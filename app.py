@@ -193,7 +193,10 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
                 return f"{canli_fiyat:.2f} TL", "Maliyet Yok"
                 
             yuzde_fark = ((canli_fiyat - maliyet) / maliyet) * 100
-            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= maliyet else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+            if canli_fiyat >= maliyet:
+                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
+            else:
+                durum_str = f"🔴 %{abs(yuzde_fark):.2f} İçeride"
             return f"{canli_fiyat:.2f} TL", durum_str
         return "Veri Yok", "⚠️ Fiyat Alınamadı"
     except:
@@ -257,4 +260,3 @@ if al_butonu:
                 
                 if "[AL]" in satir_metni:
                     yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
-                    canli_fiy, canli_durum = canli_verileri_getir(satir_hisse_adi, yüklenen_fiy)
