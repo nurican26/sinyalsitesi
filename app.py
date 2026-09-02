@@ -173,7 +173,7 @@ def saf_hisse_adi_al(metin):
         temiz = metin_str.replace("[AL]", "").replace("[SAT]", "").strip()
         parcalar = temiz.split()
         if len(parcalar) > 0:
-            return parcalar[0]
+            return str(parcalar[0])
     except Exception:
         return ""
     return ""
