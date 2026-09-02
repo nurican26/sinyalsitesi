@@ -84,6 +84,8 @@ if al_sat_butonu:
                 
                 tablo_verisi = []
                 for i in range(len(df)):
+                    if i >= len(df):
+                        break
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
                     bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
@@ -131,6 +133,8 @@ if al_butonu:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
                 for i in range(len(df)):
+                    if i >= len(df):
+                        break
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
                     w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
@@ -199,16 +203,16 @@ st.subheader("💬 BTA Sohbet Odası")
 
 isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
 
-# GİRİNTİ HATASI VERMESİ İMKANSIZ, EN GÜVENLİ HİZALANMIŞ YÖNETİCİ PANELİ
 if isat.strip().lower() == "nurican":
     st.info(f"📊 Aktif Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi Yapıldı.")
     
     with st.expander("⚙️ Nurican Yönetim ve Kısıtlama Paneli", expanded=True):
         engellenecek = st.text_input("Kısıtlanacak / Odadan Atılacak Kullanıcı Adı:")
         
-        if st.button("❌ Kullanıcıyı Odadan At / Kısıtla") and engellenecek.strip():
-            st.session_state["kisitli_kullanicilar"].add(engellenecek.strip())
-            st.success(f"⚠️ {engellenecek} kullanıcısının mesaj yazma yetkisi kısıtlandı!")
+        if st.button("❌ Kullanıcıyı Odadan At / Kısıtla"):
+            if engellenecek.strip():
+                st.session_state["kisitli_kullanicilar"].add(engellenecek.strip())
+                st.success(f"⚠️ {engellenecek} kullanıcısının mesaj yazma yetkisi kısıtlandı!")
             
         if st.button("🔓 Kısıtlamaları Kaldır"):
             st.session_state["kisitli_kullanicilar"] = set()
@@ -217,5 +221,3 @@ if isat.strip().lower() == "nurican":
             
         if st.button("🗑️ Tüm Sohbet Odası Mesajlarını Temizle", use_container_width=True):
             st.session_state["chat_history"] = []
-            st.success("Sohbet geçmişi tamamen temizlendi.")
-            st.rerun()
