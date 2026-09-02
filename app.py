@@ -40,27 +40,31 @@ css_kodlari = (
 )
 st.markdown(css_kodlari, unsafe_allow_html=True)
 
-# Görselinizdeki dosya uzantısına göre tam eşleme yapıldı
+# Dosya adı tanımı
 EXCEL_FILE_PATH = "nurican.xls.xlsm"
 
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
 # ==========================================
-# 🖲️ EXCEL MAKRO TETİKLEME MOTORU (BİREBİR EŞLENDİ)
+# 🖲️ EXCEL MAKRO TETİKLEME MOTORU (BULUT UYUMLU GÜVENLİ MOD)
 # ==========================================
 def excel_makro_tetikle(buton_adi):
     """ Arka planda Excel'i açar, ilgili makro butonunu çalıştırır ve kaydeder """
-    import win32com.client
+    # Eğer kod Streamlit Cloud (Linux) üzerinde çalışıyorsa win32com hata vermesin diye kontrol ekledik
+    if os.name != 'nt':
+        print(f"⚠️ Bulut ortamındasınız. Windows olmadığı için Excel Makrosu tetiklenemedi: {buton_adi}")
+        return False
+        
     try:
+        import win32com.client
         excel = win32com.client.Dispatch("Excel.Application")
-        excel.Visible = False  # Tamamen arka planda gizli çalışır
+        excel.Visible = False  
         excel.DisplayAlerts = False
         
         tam_yol = os.path.abspath(EXCEL_FILE_PATH)
         wb = excel.Workbooks.Open(tam_yol)
         
-        # 🎯 GÖRSELLERİNİZDEN ALINAN GERÇEK MAKRO İSİMLERİ
         makro_haritasi = {
             # ☀️ Gündüz Seans Butonları
             "ANLIK GÜNCELLEME": "AnlikGuncelle",
@@ -77,7 +81,6 @@ def excel_makro_tetikle(buton_adi):
         
         makro_ismi = makro_haritasi.get(buton_adi)
         if makro_ismi:
-            # Excel üzerinde makroyu koştur
             excel.Application.Run(f"'{wb.Name}'!{makro_ismi}")
             wb.Save()
             print(f"✔️ Makro Başarılı: {buton_adi}")
@@ -106,21 +109,15 @@ def zamanlayici_dongusu():
                 son_gunduz_dakikasi = simdi.minute
                 print(f"⏰ Seans Döngüsü Başladı | Saat: {su_an_saat_dakika}")
                 
-                # 1. Adım: Anlık Güncelleme
                 excel_makro_tetikle("ANLIK GÜNCELLEME")
+                time.sleep(300) # 5 dakika güncelleme bekleme süresi
                 
-                # 📝 Güncelleme 3-4 dakika sürdüğü için tam 5 dakika (300 saniye) güvenlik beklemesi
-                time.sleep(300) 
-                
-                # 2. Adım: Sırala
                 excel_makro_tetikle("SIRALA")
                 time.sleep(5)
                 
-                # 3. Adım: BTA
                 excel_makro_tetikle("BTA")
                 time.sleep(5)
                 
-                # 4. Adım: Al Sat Sinyali
                 excel_makro_tetikle("AL SAT SİNYALİ")
                 time.sleep(5)
                 print(f"✅ Seans Periyodu Tamamlandı | Saat: {datetime.datetime.now().strftime('%H:%M')}")
@@ -128,10 +125,9 @@ def zamanlayici_dongusu():
         # 🌙 2. SENARYO: GECE YARISI RUTİNİ (00:00 - SADECE 1 KERE)
         if simdi.hour == 0 and simdi.minute == 0:
             if not gece_tetiklendi_mi:
-                gece_tetiklendi_mi = True  # Sadece 1 kere çalışmasını kilitler
+                gece_tetiklendi_mi = True  
                 print(f"🌙 Gece Yarısı Veri Güncellemesi Başlatıldı | Saat: {su_an_saat_dakika}")
                 
-                # İlettiğiniz aralıklara göre her işlem arasına 1-2 dakika (60-120 saniye) dinlenme verildi
                 excel_makro_tetikle("BİLANÇO")
                 time.sleep(120) 
                 
@@ -145,12 +141,11 @@ def zamanlayici_dongusu():
                 time.sleep(120)
                 print("✅ Gece Yarısı Rutini Başarıyla Sona Erdi.")
         else:
-            # Saat 00:00'dan çıkınca (örn. 00:01'de) gece kilidini sonraki gün için sıfırla
             gece_tetiklendi_mi = False
 
         time.sleep(1)
 
-# Arka plan iş parçacığını güvenli başlatma
+# Arka plan zamanlayıcı başlatma
 if "dongu_aktif" not in st.session_state:
     st.session_state["dongu_aktif"] = True
     t = threading.Thread(target=zamanlayici_dongusu, daemon=True)
@@ -206,11 +201,11 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
         return "Hata", "⚠️ Bağlantı Sorunu"
 
 # ==========================================
-# 📈 1. BÖLÜM: PANEL ANA EKRANI
+# 📈 PANEL ANA EKRANI
 # ==========================================
 st.title("⚡ Sinyal Takip Merkezi")
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Arka Planda Aktif. Son Panel Senkronizasyonu: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 st.markdown("---")
 st.subheader("Sinyal Üretim Merkezi")
@@ -221,8 +216,9 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
+# 🟡 AL SAT SİNYAL GÖSTERİMİ
 if al_sat_butonu:
-    with st.spinner("Güncellenmiş Excel verileri listeleniyor..."):
+    with st.spinner("Excel verileri okunuyor..."):
         try:
             df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA") if "BTA" in pd.ExcelFile(EXCEL_FILE_PATH).sheet_names else pd.read_excel(EXCEL_FILE_PATH)
             df.columns = df.columns.astype(str).str.strip()
@@ -245,11 +241,20 @@ if al_sat_butonu:
             else:
                 st.warning("Aktif Al-Sat sinyali bulunamadı.")
         except Exception as e:
-            st.error(f"Hata: {e}")
+            st.error(f"Hata oluştu: {e}")
 
+# 🟢 AL SİNYAL GÖSTERİMİ (Hata düzeltilen kısım)
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
             df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA") if "BTA" in pd.ExcelFile(EXCEL_FILE_PATH).sheet_names else pd.read_excel(EXCEL_FILE_PATH)
             df.columns = df.columns.astype(str).str.strip()
             tablo_verisi_al = []
+            
+            for i in range(len(df)):
+                satir_hisse_adi = saf_hisse_adi_al(df.iloc[i, 0])
+                excel_anlik_verisi = df.iloc[i, 7]
+                satir_metni = " ".join(df.iloc[i, :].astype(str).upper())
+                
+                if "[AL]" in satir_metni:
+                    yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
