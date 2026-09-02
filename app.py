@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -102,7 +101,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ -> FORTE, PKENT, DUNYH)
     if al_sat_butonu and df_kaynak is not None:
         tablo_verisi = []
         sutun_sayisi = len(df_kaynak.columns)
@@ -113,27 +112,29 @@ with sol_taraf:
                 if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                     continue
                 
+                # SÖNME ve ALKLC yeşil butona ayrıldığı için buradan eliyoruz
                 if "SONME" in u_val or "ALKLC" in u_val:
                     continue
                     
                 try:
-                    kelimeler = u_val.split()
-                    if len(kelimeler) > 0:
-                        ham_kelime = str(kelimeler)
-                        hisse_adi = ham_kelime.replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "").strip()
-                        hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi)
+                    # Hücre metninin içinden parlatarak borsa kodunu net yakalıyoruz
+                    hisse_adi = None
+                    for h in BORSA_HISSELERI:
+                        if h in u_val:
+                            hisse_adi = h
+                            break
+                    
+                    if hisse_adi:
+                        fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
+                        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
+                        yuklenen_fiy = float(sayilar) if sayilar else 0.0
                         
-                        if hisse_adi and len(hisse_adi) >= 3:
-                            fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
-                            sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                            yuklenen_fiy = float(sayilar) if sayilar else 0.0
-                            
-                            hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
-                            if not hisse_data.empty:
-                                canli_fiyat = hisse_data['Close'].iloc[-1]
-                                yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
-                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                                tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                        hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
+                        if not hisse_data.empty:
+                            canli_fiyat = hisse_data['Close'].iloc[-1]
+                            yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
+                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                            tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
         if tablo_verisi:
@@ -141,7 +142,7 @@ with sol_taraf:
         else:
             st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
+    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ -> ALKLC VE SONME)
     if al_butonu and df_kaynak is not None:
         tablo_verisi_al = []
         sutun_sayisi = len(df_kaynak.columns)
@@ -153,22 +154,22 @@ with sol_taraf:
                     continue
                     
                 try:
-                    kelimeler = w_val.split()
-                    if len(kelimeler) > 0:
-                        ham_kelime = str(kelimeler)
-                        hisse_adi = ham_kelime.replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "").strip()
-                        hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi)
-                        
-                        if hisse_adi and len(hisse_adi) >= 3:
-                            hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
-                            if not hisse_data.empty:
-                                canli_fiyat = hisse_data['Close'].iloc[-1]
-                                yuklenen_fiy = canli_fiyat 
-                                yuzde_fark = 0.0  
-                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
-                                
-                                st.session_state["ozel_takip_kutusu"][hisse_adi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                                tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                    hisse_adi = None
+                    for h in BORSA_HISSELERI:
+                        if h in w_val:
+                            hisse_adi = h
+                            break
+                    
+                    if hisse_adi:
+                        hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
+                        if not hisse_data.empty:
+                            canli_fiyat = hisse_data['Close'].iloc[-1]
+                            yuklenen_fiy = canli_fiyat 
+                            yuzde_fark = 0.0  
+                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
+                            
+                            st.session_state["ozel_takip_kutusu"][hisse_adi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                            tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
         if tablo_verisi_al:
@@ -200,12 +201,17 @@ with sol_taraf:
 
 with sag_taraf:
     # ==========================================
-    # ⭐ YUKARI TAŞINAN KALICI YILDIZ OYLAMA ALANI (KÖKTEN DÜZELTİLDİ)
+    # ⭐ KALICI YILDIZ OYLAMA ALANI
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
     st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
     yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
 
-    # Çökmeye sebep olan tüm karmaşık yapılar ve boşluk riskleri tamamen kaldırıldı
     if yildiz_skor is not None:
         gercek_puan = yildiz_skor + 1
+        st.session_state["toplam_oy_sayisi"] = st.session_state["toplam_oy_sayisi"] + 1
+        st.session_state["toplam_yildiz_puani"] = st.session_state["toplam_yildiz_puani"] + gercek_puan
+        st.success(f"Teşekkürler! Puanınız kaydedildi: {gercek_puan} Yıldız")
+
+    st.markdown("---")
+    st.subheader("💬 BTA Sohbet Odası")
