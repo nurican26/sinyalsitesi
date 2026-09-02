@@ -156,28 +156,34 @@ if "dongu_aktif" not in st.session_state:
 def saf_fiyat_al(veri):
     if pd.isnull(veri):
         return 0.0
-    veri_str = str(veri).replace(",", ".").strip()
-    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", veri_str)
-    if sayilar:
-        try:
+    try:
+        veri_str = str(veri).replace(",", ".").strip()
+        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", veri_str)
+        if sayilar:
             return float(sayilar[0])
-        except:
-            return 0.0
+    except Exception:
+        return 0.0
     return 0.0
 
 def saf_hisse_adi_al(metin):
     if pd.isnull(metin):
         return ""
-    metin_str = str(metin).strip().upper()
-    temiz = metin_str.replace("[AL]", "").replace("[SAT]", "").strip()
-    parcalar = temiz.split()
-    if len(parcalar) > 0:
-        return parcalar[0]
-    return temiz
+    try:
+        metin_str = str(metin).strip().upper()
+        temiz = metin_str.replace("[AL]", "").replace("[SAT]", "").strip()
+        parcalar = temiz.split()
+        if len(parcalar) > 0:
+            return parcalar[0]
+    except Exception:
+        return ""
+    return ""
 
 def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     try:
         temiz_hisse = saf_hisse_adi_al(hisse_adi)
+        if not temiz_hisse:
+            return None, None
+            
         gecersiz_kelimeler = ["ANA", "PAZAR", "HİSSE", "DOLAŞIM", "PİYASA", "LOT", "ANLIK", "BTA", "UCUZ", "KOPYA", "AL", "SAT", "NAN", "ARZ"]
         if any(x in temiz_hisse for x in gecersiz_kelimeler) or len(temiz_hisse) < 2:
             return None, None
@@ -199,7 +205,7 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
                 durum_str = f"🔴 %{abs(yuzde_fark):.2f} İçeride"
             return f"{canli_fiyat:.2f} TL", durum_str
         return "Veri Yok", "⚠️ Fiyat Alınamadı"
-    except:
+    except Exception:
         return "Hata", "⚠️ Bağlantı Sorunu"
 
 # ==========================================
@@ -232,7 +238,7 @@ if al_sat_butonu:
                 bta_sinyal_al_sat = df.iloc[i, 20] 
                 
                 hisse_temiz = saf_hisse_adi_al(hisse_kodu_ham)
-                if pd.notnull(bta_sinyal_al_sat) and "+" in str(bta_sinyal_al_sat):
+                if hisse_temiz and pd.notnull(bta_sinyal_al_sat) and "+" in str(bta_sinyal_al_sat):
                     yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
                     canli_fiy, canli_durum = canli_verileri_getir(hisse_temiz, yüklenen_fiy)
                     if canli_fiy is not None:
@@ -255,8 +261,5 @@ if al_butonu:
             
             for i in range(len(df)):
                 satir_hisse_adi = saf_hisse_adi_al(df.iloc[i, 0])
-                excel_anlik_verisi = df.iloc[i, 7]
-                satir_metni = " ".join(df.iloc[i, :].astype(str).upper())
-                
-                if "[AL]" in satir_metni:
-                    yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
+                if satir_hisse_adi:
+                    excel_anlik_verisi = df.iloc[i, 7]
