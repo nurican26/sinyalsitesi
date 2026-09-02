@@ -9,17 +9,6 @@ import re
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
 # ==========================================
-# 📊 OTOMATİK CANLI GİRİŞ VE SAYAÇ SİSTEMİ
-# ==========================================
-if "toplam_giris_sayisi" not in st.session_state:
-    st.session_state["toplam_giris_sayisi"] = 1
-else:
-    st.session_state["toplam_giris_sayisi"] += 1
-
-if "aktif_kisi_sayisi" not in st.session_state:
-    st.session_state["aktif_kisi_sayisi"] = 1
-
-# ==========================================
 # 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
@@ -58,7 +47,7 @@ if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
 # ==========================================
-# 🧼 GÜVENLİ METİN VE SAYI TEMİZLEME FONKSİYONLARI
+# 🧼 GÜVENLİ SAYI TEMİZLEME FONKSİYONU
 # ==========================================
 def saf_fiyat_al(veri):
     if pd.isnull(veri):
@@ -77,9 +66,7 @@ def saf_fiyat_al(veri):
 # ==========================================
 def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     try:
-        # Hücre içeriğini temizleyip saf borsa kodunu çıkarıyoruz
         temiz_hisse = str(hisse_adi).replace("[AL]", "").replace("[SAT]", "").strip().upper()
-        temiz_hisse = temiz_hisse.split()[0] if len(temiz_hisse.split()) > 0 else temiz_hisse
         
         if not temiz_hisse.endswith(".IS"):
             ticker_kod = f"{temiz_hisse}.IS"
@@ -96,7 +83,6 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
             if maliyet <= 0:
                 return f"{canli_fiyat:.2f} TL", "Maliyet Yok"
                 
-            # Kâr/Zarar Oranı Hesaplama
             yuzde_fark = ((canli_fiyat - maliyet) / maliyet) * 100
             if yuzde_fark >= 0:
                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
@@ -143,18 +129,17 @@ if al_sat_butonu:
             
             for i in range(len(df)):
                 if len(df.columns) > 20:
-                    hisse_hucresi = df.iloc[i, 20]     # U Sütunu
-                    excel_anlik_verisi = df.iloc[i, 7] # H Sütunu
+                    hisse_hucresi = df.iloc[i, 20]     
+                    excel_anlik_verisi = df.iloc[i, 7] 
                     
                     if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(hisse_hucresi):
                         hisse_metni = str(hisse_hucresi).strip()
-                        hisse_ismi = hisse_metni.split()[0] if len(hisse_metni.split()) > 0 else hisse_metni
                         yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
                         
-                        canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
+                        canli_fiy, canli_durum = canli_verileri_getir(hisse_metni, yüklenen_fiy)
                         
                         tablo_verisi.append({
-                            "Hisse Kodu": hisse_ismi,
+                            "Hisse Kodu": hisse_metni,
                             "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
                             "Anlık Canlı Fiyat": canli_fiy,
                             "Canlı Kar/Zarar Oranı": canli_durum
@@ -170,7 +155,7 @@ if al_sat_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# 🟢 2. BUTON: AL SİNYALİ (HİSSE KODU VE YERLEŞİM TAMAMEN DÜZELTİLDİ)
+# 🟢 2. BUTON: AL SİNYALİ
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
@@ -182,29 +167,25 @@ if al_butonu:
             df.columns = df.columns.astype(str).str.strip()
             tablo_verisi_al = []
             
-            # Excel'deki tam satır eşleşmesine göre tarama yapıyoruz
             for i in range(len(df)):
-                # A Sütunundaki hisse kodunu (Örn: ALARK) doğrudan çekiyoruz
-                satir_hisse_adi = str(df.iloc[i, 0]).strip().upper()
-                excel_anlik_verisi = df.iloc[i, 7] # H Sütunu (Yüklenen Fiyat)
-                
-                # Tablonun ilgili satırlarında [AL] ifadesi var mı kontrol et
-                satir_metni = "".join(df.iloc[i, :].astype(str))
-                
-                if "[AL]" in satir_metni and pd.notnull(satir_hisse_adi) and satir_hisse_adi != "NAN" and satir_hisse_adi != "":
-                    yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
-                    canli_fiy, canli_durum = canli_verileri_getir(satir_hisse_adi, yüklenen_fiy)
+                for j in range(len(df.columns)):
+                    hucre_degeri = str(df.iloc[i, j]).strip()
+                    excel_anlik_verisi = df.iloc[i, 7] 
                     
-                    tablo_verisi_al.append({
-                        "Hisse Kodu": satir_hisse_adi,
-                        "Sinyal Durumu": f"{satir_hisse_adi} [AL]",
-                        "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
-                        "Anlık Canlı Fiyat": canli_fiy,
-                        "Canlı Kar/Zarar Oranı": canli_durum
-                    })
+                    if "[AL]" in hucre_degeri:
+                        yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
+                        canli_fiy, canli_durum = canli_verileri_getir(hucre_degeri, yüklenen_fiy)
+                        
+                        tablo_verisi_al.append({
+                            "Hisse Kodu": hucre_degeri.replace("[AL]", "").strip(),
+                            "Sinyal Durumu": hucre_degeri,
+                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
+                            "Anlık Canlı Fiyat": canli_fiy,
+                            "Canlı Kar/Zarar Oranı": canli_durum
+                        })
             
             if tablo_verisi_al:
-                st.success("Aktif AL Sinyalleri Doğru Kodlarla Listelendi!")
+                st.success("Aktif AL Sinyalleri Başarıyla Listelendi!")
                 result_df_al = pd.DataFrame(tablo_verisi_al)
                 st.dataframe(result_df_al, use_container_width=True, hide_index=True)
             else:
@@ -235,11 +216,24 @@ else:
     st.info("Henüz mesaj yazılmamış. İlk mesajı siz yazın! 👇")
 
 # ==========================================
-# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU
+# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU (GÜVENLİ TEK SATIR MODU)
 # ==========================================
 st.markdown("---")
-yasal_metin = (
-    "⚠️ YASAL UYARI (SPK Mevzuatı Uyarınca): Burada yer alan yatırım bilgi, yorum ve tavsiyeleri "
-    "yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy "
-    "yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı "
-    "sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların "
+st.error("⚠️ YASAL UYARI (SPK Mevzuatı Uyarınca): Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Burada paylaşılan sinyaller ve bilgiler kesinlikle yatırım tavsiyesi değildir.")
+
+# ==========================================
+# 🔐 5. BÖLÜM: EN ALTTAKİ GİZLİ SAYAÇ PANELİ
+# ==========================================
+st.markdown("---")
+with st.expander("🛠️ Yönetici Girişi (Sadece Nurican)"):
+    admin_sifre = st.text_input("Şifrenizi Giriniz:", type="password", key="admin_pwd_key")
+    if admin_sifre == "1234":
+        st.success("Giriş Başarılı!")
+        col_info1, col_info2, col_info3 = st.columns(3)
+        with col_info1:
+            st.metric(label="🟢 Sitedeki Kişi Sayısı", value="Aktif")
+        with col_info2:
+            st.metric(label="📊 Toplam Giriş Sayısı", value="1")
+        with col_info3:
+            st.metric(label="🕒 Son Güncelleme", value=su_an.strftime("%H:%M:%S"))
+    elif admin_sifre != "":
