@@ -121,7 +121,7 @@ with sol_taraf:
                         if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                             continue
                         
-                        # Satırdaki tüm hücreleri birleştirerek genel bir metin taraması yapıyoruz (Sütun kaymalarına çözüm)
+                        # Satırdaki tüm hücreleri kapsayan akıllı metin taraması
                         satir_metni_bütün = " ".join([str(val).strip().upper() for val in df_kaynak.iloc[i].values]).upper()
                         
                         # Gelişmiş Hisse Kodu Temizleme
@@ -129,7 +129,6 @@ with sol_taraf:
                         hisse_temiz = re.sub(r'[-+]?\d*\.\d+|\d+', '', hisse_temiz)
                         hisse_temiz = hisse_temiz.replace("+", "").replace("-", "").strip()
                         
-                        # Eğer satırda tetikleyici anahtar kelimelerden biri geçiyorsa sinyali kabul et
                         if "+" in satir_metni_bütün or "AL" in satir_metni_bütün or "SAT" in satir_metni_bütün or "SONME" in hisse_temiz:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
                             yüklenen_fiy = float(sayilar) if sayilar else 0.0
@@ -170,7 +169,6 @@ with sol_taraf:
                         hisse_temiz = re.sub(r'[-+]?\d*\.\d+|\d+', '', hisse_temiz)
                         hisse_temiz = hisse_temiz.replace("+", "").replace("-", "").strip()
                         
-                        # Satırın herhangi bir yerinde [AL], AL veya SONME koşulu tetiklenirse
                         if "[AL]" in satir_metni_bütün or "AL" in satir_metni_bütün or "SONME" in hisse_temiz:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
                             yüklenen_fiy = float(sayilar) if sayilar else 0.0
@@ -186,3 +184,10 @@ with sol_taraf:
                     if tablo_verisi_al:
                         st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
                     else:
+                        st.warning("Filtreye uygun aktif [AL] veya Sönme durumu bulunamadı.")
+                except Exception as e:
+                    st.error(f"Hata: {e}")
+
+    # 📦 SADECE AL SİNYALİ GELEN HİSSELERİN TAKİP KUTUSU
+    if st.session_state["ozel_takip_kutusu"]:
+        st.markdown("---")
