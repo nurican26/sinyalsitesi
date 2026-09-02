@@ -79,14 +79,14 @@ if al_sat_butonu:
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
                 tablo_verisi = []
                 for i in range(len(df)):
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                    bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
+                    bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape > 20 else ""
                     
                     if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                         continue
@@ -95,7 +95,7 @@ if al_sat_butonu:
                     
                     if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat:
                         sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                        yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                        yüklenen_fiy = float(sayilar) if sayilar else 0.0
                         
                         ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                         hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -127,13 +127,13 @@ if al_butonu:
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
                 for i in range(len(df)):
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                    w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
+                    w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape > 22 else ""
                     
                     if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                         continue
@@ -142,7 +142,7 @@ if al_butonu:
                     
                     if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi:
                         sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                        yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                        yüklenen_fiy = float(sayilar) if sayilar else 0.0
                         
                         ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                         hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -192,32 +192,26 @@ if st.session_state["ozel_takip_kutusu"]:
             st.rerun()
 
 # ==========================================
+# ⚠️ SPK YASAL UYARI METNİ (ÜSTE SABİTLENDİ)
+# ==========================================
+st.markdown("---")
+st.markdown(
+    """
+    <div style="background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+        <p style="margin: 0; font-weight: bold; color: #f87171 !important;">⚠️ SPK YASAL UYARI (YATIRIM TAVSİYESİ KESİNLİKLE DEĞİLDİR):</p>
+        <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #cbd5e1 !important; line-height: 1.5;">
+            Burada yer alan yatırım bilgi, yorum ve tavsiyeleri <b>yatırım danışmanlığı kapsamında değildir.</b> 
+            Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri dikkate alınarak kişiye özel sunulmaktadır. 
+            Burada yer alan yorum ve tahminler ise genel niteliktedir ve mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. 
+            Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ==========================================
 # 💬 3. BÖLÜM: BTA SOHBET ODASI & YÖNETİM
 # ==========================================
 st.markdown("---")
 st.subheader("💬 BTA Sohbet Odası")
-
-isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
-
-if isat.strip().lower() == "nurican":
-    st.info(f"📊 Aktif Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi Yapıldı.")
-    
-    with st.expander("⚙️ Nurican Yönetim ve Kısıtlama Paneli", expanded=True):
-        engellenecek = st.text_input("Kısıtlanacak / Odadan Atılacak Kullanıcı Adı:")
-        
-        if st.button("❌ Kullanıcıyı Odadan At / Kısıtla"):
-            if engellenecek.strip():
-                st.session_state["kisitli_kullanicilar"].add(engellenecek.strip())
-                st.success(f"⚠️ {engellenecek} kullanıcısının mesaj yazma yetkisi kısıtlandı!")
-            
-        if st.button("🔓 Kısıtlamaları Kaldır"):
-            st.session_state["kisitli_kullanicilar"] = set()
-            st.success("Tüm oda kısıtlamaları sıfırlandı.")
-            st.rerun()
-            
-        if st.button("🗑️ Tüm Sohbet Odası Mesajlarını Temizle", use_container_width=True):
-            st.session_state["chat_history"] = []
-            st.success("Sohbet geçmişi tamamen temizlendi.")
-            st.rerun()
-
-mesaj = st.text_input("Mesajınızı yazın:", placeholder="Örn: Hisseler bugün çok iyi gidiyor...")
