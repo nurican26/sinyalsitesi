@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -174,7 +175,7 @@ if al_butonu:
             st.error("Excel dosyası bulunamadı!")
 
 # ==========================================
-# 📥 ÖZEL AL SİNYALİ TAKİP KUTUSU
+# 📦 ÖZEL AL SİNYALİ TAKİP KUTUSU
 # ==========================================
 if st.session_state["ozel_takip_kutusu"]:
     st.markdown("---")
@@ -211,8 +212,7 @@ if st.session_state["ozel_takip_kutusu"]:
 st.markdown("---")
 st.subheader("💬 BTA Sohbet Odası")
 
-# Orijinal Sohbet Girişleri
 isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
 
-# Sadece "Nurican" girdiğinde görünecek admin ikonu ve yetkileri
+# Gizli Admin Yetkileri İkon Yapısı (Sadece tam adınız girildiğinde tetiklenir)
 if isat.strip().lower() == "nurican":
