@@ -71,7 +71,7 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (CANLI VERİLİ)
+# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
 if al_sat_butonu:
     with st.spinner("Excel verileri okunuyor ve canlı fiyatlar çekiliyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
@@ -151,7 +151,6 @@ if al_butonu:
                             yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                             
-                            # Eş zamanlı olarak o anki canlı fiyatıyla kalıcı kutuya kaydet/güncelle
                             st.session_state["ozel_takip_kutusu"][hisse_temiz] = {
                                 "kayit_fiyati": canli_fiyat,
                                 "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")
@@ -176,7 +175,7 @@ if al_butonu:
             st.error("Excel dosyası bulunamadı!")
 
 # ==========================================
-# 📦 ÖZEL AL SİNYALİ TAKİP KUTUSU (YENİ)
+# 📦 ÖZEL AL SİNYALİ TAKİP KUTUSU
 # ==========================================
 if st.session_state["ozel_takip_kutusu"]:
     st.markdown("---")
@@ -208,3 +207,6 @@ if st.session_state["ozel_takip_kutusu"]:
         if st.button("🗑️ Kutuyu Temizle", use_container_width=False):
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
+
+# ==========================================
+# 💬 3. BÖLÜM: BTA SOHBET ODASI & ADMIN YETKİLERİ
