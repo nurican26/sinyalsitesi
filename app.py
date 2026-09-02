@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -151,7 +150,6 @@ if al_butonu:
                             yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                             
-                            # Farklı bir kutuya o anki canlı fiyatı kalıcı kaydetme
                             st.session_state["ozel_takip_kutusu"][hisse_temiz] = {
                                 "kayit_fiyati": canli_fiyat,
                                 "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")
@@ -214,5 +212,7 @@ st.subheader("💬 BTA Sohbet Odası")
 
 isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
 
-# Gizli Admin Yetkileri İkon Yapısı (Sadece tam adınız girildiğinde tetiklenir)
 if isat.strip().lower() == "nurican":
+    with st.expander("⚙️ Yönetici Kontrolleri (Sadece Nurican Görebilir)", expanded=False):
+        engellenecek = st.text_input("Kısıtlanacak / Mesaj Engellenecek Kişi:")
+        if st.button("❌ Kullanıcıyı Kısıtla"):
