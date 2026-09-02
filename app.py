@@ -5,6 +5,7 @@ import yfinance as yf
 import os
 import re
 
+# Sayfa Tasarım Ayarları
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
 # ==========================================
@@ -43,6 +44,9 @@ guncel_tarih_saat = su_an.strftime("%d.%m.%Y - %H:%M:%S")
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
+# ==========================================
+# 🧼 GÜVENLİ SAYI VE METİN TEMİZLEME FONKSİYONLARI
+# ==========================================
 def saf_fiyat_al(veri):
     if pd.isnull(veri):
         return 0.0
@@ -55,12 +59,29 @@ def saf_fiyat_al(veri):
             return 0.0
     return 0.0
 
+def saf_hisse_adi_al(metin):
+    if pd.isnull(metin):
+        return ""
+    metin_str = str(metin).strip().upper()
+    # Hücre içindeki gereksiz boşlukları ve ekleri tamamen temizle
+    temiz = metin_str.replace("[AL]", "").replace("[SAT]", "").strip()
+    parcalar = temiz.split()
+    if len(parcalar) > 0:
+        return parcalar[0]
+    return temiz
+
 # ==========================================
 # 📊 YFINANCE CANLI FIYAT VE DOĞRU KAR/ZARAR MANTIĞI
 # ==========================================
 def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     try:
-        temiz_hisse = str(hisse_adi).replace("[AL]", "").replace("[SAT]", "").strip().upper()
+        temiz_hisse = saf_hisse_adi_al(hisse_adi)
+        
+        # İçinde bu kelimeler geçen satırları engelle (ANA PAZAR vb. başlıkları eler)
+        gecersiz_kelimeler = ["ANA", "PAZAR", "HİSSE", "DOLAŞIM", "PİYASA", "LOT", "ANLIK", "BTA", "UCUZ", "KOPYA", "AL", "SAT", "NAN", "ARZ"]
+        if any(x in temiz_hisse for x in gecersiz_kelimeler) or len(temiz_hisse) < 2:
+            return None, None
+
         if not temiz_hisse.endswith(".IS"):
             ticker_kod = f"{temiz_hisse}.IS"
         else:
@@ -71,11 +92,13 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
         
         if not df_live.empty:
             canli_fiyat = df_live['Close'].iloc[-1]
-            maliyet = yuklenen_fiyat if yuklenen_fiyat > 0 else 110.30
+            maliyet = yuklenen_fiyat
             
-            # Yüzde kâr/zarar hesabı
+            if maliyet <= 0:
+                return f"{canli_fiyat:.2f} TL", "Maliyet Yok"
+                
             yuzde_fark = ((canli_fiyat - maliyet) / maliyet) * 100
-            if yuzde_fark >= 0:
+            if canli_fiyat >= maliyet:
                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
             else:
                 durum_str = f"🔴 %{abs(yuzde_fark):.2f} İçeride"
@@ -86,6 +109,9 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     except:
         return "Hata", "⚠️ Bağlantı Sorunu"
 
+# ==========================================
+# 📈 1. BÖLÜM: PANEL ANA EKRANI VE GÜNCELLEME NOTU
+# ==========================================
 st.title("⚡ Sinyal Takip Merkezi")
 st.success(f"💡 Bu sayfa {guncel_tarih_saat} tarihinde bta analiz tarafından güncellenmiştir.")
 
@@ -113,33 +139,34 @@ if al_sat_butonu:
             tablo_verisi = []
             
             for i in range(len(df)):
-                if len(df.columns) > 20:
-                    hisse_hucresi = df.iloc[i, 0]      # A Sütunundan hisse kodunu oku (ALARK)
-                    excel_anlik_verisi = df.iloc[i, 7] # H Sütunundan tam fiyatı oku (110,30)
-                    bta_sinyal_al_sat = df.iloc[i, 20] # U Sütunu
+                hisse_kodu_ham = df.iloc[i, 0]      # A Sütunu
+                excel_anlik_verisi = df.iloc[i, 7] # H Sütunu (ANLIK)
+                bta_sinyal_al_sat = df.iloc[i, 20] # U Sütunu
+                
+                hisse_temiz = saf_hisse_adi_al(hisse_kodu_ham)
+                
+                if pd.notnull(bta_sinyal_al_sat) and str(bta_sinyal_al_sat).strip() != "" and "+" in str(bta_sinyal_al_sat):
+                    yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
+                    canli_fiy, canli_durum = canli_verileri_getir(hisse_temiz, yüklenen_fiy)
                     
-                    if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(bta_sinyal_al_sat):
-                        hisse_metni = str(hisse_hucresi).strip()
-                        yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
-                        
-                        canli_fiy, canli_durum = canli_verileri_getir(hisse_metni, yüklenen_fiy)
+                    if canli_fiy is not None:
                         tablo_verisi.append({
-                            "Hisse Kodu": hisse_metni,
+                            "Hisse Kodu": hisse_temiz,
                             "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
                             "Anlık Canlı Fiyat": canli_fiy,
                             "Canlı Kar/Zarar Oranı": canli_durum
                         })
+            
             if tablo_verisi:
                 st.success("Sinyaller ve Canlı Durumlar Listelendi!")
                 result_df = pd.DataFrame(tablo_verisi)
                 st.dataframe(result_df, use_container_width=True, hide_index=True)
             else:
-                st.info("Tablo İçeriği:")
-                st.dataframe(df.dropna(how='all').head(10), use_container_width=True)
+                st.warning("Aktif Al-Sat sinyali hücresi bulunamadı.")
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# 🟢 2. BUTON: AL SİNYALİ
+# 🟢 2. BUTON: AL SİNYALİ (BAŞLIK ENGELLİ VE GÜVENLİ ARAMA)
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
@@ -152,25 +179,28 @@ if al_butonu:
             tablo_verisi_al = []
             
             for i in range(len(df)):
-                satir_hisse_adi = str(df.iloc[i, 0]).strip().upper() # A Sütunu (ALARK)
-                excel_anlik_verisi = df.iloc[i, 7]                  # H Sütunu (110,30)
+                satir_hisse_adi = saf_hisse_adi_al(df.iloc[i, 0]) # A Sütunu
+                excel_anlik_verisi = df.iloc[i, 7]               # H Sütunu
                 
-                # Satırdaki hücrelerin herhangi birinde [AL] yazıyor mu kontrol et
-                satir_metni = "".join(df.iloc[i, :].astype(str))
+                # Bütün satırı metne çevirip içinde [AL] arıyoruz
+                satir_metni = " ".join(df.iloc[i, :].astype(str).upper())
                 
-                if "[AL]" in satir_metni and pd.notnull(satir_hisse_adi) and satir_hisse_adi != "NAN" and satir_hisse_adi != "":
+                if "[AL]" in satir_metni:
                     yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
                     canli_fiy, canli_durum = canli_verileri_getir(satir_hisse_adi, yüklenen_fiy)
                     
-                    tablo_verisi_al.append({
-                        "Hisse Kodu": satir_hisse_adi,
-                        "Sinyal Durumu": f"{satir_hisse_adi} [AL]",
-                        "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
-                        "Anlık Canlı Fiyat": canli_fiy,
-                        "Canlı Kar/Zarar Oranı": canli_durum
-                    })
+                    # Sadece geçerli bir hisse senedi döndüyse listeye ekle
+                    if canli_fiy is not None:
+                        tablo_verisi_al.append({
+                            "Hisse Kodu": satir_hisse_adi,
+                            "Sinyal Durumu": f"{satir_hisse_adi} [AL]",
+                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
+                            "Anlık Canlı Fiyat": canli_fiy,
+                            "Canlı Kar/Zarar Oranı": canli_durum
+                        })
+            
             if tablo_verisi_al:
-                st.success("Aktif AL Sinyalleri Başarıyla Listelendi!")
+                st.success("Aktif AL Sinyalleri Doğru Fiyatlarla Listelendi!")
                 result_df_al = pd.DataFrame(tablo_verisi_al)
                 st.dataframe(result_df_al, use_container_width=True, hide_index=True)
             else:
@@ -178,8 +208,12 @@ if al_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
+# ==========================================
+# 💬 3. BÖLÜM: BTA SOHBET ODASI
+# ==========================================
 st.markdown("---")
 st.subheader("💬 BTA SOHBET ODASI")
+
 sohbet_adi = st.text_input("👤 Sohbet Takma Adınız:", value="Nurican", key="chat_name")
 yeni_mesaj = st.text_input("✍️ Mesajınızı yazın:", placeholder="Örn: Hisseler bugün çok iyi gidiyor... 🚀📈", key="chat_msg")
 
@@ -196,5 +230,8 @@ if st.session_state["chat_history"]:
 else:
     st.info("Henüz mesaj yazılmamış. İlk mesajı siz yazın! 👇")
 
+# ==========================================
+# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU
+# ==========================================
 st.markdown("---")
 st.error("⚠️ YASAL UYARI (SPK Mevzuatı Uyarınca): Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Burada paylaşılan sinyaller ve bilgiler kesinlikle yatırım tavsiyesi değildir.")
