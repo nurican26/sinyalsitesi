@@ -57,9 +57,14 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
 # ==========================================
 st.title("⚡ Sinyal Takip Merkezi")
 
+# 💡 bta analiz Özel Güncelleme Notu (İnsanların görmesi için yukarıya geri alındı)
 st.markdown("---")
+st.info(f"💡 Bu sayfa **{guncel_tarih_saat}** tarihinde **bta analiz** tarafından güncellenmiştir.")
+st.markdown("---")
+
 st.subheader("Sinyal Üretim Merkezi")
 
+# İstediğiniz gibi dosya adı tekrar 'nurican.xlsx' olarak sabitlendi
 EXCEL_FILE_PATH = "nurican.xls" 
 
 col1, col2 = st.columns(2)
@@ -117,7 +122,7 @@ if al_sat_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# 🟢 2. BUTON: AL SİNYALİ (İSTEDİĞİNİZ CANLI TAKİP ÖZELLİĞİ EKLENDİ)
+# 🟢 2. BUTON: AL SİNYALİ
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler canlı borsa verileriyle hesaplanıyor..."):
         try:
@@ -134,16 +139,13 @@ if al_butonu:
             
             tablo_verisi_al = []
             
-            # Tüm satırları tarayıp sadece içinde '[AL]' geçen gerçek hisseleri ayıklıyoruz
             for i in range(len(df)):
                 durum_metni = w_sutun_verisi.iloc[i]
                 hisse_ismi = hisse_verisi.iloc[i]
                 
-                # Sadece geçerli bir hisse adı varsa ve [AL] içeriyorsa işleme al
                 if "[AL]" in durum_metni and pd.notnull(hisse_ismi) and str(hisse_ismi).strip() != "":
                     yüklenen_fiy = pd.to_numeric(excel_anlik_verisi.iloc[i], errors='coerce')
                     
-                    # İnternetten anlık canlı fiyatı ve kâr/zarar durumunu çekiyoruz
                     canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
                     
                     tablo_verisi_al.append({
@@ -164,13 +166,13 @@ if al_butonu:
             st.error(f"Hata oluştu: {e}")
 
 # ==========================================
-# 💬 CANLI SOHBET ODASI BÖLÜMÜ
+# 💬 BTA SOHBET ODASI BÖLÜMÜ (İstediğiniz Emojiler Kuruldu)
 # ==========================================
 st.markdown("---")
-st.subheader("💬 Sinyal Odası Canlı Sohbet")
+st.subheader("💬 BTA SOHBET ODASI")
 
-sohbet_adi = st.text_input("Sohbet Takma Adınız:", value="Nurican", key="chat_name")
-yeni_mesaj = st.text_input("Mesajınızı yazın:", placeholder="Örn: Hisseler bugün çok iyi gidiyor...", key="chat_msg")
+sohbet_adi = st.text_input("👤 Sohbet Takma Adınız:", value="Nurican", key="chat_name")
+yeni_mesaj = st.text_input("✍️ Mesajınızı yazın:", placeholder="Örn: Hisseler bugün çok iyi gidiyor... 🚀📈", key="chat_msg")
 
 if st.button("Mesajı Gönder 🚀", use_container_width=True):
     if yeni_mesaj.strip() != "":
@@ -183,7 +185,7 @@ if st.session_state["chat_history"]:
     for mesaj in reversed(st.session_state["chat_history"]):
         st.markdown(f"*{mesaj}*")
 else:
-    st.info("Henüz mesaj yazılmamış. İlk mesajı siz yazın!")
+    st.info("Henüz mesaj yazılmamış. İlk mesajı siz yazın! 👇")
 
 # ==========================================
 # ⚠️ SPK MEVZUATINA UYGUN YASAL UYARI KUTUSU
@@ -194,11 +196,11 @@ st.error("""
          
 Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. 
 
-Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. **Burada paylaşılan sinyaller ve bilgiler kesinlikle yatırım tavsiyesi değildir.**
+Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. **Burada paylaşılan sinyaller and bilgiler kesinlikle yatırım tavsiyesi değildir.**
 """)
 
 # ==========================================
-# 🔐 GİZLİ SAYAÇ ALANI
+# 🔐 GİZLİ SAYAÇ ALANI (Sadece Nurican Görecek)
 # ==========================================
 st.markdown("---")
 with st.expander("🛠️ Yönetici Girişi (Sadece Nurican)"):
@@ -212,6 +214,5 @@ with st.expander("🛠️ Yönetici Girişi (Sadece Nurican)"):
             st.metric(label="📊 Toplam Giriş Sayısı", value="1")
         with col_info3:
             st.metric(label="🕒 Son Güncelleme", value=su_an.strftime("%H:%M:%S"))
-        st.info(f"💡 Bu sayfa **{guncel_tarih_saat}** tarihinde **bta analiz** tarafından güncellenmiştir.")
     elif admin_sifre != "":
         st.error("Hatalı Şifre!")
