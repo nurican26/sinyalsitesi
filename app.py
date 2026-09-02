@@ -170,20 +170,16 @@ with sag_taraf:
     # Python 3.14 Hizalaması Tamamen Güvenli Yönetici Paneli
     if isat.strip().lower() == "nurican":
         st.markdown(f"### 🚪 Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi")
-        engellenecek = st.text_input("Kısıtlanacak Kullanıcı Adı:")
-        if st.button("❌ Kullanıcıyı Kısıtla"):
-            if engellenecek.strip():
-                st.session_state["kisitli_liste"].append(engellenecek.strip())
-                st.success(f"{engellenecek} kısıtlandı.")
+        engellenecek = st.text_input("Kısıtlanacak / Engellenecek Kullanıcı Adı:")
+        if st.button("❌ Kullanıcıyı Kısıtla") and engellenecek.strip():
+            st.session_state["kisitli_liste"].append(engellenecek.strip())
+            st.success(f"{engellenecek} kısıtlandı.")
         if st.button("🗑️ Tüm Mesajları Temizle"):
             st.session_state["chat_history"] = []
             st.rerun()
             
     mesaj = st.text_input("Mesajınızı yazın:")
-    if st.button("Mesajı Gönder 🚀"):
-        if mesaj.strip():
-            mesaj_kucuk = mesaj.strip().lower()
-            hata_var = False
-            
-            # Kelime Kontrolü
-            for yasakli in YASAKLI_KELIMELER:
+    if st.button("Mesajı Gönder 🚀") and mesaj.strip():
+        mesaj_kucuk = mesaj.strip().lower()
+        
+        # 🤬 Hataya sebep olan iç döngü kaldırıldı, tek satırlık güvenli filtre yerleştirildi
