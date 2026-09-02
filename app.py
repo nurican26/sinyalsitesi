@@ -5,7 +5,7 @@ import yfinance as yf
 import os
 import re
 
-# Sayfa Tasarım Ayarları
+# Sayfa Tasarım Ayarları (Geniş Ekran Düzeni)
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="wide")
 
 # ==========================================
@@ -55,17 +55,19 @@ if "kisitli_liste" not in st.session_state:
 if "oda_sayisi" not in st.session_state:
     st.session_state["oda_sayisi"] = 1
 
-YASAKLI_KELIMELER = ["küfür1", "küfür2", "hakaret1", "argokelime", "salak", "aptal"]
+# Otomatik Filtrelenecek Kelimeler
+YASAKLI_KELIMELER = ["salak", "aptal", "küfür1", "küfür2"]
 
+# Ana Başlıklar
 st.title("⚡ Sinyal Takip Merkezi")
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
-# En Üstte Sabit SPK Uyarısı
+# En Üstte Sabit SPK Yasal Uyarı Şeridi
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Burada yer alan yatırım bilgi ve yorumları yatırım danışmanlığı kapsamında değildir. YATIRIM TAVSİYESİ KESİNLİKLE DEĞİLDİR.</p></div>", unsafe_allow_html=True)
 
 # ==========================================
-# 📊 YAN YANA PANEL DÜZENİ
+# 📊 YAN YANA PANEL DÜZENİ (SOL: SİNYALLER | SAĞ: SOHBET)
 # ==========================================
 sol_taraf, sag_taraf = st.columns([1.1, 0.9])
 
@@ -77,7 +79,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (Uyarı tamamen silindi)
+    # 🟡 AL SAT Sinyal Tablosu
     if al_sat_butonu:
         with st.spinner("Excel verileri okunuyor..."):
             if os.path.exists(EXCEL_FILE_PATH):
@@ -102,14 +104,11 @@ with sol_taraf:
                                 yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                                 tablo_verisi.append({"Hisse Kodu": hisse_temiz, "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
-                    if tablo_verisi: 
-                        st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
-                except Exception as e: 
-                    st.error(f"Hata: {e}")
-            else: 
-                st.error("Excel bulunamadı!")
+                    if tablo_verisi: st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
+                except Exception as e: st.error(f"Hata: {e}")
+            else: st.error("Excel bulunamadı!")
 
-    # 🟢 2. ADIM: AL SİNYALİNİ FARKLI KUTUYA ANLIK FİYATIYLA KAYDETME
+    # 🟢 AL Sinyali & Farklı Kutuya Kayıt
     if al_butonu:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             if os.path.exists(EXCEL_FILE_PATH):
@@ -135,12 +134,10 @@ with sol_taraf:
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                                 st.session_state["ozel_takip_kutusu"][hisse_temiz] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")}
                                 tablo_verisi_al.append({"Hisse Kodu": hisse_temiz, "Sinyal": f"{hisse_temiz} [AL]", "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
-                    if tablo_verisi_al: 
-                        st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-                except Exception as e: 
-                    st.error(f"Hata: {e}")
+                    if tablo_verisi_al: st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+                except Exception as e: st.error(f"Hata: {e}")
 
-    # 📦 SADECE AL SİNYALİ GELEN HİSSELERİN TAKİP KUTUSU (GÜNCEL SÜTUNLAR)
+    # 📦 Yeni Sütunlu Özel Takip Kutusu
     if st.session_state["ozel_takip_kutusu"]:
         st.markdown("---")
         st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
@@ -163,14 +160,14 @@ with sag_taraf:
     st.subheader("💬 BTA Sohbet Odası")
     isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
     
-    # Python 3.14 Hizalaması ve Boşlukları Kusursuzlaştırılmış Yönetici Girişi
+    # Python 3.14 için büyük-küçük esnek admin kontrol yapısı
     if isat.strip().lower() == "nurican":
         st.markdown(f"### 🚪 Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi")
-        engellenecek = st.text_input("Kısıtlanacak / Engellenecek Kullanıcı Adı:")
+        engellenecek = st.text_input("Kısıtlanacak Kullanıcı Adı:")
         if st.button("❌ Kullanıcıyı Kısıtla"):
             if engellenecek.strip():
                 st.session_state["kisitli_liste"].append(engellenecek.strip())
-                st.success(f"⚠️ {engellenecek} kısıtlandı.")
+                st.success(f"{engellenecek} kısıtlandı.")
         if st.button("🗑️ Tüm Mesajları Temizle"):
             st.session_state["chat_history"] = []
             st.rerun()
@@ -180,3 +177,5 @@ with sag_taraf:
         mesaj_kucuk = mesaj.strip().lower()
         iceriyor_mu = any(yasakli in mesaj_kucuk for yasakli in YASAKLI_KELIMELER)
         if isat.strip() in st.session_state["kisitli_liste"]:
+            st.error("🚫 Bu odada mesaj yazma yetkiniz kısıtlanmıştır!")
+        elif iceriyor_mu:
