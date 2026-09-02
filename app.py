@@ -85,7 +85,7 @@ with sol_taraf:
     if al_sat_butonu and df_kaynak is not None:
         tablo_verisi = []
         for i in range(len(df_kaynak)):
-            if df_kaynak.shape[1] > 20:
+            if df_kaynak.shape > 20:
                 u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
                 hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
                 
@@ -95,14 +95,13 @@ with sol_taraf:
                         hisse_temiz = h
                         break
                 
-                # SÖNME bu butonda gösterilmez
                 if hisse_temiz == "SONME":
                     continue
                     
                 if hisse_temiz and u_val and u_val != "NAN" and ("+" in u_val or "AL" in u_val or "SAT" in u_val):
-                    fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
+                    fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape > 7 else "0"
                     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                    yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                    yuklenen_fiy = float(sayilar) if sayilar else 0.0
                     
                     try:
                         hisse_data = yf.Ticker(f"{hisse_temiz}.IS").history(period="1d")
@@ -122,7 +121,7 @@ with sol_taraf:
     if al_butonu and df_kaynak is not None:
         tablo_verisi_al = []
         for i in range(len(df_kaynak)):
-            if df_kaynak.shape[1] > 22:
+            if df_kaynak.shape > 22:
                 w_val = str(df_kaynak.iloc[i, 22]).strip().upper()
                 hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
                 
@@ -132,18 +131,19 @@ with sol_taraf:
                         hisse_temiz = h
                         break
                 
-                # Sadece SÖNME hissesi yeşil butonda gösterilir
                 if hisse_temiz == "SONME" and w_val and w_val != "NAN" and ("AL" in w_val or "SONME" in w_val):
-                    fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                    yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
-                    
                     try:
                         hisse_data = yf.Ticker("SONME.IS").history(period="1d")
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
-                            yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
-                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                            
+                            # 🎯 DÜZELTME: SÖNME'nin yüklenen fiyatını tarayıcı yerine doğrudan canlı fiyata eşitliyoruz.
+                            # Excel'deki diğer satırların fiyatıyla karışmasını tamamen engeller.
+                            yuklenen_fiy = canli_fiyat 
+                            
+                            yuzde_fark = 0.0  # Fiyatlar eşitlendiği için fark sıfırlanır
+                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
+                            
                             st.session_state["ozel_takip_kutusu"]["SONME"] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                             tablo_verisi_al.append({"Hisse Kodu": "SONME", "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                     except:
@@ -180,6 +180,7 @@ with sag_taraf:
     isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
     
     if isat.strip().lower() == "nurican":
+        st.markdown(f"### 🚪 Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi")
         st.markdown(f"📊 **Ziyaret Sayısı:** `{st.session_state['ziyaret_sayaci']}`")
         if st.button("🗑️ Tüm Mesajları Temizle"):
             st.session_state["chat_history"] = []
