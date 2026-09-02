@@ -211,8 +211,7 @@ st.markdown(
 )
 
 # ==========================================
-# 💬 3. BÖLÜM: BTA SOHBET ODASI & YÖNETİM
+# 💬 3. BÖLÜM: BTA SOHBET ODASI & YÖNETİM (GÜVENLİ HALE GETİRİLDİ)
 # ==========================================
 st.markdown("---")
-
-# Kullanıcı "Nurican" yazdığında başlığın yanına gizli oda ikonu ve sayısı gelecek
+st.subheader("💬 BTA Sohbet Odası")
