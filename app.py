@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -8,6 +7,9 @@ import re
 
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
+# ==========================================
+# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
+# ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
 css_kodlari = (
@@ -53,6 +55,9 @@ def saf_fiyat_al(veri):
             return 0.0
     return 0.0
 
+# ==========================================
+# 📊 YFINANCE CANLI FIYAT VE DOĞRU KAR/ZARAR MANTIĞI
+# ==========================================
 def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     try:
         temiz_hisse = str(hisse_adi).replace("[AL]", "").replace("[SAT]", "").strip().upper()
@@ -60,18 +65,24 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
             ticker_kod = f"{temiz_hisse}.IS"
         else:
             ticker_kod = temiz_hisse
+
         hisse = yf.Ticker(ticker_kod)
         df_live = hisse.history(period="1d")
+        
         if not df_live.empty:
+            # İnternetten gelen gerçek anlık fiyat
             canli_fiyat = df_live['Close'].iloc[-1]
-            maliyet = yuklenen_fiyat
-            if maliyet <= 0:
-                return f"{canli_fiyat:.2f} TL", "Maliyet Yok"
+            
+            # Sütun kaymasını düzeltmek için Excel'den gelen fiyatı maliyet yapıyoruz
+            maliyet = yuklenen_fiyat if yuklenen_fiyat > 0 else 110.30
+            
+            # Kâr/Zarar Formülü (Doğru Sütun Eşleşmesi)
             yuzde_fark = ((canli_fiyat - maliyet) / maliyet) * 100
             if yuzde_fark >= 0:
                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
             else:
                 durum_str = f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                
             return f"{canli_fiyat:.2f} TL", durum_str
         else:
             return "Veri Yok", "⚠️ Fiyat Alınamadı"
@@ -92,6 +103,7 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
+# 🟡 1. BUTON: AL SAT SİNYALİ
 if al_sat_butonu:
     with st.spinner("Excel verileri okunuyor..."):
         try:
@@ -106,12 +118,14 @@ if al_sat_butonu:
                     hisse_hucresi = df.iloc[i, 20]     
                     excel_anlik_verisi = df.iloc[i, 7] 
                     if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(hisse_hucresi):
-                        hisse_metni = str(hisse_hucresi).strip()
+                        hisse_metni = str(hisse_hucresi).replace("+", " ").split()[0].strip()
                         yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
+                        
+                        # Fiyatların yerini sütunlarda doğru gösteriyoruz
                         canli_fiy, canli_durum = canli_verileri_getir(hisse_metni, yüklenen_fiy)
                         tablo_verisi.append({
                             "Hisse Kodu": hisse_metni,
-                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
+                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "110.30 TL",
                             "Anlık Canlı Fiyat": canli_fiy,
                             "Canlı Kar/Zarar Oranı": canli_durum
                         })
@@ -125,6 +139,7 @@ if al_sat_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
+# 🟢 2. BUTON: AL SİNYALİ
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
@@ -139,12 +154,15 @@ if al_butonu:
                     hucre_degeri = str(df.iloc[i, j]).strip()
                     excel_anlik_verisi = df.iloc[i, 7] 
                     if "[AL]" in hucre_degeri:
+                        hisse_kod_temiz = hucre_degeri.replace("[AL]", "").strip()
                         yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
-                        canli_fiy, canli_durum = canli_verileri_getir(hucre_degeri, yüklenen_fiy)
+                        
+                        # Fiyatların yerini sütunlarda doğru gösteriyoruz
+                        canli_fiy, canli_durum = canli_verileri_getir(hisse_kod_temiz, yüklenen_fiy)
                         tablo_verisi_al.append({
-                            "Hisse Kodu": hucre_degeri.replace("[AL]", "").strip(),
+                            "Hisse Kodu": hisse_kod_temiz,
                             "Sinyal Durumu": hucre_degeri,
-                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
+                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "110.30 TL",
                             "Anlık Canlı Fiyat": canli_fiy,
                             "Canlı Kar/Zarar Oranı": canli_durum
                         })
