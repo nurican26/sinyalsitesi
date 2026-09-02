@@ -55,7 +55,7 @@ if "kisitli_kullanicilar" not in st.session_state:
     st.session_state["kisitli_kullanicilar"] = set()
 
 if "oda_sayisi" not in st.session_state:
-    st.session_state["oda_sayisi"] = 1  # Varsayılan oda sayısı
+    st.session_state["oda_sayisi"] = 1
 
 # ==========================================
 # 📈 PANEL ANA EKRANI
@@ -73,9 +73,9 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (Sadece Canlı Veri + Kar/Zarar)
+# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
 if al_sat_butonu:
-    with st.spinner("Excel okunuyor ve canlı veriler hesaplanıyor..."):
+    with st.spinner("Excel verileri okunuyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
@@ -150,7 +150,6 @@ if al_butonu:
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
                             
-                            # Sadece AL sinyaline gelen hisseleri farklı kutuya o anki fiyatıyla kaydeder
                             st.session_state["ozel_takip_kutusu"][hisse_temiz] = {
                                 "kayit_fiyati": canli_fiyat,
                                 "yuklenen_fiyat": yüklenen_fiy,
@@ -198,21 +197,25 @@ if st.session_state["ozel_takip_kutusu"]:
 st.markdown("---")
 st.subheader("💬 BTA Sohbet Odası")
 
-# Sohbet Alanında Varsayılan İsim: BTA Sohbet
 isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
 
-# 🔒 Sadece 'Nurican' yazıldığında görünecek Oda sayısı ikonu ve Admin Yetkileri
+# GİRİNTİ HATASI VERMESİ İMKANSIZ, EN GÜVENLİ HİZALANMIŞ YÖNETİCİ PANELİ
 if isat.strip().lower() == "nurican":
     st.info(f"📊 Aktif Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi Yapıldı.")
     
     with st.expander("⚙️ Nurican Yönetim ve Kısıtlama Paneli", expanded=True):
         engellenecek = st.text_input("Kısıtlanacak / Odadan Atılacak Kullanıcı Adı:")
         
-        col_adm1, col_adm2 = st.columns(2)
-        with col_adm1:
-            if st.button("❌ Kullanıcıyı Odadan At / Kısıtla"):
-                if engellenecek.strip():
-                    st.session_state["kisitli_kullanicilar"].add(engellenecek.strip())
-                    st.success(f"⚠️ {engellenecek} kullanıcısının mesaj yazma yetkisi kısıtlandı!")
-        with col_adm2:
-            if st.button("🔓 Kısıtlamaları Kaldır"):
+        if st.button("❌ Kullanıcıyı Odadan At / Kısıtla") and engellenecek.strip():
+            st.session_state["kisitli_kullanicilar"].add(engellenecek.strip())
+            st.success(f"⚠️ {engellenecek} kullanıcısının mesaj yazma yetkisi kısıtlandı!")
+            
+        if st.button("🔓 Kısıtlamaları Kaldır"):
+            st.session_state["kisitli_kullanicilar"] = set()
+            st.success("Tüm oda kısıtlamaları sıfırlandı.")
+            st.rerun()
+            
+        if st.button("🗑️ Tüm Sohbet Odası Mesajlarını Temizle", use_container_width=True):
+            st.session_state["chat_history"] = []
+            st.success("Sohbet geçmişi tamamen temizlendi.")
+            st.rerun()
