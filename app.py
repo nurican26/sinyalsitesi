@@ -54,7 +54,7 @@ st.session_state["ziyaret_sayaci"] += 1
 st.title("⚡ Sinyal Takip Merkezi")
 
 # ==========================================
-# ⭐ YENİ: HERKESİN GÖRECEĞİ BEĞENİ VE POPÜLARİTE VİTRİNİ
+# 📊 HERKESİN GÖRECEĞİ BEĞENİ VE POPÜLARİTE VİTRİNİ
 # ==========================================
 ortalama_puan = st.session_state["toplam_yildiz_puani"] / st.session_state["toplam_oy_sayisi"] if st.session_state["toplam_oy_sayisi"] > 0 else 0.0
 
@@ -198,12 +198,13 @@ with sol_taraf:
                 st.rerun()
 
 with sag_taraf:
-    st.subheader("💬 BTA Sohbet Odası")
-    isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
-    
-    # 👑 SADECE YÖNETİCİNİN GÖRECEĞİ GİZLİ SAYAÇ PANELİ
-    if isat.strip().lower() == "nurican":
-        st.markdown("---")
-        st.markdown("### 👑 Yetkili Takip Paneli")
-        st.markdown(f"🚪 **Odadaki/Sitedeki Aktif Oturum Sayısı:** `{st.session_state['oda_sayisi']}`")
-        st.markdown(f"📊 **Toplam Giriş / Yenilenme Sayısı:** `{st.session_state['ziyaret_sayaci']}`")
+    # ==========================================
+    # ⭐ YENİ: YUKARI TAŞINAN KALICI YILDIZ OYLAMA ALANI
+    # ==========================================
+    st.markdown("### ✨ Paneli Beğendiniz mi?")
+    st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
+    yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
+
+    if yildiz_skor is not None:
+        gercek_puan = yildiz_skor + 1
+        if "son_verilen_oy" not in st.session_state or st.session_state["son_verilen_oy"] != yildiz_skor:
