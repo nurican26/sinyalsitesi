@@ -69,9 +69,9 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
     except:
         pass
 
-# ==========================================
-# 📊 YAN YANA PANEL DÜZENI
-# ==========================================
+# Tarama Yapılacak Gerçek Borsa Kodları
+BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "DUNYH"]
+
 sol_taraf, sag_taraf = st.columns([1.1, 0.9])
 
 with sol_taraf:
@@ -88,26 +88,28 @@ with sol_taraf:
         sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
             if sutun_sayisi > 20:
-                u_val = str(df_kaynak.iloc[i, 20]).strip() # U Sütunu
+                u_val = str(df_kaynak.iloc[i, 20]).strip().upper() # U Sütunu
                 
-                if not u_val or u_val.upper() in ["NAN", "AL SAT SİNYALİ", ""]:
+                if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", ""]:
                     continue
                 
                 # SÖNME ve ALKLC sadece yeşil butona ayrıldı
-                if "SONME" in u_val.upper() or "ALKLC" in u_val.upper():
+                if "SONME" in u_val or "ALKLC" in u_val:
                     continue
                     
                 try:
-                    fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                    yuklenen_fiy = float(sayilar) if sayilar else 0.0
-                    
-                    # Hücrenin içindeki ilk kelimeyi alıp temizliyoruz (Örn: FORTE +2,45 -> FORTE)
-                    hisse_adi = u_val.split()[0].upper().replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "")
-                    # Sayıları temizle
-                    hisse_adi = re.sub(r'\d+', '', hisse_adi).strip()
+                    # Hücre metninin içinden sadece harfleri temizleyerek borsa kodunu buluyoruz
+                    hisse_adi = None
+                    for h in BORSA_HISSELERI:
+                        if h in u_val:
+                            hisse_adi = h
+                            break
                     
                     if hisse_adi:
+                        fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
+                        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
+                        yuklenen_fiy = float(sayilar) if sayilar else 0.0
+                        
                         hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
@@ -127,15 +129,17 @@ with sol_taraf:
         sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
             if sutun_sayisi > 22:
-                w_val = str(df_kaynak.iloc[i, 22]).strip() # W Sütunu
+                w_val = str(df_kaynak.iloc[i, 22]).strip().upper() # W Sütunu
                 
-                if not w_val or w_val.upper() in ["NAN", "AL", ""]:
+                if not w_val or w_val in ["NAN", "AL", ""]:
                     continue
                     
                 try:
-                    # Hücrenin içindeki ilk kelimeyi alıp temizliyoruz (Örn: ALKLC [AL] -> ALKLC)
-                    hisse_adi = w_val.split()[0].upper().replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "")
-                    hisse_adi = re.sub(r'\d+', '', hisse_adi).strip()
+                    hisse_adi = None
+                    for h in BORSA_HISSELERI:
+                        if h in w_val:
+                            hisse_adi = h
+                            break
                     
                     if hisse_adi:
                         hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
