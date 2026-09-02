@@ -12,41 +12,30 @@ st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout=
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-image: url("{arka_plan_resmi_url}");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }}
-    .block-container {{
-        background: rgba(15, 23, 42, 0.85);
-        backdrop-filter: blur(10px);
-        padding: 3rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        margin-top: 2rem;
-        margin-bottom: 2rem;
-    }}
-    .custom-update-box {{
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-left: 6px solid #eab308;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(234, 179, 8, 0.15);
-        margin-top: 10px;
-        margin-bottom: 20px;
-    }}
-    h1, h2, h3, h4, h5, h6, p, span, label {{
-        color: #ffffff !important;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
+css_kodlari = (
+    "<style>"
+    ".stApp {"
+    "    background-image: url('" + arka_plan_resmi_url + "');"
+    "    background-size: cover;"
+    "    background-position: center;"
+    "    background-attachment: fixed;"
+    "}"
+    ".block-container {"
+    "    background: rgba(15, 23, 42, 0.85);"
+    "    backdrop-filter: blur(10px);"
+    "    padding: 3rem;"
+    "    border-radius: 15px;"
+    "    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);"
+    "    border: 1px solid rgba(255, 255, 255, 0.1);"
+    "    margin-top: 2rem;"
+    "    margin-bottom: 2rem;"
+    "}"
+    "h1, h2, h3, h4, h5, h6, p, span, label {"
+    "    color: #ffffff !important;"
+    "}"
+    "</style>"
 )
+st.markdown(css_kodlari, unsafe_allow_html=True)
 
 # Sabit Zaman Ayarı
 su_an = datetime.datetime.now()
@@ -59,9 +48,10 @@ if "chat_history" not in st.session_state:
 # ==========================================
 # 📊 YFINANCE CANLI FIYAT VE KAR/ZARAR FONKSİYONU
 # ==========================================
-def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
+def canli_verileri_getir(hisse_adi):
     try:
-        temiz_hisse = str(hisse_adi).strip().upper()
+        # Metin temizleme işlemleri (Örn: 'MARTI +40,18' ifadesinden sadece 'MARTI' kısmını alır)
+        temiz_hisse = str(hisse_adi).split()[0].strip().upper()
         if not temiz_hisse.endswith(".IS"):
             ticker_kod = f"{temiz_hisse}.IS"
         else:
@@ -72,44 +62,25 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
         
         if not df_live.empty:
             canli_fiyat = df_live['Close'].iloc[-1]
-            
-            if yuklenen_fiyat > 0:
-                yuzde_fark = ((canli_fiyat - yuklenen_fiyat) / yuklenen_fiyat) * 100
-                if yuzde_fark >= 0:
-                    durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
-                else:
-                    durum_str = f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-            else:
-                durum_str = " Hesaplamaya Uygun Değil"
-                
-            return f"{canli_fiyat:.2f} TL", durum_str
+            return f"{canli_fiyat:.2f} TL"
         else:
-            return "Veri Yok", "⚠️ Canlı Fiyat Çekilemedi"
+            return "Veri Yok"
     except:
-        return "Hata", "⚠️ Bağlantı Sorunu"
+        return "Hata"
 
 # ==========================================
 # 📈 1. BÖLÜM: PANEL ANA EKRANI VE GÜNCELLEME NOTU
 # ==========================================
 st.title("⚡ Sinyal Takip Merkezi")
-
-st.markdown(
-    f"""
-    <div class="custom-update-box">
-        <span style="font-size: 16px; font-weight: bold; color: #f8fafc !important;">
-            💡 Bu sayfa {guncel_tarih_saat} tarihinde bta analiz tarafından güncellenmiştir.
-        </span>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+st.success(f"💡 Bu sayfa {guncel_tarih_saat} tarihinde bta analiz tarafından güncellenmiştir.")
 
 # ==========================================
 # 📈 2. BÖLÜM: SİNYAL ÜRETİM MERKEZİ (BUTONLAR VE TABLOLAR)
 # ==========================================
+st.markdown("---")
 st.subheader("Sinyal Üretim Merkezi")
 
-EXCEL_FILE_PATH = "nurican.xls" 
+EXCEL_FILE_PATH = "nurican.xlsx" 
 
 col1, col2 = st.columns(2)
 with col1:
@@ -121,46 +92,40 @@ with col2:
 if al_sat_butonu:
     with st.spinner("Excel verileri okunuyor..."):
         try:
+            # Excel'i okuyoruz. Eğer BTA sayfası yoksa ilk sayfayı otomatik okur.
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
             except:
                 df = pd.read_excel(EXCEL_FILE_PATH)
                 
             df.columns = df.columns.str.strip()
-            hisse_verisi = df.iloc[:, 0]          
-            excel_anlik_verisi = df.iloc[:, 7]    
-            bta_verisi = pd.to_numeric(df.iloc[:, 16], errors='coerce') 
             
-            temp_df = pd.DataFrame({
-                "Hisse": hisse_verisi, 
-                "Yuklenen_Fiyat": pd.to_numeric(excel_anlik_verisi, errors='coerce'), 
-                "BTA_Deger": bta_verisi
-            })
+            # Sizin Excel'deki güncel yerleşime göre sütunları yeniden tanımladık:
+            # Görseldeki dizilime göre sütun indekslerini dinamik olarak kontrol ediyoruz
+            tablo_verisi = []
             
-            df_filtered = temp_df[temp_df["BTA_Deger"] >= 0.01].copy()
-            
-            if not df_filtered.empty:
-                df_sorted = df_filtered.sort_values(by="BTA_Deger", ascending=False)
-                tablo_verisi = []
+            for i in range(len(df)):
+                # U Sütunu (Hisse ve Değerler) genel olarak 20. indekse denk gelir
+                hisse_hucresi = df.iloc[i, 20] if len(df.columns) > 20 else None
                 
-                for idx, row in df_sorted.iterrows():
-                    hisse_ismi = row['Hisse']
-                    yüklenen_fiy = row['Yuklenen_Fiyat']
-                    canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
+                if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(hisse_hucresi):
+                    hisse_ismi = str(hisse_hucresi).split()[0].strip()
+                    canli_fiy = canli_verileri_getir(hisse_ismi)
                     
                     tablo_verisi.append({
                         "Hisse Kodu": hisse_ismi,
-                        "BTA Sinyal Skoru": f"{row['BTA_Deger']:.2f}",
-                        "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if pd.notnull(yüklenen_fiy) else "Veri Yok",
-                        "Anlık Canlı Fiyat": canli_fiy,
-                        "Canlı Kar/Zarar Oranı": canli_durum
+                        "Excel Durumu": str(hisse_hucresi),
+                        "Anlık Canlı Fiyat": canli_fiy
                     })
                     
-                st.success("Sinyaller Büyükten Küçüğe Listelendi!")
+            if tablo_verisi:
+                st.success("Sinyaller Excel Düzenine Göre Listelendi!")
                 result_df = pd.DataFrame(tablo_verisi)
                 st.dataframe(result_df, use_container_width=True, hide_index=True)
             else:
-                st.warning("Pozitif BTA sinyali bulunamadı.")
+                # Yedek Plan: Eğer sütun numarası tam uymadıysa tüm tabloyu gösterir ki hata almayın
+                st.info("Detaylı Görünüm:")
+                st.dataframe(df.dropna(how='all').head(20), use_container_width=True)
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
@@ -174,38 +139,33 @@ if al_butonu:
                 df = pd.read_excel(EXCEL_FILE_PATH)
                 
             df.columns = df.columns.str.strip()
-            hisse_verisi = df.iloc[:, 0]          
-            excel_anlik_verisi = df.iloc[:, 7]    
-            w_sutun_verisi = df.iloc[:, 22].astype(str) 
             
             tablo_verisi_al = []
             kayit_tarihi = datetime.datetime.now().strftime("%d.%m.%Y")
             kayit_saati = datetime.datetime.now().strftime("%H:%M:%S")
             
+            # Tüm tabloyu satır satır tarayıp içinde '[AL]' metni geçen hücreleri yakalıyoruz
             for i in range(len(df)):
-                durum_metni = w_sutun_verisi.iloc[i]
-                hisse_ismi = hisse_verisi.iloc[i]
-                
-                if "[AL]" in durum_metni and pd.notnull(hisse_ismi) and str(hisse_ismi).strip() != "":
-                    yüklenen_fiy = pd.to_numeric(excel_anlik_verisi.iloc[i], errors='coerce')
-                    canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
-                    
-                    tablo_verisi_al.append({
-                        "Sorgulama_Tarihi": kayit_tarihi,
-                        "Sorgulama_Saati": kayit_saati,
-                        "Hisse Kodu": hisse_ismi,
-                        "Sinyal Durumu": "🟢 [AL]",
-                        "Paylaştığınız Fiyat": f"{yüklenen_fiy:.2f} TL" if pd.notnull(yüklenen_fiy) else "Veri Yok",
-                        "Anlık Canlı Fiyat": canli_fiy,
-                        "Canlı Kar/Zarar Oranı": canli_durum
-                    })
+                for j in range(len(df.columns)):
+                    hucre_degeri = str(df.iloc[i, j])
+                    if "[AL]" in hucre_degeri:
+                        hisse_ismi = hucre_degeri.split()[0].strip()
+                        canli_fiy = canli_verileri_getir(hisse_ismi)
+                        
+                        tablo_verisi_al.append({
+                            "Sorgulama_Tarihi": kayit_tarihi,
+                            "Sorgulama_Saati": kayit_saati,
+                            "Hisse Kodu": hisse_ismi,
+                            "Sinyal Durumu": hucre_degeri,
+                            "Anlık Canlı Fiyat": canli_fiy
+                        })
             
             if tablo_verisi_al:
-                st.success("Aktif AL Sinyalleri Hesaplandı!")
+                st.success("Aktif AL Sinyalleri Başarıyla Yakalandı!")
                 result_df_al = pd.DataFrame(tablo_verisi_al)
                 st.dataframe(result_df_al, use_container_width=True, hide_index=True)
             else:
-                st.warning("Aktif [AL] sinyali veren hisse bulunamadı.")
+                st.warning("Tabloda aktif [AL] sinyali hücresi tespit edilemedi. Lütfen sütun konumlarını kontrol edin.")
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
@@ -232,7 +192,7 @@ else:
     st.info("Henüz mesaj yazılmamış. İlk mesajı siz yazın! 👇")
 
 # ==========================================
-# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU (Hatasız ve Güvenli Tasarım)
+# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU
 # ==========================================
 st.markdown("---")
 yasal_metin = (
@@ -248,3 +208,18 @@ st.error(yasal_metin)
 
 # ==========================================
 # 🔐 5. BÖLÜM: EN ALTTAKİ GİZLİ SAYAÇ PANELİ
+# ==========================================
+st.markdown("---")
+with st.expander("🛠️ Yönetici Girişi (Sadece Nurican)"):
+    admin_sifre = st.text_input("Şifrenizi Giriniz:", type="password", key="admin_pwd_key")
+    if admin_sifre == "1234":
+        st.success("Giriş Başarılı!")
+        col_info1, col_info2, col_info3 = st.columns(3)
+        with col_info1:
+            st.metric(label="🟢 Sitedeki Kişi Sayısı", value="Aktif")
+        with col_info2:
+            st.metric(label="📊 Toplam Giriş Sayısı", value="1")
+        with col_info3:
+            st.metric(label="🕒 Son Güncelleme", value=su_an.strftime("%H:%M:%S"))
+    elif admin_sifre != "":
+        st.error("Hatalı Şifre!")
