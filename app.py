@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -101,7 +102,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ -> SIZDIRMAZ ENERJİK DÖNGÜ)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ -> HATA RİSKİ SIFIRLANDI)
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
@@ -111,14 +112,14 @@ with sol_taraf:
                     if sutun_sayisi > 20:
                         u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
                         
-                        # Boş veya geçersiz satırlarda döngüyü kırmak yerine 'continue' ile bir sonraki satıra atlıyoruz
                         if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                             continue
                         
-                        # SÖNME ve ALKLC yeşil butona özel olduğu için sarıdan muaf tutulur
+                        # SÖNME ve ALKLC sarı butonda görünmez
                         if "SONME" in u_val or "ALKLC" in u_val:
                             continue
                             
+                        # 🎯 YENİ NOKTA ATIŞI EŞLEŞTİRME (Metni parçalamadan doğrudan hücreyi tarar)
                         hisse_adi = None
                         for h in BORSA_HISSELERI:
                             if h in u_val:
@@ -137,8 +138,7 @@ with sol_taraf:
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                                 tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
-                    pass # Tek bir satırda okuma hatası olsa bile diğer satırları okumaya devam eder
-                    
+                    pass
             if tablo_verisi:
                 st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
             else:
@@ -207,3 +207,7 @@ with sag_taraf:
     # ⭐ KALICI YILDIZ OYLAMA ALANI
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
+    st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
+    yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
+
+    if yildiz_skor is not None:
