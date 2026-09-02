@@ -109,7 +109,6 @@ st.markdown(
 # ==========================================
 st.subheader("Sinyal Üretim Merkezi")
 
-# Excel dosyanızın adı sol menüde 'nurican.xlsx' göründüğü için burayı sabitledik
 EXCEL_FILE_PATH = "nurican.xlsx" 
 
 col1, col2 = st.columns(2)
@@ -120,7 +119,7 @@ with col2:
 
 # 🟡 1. BUTON: AL SAT SİNYALİ
 if al_sat_butonu:
-    with st.spinner("Excel verileri okunuyor ve canlı borsa takibi yapılıyor..."):
+    with st.spinner("Excel verileri okunuyor..."):
         try:
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
@@ -128,7 +127,6 @@ if al_sat_butonu:
                 df = pd.read_excel(EXCEL_FILE_PATH)
                 
             df.columns = df.columns.str.strip()
-            
             hisse_verisi = df.iloc[:, 0]          
             excel_anlik_verisi = df.iloc[:, 7]    
             bta_verisi = pd.to_numeric(df.iloc[:, 16], errors='coerce') 
@@ -148,7 +146,6 @@ if al_sat_butonu:
                 for idx, row in df_sorted.iterrows():
                     hisse_ismi = row['Hisse']
                     yüklenen_fiy = row['Yuklenen_Fiyat']
-                    
                     canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
                     
                     tablo_verisi.append({
@@ -169,7 +166,7 @@ if al_sat_butonu:
 
 # 🟢 2. BUTON: AL SİNYALİ
 if al_butonu:
-    with st.spinner("Aktif AL veren hisseler canlı borsa verileriyle hesaplanıyor..."):
+    with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
@@ -177,7 +174,6 @@ if al_butonu:
                 df = pd.read_excel(EXCEL_FILE_PATH)
                 
             df.columns = df.columns.str.strip()
-            
             hisse_verisi = df.iloc[:, 0]          
             excel_anlik_verisi = df.iloc[:, 7]    
             w_sutun_verisi = df.iloc[:, 22].astype(str) 
@@ -208,14 +204,6 @@ if al_butonu:
                 st.success("Aktif AL Sinyalleri Hesaplandı!")
                 result_df_al = pd.DataFrame(tablo_verisi_al)
                 st.dataframe(result_df_al, use_container_width=True, hide_index=True)
-                
-                gecmis_dosya = "nurican_sinyal_gecmisi.csv"
-                if os.path.exists(gecmis_dosya):
-                    eski_gecmis = pd.read_csv(gecmis_dosya)
-                    yeni_gecmis = pd.concat([eski_gecmis, result_df_al], ignore_index=True)
-                    yeni_gecmis.to_csv(gecmis_dosya, index=False)
-                else:
-                    result_df_al.to_csv(gecmis_dosya, index=False)
             else:
                 st.warning("Aktif [AL] sinyali veren hisse bulunamadı.")
         except Exception as e:
@@ -244,8 +232,19 @@ else:
     st.info("Henüz mesaj yazılmamış. İlk mesajı siz yazın! 👇")
 
 # ==========================================
-# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU (Eksiksiz Tam Metin)
+# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU (Hatasız ve Güvenli Tasarım)
 # ==========================================
 st.markdown("---")
-st.error("""
-⚠️ **YASAL UYARI (SPK Mevzuatı Uyarınca):**
+yasal_metin = (
+    "⚠️ YASAL UYARI (SPK Mevzuatı Uyarınca): Burada yer alan yatırım bilgi, yorum ve tavsiyeleri "
+    "yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy "
+    "yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı "
+    "sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların "
+    "kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. "
+    "Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar "
+    "doğurmayabilir. Burada paylaşılan sinyaller ve bilgiler kesinlikle yatırım tavsiyesi değildir."
+)
+st.error(yasal_metin)
+
+# ==========================================
+# 🔐 5. BÖLÜM: EN ALTTAKİ GİZLİ SAYAÇ PANELİ
