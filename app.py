@@ -43,8 +43,17 @@ st.markdown(
 
 EXCEL_FILE_PATH = "nurican.xls.xlsm"
 
+# ==========================================
+# 💾 SESSION STATE BAŞLATMALARI
+# ==========================================
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
+
+if "ozel_takip_kutusu" not in st.session_state:
+    st.session_state["ozel_takip_kutusu"] = {}
+
+if "kisitli_kullanicilar" not in st.session_state:
+    st.session_state["kisitli_kullanicilar"] = set()
 
 # ==========================================
 # 📈 PANEL ANA EKRANI
@@ -62,9 +71,9 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (U SÜTUNU - 20. İNDEKS)
+# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (CANLI VERİLİ)
 if al_sat_butonu:
-    with st.spinner("Excel verileri okunuyor..."):
+    with st.spinner("Excel verileri okunuyor ve canlı fiyatlar çekiliyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
@@ -73,21 +82,15 @@ if al_sat_butonu:
                 
                 tablo_verisi = []
                 for i in range(len(df)):
-                    if i >= len(df):
-                        break
-                    
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                    
-                    # U Sütununu kontrol et (20. indeks)
                     bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
                     
-                    if not hisse_kodu_ham or hisse_kodu_ham == "NAN" or hisse_kodu_ham == "":
+                    if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                         continue
                         
                     hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
                     
-                    # Sütunda artı işareti veya AL SAT yazısı arama
                     if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat:
                         sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
                         yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
@@ -116,9 +119,9 @@ if al_sat_butonu:
         else:
             st.error("Excel dosyası bulunamadı!")
 
-# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ (W SÜTUNU - 22. İNDEKS)
+# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ & KUTUYA ANLIK FİYATLA KAYDETME
 if al_butonu:
-    with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
+    with st.spinner("Aktif AL veren hisseler hesaplanıyor ve kutuya kaydediliyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
@@ -127,21 +130,15 @@ if al_butonu:
                 
                 tablo_verisi_al = []
                 for i in range(len(df)):
-                    if i >= len(df):
-                        break
-                        
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                    
-                    # W Sütununu kontrol et (22. indeks)
                     w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
                     
-                    if not hisse_kodu_ham or hisse_kodu_ham == "NAN" or hisse_kodu_ham == "":
+                    if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                         continue
                         
                     hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
                     
-                    # W sütununda [AL] ifadesi geçiyorsa listele
                     if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi:
                         sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
                         yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
@@ -154,6 +151,12 @@ if al_butonu:
                             yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                             
+                            # Eş zamanlı olarak o anki canlı fiyatıyla kalıcı kutuya kaydet/güncelle
+                            st.session_state["ozel_takip_kutusu"][hisse_temiz] = {
+                                "kayit_fiyati": canli_fiyat,
+                                "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")
+                            }
+                            
                             tablo_verisi_al.append({
                                 "Hisse Kodu": hisse_temiz,
                                 "Sinyal Durumu": f"{hisse_temiz} [AL]",
@@ -164,6 +167,7 @@ if al_butonu:
                 
                 if tablo_verisi_al:
                     st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+                    st.toast("🟢 [AL] Sinyali veren hisseler Özel Takip Kutunuza eklendi!", icon="📥")
                 else:
                     st.warning("W sütununda aktif [AL] sinyali bulunamadı.")
             except Exception as e:
@@ -172,23 +176,35 @@ if al_butonu:
             st.error("Excel dosyası bulunamadı!")
 
 # ==========================================
-# 💬 3. BÖLÜM: BTA SOHBET ODASI
+# 📦 ÖZEL AL SİNYALİ TAKİP KUTUSU (YENİ)
 # ==========================================
-st.markdown("---")
-st.subheader("💬 BTA Sohbet Odası")
-
-isat = st.text_input("Sohbet Takma Adınız:", value="Nurican")
-mesaj = st.text_input("Mesajınızı yazın:", placeholder="Örn: Hisseler bugün çok iyi gidiyor...")
-
-if st.button("Mesajı Gönder 🚀"):
-    if mesaj:
-        zaman = datetime.datetime.now().strftime("%H:%M")
-        st.session_state["chat_history"].append(f"⏱️ {zaman} - **{isat}**: {mesaj}")
-        st.rerun()
-
-st.write("📜 **Mesaj Geçmişi**")
-if st.session_state["chat_history"]:
-    for m in reversed(st.session_state["chat_history"]):
-        st.info(m)
-else:
-    st.caption("Henüz mesaj yazılmamış. İlk mesajı siz yazın! 👇")
+if st.session_state["ozel_takip_kutusu"]:
+    st.markdown("---")
+    st.subheader("📥 Özel AL Sinyali Takip Kutusu")
+    st.caption("Aşağıdaki listede [AL] butonuna basıldığı an canlı fiyatıyla kaydedilen hisseler listelenmektedir.")
+    
+    kutu_tablo_verisi = []
+    with st.spinner("Kutudaki hisselerin anlık durumları güncelleniyor..."):
+        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
+            ticker_kod = f"{hisse}.IS" if not hisse.endswith(".IS") else hisse
+            hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+            
+            if not hisse_data.empty:
+                guncel_canli = hisse_data['Close'].iloc[-1]
+                eski_fiyat = bilgi["kayit_fiyati"]
+                yuzde_fark = ((guncel_canli - eski_fiyat) / eski_fiyat) * 100 if eski_fiyat > 0 else 0.0
+                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if guncel_canli >= eski_fiyat else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                
+                kutu_tablo_verisi.append({
+                    "Hisse Kodu": hisse,
+                    "Kutuya Kayıt Fiyatı": f"{eski_fiyat:.2f} TL",
+                    "Anlık Canlı Fiyat": f"{guncel_canli:.2f} TL",
+                    "Anlık Kar/Zarar Oranı": durum_str,
+                    "Kayıt Tarihi": bilgi["kayit_zamani"]
+                })
+                
+    if kutu_tablo_verisi:
+        st.dataframe(pd.DataFrame(kutu_tablo_verisi), use_container_width=True, hide_index=True)
+        if st.button("🗑️ Kutuyu Temizle", use_container_width=False):
+            st.session_state["ozel_takip_kutusu"] = {}
+            st.rerun()
