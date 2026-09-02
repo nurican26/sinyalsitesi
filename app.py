@@ -42,8 +42,6 @@ if "kisitli_liste" not in st.session_state:
     st.session_state["kisitli_liste"] = []
 if "engellenen_kelimeler" not in st.session_state:
     st.session_state["engellenen_kelimeler"] = ["salak", "aptal", "küfür1", "küfür2"]
-if "oda_sayisi" not in st.session_state:
-    st.session_state["oda_sayisi"] = 1
 if "ziyaret_sayaci" not in st.session_state:
     st.session_state["ziyaret_sayaci"] = 0
 if "topham_oy_sayisi" not in st.session_state:
@@ -56,7 +54,7 @@ st.session_state["ziyaret_sayaci"] += 1
 st.title("⚡ Sinyal Takip Merkezi")
 
 # ==========================================
-# 📊 BEĞENİ VE POPÜLARİTE VİTRİNİ
+# 📊 BEĞENİ VE YILDIZ PUANI VİTRİNİ
 # ==========================================
 ortalama_puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
 
@@ -93,12 +91,12 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
 # ==========================================
-# 📊 YAN YANA PANEL DÜZENI (Yerleşim Sabitlendi)
+# 📊 YAN YANA PANEL DÜZENI
 # ==========================================
 sol_taraf, sag_taraf = st.columns([1.1, 0.9])
 
 # ------------------------------------------
-# 📈 SOL TARAF: SİNYAL ÜRETİM MERKEZİ
+# 📈 SOL TARAF: SİNYAL ÜRETİM MERKEZİ & MESAJ KUTUSU
 # ------------------------------------------
 with sol_taraf:
     st.subheader("📈 Sinyal Üretim Merkezi")
@@ -108,7 +106,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (ÇÖKME KORUMALI YENİ NESİL KOD)
+    # 🟡 1. ADIM: SARI BUTON
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
@@ -137,7 +135,7 @@ with sol_taraf:
                             try:
                                 fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                                yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yuklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yuklenen_fiy = 0.0
                             
@@ -166,7 +164,7 @@ with sol_taraf:
     elif al_sat_butonu and df_kaynak is None:
         st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (KORUMALI AL SİNYALLERİ)
+    # 🟢 2. ADIM: YEŞİL BUTON
     if al_butonu and df_kaynak is not None:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             tablo_verisi_al = []
@@ -213,10 +211,12 @@ with sol_taraf:
     elif al_butonu and df_kaynak is None:
         st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
 
-# ------------------------------------------
-# 🎯 SAĞ TARAF: SABİT CANLI BORSA KÖŞESİ & PANEL
-# ------------------------------------------
-with sag_taraf:
-    st.subheader("🎯 Canlı Takip & Topluluk Paneli")
-    
-    # ⚡ TÜM HİSSELERE AİT BAĞIMSIZ SABİT CANLI KÖŞE
+    st.divider()
+
+    # 💬 TOPLULUK SOHBET ODASI
+    st.subheader("💬 Topluluk Sohbet Odası")
+    with st.form("mesaj_formu", clear_on_submit=True):
+        kullanici_mesaji = st.text_input("Mesajınızı yazın:", placeholder="Buraya yazın...")
+        mesaj_gonder = st.form_submit_button("Gönder", use_container_width=True)
+        
+        if mesaj_gonder and kullanici_mesaji:
