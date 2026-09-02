@@ -7,7 +7,7 @@ st.set_page_config(page_title="Sinyal Sitesi", layout="wide")
 st.title("📊 Sinyal Sitesi Yönetim Paneli")
 
 # 2. Excel Dosya Adı Tanımlaması
-excel_dosyasi = "nurcan.xlsx"
+excel_dosyasi = "nurican.xls"
 
 # 3. 💬 MESAJLAŞMA / CHAT ALANI (Kullanıcı Girişi)
 st.markdown("---")
