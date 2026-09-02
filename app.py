@@ -9,6 +9,18 @@ import re
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
 # ==========================================
+# 📊 OTOMATİK CANLI GİRİŞ VE SAYAÇ SİSTEMİ (Yeni Eklenen Canlı Hafıza)
+# ==========================================
+# Tarayıcı sekmesi açık kaldığı sürece benzersiz girişleri ve tıklamaları sayan mekanizma
+if "toplam_giris_sayisi" not in st.session_state:
+    st.session_state["toplam_giris_sayisi"] = 1
+else:
+    st.session_state["toplam_giris_sayisi"] += 1
+
+if "aktif_kisi_sayisi" not in st.session_state:
+    st.session_state["aktif_kisi_sayisi"] = 1
+
+# ==========================================
 # 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
@@ -53,7 +65,6 @@ def saf_hisse_adi_al(metin):
     if pd.isnull(metin):
         return ""
     metin_str = str(metin).strip().upper()
-    # Eğer hücrede 'ALARK [AL]' yazıyorsa sadece 'ALARK' kısmını çeker
     temiz = metin_str.replace("[AL]", "").replace("[SAT]", "").strip()
     parcalar = temiz.split()
     if len(parcalar) > 0:
@@ -73,7 +84,7 @@ def saf_fiyat_al(veri):
     return 0.0
 
 # ==========================================
-# 📊 YFINANCE CANLI FIYAT VE KAR/ZARAR FONKSİYONU (DÜZELTİLDİ)
+# 📊 YFINANCE CANLI FIYAT VE KAR/ZARAR FONKSİYONU
 # ==========================================
 def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     try:
@@ -92,12 +103,10 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
         if not df_live.empty:
             canli_fiyat = df_live['Close'].iloc[-1]
             
-            # Sütunlardaki fiyat uyuşmazlığını çözmek için maliyet ve canlı fiyat mantığı dengelendi
             maliyet = yuklenen_fiyat
             if maliyet == 0:
-                maliyet = 110.0  # Sabit yedek fiyat
+                maliyet = 110.0
                 
-            # Eğer excelden gelen fiyat canlı fiyattan yüksek basıldıysa yer değiştirerek kâr hesabı yapılır
             if canli_fiyat > maliyet:
                 yuzde_fark = ((canli_fiyat - maliyet) / maliyet) * 100
                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
@@ -148,8 +157,8 @@ if al_sat_butonu:
                 
                 for i in range(len(df)):
                     if len(df.columns) > 20:
-                        hisse_hucresi = df.iloc[i, 20]     # U Sütunu
-                        excel_anlik_verisi = df.iloc[i, 7] # H Sütunu (Yüklenen Fiyat)
+                        hisse_hucresi = df.iloc[i, 20]     
+                        excel_anlik_verisi = df.iloc[i, 7] 
                         
                         if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(hisse_hucresi):
                             hisse_ismi = saf_hisse_adi_al(hisse_hucresi)
@@ -189,7 +198,7 @@ if al_butonu:
             for i in range(len(df)):
                 for j in range(len(df.columns)):
                     hucre_degeri = str(df.iloc[i, j]).strip()
-                    excel_anlik_verisi = df.iloc[i, 7] # H Sütunu
+                    excel_anlik_verisi = df.iloc[i, 7]
                     
                     if "[AL]" in hucre_degeri:
                         hisse_ismi = saf_hisse_adi_al(hucre_degeri)
@@ -240,8 +249,3 @@ else:
 # ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU
 # ==========================================
 st.markdown("---")
-yasal_metin = (
-    "⚠️ YASAL UYARI (SPK Mevzuatı Uyarınca): Burada yer alan yatırım bilgi, yorum ve tavsiyeleri "
-    "yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy "
-    "yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı "
-    "sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların "
