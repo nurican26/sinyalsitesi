@@ -61,7 +61,7 @@ if "ziyaret_sayaci" not in st.session_state:
 if "yildiz_skorlari" not in st.session_state:
     st.session_state["yildiz_skorlari"] = []
 
-# Her sayfa yenilendiğinde ziyaretçi sayısını 1 artırır
+# Ziyaretçi sayacı artırımı
 st.session_state["ziyaret_sayaci"] += 1
 
 # Başlık ve Zaman Bilgisi
@@ -78,13 +78,11 @@ st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left:
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Güncel sinyal verilerinizi içeren Excel dosyasını seçin veya sürükleyin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 
-# Okunacak nihai veri kaynağını belirleme
 df_kaynak = None
 if yuklenen_dosya is not None:
     try:
         excel_obj = pd.ExcelFile(yuklenen_dosya)
         sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
-        # Veri sadece bellekte (RAM) tutulur, diske yazılmaz ve kimse erişemez
         df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=sheet)
         st.info("🔒 Güncel Excel dosyası güvenli bellek üzerinde işlendi. Dış erişime tamamen kapatıldı.")
     except Exception as e:
@@ -119,16 +117,22 @@ with sol_taraf:
                     for i in range(len(df_kaynak)):
                         hisse_kodu_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
                         excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
-                        bta_sinyal_al_sat = str(df_kaynak.iloc[i, 20]).strip().upper() if df_kaynak.shape[1] > 20 else ""
                         
                         if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                             continue
                         
-                        hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                        # Satırdaki tüm hücreleri birleştirerek genel bir metin taraması yapıyoruz (Sütun kaymalarına çözüm)
+                        satir_metni_bütün = " ".join([str(val).strip().upper() for val in df_kaynak.iloc[i].values]).upper()
                         
-                        if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat or "SAT" in bta_sinyal_al_sat or "SONME" in bta_sinyal_al_sat:
+                        # Gelişmiş Hisse Kodu Temizleme
+                        hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "")
+                        hisse_temiz = re.sub(r'[-+]?\d*\.\d+|\d+', '', hisse_temiz)
+                        hisse_temiz = hisse_temiz.replace("+", "").replace("-", "").strip()
+                        
+                        # Eğer satırda tetikleyici anahtar kelimelerden biri geçiyorsa sinyali kabul et
+                        if "+" in satir_metni_bütün or "AL" in satir_metni_bütün or "SAT" in satir_metni_bütün or "SONME" in hisse_temiz:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
                             
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -155,16 +159,21 @@ with sol_taraf:
                     for i in range(len(df_kaynak)):
                         hisse_kodu_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
                         excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
-                        w_sutun_verisi = str(df_kaynak.iloc[i, 22]).strip().upper() if df_kaynak.shape[1] > 22 else ""
                         
                         if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                             continue
                         
-                        hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                        # Satırdaki tüm hücreleri kapsayan akıllı tarama metni
+                        satir_metni_bütün = " ".join([str(val).strip().upper() for val in df_kaynak.iloc[i].values]).upper()
                         
-                        if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi or "SONME" in w_sutun_verisi:
+                        hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "")
+                        hisse_temiz = re.sub(r'[-+]?\d*\.\d+|\d+', '', hisse_temiz)
+                        hisse_temiz = hisse_temiz.replace("+", "").replace("-", "").strip()
+                        
+                        # Satırın herhangi bir yerinde [AL], AL veya SONME koşulu tetiklenirse
+                        if "[AL]" in satir_metni_bütün or "AL" in satir_metni_bütün or "SONME" in hisse_temiz:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
                             
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -177,17 +186,3 @@ with sol_taraf:
                     if tablo_verisi_al:
                         st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
                     else:
-                        st.warning("Filtreye uygun aktif [AL] veya Sönme durumu bulunamadı.")
-                except Exception as e:
-                    st.error(f"Hata: {e}")
-
-    # 📦 SADECE AL SİNYALİ GELEN HİSSELERİN TAKİP KUTUSU
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("---")
-        st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
-        kutu_tablo = []
-        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-            hisse_data = yf.Ticker(f"{hisse}.IS").history(period="1d")
-            if not hisse_data.empty:
-                guncel_canli = hisse_data['Close'].iloc[-1]
-                eski_fiyat = bilge["kayit_fiyati"]
