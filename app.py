@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -10,7 +9,7 @@ import re
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
 # ==========================================
-# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
+# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI (DÜZELTİLDİ)
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
@@ -24,7 +23,7 @@ st.markdown(
         background-attachment: fixed;
     }}
     .block-container {{
-        background: rgba(15, 23, 42, 0.90);
+        background: rgba(15, 23, 42, 0.95) !important;
         backdrop-filter: blur(10px);
         padding: 3rem;
         border-radius: 15px;
@@ -33,8 +32,13 @@ st.markdown(
         margin-top: 2rem;
         margin-bottom: 2rem;
     }}
-    h1, h2, h3, h4, h5, h6, p, span, label {{
+    /* Yazıların kaybolmasını engelleyen kritik düzeltme */
+    h1, h2, h3, h4, h5, h6, p, span, label, div, .stMarkdown {{
         color: #ffffff !important;
+    }}
+    .stTextInput input {{
+        color: #000000 !important;
+        background-color: #ffffff !important;
     }}
     </style>
     """,
@@ -121,7 +125,7 @@ if al_sat_butonu:
 
 # 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ & KUTUYA ANLIK FİYATLA KAYDETME
 if al_butonu:
-    with st.spinner("Aktif AL veren hisseler hesaplanıyor ve kutuya kaydediliyor..."):
+    with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
@@ -151,6 +155,7 @@ if al_butonu:
                             yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                             
+                            # O anki canlı fiyatı kutuya kalıcı kaydetme
                             st.session_state["ozel_takip_kutusu"][hisse_temiz] = {
                                 "kayit_fiyati": canli_fiyat,
                                 "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")
@@ -166,7 +171,7 @@ if al_butonu:
                 
                 if tablo_verisi_al:
                     st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-                    st.toast("🟢 [AL] Sinyali veren hisseler Özel Takip Kutunuza eklendi!", icon="📥")
+                    st.toast("🟢 Hisse Özel Takip Kutunuza eklendi!", icon="📥")
                 else:
                     st.warning("W sütununda aktif [AL] sinyali bulunamadı.")
             except Exception as e:
@@ -180,31 +185,29 @@ if al_butonu:
 if st.session_state["ozel_takip_kutusu"]:
     st.markdown("---")
     st.subheader("📥 Özel AL Sinyali Takip Kutusu")
-    st.caption("Aşağıdaki listede [AL] butonuna basıldığı an canlı fiyatıyla kaydedilen hisseler listelenmektedir.")
     
     kutu_tablo_verisi = []
-    with st.spinner("Kutudaki hisselerin anlık durumları güncelleniyor..."):
-        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-            ticker_kod = f"{hisse}.IS" if not hisse.endswith(".IS") else hisse
-            hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+    for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
+        ticker_kod = f"{hisse}.IS" if not hisse.endswith(".IS") else hisse
+        hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+        
+        if not hisse_data.empty:
+            guncel_canli = hisse_data['Close'].iloc[-1]
+            eski_fiyat = bilgi["kayit_fiyati"]
+            yuzde_fark = ((guncel_canli - eski_fiyat) / eski_fiyat) * 100 if eski_fiyat > 0 else 0.0
+            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if guncel_canli >= eski_fiyat else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
             
-            if not hisse_data.empty:
-                guncel_canli = hisse_data['Close'].iloc[-1]
-                eski_fiyat = bilgi["kayit_fiyati"]
-                yuzde_fark = ((guncel_canli - eski_fiyat) / eski_fiyat) * 100 if eski_fiyat > 0 else 0.0
-                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if guncel_canli >= eski_fiyat else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                
-                kutu_tablo_verisi.append({
-                    "Hisse Kodu": hisse,
-                    "Kutuya Kayıt Fiyatı": f"{eski_fiyat:.2f} TL",
-                    "Anlık Canlı Fiyat": f"{guncel_canli:.2f} TL",
-                    "Anlık Kar/Zarar Oranı": durum_str,
-                    "Kayıt Tarihi": bilgi["kayit_zamani"]
-                })
-                
+            kutu_tablo_verisi.append({
+                "Hisse Kodu": hisse,
+                "Kutuya Kayıt Fiyatı": f"{eski_fiyat:.2f} TL",
+                "Anlık Canlı Fiyat": f"{guncel_canli:.2f} TL",
+                "Anlık Kar/Zarar Oranı": durum_str,
+                "Kayıt Tarihi": bilgi["kayit_zamani"]
+            })
+            
     if kutu_tablo_verisi:
         st.dataframe(pd.DataFrame(kutu_tablo_verisi), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Kutuyu Temizle", use_container_width=False):
+        if st.button("🗑️ Kutuyu Temizle"):
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
