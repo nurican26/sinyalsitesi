@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -68,7 +69,7 @@ st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 📂 Excel Dosya Yükleme
+# 📂 Excel Dosya Yükleme (GİZLİLİK KORUMALI)
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Excel dosyasını seçin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 
@@ -100,18 +101,20 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ TÜM AL SAT SİNYALLERİ -> 20. İNDEKS)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
             sutun_sayisi = len(df_kaynak.columns)
-            # Logoları atlamak için döngü doğrudan 2. indeksteki satırdan başlar
             for i in range(2, len(df_kaynak)):
                 try:
                     if sutun_sayisi > 20:
                         u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
                         
                         if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
+                            continue
+                        
+                        if "SONME" in u_val or "ALKLC" in u_val:
                             continue
                             
                         hisse_adi = None
@@ -121,18 +124,16 @@ with sol_taraf:
                                 break
                         
                         if hisse_adi:
-                            # Fiyat hücresini güvenli okuma adımı
                             try:
                                 fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                                yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yuklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yuklenen_fiy = 0.0
                             
                             hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
                             if not hisse_data.empty:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
-                                # Eğer Excel fiyatı 0 ise canlı fiyata eşitleyip hatayı önlüyoruz
                                 if yuklenen_fiy == 0.0:
                                     yuklenen_fiy = canli_fiyat
                                     
@@ -146,7 +147,7 @@ with sol_taraf:
             else:
                 st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ -> 22. İNDEKS)
+    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
     if al_butonu and df_kaynak is not None:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             tablo_verisi_al = []
@@ -206,6 +207,8 @@ with sol_taraf:
 
 with sag_taraf:
     # ==========================================
-    # ⭐ KALICI YILDIZ OYLAMA ALANI
+    # ⭐ GÜVENLİ VE HER ZAMAN GÖRÜNÜR YILDIZ ALANI
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
+    st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
+    yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
