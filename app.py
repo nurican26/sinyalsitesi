@@ -100,7 +100,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ -> 20. İNDEKS)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
@@ -146,7 +146,7 @@ with sol_taraf:
             else:
                 st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ -> 22. İNDEKS)
+    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
     if al_butonu and df_kaynak is not None:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             tablo_verisi_al = []
@@ -206,7 +206,8 @@ with sol_taraf:
 
 with sag_taraf:
     # ==========================================
-    # ⭐ KALICI YILDIZ OYLAMA ALANI
+    # ⭐ GÜVENLİ VE HER ZAMAN GÖRÜNÜR YILDIZ ALANI
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
     st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
+    yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
