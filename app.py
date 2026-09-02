@@ -85,19 +85,27 @@ with sol_taraf:
             if os.path.exists(EXCEL_FILE_PATH):
                 try:
                     excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
+                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
                     df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                     tablo_verisi = []
                     for i in range(len(df)):
                         hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                         excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                        bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape > 20 else ""
+                        
+                        # DÜZELTME: df.shape yerine df.shape[1] (Sütun sayısı) kontrol ediliyor
+                        bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
+                        
                         if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                             continue
+                        
                         hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
-                        if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat:
+                        
+                        # Görseldeki "SONME +1,06" veya "AL" gibi ifadelere uyumluluk sağlandı
+                        if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat or "SAT" in bta_sinyal_al_sat:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                            # DÜZELTME: Listenin ilk elemanı sayıya çevriliyor [0] eklendi
+                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
                             if not hisse_data.empty:
@@ -107,6 +115,8 @@ with sol_taraf:
                                 tablo_verisi.append({"Hisse Kodu": hisse_temiz, "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                     if tablo_verisi:
                         st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
+                    else:
+                        st.warning("Eşleşen sinyal veya hisse kodu bulunamadı. Lütfen Excel sütun adlarını/indekslerini kontrol edin.")
                 except Exception as e:
                     st.error(f"Hata: {e}")
             else:
@@ -118,19 +128,26 @@ with sol_taraf:
             if os.path.exists(EXCEL_FILE_PATH):
                 try:
                     excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
+                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
                     df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                     tablo_verisi_al = []
                     for i in range(len(df)):
                         hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                         excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                        w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape > 22 else ""
+                        
+                        # DÜZELTME: df.shape yerine df.shape[1] (Sütun sayısı) kontrol ediliyor
+                        w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
+                        
                         if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                             continue
+                        
                         hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                        
                         if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                            # DÜZELTME: Listenin ilk elemanı sayıya çevriliyor [0] eklendi
+                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
                             if not hisse_data.empty:
@@ -141,6 +158,8 @@ with sol_taraf:
                                 tablo_verisi_al.append({"Hisse Kodu": hisse_temiz, "Sinyal": f"{hisse_temiz} [AL]", "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                     if tablo_verisi_al:
                         st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+                    else:
+                        st.warning("Filtreye uygun [AL] sinyali bulunamadı.")
                 except Exception as e:
                     st.error(f"Hata: {e}")
 
@@ -162,24 +181,3 @@ with sol_taraf:
             if st.button("🗑️ Kutuyu Sıfırla"):
                 st.session_state["ozel_takip_kutusu"] = {}
                 st.rerun()
-
-with sag_taraf:
-    st.subheader("💬 BTA Sohbet Odası")
-    isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
-    
-    # Python 3.14 Hizalaması Tamamen Güvenli Yönetici Paneli
-    if isat.strip().lower() == "nurican":
-        st.markdown(f"### 🚪 Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi")
-        engellenecek = st.text_input("Kısıtlanacak / Engellenecek Kullanıcı Adı:")
-        if st.button("❌ Kullanıcıyı Kısıtla") and engellenecek.strip():
-            st.session_state["kisitli_liste"].append(engellenecek.strip())
-            st.success(f"{engellenecek} kısıtlandı.")
-        if st.button("🗑️ Tüm Mesajları Temizle"):
-            st.session_state["chat_history"] = []
-            st.rerun()
-            
-    mesaj = st.text_input("Mesajınızı yazın:")
-    if st.button("Mesajı Gönder 🚀") and mesaj.strip():
-        mesaj_kucuk = mesaj.strip().lower()
-        
-        # 🤬 Hataya sebep olan iç döngü kaldırıldı, tek satırlık güvenli filtre yerleştirildi
