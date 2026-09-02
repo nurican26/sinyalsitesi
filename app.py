@@ -91,7 +91,7 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
 # ==========================================
-# ⚡ TÜM HİSSELERE AİT SABİT CANLI KÖŞE (EN ÜSTE ALINDI)
+# ⚡ TÜM HİSSELERE AİT SABİT CANLI KÖŞE
 # ==========================================
 st.subheader("🎯 Canlı Takip")
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
@@ -175,7 +175,7 @@ if al_sat_butonu and df_kaynak is not None:
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
                             if yuklenen_fiy == 0.0:
-                                    yuklenen_fiy = canli_fiyat
+                                yuklenen_fiy = canli_fiyat
                                 
                             yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
