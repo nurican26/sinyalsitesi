@@ -134,7 +134,7 @@ with sol_taraf:
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                             
@@ -183,7 +183,7 @@ with sol_taraf:
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                                 
