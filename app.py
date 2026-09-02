@@ -151,44 +151,19 @@ if "dongu_aktif" not in st.session_state:
     t.start()
 
 # ==========================================
-# 🧼 GÜVENLİ SAYI VE METİN TEMİZLEME FONKSİYONLARI
+# 📊 YFINANCE CANLI FIYAT SORGULAMA MOTORU
 # ==========================================
-def saf_fiyat_al(veri):
-    if pd.isnull(veri):
-        return 0.0
-    try:
-        veri_str = str(veri).replace(",", ".").strip()
-        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", veri_str)
-        if sayilar:
-            return float(sayilar[0])
-    except Exception:
-        return 0.0
-    return 0.0
-
-def saf_hisse_adi_al(metin):
-    if pd.isnull(metin):
-        return ""
-    try:
-        metin_str = str(metin).strip().upper()
-        temiz = metin_str.replace("[AL]", "").replace("[SAT]", "").strip()
-        parcalar = temiz.split()
-        if len(parcalar) > 0:
-            return str(parcalar[0])
-    except Exception:
-        return ""
-    return ""
-
 def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     try:
-        temiz_hisse = saf_hisse_adi_al(hisse_adi)
-        if not temiz_hisse:
+        if not hisse_adi or pd.isnull(hisse_adi):
             return None, None
             
+        hisse_str = str(hisse_adi).strip().upper()
         gecersiz_kelimeler = ["ANA", "PAZAR", "HİSSE", "DOLAŞIM", "PİYASA", "LOT", "ANLIK", "BTA", "UCUZ", "KOPYA", "AL", "SAT", "NAN", "ARZ"]
-        if any(x in temiz_hisse for x in gecersiz_kelimeler) or len(temiz_hisse) < 2:
+        if any(x in hisse_str for x in gecersiz_kelimeler) or len(hisse_str) < 2:
             return None, None
 
-        ticker_kod = f"{temiz_hisse}.IS" if not temiz_hisse.endswith(".IS") else temiz_hisse
+        ticker_kod = f"{hisse_str}.IS" if not hisse_str.endswith(".IS") else hisse_str
         hisse = yf.Ticker(ticker_kod)
         df_live = hisse.history(period="1d")
         
@@ -224,7 +199,7 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 AL SAT SİNYAL GÖSTERİMİ
+# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
 if al_sat_butonu:
     with st.spinner("Excel verileri okunuyor..."):
         try:
@@ -233,13 +208,19 @@ if al_sat_butonu:
             tablo_verisi = []
             
             for i in range(len(df)):
-                hisse_kodu_ham = df.iloc[i, 0]      
-                excel_anlik_verisi = df.iloc[i, 7] 
+                hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
+                excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
                 bta_sinyal_al_sat = df.iloc[i, 20] 
                 
-                hisse_temiz = saf_hisse_adi_al(hisse_kodu_ham)
-                if hisse_temiz and pd.notnull(bta_sinyal_al_sat) and "+" in str(bta_sinyal_al_sat):
-                    yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
+                if not hisse_kodu_ham or hisse_kodu_ham == "NAN":
+                    continue
+                    
+                hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                
+                if pd.notnull(bta_sinyal_al_sat) and ("+" in str(bta_sinyal_al_sat) or "AL SAT" in str(bta_sinyal_al_sat).upper()):
+                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
+                    yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                    
                     canli_fiy, canli_durum = canli_verileri_getir(hisse_temiz, yüklenen_fiy)
                     if canli_fiy is not None:
                         tablo_verisi.append({"Hisse Kodu": hisse_temiz, "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL", "Anlık Canlı Fiyat": canli_fiy, "Canlı Kar/Zarar Oranı": canli_durum})
@@ -251,7 +232,7 @@ if al_sat_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# 🟢 AL SİNYAL GÖSTERİMİ
+# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
@@ -260,6 +241,11 @@ if al_butonu:
             tablo_verisi_al = []
             
             for i in range(len(df)):
-                satir_hisse_adi = saf_hisse_adi_al(df.iloc[i, 0])
-                if satir_hisse_adi:
-                    excel_anlik_verisi = df.iloc[i, 7]
+                hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
+                excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
+                satir_metni = " ".join(df.iloc[i, :].astype(str).upper())
+                
+                if not hisse_kodu_ham or hisse_kodu_ham == "NAN":
+                    continue
+                    
+                hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
