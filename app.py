@@ -101,7 +101,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ -> FORTE, PKENT, DUNYH)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
     if al_sat_butonu and df_kaynak is not None:
         tablo_verisi = []
         sutun_sayisi = len(df_kaynak.columns)
@@ -112,12 +112,10 @@ with sol_taraf:
                 if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                     continue
                 
-                # SÖNME ve ALKLC yeşil butona ayrıldığı için buradan eliyoruz
                 if "SONME" in u_val or "ALKLC" in u_val:
                     continue
                     
                 try:
-                    # Hücre metninin içinden parlatarak borsa kodunu net yakalıyoruz
                     hisse_adi = None
                     for h in BORSA_HISSELERI:
                         if h in u_val:
@@ -142,7 +140,7 @@ with sol_taraf:
         else:
             st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ -> ALKLC VE SONME)
+    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
     if al_butonu and df_kaynak is not None:
         tablo_verisi_al = []
         sutun_sayisi = len(df_kaynak.columns)
@@ -215,3 +213,9 @@ with sag_taraf:
 
     st.markdown("---")
     st.subheader("💬 BTA Sohbet Odası")
+    isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
+    
+    # 👑 SADECE YÖNETİCİNİN GÖRECEĞİ GİZLİ SAYAÇ PANELİ
+    if isat.strip().lower() == "nurican":
+        st.markdown("---")
+        st.markdown("### 👑 Yetkili Takip Paneli")
