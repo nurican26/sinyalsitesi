@@ -48,7 +48,6 @@ if "toplam_oy_sayisi" not in st.session_state:
 if "toplam_yildiz_puani" not in st.session_state:
     st.session_state["toplam_yildiz_puani"] = 0
 
-# Ziyaret sayısını artırır
 st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ Sinyal Takip Merkezi")
@@ -69,7 +68,7 @@ st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 📂 Excel Dosya Yükleme (GİZLİLİK KORUMALI)
+# 📂 Excel Dosya Yükleme
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Excel dosyasını seçin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 
@@ -86,8 +85,6 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
     except:
         pass
 
-BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
-
 # ==========================================
 # 📊 YAN YANA PANEL DÜZENI
 # ==========================================
@@ -101,7 +98,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ TÜM AL SAT SİNYALLERİ - LİSTELERDEN BAĞIMSIZ HIZLI TARAMA)
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
@@ -114,16 +111,15 @@ with sol_taraf:
                         if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                             continue
                         
+                        # SÖNME ve ALKLC yeşil butona ayrıldığı için sarı butondan gizlenir
                         if "SONME" in u_val or "ALKLC" in u_val:
                             continue
                             
-                        hisse_adi = None
-                        for h in BORSA_HISSELERI:
-                            if h in u_val:
-                                h_adi = h
-                                break
+                        # 🎯 DOĞRUDAN HÜCRE OKUMA: Hücrenin içindeki yazıyı (Örn: FORTE) direkt hisse kodu kabul eder
+                        hisse_adi = u_val.split()[0] if len(u_val.split()) > 0 else u_val
+                        hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi).strip() # Sadece harfleri tutar
                         
-                        if hisse_adi:
+                        if hisse_adi and len(hisse_adi) >= 3:
                             fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
                             yuklenen_fiy = float(sayilar) if sayilar else 0.0
@@ -141,7 +137,7 @@ with sol_taraf:
             else:
                 st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
+    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ - TAŞ GİBİ SAĞLAM)
     if al_butonu and df_kaynak is not None:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             tablo_verisi_al = []
@@ -154,13 +150,10 @@ with sol_taraf:
                         if not w_val or w_val in ["NAN", "AL", ""]:
                             continue
                             
-                        hisse_adi = None
-                        for h in BORSA_HISSELERI:
-                            if h in w_val:
-                                hisse_adi = h
-                                break
+                        hisse_adi = w_val.split()[0] if len(w_val.split()) > 0 else w_val
+                        hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi).strip()
                         
-                        if hisse_adi:
+                        if hisse_adi and len(hisse_adi) >= 3:
                             hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
                             if not hisse_data.empty:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
@@ -201,7 +194,7 @@ with sol_taraf:
 
 with sag_taraf:
     # ==========================================
-    # ⭐ KALICI YILDIZ OYLAMA ALANI (GİRİNTİ HATASI TAMAMEN DÜZELTİLDİ)
+    # ⭐ KALICI YILDIZ OYLAMA ALANI
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
     st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
