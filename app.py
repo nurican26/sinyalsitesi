@@ -135,7 +135,7 @@ with sol_taraf:
                             try:
                                 fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                                yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yuklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yuklenen_fiy = 0.0
                             
@@ -213,11 +213,9 @@ with sol_taraf:
 
     st.divider()
 
-    # 💬 TOPLULUK SOHBET ODASI (Hizalama Hatasını Engelleyen Yeni Mimari)
+    # 💬 TOPLULUK SOHBET ODASI (Hata İhtimali Sıfırlanmış Düz Mimari)
     st.subheader("💬 Topluluk Sohbet Odası")
     
-    def mesaj_süreç_kontrolü(mesaj):
-        if not mesaj:
-            return
-        mesaj_temiz = mesaj.lower()
-        if any(kufur in mesaj_temiz for kufur in st.session_state["engellenen_kelimeler"]):
+    with st.form("mesaj_formu", clear_on_submit=True):
+        kullanici_mesaji = st.text_input("Mesajınızı yazın:", placeholder="Buraya yazın...")
+        mesaj_gonder = st.form_submit_button("Gönder", use_container_width=True)
