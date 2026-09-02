@@ -43,17 +43,33 @@ if "oda_sayisi" not in st.session_state:
     st.session_state["oda_sayisi"] = 1
 if "ziyaret_sayaci" not in st.session_state:
     st.session_state["ziyaret_sayaci"] = 0
+if "toplam_oy_sayisi" not in st.session_state:
+    st.session_state["toplam_oy_sayisi"] = 0
+if "toplam_yildiz_puani" not in st.session_state:
+    st.session_state["toplam_yildiz_puani"] = 0
 
-# Her sayfa yenilendiğinde ziyaret sayısını güvenli şekilde artırır
+# Her sayfa yenilendiğinde ziyaret sayısını artırır
 st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ Sinyal Takip Merkezi")
+
+# ==========================================
+# ⭐ YENİ: HERKESİN GÖRECEĞİ BEĞENİ VE POPÜLARİTE VİTRİNİ
+# ==========================================
+ortalama_puan = st.session_state["toplam_yildiz_puani"] / st.session_state["toplam_oy_sayisi"] if st.session_state["toplam_oy_sayisi"] > 0 else 0.0
+
+col_vitrin1, col_vitrin2 = st.columns(2)
+with col_vitrin1:
+    st.metric(label="🔥 Toplam Panel Beğenisi (Oy)", value=f"{st.session_state['toplam_oy_sayisi']} Kişi")
+with col_vitrin2:
+    st.metric(label="⭐ Topluluk Puan Ortalaması", value=f"{ortalama_puan:.2f} / 5.0")
+
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 📂 Excel Dosya Yükleme (GİZLİLİK KORUMALI - SADECE BELLEKTE İŞLENİR)
+# 📂 Excel Dosya Yükleme (GİZLİLİK KORUMALI)
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Excel dosyasını seçin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 
@@ -85,7 +101,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ -> FORTE, PKENT, DUNYH)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
     if al_sat_butonu and df_kaynak is not None:
         tablo_verisi = []
         sutun_sayisi = len(df_kaynak.columns)
@@ -102,14 +118,14 @@ with sol_taraf:
                 try:
                     kelimeler = u_val.split()
                     if len(kelimeler) > 0:
-                        ham_kelime = str(kelimeler[0])
+                        ham_kelime = str(kelimeler)
                         hisse_adi = ham_kelime.replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "").strip()
                         hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi)
                         
                         if hisse_adi and len(hisse_adi) >= 3:
                             fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                            yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            yuklenen_fiy = float(sayilar) if sayilar else 0.0
                             
                             hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
                             if not hisse_data.empty:
@@ -124,7 +140,7 @@ with sol_taraf:
         else:
             st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ -> ALKLC VE SONME)
+    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
     if al_butonu and df_kaynak is not None:
         tablo_verisi_al = []
         sutun_sayisi = len(df_kaynak.columns)
@@ -138,7 +154,7 @@ with sol_taraf:
                 try:
                     kelimeler = w_val.split()
                     if len(kelimeler) > 0:
-                        ham_kelime = str(kelimeler[0])
+                        ham_kelime = str(kelimeler)
                         hisse_adi = ham_kelime.replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "").strip()
                         hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi)
                         
@@ -185,22 +201,9 @@ with sag_taraf:
     st.subheader("💬 BTA Sohbet Odası")
     isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
     
-    # 👑 SADECE SİZİN GÖRECEĞİNİZ GİZLİ YÖNETİCİ SAYACI
+    # 👑 SADECE YÖNETİCİNİN GÖRECEĞİ GİZLİ SAYAÇ PANELİ
     if isat.strip().lower() == "nurican":
         st.markdown("---")
         st.markdown("### 👑 Yetkili Takip Paneli")
         st.markdown(f"🚪 **Odadaki/Sitedeki Aktif Oturum Sayısı:** `{st.session_state['oda_sayisi']}`")
-        st.markdown(f"📊 **Toplam Sayfa Yenilenme / Giriş Sayısı:** `{st.session_state['ziyaret_sayaci']}`")
-        if st.button("🗑️ Tüm Mesajları Temizle"):
-            st.session_state["chat_history"] = []
-            st.rerun()
-        st.markdown("---")
-            
-    mesaj = st.text_input("Mesajınızı yazın:")
-    if st.button("Mesajı Gönder 🚀") and mesaj.strip():
-        mesaj_kucuk = mesaj.strip().lower()
-        if not any(yasakli in mesaj_kucuk for yasakli in st.session_state["engellenen_kelimeler"]):
-            st.session_state["chat_history"].append(f"<b>{isat}</b>: {mesaj}")
-            st.rerun()
-
-    st.markdown("<div style='background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto;'>", unsafe_allow_html=True)
+        st.markdown(f"📊 **Toplam Giriş / Yenilenme Sayısı:** `{st.session_state['ziyaret_sayaci']}`")
