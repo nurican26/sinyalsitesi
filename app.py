@@ -109,7 +109,7 @@ st.markdown(
 # ==========================================
 st.subheader("Sinyal Üretim Merkezi")
 
-# Excel dosyanızın adı sol menüde 'nurican.xlsx' görünüyor, aynen korundu
+# Excel dosyanızın adı sol menüde 'nurican.xlsx' göründüğü için burayı sabitledik
 EXCEL_FILE_PATH = "nurican.xlsx" 
 
 col1, col2 = st.columns(2)
