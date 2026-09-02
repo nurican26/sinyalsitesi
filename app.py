@@ -5,11 +5,11 @@ import yfinance as yf
 import os
 import re
 
-# Sayfa Tasarım Ayarları (Orijinal Düzen)
+# Sayfa Tasarım Ayarları
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
 # ==========================================
-# 🎨 İLK GÜNKÜ ORİJİNAL CSS VE TASARIM AYARLARI
+# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
@@ -84,8 +84,6 @@ if al_sat_butonu:
                 
                 tablo_verisi = []
                 for i in range(len(df)):
-                    if i >= len(df):
-                        break
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
                     bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
@@ -133,8 +131,6 @@ if al_butonu:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
                 for i in range(len(df)):
-                    if i >= len(df):
-                        break
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
                     w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
@@ -171,13 +167,13 @@ if st.session_state["ozel_takip_kutusu"]:
     st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
     
     kutu_tablo_verisi = []
-    for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
+    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         ticker_kod = f"{hisse}.IS" if not hisse.endswith(".IS") else hisse
         hisse_data = yf.Ticker(ticker_kod).history(period="1d")
         
         if not hisse_data.empty:
             guncel_canli = hisse_data['Close'].iloc[-1]
-            eski_fiyat = bilgi["kayit_fiyati"]
+            eski_fiyat = bilge["kayit_fiyati"]
             yuzde_fark = ((guncel_canli - eski_fiyat) / eski_fiyat) * 100 if eski_fiyat > 0 else 0.0
             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if guncel_canli >= eski_fiyat else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
             
@@ -186,7 +182,7 @@ if st.session_state["ozel_takip_kutusu"]:
                 "Kayıt Anındaki Canlı Fiyat": f"{eski_fiyat:.2f} TL",
                 "Güncel Canlı Fiyat": f"{guncel_canli:.2f} TL",
                 "Anlık Kar/Zarar Oranı": durum_str,
-                "Kayıt Tarihi": bilgi["kayit_zamani"]
+                "Kayıt Tarihi": bilge["kayit_zamani"]
             })
             
     if kutu_tablo_verisi:
@@ -221,3 +217,7 @@ if isat.strip().lower() == "nurican":
             
         if st.button("🗑️ Tüm Sohbet Odası Mesajlarını Temizle", use_container_width=True):
             st.session_state["chat_history"] = []
+            st.success("Sohbet geçmişi tamamen temizlendi.")
+            st.rerun()
+
+mesaj = st.text_input("Mesajınızı yazın:", placeholder="Örn: Hisseler bugün çok iyi gidiyor...")
