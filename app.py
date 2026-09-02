@@ -62,97 +62,112 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
+# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (U SÜTUNU - 20. İNDEKS)
 if al_sat_butonu:
     with st.spinner("Excel verileri okunuyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
-            excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-            sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
-            df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
-            df.columns = df.columns.astype(str).str.strip()
-            
-            tablo_verisi = []
-            for i in range(len(df)):
-                hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
-                excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper()
+            try:
+                excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
+                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
-                if not hisse_kodu_ham or hisse_kodu_ham == "NAN":
-                    continue
+                tablo_verisi = []
+                for i in range(len(df)):
+                    if i >= len(df):
+                        break
                     
-                hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
-                
-                if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat:
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                    yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                    hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
+                    excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
                     
-                    # Canlı fiyatı doğrudan yfinance ile çekiyoruz
-                    ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
-                    hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+                    # U Sütununu kontrol et (20. indeks)
+                    bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
                     
-                    if not hisse_data.empty:
-                        canli_fiyat = hisse_data['Close'].iloc[-1]
-                        yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
-                        durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                    if not hisse_kodu_ham or hisse_kodu_ham == "NAN" or hisse_kodu_ham == "":
+                        continue
                         
-                        tablo_verisi.append({
-                            "Hisse Kodu": hisse_temiz,
-                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL",
-                            "Anlık Canlı Fiyat": f"{canli_fiyat:.2f} TL",
-                            "Canlı Kar/Zarar Oranı": durum_str
-                        })
-            
-            if tablo_verisi:
-                st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
-            else:
-                st.warning("Aktif Al-Sat sinyali bulunamadı.")
+                    hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                    
+                    # Sütunda artı işareti veya AL SAT yazısı arama
+                    if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat:
+                        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
+                        yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                        
+                        ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
+                        hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+                        
+                        if not hisse_data.empty:
+                            canli_fiyat = hisse_data['Close'].iloc[-1]
+                            yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
+                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                            
+                            tablo_verisi.append({
+                                "Hisse Kodu": hisse_temiz,
+                                "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL",
+                                "Anlık Canlı Fiyat": f"{canli_fiyat:.2f} TL",
+                                "Canlı Kar/Zarar Oranı": durum_str
+                            })
+                
+                if tablo_verisi:
+                    st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
+                else:
+                    st.warning("U sütununda aktif Al-Sat sinyali bulunamadı.")
+            except Exception as e:
+                st.error(f"Veri işleme hatası: {e}")
         else:
             st.error("Excel dosyası bulunamadı!")
 
-# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ
+# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ (W SÜTUNU - 22. İNDEKS)
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
-            excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-            sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
-            df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
-            df.columns = df.columns.astype(str).str.strip()
-            
-            tablo_verisi_al = []
-            for i in range(len(df)):
-                hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
-                excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                satir_metni = " ".join(df.iloc[i, :].astype(str).upper())
+            try:
+                excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
+                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
-                if not hisse_kodu_ham or hisse_kodu_ham == "NAN":
-                    continue
-                    
-                hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
-                
-                if "AL" in satir_metni:
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                    yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
-                    
-                    ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
-                    hisse_data = yf.Ticker(ticker_kod).history(period="1d")
-                    
-                    if not hisse_data.empty:
-                        canli_fiyat = hisse_data['Close'].iloc[-1]
-                        yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
-                        durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                tablo_verisi_al = []
+                for i in range(len(df)):
+                    if i >= len(df):
+                        break
                         
-                        tablo_verisi_al.append({
-                            "Hisse Kodu": hisse_temiz,
-                            "Sinyal Durumu": f"{hisse_temiz} [AL SAT]",
-                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL",
-                            "Anlık Canlı Fiyat": f"{canli_fiyat:.2f} TL",
-                            "Canlı Kar/Zarar Oranı": durum_str
-                        })
-            
-            if tablo_verisi_al:
-                st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-            else:
-                st.warning("Aktif sinyal hücresi bulunamadı.")
+                    hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
+                    excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
+                    
+                    # W Sütununu kontrol et (22. indeks)
+                    w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
+                    
+                    if not hisse_kodu_ham or hisse_kodu_ham == "NAN" or hisse_kodu_ham == "":
+                        continue
+                        
+                    hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                    
+                    # W sütununda [AL] ifadesi geçiyorsa listele
+                    if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi:
+                        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
+                        yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                        
+                        ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
+                        hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+                        
+                        if not hisse_data.empty:
+                            canli_fiyat = hisse_data['Close'].iloc[-1]
+                            yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
+                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                            
+                            tablo_verisi_al.append({
+                                "Hisse Kodu": hisse_temiz,
+                                "Sinyal Durumu": f"{hisse_temiz} [AL]",
+                                "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL",
+                                "Anlık Canlı Fiyat": f"{canli_fiyat:.2f} TL",
+                                "Canlı Kar/Zarar Oranı": durum_str
+                            })
+                
+                if tablo_verisi_al:
+                    st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+                else:
+                    st.warning("W sütununda aktif [AL] sinyali bulunamadı.")
+            except Exception as e:
+                st.error(f"Sinyal hesaplama hatası: {e}")
         else:
             st.error("Excel dosyası bulunamadı!")
 
