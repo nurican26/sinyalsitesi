@@ -7,7 +7,7 @@ st.set_page_config(page_title="Sinyal Sitesi", layout="wide")
 st.title("📊 Sinyal Sitesi Yönetim Paneli")
 
 # Excel Dosya Adı
-excel_dosyasi = "nurcan.xlsx"
+excel_dosyasi = "nurican.xls"
 
 # Dosya Kontrolü ve Okuma
 if os.path.exists(excel_dosyasi):
