@@ -82,7 +82,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (DOĞRUDAN U SÜTUNUNA BAKAR)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
     if al_sat_butonu and df_kaynak is not None:
         tablo_verisi = []
         sutun_sayisi = len(df_kaynak.columns)
@@ -90,11 +90,10 @@ with sol_taraf:
             if sutun_sayisi > 20:
                 u_val = str(df_kaynak.iloc[i, 20]).strip() # U Sütunu
                 
-                # Başlıkları veya boş hücreleri eliyoruz
                 if not u_val or u_val.upper() in ["NAN", "AL SAT SİNYALİ", ""]:
                     continue
                 
-                # SÖNME ve ALKLC sadece yeşil butona ayrıldığı için sarıdan eliyoruz
+                # SÖNME ve ALKLC sadece yeşil butona ayrıldı
                 if "SONME" in u_val.upper() or "ALKLC" in u_val.upper():
                     continue
                     
@@ -103,15 +102,18 @@ with sol_taraf:
                     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
                     yuklenen_fiy = float(sayilar) if sayilar else 0.0
                     
-                    # Hücrenin içindeki ilk kelimeyi (Hisse adını) ayıklıyoruz (Örn: FORTE +2,45 -> FORTE)
-                    hisse_adi = u_val.split()[0].upper().replace("[AL]", "").replace("[SAT]", "")
+                    # Hücrenin içindeki ilk kelimeyi alıp temizliyoruz (Örn: FORTE +2,45 -> FORTE)
+                    hisse_adi = u_val.split()[0].upper().replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "")
+                    # Sayıları temizle
+                    hisse_adi = re.sub(r'\d+', '', hisse_adi).strip()
                     
-                    hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
-                    if not hisse_data.empty:
-                        canli_fiyat = hisse_data['Close'].iloc[-1]
-                        yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
-                        durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                        tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                    if hisse_adi:
+                        hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
+                        if not hisse_data.empty:
+                            canli_fiyat = hisse_data['Close'].iloc[-1]
+                            yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
+                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                            tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
         if tablo_verisi:
@@ -119,30 +121,32 @@ with sol_taraf:
         else:
             st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (DOĞRUDAN W SÜTUNUNA BAKAR)
+    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
     if al_butonu and df_kaynak is not None:
         tablo_verisi_al = []
         sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
             if sutun_sayisi > 22:
-                w_val = str(df_kaynak.iloc[i, 22]).strip() # W Sütunu (AL)
+                w_val = str(df_kaynak.iloc[i, 22]).strip() # W Sütunu
                 
                 if not w_val or w_val.upper() in ["NAN", "AL", ""]:
                     continue
                     
                 try:
-                    # Hücrenin içindeki ilk kelimeyi alıyoruz (Örn: ALKLC [AL] -> ALKLC)
-                    hisse_adi = w_val.split()[0].upper().replace("[AL]", "").replace("[SAT]", "")
+                    # Hücrenin içindeki ilk kelimeyi alıp temizliyoruz (Örn: ALKLC [AL] -> ALKLC)
+                    hisse_adi = w_val.split()[0].upper().replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "")
+                    hisse_adi = re.sub(r'\d+', '', hisse_adi).strip()
                     
-                    hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
-                    if not hisse_data.empty:
-                        canli_fiyat = hisse_data['Close'].iloc[-1]
-                        yuklenen_fiy = canli_fiyat 
-                        yuzde_fark = 0.0  
-                        durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
-                        
-                        st.session_state["ozel_takip_kutusu"][hisse_adi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                        tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                    if hisse_adi:
+                        hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
+                        if not hisse_data.empty:
+                            canli_fiyat = hisse_data['Close'].iloc[-1]
+                            yuklenen_fiy = canli_fiyat 
+                            yuzde_fark = 0.0  
+                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
+                            
+                            st.session_state["ozel_takip_kutusu"][hisse_adi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                            tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
         if tablo_verisi_al:
