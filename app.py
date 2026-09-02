@@ -65,6 +65,7 @@ st.title("⚡ Sinyal Takip Merkezi")
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
+# SPK Yasal Uyarı Şeridi
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Burada yer alan yatırım bilgi ve yorumları yatırım danışmanlığı kapsamında değildir. YATIRIM TAVSİYESİ KESİNLİKLE DEĞİLDİR.</p></div>", unsafe_allow_html=True)
 
 # ==========================================
@@ -135,7 +136,7 @@ with sol_taraf:
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                             
@@ -185,7 +186,7 @@ with sol_taraf:
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                                 
