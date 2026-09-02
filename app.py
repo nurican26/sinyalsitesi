@@ -213,10 +213,11 @@ with sol_taraf:
 
     st.divider()
 
-    # 💬 TOPLULUK SOHBET ODASI
+    # 💬 TOPLULUK SOHBET ODASI (Hizalama Hatasını Engelleyen Yeni Mimari)
     st.subheader("💬 Topluluk Sohbet Odası")
-    with st.form("mesaj_formu", clear_on_submit=True):
-        kullanici_mesaji = st.text_input("Mesajınızı yazın:", placeholder="Buraya yazın...")
-        mesaj_gonder = st.form_submit_button("Gönder", use_container_width=True)
-        
-        if mesaj_gonder and kullanici_mesaji:
+    
+    def mesaj_süreç_kontrolü(mesaj):
+        if not mesaj:
+            return
+        mesaj_temiz = mesaj.lower()
+        if any(kufur in mesaj_temiz for kufur in st.session_state["engellenen_kelimeler"]):
