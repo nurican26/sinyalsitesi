@@ -48,7 +48,7 @@ if "toplam_oy_sayisi" not in st.session_state:
 if "toplam_yildiz_puani" not in st.session_state:
     st.session_state["toplam_yildiz_puani"] = 0
 
-# Her sayfa yenilendiğinde ziyaret sayısını artırır
+# Ziyaret sayısını artırır
 st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ Sinyal Takip Merkezi")
@@ -199,7 +199,7 @@ with sol_taraf:
 
 with sag_taraf:
     # ==========================================
-    # ⭐ YENİ: YUKARI TAŞINAN KALICI YILDIZ OYLAMA ALANI
+    # ⭐ YUKARI TAŞINAN KALICI YILDIZ OYLAMA ALANI (DÜZELTİLDİ)
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
     st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
