@@ -62,7 +62,6 @@ st.title("⚡ Sinyal Takip Merkezi")
 # ==========================================
 # 📊 HERKESİN GÖRECEĞİ BEĞENİ VE POPÜLARİTE VİTRİNİ
 # ==========================================
-# Harf hatası tamamen düzeltildi (topham -> toplam yapıldı)
 ortalama_puan = st.session_state["toplam_yildiz_puani"] / st.session_state["toplam_oy_sayisi"] if st.session_state["toplam_oy_sayisi"] > 0 else 0.0
 
 col_vitrin1, col_vitrin2 = st.columns(2)
@@ -213,3 +212,5 @@ with sol_taraf:
                 st.rerun()
 
 with sag_taraf:
+    # ⭐ KALICI YILDIZ OYLAMA ALANI
+    st.markdown("### ✨ Paneli Beğendiniz mi?")
