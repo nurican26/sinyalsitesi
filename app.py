@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
 # ==========================================
-# 🎨 BORSA TEMALI ARKA PLAN VE BOYAMA CSS AYARLARI
+# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
@@ -50,8 +50,14 @@ if "chat_history" not in st.session_state:
 # ==========================================
 def canli_verileri_getir(hisse_adi):
     try:
-        # Metin temizleme işlemleri (Örn: 'MARTI +40,18' ifadesinden sadece 'MARTI' kısmını alır)
-        temiz_hisse = str(hisse_adi).split()[0].strip().upper()
+        # Metindeki sayı ve işaretleri temizleyip sadece saf hisse kodunu alır
+        hisse_str = str(hisse_adi).strip()
+        parcalar = hisse_str.split()
+        if len(parcalar) > 0:
+            temiz_hisse = parcalar[0].upper()
+        else:
+            temiz_hisse = hisse_str.upper()
+            
         if not temiz_hisse.endswith(".IS"):
             ticker_kod = f"{temiz_hisse}.IS"
         else:
@@ -80,7 +86,8 @@ st.success(f"💡 Bu sayfa {guncel_tarih_saat} tarihinde bta analiz tarafından 
 st.markdown("---")
 st.subheader("Sinyal Üretim Merkezi")
 
-EXCEL_FILE_PATH = "nurican.xlsx" 
+# İstediğiniz gibi dosya adı tamamen 'nurican.xls' formatına sabitlendi
+EXCEL_FILE_PATH = "nurican.xls" 
 
 col1, col2 = st.columns(2)
 with col1:
@@ -92,40 +99,41 @@ with col2:
 if al_sat_butonu:
     with st.spinner("Excel verileri okunuyor..."):
         try:
-            # Excel'i okuyoruz. Eğer BTA sayfası yoksa ilk sayfayı otomatik okur.
-            try:
-                df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
-            except:
-                df = pd.read_excel(EXCEL_FILE_PATH)
-                
-            df.columns = df.columns.str.strip()
-            
-            # Sizin Excel'deki güncel yerleşime göre sütunları yeniden tanımladık:
-            # Görseldeki dizilime göre sütun indekslerini dinamik olarak kontrol ediyoruz
-            tablo_verisi = []
-            
-            for i in range(len(df)):
-                # U Sütunu (Hisse ve Değerler) genel olarak 20. indekse denk gelir
-                hisse_hucresi = df.iloc[i, 20] if len(df.columns) > 20 else None
-                
-                if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(hisse_hucresi):
-                    hisse_ismi = str(hisse_hucresi).split()[0].strip()
-                    canli_fiy = canli_verileri_getir(hisse_ismi)
-                    
-                    tablo_verisi.append({
-                        "Hisse Kodu": hisse_ismi,
-                        "Excel Durumu": str(hisse_hucresi),
-                        "Anlık Canlı Fiyat": canli_fiy
-                    })
-                    
-            if tablo_verisi:
-                st.success("Sinyaller Excel Düzenine Göre Listelendi!")
-                result_df = pd.DataFrame(tablo_verisi)
-                st.dataframe(result_df, use_container_width=True, hide_index=True)
+            if not os.path.exists(EXCEL_FILE_PATH):
+                st.error(f"❌ Klasörde '{EXCEL_FILE_PATH}' dosyası bulunamadı. Lütfen GitHub listesini kontrol edin.")
             else:
-                # Yedek Plan: Eğer sütun numarası tam uymadıysa tüm tabloyu gösterir ki hata almayın
-                st.info("Detaylı Görünüm:")
-                st.dataframe(df.dropna(how='all').head(20), use_container_width=True)
+                try:
+                    df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
+                except:
+                    df = pd.read_excel(EXCEL_FILE_PATH)
+                    
+                df.columns = df.columns.str.strip()
+                tablo_verisi = []
+                
+                # Excel'deki U Sütununu (İndeks 20) satır satır tarar
+                for i in range(len(df)):
+                    if len(df.columns) > 20:
+                        hisse_hucresi = df.iloc[i, 20]
+                        if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(hisse_hucresi):
+                            hisse_str = str(hisse_hucresi).strip()
+                            parcalar = hisse_str.split()
+                            hisse_ismi = parcalar[0] if len(parcalar) > 0 else hisse_str
+                            
+                            canli_fiy = canli_verileri_getir(hisse_ismi)
+                            
+                            tablo_verisi.append({
+                                "Hisse Kodu": hisse_ismi,
+                                "Excel Sinyal Durumu": hisse_str,
+                                "Anlık Canlı Fiyat": canli_fiy
+                            })
+                
+                if tablo_verisi:
+                    st.success("Sinyaller Excel Düzenine Göre Listelendi!")
+                    result_df = pd.DataFrame(tablo_verisi)
+                    st.dataframe(result_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("Tablo İçeriği (İlk 10 satır gösteriliyor):")
+                    st.dataframe(df.dropna(how='all').head(10), use_container_width=True)
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
@@ -133,39 +141,42 @@ if al_sat_butonu:
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
-            try:
-                df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
-            except:
-                df = pd.read_excel(EXCEL_FILE_PATH)
-                
-            df.columns = df.columns.str.strip()
-            
-            tablo_verisi_al = []
-            kayit_tarihi = datetime.datetime.now().strftime("%d.%m.%Y")
-            kayit_saati = datetime.datetime.now().strftime("%H:%M:%S")
-            
-            # Tüm tabloyu satır satır tarayıp içinde '[AL]' metni geçen hücreleri yakalıyoruz
-            for i in range(len(df)):
-                for j in range(len(df.columns)):
-                    hucre_degeri = str(df.iloc[i, j])
-                    if "[AL]" in hucre_degeri:
-                        hisse_ismi = hucre_degeri.split()[0].strip()
-                        canli_fiy = canli_verileri_getir(hisse_ismi)
-                        
-                        tablo_verisi_al.append({
-                            "Sorgulama_Tarihi": kayit_tarihi,
-                            "Sorgulama_Saati": kayit_saati,
-                            "Hisse Kodu": hisse_ismi,
-                            "Sinyal Durumu": hucre_degeri,
-                            "Anlık Canlı Fiyat": canli_fiy
-                        })
-            
-            if tablo_verisi_al:
-                st.success("Aktif AL Sinyalleri Başarıyla Yakalandı!")
-                result_df_al = pd.DataFrame(tablo_verisi_al)
-                st.dataframe(result_df_al, use_container_width=True, hide_index=True)
+            if not os.path.exists(EXCEL_FILE_PATH):
+                st.error(f"❌ Klasörde '{EXCEL_FILE_PATH}' dosyası bulunamadı.")
             else:
-                st.warning("Tabloda aktif [AL] sinyali hücresi tespit edilemedi. Lütfen sütun konumlarını kontrol edin.")
+                try:
+                    df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
+                except:
+                    df = pd.read_excel(EXCEL_FILE_PATH)
+                    
+                df.columns = df.columns.str.strip()
+                tablo_verisi_al = []
+                kayit_tarihi = datetime.datetime.now().strftime("%d.%m.%Y")
+                kayit_saati = datetime.datetime.now().strftime("%H:%M:%S")
+                
+                # Tüm hücrelerde [AL] sinyali arayan güvenli tarayıcı düzenek
+                for i in range(len(df)):
+                    for j in range(len(df.columns)):
+                        hucre_degeri = str(df.iloc[i, j]).strip()
+                        if "[AL]" in hucre_degeri:
+                            parcalar = hucre_degeri.split()
+                            hisse_ismi = parcalar[0] if len(parcalar) > 0 else hucre_degeri
+                            canli_fiy = canli_verileri_getir(hisse_ismi)
+                            
+                            tablo_verisi_al.append({
+                                "Sorgulama_Tarihi": kayit_tarihi,
+                                "Sorgulama_Saati": kayit_saati,
+                                "Hisse Kodu": hisse_ismi,
+                                "Sinyal Durumu": hucre_degeri,
+                                "Anlık Canlı Fiyat": canli_fiy
+                            })
+                
+                if tablo_verisi_al:
+                    st.success("Aktif AL Sinyalleri Başarıyla Listelendi!")
+                    result_df_al = pd.DataFrame(tablo_verisi_al)
+                    st.dataframe(result_df_al, use_container_width=True, hide_index=True)
+                else:
+                    st.warning("Aktif [AL] sinyali hücresi bulunamadı. Lütfen Excel dosyasını kontrol edin.")
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
@@ -221,5 +232,3 @@ with st.expander("🛠️ Yönetici Girişi (Sadece Nurican)"):
             st.metric(label="📊 Toplam Giriş Sayısı", value="1")
         with col_info3:
             st.metric(label="🕒 Son Güncelleme", value=su_an.strftime("%H:%M:%S"))
-    elif admin_sifre != "":
-        st.error("Hatalı Şifre!")
