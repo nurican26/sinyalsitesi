@@ -100,27 +100,23 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (🎯 FOTOĞRAFA GÖRE DOĞRUDAN 21. SÜTUNA - V SÜTUNUNA BAKAR)
+    # 🟡 1. ADIM: SARI BUTON (🎯 U SÜTUNUNDAKİ - 20. İNDEKS - TÜM SARI HÜCRELERİ TARAR)
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
             sutun_sayisi = len(df_kaynak.columns)
             for i in range(len(df_kaynak)):
                 try:
-                    if sutun_sayisi > 21:
-                        # Fotoğrafınızdaki sarı hücrelerin tam koordinatı olan 21. indeksi okuyoruz (V Sütunu)
-                        v_val = str(df_kaynak.iloc[i, 21]).strip().upper()
+                    if sutun_sayisi > 20:
+                        u_val = str(df_kaynak.iloc[i, 20]).strip().upper() # U Sütunu (20)
                         
-                        if not v_val or v_val in ["NAN", "AL_SAT SİNYALİ", ""]:
-                            continue
-                        
-                        # SÖNME ve ALKLC yeşil butona ayrıldığı için sarı butondan gizlenir
-                        if "SONME" in v_val or "ALKLC" in v_val:
+                        if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                             continue
                             
+                        # Hücre içindeki yazıyı (Örn: FORTE) tarayıp eşleştiriyoruz
                         hisse_adi = None
                         for h in BORSA_HISSELERI:
-                            if h in v_val:
+                            if h in u_val:
                                 hisse_adi = h
                                 break
                         
@@ -134,7 +130,7 @@ with sol_taraf:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
                                 yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                                tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": v_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                                tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
             if tablo_verisi:
@@ -142,23 +138,22 @@ with sol_taraf:
             else:
                 st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (🎯 FOTOĞRAFA GÖRE DOĞRUDAN 23. SÜTUNA - X SÜTUNUNA BAKAR)
+    # 🟢 2. ADIM: YEŞİL BUTON (🎯 W SÜTUNUNDAKİ - 22. İNDEKS - NET AL SİNYALLERİ)
     if al_butonu and df_kaynak is not None:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             tablo_verisi_al = []
             sutun_sayisi = len(df_kaynak.columns)
             for i in range(len(df_kaynak)):
                 try:
-                    if sutun_sayisi > 23:
-                        # Fotoğrafınızdaki mavi hücrelerin tam koordinatı olan 23. indeksi okuyoruz (X Sütunu)
-                        x_val = str(df_kaynak.iloc[i, 23]).strip().upper()
+                    if sutun_sayisi > 22:
+                        w_val = str(df_kaynak.iloc[i, 22]).strip().upper() # W Sütunu (22)
                         
-                        if not x_val or x_val in ["NAN", "AL", ""]:
+                        if not w_val or w_val in ["NAN", "AL", ""]:
                             continue
                             
                         hisse_adi = None
                         for h in BORSA_HISSELERI:
-                            if h in x_val:
+                            if h in w_val:
                                 hisse_adi = h
                                 break
                         
@@ -171,7 +166,7 @@ with sol_taraf:
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
                                 
                                 st.session_state["ozel_takip_kutusu"][hisse_adi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                                tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": x_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                                tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
             if tablo_verisi_al:
@@ -206,3 +201,9 @@ with sag_taraf:
     # ⭐ KALICI YILDIZ OYLAMA ALANI
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
+    st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
+    yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
+
+    if yildiz_skor is not None:
+        gercek_puan = yildiz_skor + 1
+        st.session_state["toplam_oy_sayisi"] = st.session_state["toplam_oy_sayisi"] + 1
