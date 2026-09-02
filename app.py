@@ -9,7 +9,7 @@ import re
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
 # ==========================================
-# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI (GÖRÜNMEZLİK SORUNU DÜZELTİLDİ)
+# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
@@ -35,8 +35,8 @@ st.markdown(
     h1, h2, h3, h4, h5, h6, p, span, label {{
         color: #ffffff !important;
     }}
-    /* Giriş kutularını görünür kılan kritik CSS şeridi */
-    .stTextInput input {{
+    /* Giriş kutularını her zaman beyaz ve net tutar */
+    input {{
         color: #000000 !important;
         background-color: #ffffff !important;
     }}
@@ -56,8 +56,8 @@ if "chat_history" not in st.session_state:
 if "ozel_takip_kutusu" not in st.session_state:
     st.session_state["ozel_takip_kutusu"] = {}
 
-if "kisitli_kullanicilar" not in st.session_state:
-    st.session_state["kisitli_kullanicilar"] = set()
+if "kisitli_liste" not in st.session_state:
+    st.session_state["kisitli_liste"] = []
 
 if "oda_sayisi" not in st.session_state:
     st.session_state["oda_sayisi"] = 1
@@ -84,14 +84,14 @@ if al_sat_butonu:
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
                 tablo_verisi = []
                 for i in range(len(df)):
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                    bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
+                    bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape > 20 else ""
                     
                     if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                         continue
@@ -100,7 +100,7 @@ if al_sat_butonu:
                     
                     if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat:
                         sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                        yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                        yüklenen_fiy = float(sayilar) if sayilar else 0.0
                         
                         ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                         hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -132,13 +132,13 @@ if al_butonu:
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
                 for i in range(len(df)):
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                    w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
+                    w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape > 22 else ""
                     
                     if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                         continue
@@ -147,7 +147,7 @@ if al_butonu:
                     
                     if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi:
                         sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                        yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                        yüklenen_fiy = float(sayilar) if sayilar else 0.0
                         
                         ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                         hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -160,7 +160,7 @@ if al_butonu:
                                 "yuklenen_fiyat": yüklenen_fiy,
                                 "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")
                             }
-                st.toast("🟢 [AL] Sinyalli hisseler aşağıdaki özel kutuya başarıyla kaydedildi!")
+                st.toast("🟢 [AL] Sinyalli hisseler özel kutuya kaydedildi!")
             except Exception as e:
                 st.error(f"Sinyal hesaplama hatası: {e}")
         else:
@@ -174,7 +174,7 @@ if st.session_state["ozel_takip_kutusu"]:
     kutu_tablo_verisi = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         ticker_kod = f"{hisse}.IS" if not hisse.endswith(".IS") else hisse
-        hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+        hisse_data = yf.Ticker(f"{hisse}.IS").history(period="1d")
         
         if not hisse_data.empty:
             guncel_canli = hisse_data['Close'].iloc[-1]
@@ -214,3 +214,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# ==========================================
+# 💬 3. BÖLÜM: BTA SOHBET ODASI & YÖNETİM
