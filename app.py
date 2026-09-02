@@ -70,13 +70,10 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
         df_live = hisse.history(period="1d")
         
         if not df_live.empty:
-            # İnternetten gelen gerçek anlık fiyat
             canli_fiyat = df_live['Close'].iloc[-1]
-            
-            # Sütun kaymasını düzeltmek için Excel'den gelen fiyatı maliyet yapıyoruz
             maliyet = yuklenen_fiyat if yuklenen_fiyat > 0 else 110.30
             
-            # Kâr/Zarar Formülü (Doğru Sütun Eşleşmesi)
+            # Yüzde kâr/zarar hesabı
             yuzde_fark = ((canli_fiyat - maliyet) / maliyet) * 100
             if yuzde_fark >= 0:
                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
@@ -111,21 +108,24 @@ if al_sat_butonu:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
             except:
                 df = pd.read_excel(EXCEL_FILE_PATH)
+            
             df.columns = df.columns.astype(str).str.strip()
             tablo_verisi = []
+            
             for i in range(len(df)):
                 if len(df.columns) > 20:
-                    hisse_hucresi = df.iloc[i, 20]     
-                    excel_anlik_verisi = df.iloc[i, 7] 
-                    if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(hisse_hucresi):
-                        hisse_metni = str(hisse_hucresi).replace("+", " ").split()[0].strip()
+                    hisse_hucresi = df.iloc[i, 0]      # A Sütunundan hisse kodunu oku (ALARK)
+                    excel_anlik_verisi = df.iloc[i, 7] # H Sütunundan tam fiyatı oku (110,30)
+                    bta_sinyal_al_sat = df.iloc[i, 20] # U Sütunu
+                    
+                    if pd.notnull(hisse_hucresi) and str(hisse_hucresi).strip() != "" and "+" in str(bta_sinyal_al_sat):
+                        hisse_metni = str(hisse_hucresi).strip()
                         yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
                         
-                        # Fiyatların yerini sütunlarda doğru gösteriyoruz
                         canli_fiy, canli_durum = canli_verileri_getir(hisse_metni, yüklenen_fiy)
                         tablo_verisi.append({
                             "Hisse Kodu": hisse_metni,
-                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "110.30 TL",
+                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
                             "Anlık Canlı Fiyat": canli_fiy,
                             "Canlı Kar/Zarar Oranı": canli_durum
                         })
@@ -147,25 +147,28 @@ if al_butonu:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
             except:
                 df = pd.read_excel(EXCEL_FILE_PATH)
+            
             df.columns = df.columns.astype(str).str.strip()
             tablo_verisi_al = []
+            
             for i in range(len(df)):
-                for j in range(len(df.columns)):
-                    hucre_degeri = str(df.iloc[i, j]).strip()
-                    excel_anlik_verisi = df.iloc[i, 7] 
-                    if "[AL]" in hucre_degeri:
-                        hisse_kod_temiz = hucre_degeri.replace("[AL]", "").strip()
-                        yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
-                        
-                        # Fiyatların yerini sütunlarda doğru gösteriyoruz
-                        canli_fiy, canli_durum = canli_verileri_getir(hisse_kod_temiz, yüklenen_fiy)
-                        tablo_verisi_al.append({
-                            "Hisse Kodu": hisse_kod_temiz,
-                            "Sinyal Durumu": hucre_degeri,
-                            "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "110.30 TL",
-                            "Anlık Canlı Fiyat": canli_fiy,
-                            "Canlı Kar/Zarar Oranı": canli_durum
-                        })
+                satir_hisse_adi = str(df.iloc[i, 0]).strip().upper() # A Sütunu (ALARK)
+                excel_anlik_verisi = df.iloc[i, 7]                  # H Sütunu (110,30)
+                
+                # Satırdaki hücrelerin herhangi birinde [AL] yazıyor mu kontrol et
+                satir_metni = "".join(df.iloc[i, :].astype(str))
+                
+                if "[AL]" in satir_metni and pd.notnull(satir_hisse_adi) and satir_hisse_adi != "NAN" and satir_hisse_adi != "":
+                    yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
+                    canli_fiy, canli_durum = canli_verileri_getir(satir_hisse_adi, yüklenen_fiy)
+                    
+                    tablo_verisi_al.append({
+                        "Hisse Kodu": satir_hisse_adi,
+                        "Sinyal Durumu": f"{satir_hisse_adi} [AL]",
+                        "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if yüklenen_fiy > 0 else "Veri Yok",
+                        "Anlık Canlı Fiyat": canli_fiy,
+                        "Canlı Kar/Zarar Oranı": canli_durum
+                    })
             if tablo_verisi_al:
                 st.success("Aktif AL Sinyalleri Başarıyla Listelendi!")
                 result_df_al = pd.DataFrame(tablo_verisi_al)
