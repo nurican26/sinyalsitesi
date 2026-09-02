@@ -9,8 +9,8 @@ st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout=
 # 🔑 GÜVENLİK VE ŞİFRE AYARLARI
 # ==========================================
 # Sitenizin giriş şifrelerini buradan istediğiniz gibi değiştirebilirsiniz
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "nurican2026"
+ADMIN_USERNAME = "nurican"
+ADMIN_PASSWORD = "3015"
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
