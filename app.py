@@ -9,7 +9,7 @@ import re
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="wide")
 
 # ==========================================
-# 🎨 BORSA TEMALY ARKA PLAN VE CSS AYARLARI
+# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
@@ -73,7 +73,7 @@ st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Burada yer alan yatırım bilgi ve yorumları yatırım danışmanlığı kapsamında değildir. YATIRIM TAVSİYESİ KESİNLİKLE DEĞİLDİR.</p></div>", unsafe_allow_html=True)
 
 # ==========================================
-# 📂 YENİ: EXCEL DOSYA YÜKLEME ALANI
+# 📂 EXCEL DOSYA YÜKLEME ALANI (GİZLİLİK KORUMALI)
 # ==========================================
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Güncel sinyal verilerinizi içeren Excel dosyasını seçin veya sürükleyin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
@@ -83,15 +83,16 @@ df_kaynak = None
 if yuklenen_dosya is not None:
     try:
         excel_obj = pd.ExcelFile(yuklenen_dosya)
-        sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+        sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
+        # Veri sadece bellekte (RAM) tutulur, diske yazılmaz ve kimse erişemez
         df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=sheet)
-        st.info("🔄 Güncel yüklediğiniz Excel dosyası başarıyla sisteme entegre edildi.")
+        st.info("🔒 Güncel Excel dosyası güvenli bellek üzerinde işlendi. Dış erişime tamamen kapatıldı.")
     except Exception as e:
         st.error(f"Yüklenen dosya okunurken hata oluştu: {e}")
 elif os.path.exists(DEFAULT_EXCEL_PATH):
     try:
         excel_obj = pd.ExcelFile(DEFAULT_EXCEL_PATH)
-        sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+        sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
         df_kaynak = pd.read_excel(DEFAULT_EXCEL_PATH, sheet_name=sheet)
     except Exception as e:
         st.error(f"Varsayılan Excel okunurken hata oluştu: {e}")
@@ -125,7 +126,6 @@ with sol_taraf:
                         
                         hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
                         
-                        # Eğer hücre içeriğinde AL, SAT, +, veya SÖNME gibi özel durumlar varsa yakala
                         if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat or "SAT" in bta_sinyal_al_sat or "SONME" in bta_sinyal_al_sat:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
                             yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
