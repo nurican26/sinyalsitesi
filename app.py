@@ -82,30 +82,28 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (SÖNME HARİÇ DİĞERLERİ)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDA AL SAT OLANLAR)
     if al_sat_butonu and df_kaynak is not None:
         tablo_verisi = []
         sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
             if sutun_sayisi > 20:
-                u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
-                hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
+                u_val = str(df_kaynak.iloc[i, 20]).strip().upper() # U Sütunu
+                hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper() # A Sütunu
                 
+                # A sütunundaki ham metinden net borsa kodunu çekme
                 hisse_temiz = None
                 for h in BORSA_HISSELERI:
-                    if h in hisse_ham or h in u_val:
+                    if h in hisse_ham:
                         hisse_temiz = h
                         break
                 
-                if hisse_temiz == "SONME":
-                    continue
-                    
+                # Eğer U sütununda sinyal varsa listele
                 if hisse_temiz and u_val and u_val != "NAN" and ("+" in u_val or "AL" in u_val or "SAT" in u_val):
-                    # 🎯 SARI BUTON ÇÖKME KORUMASI: Fiyat okuma hatası tamamen try-except içine alındı
                     try:
                         fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                         sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                        yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                        yuklenen_fiy = float(sayilar) if sayilar else 0.0
                     except:
                         yuklenen_fiy = 0.0
                     
@@ -123,38 +121,41 @@ with sol_taraf:
         else:
             st.warning("Aktif AL SAT verisi bulunamadı.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (SADECE SÖNME)
+    # 🟢 2. ADIM: YEŞİL BUTON (SADECE W SÜTUNUNDA NET [AL] YAZANLAR -> ALKLC VE SONME)
     if al_butonu and df_kaynak is not None:
         tablo_verisi_al = []
         sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
             if sutun_sayisi > 22:
-                w_val = str(df_kaynak.iloc[i, 22]).strip().upper()
-                hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
+                w_val = str(df_kaynak.iloc[i, 22]).strip().upper() # W Sütunu (AL)
+                hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper() # A Sütunu
                 
                 hisse_temiz = None
                 for h in BORSA_HISSELERI:
-                    if h in hisse_ham or h in w_val:
+                    if h in hisse_ham:
                         hisse_temiz = h
                         break
                 
-                if hisse_temiz == "SONME" and w_val and w_val != "NAN" and ("AL" in w_val or "SONME" in w_val):
+                # Sadece W sütununda (22. indeks) açıkça AL veya [AL] yazan gerçek satırları listeler
+                if hisse_temiz and w_val and w_val != "NAN" and ("AL" in w_val or "[AL]" in w_val):
                     try:
-                        hisse_data = yf.Ticker("SONME.IS").history(period="1d")
+                        hisse_data = yf.Ticker(f"{hisse_temiz}.IS").history(period="1d")
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
+                            
+                            # Satır kayması maliyet hatasını önlemek için yüklenen fiyatı canlı fiyata eşitliyoruz
                             yuklenen_fiy = canli_fiyat 
                             yuzde_fark = 0.0  
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
                             
-                            st.session_state["ozel_takip_kutusu"]["SONME"] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                            tablo_verisi_al.append({"Hisse Kodu": "SONME", "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                            st.session_state["ozel_takip_kutusu"][hisse_temiz] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                            tablo_verisi_al.append({"Hisse Kodu": hisse_temiz, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                     except:
                         pass
         if tablo_verisi_al:
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
         else:
-            st.warning("SÖNME [AL] sinyali bulunamadı.")
+            st.warning("Excel şablonunda aktif [AL] kriterine uyan veri bulunamadı.")
 
     # Takip Kutusu Gösterimi
     if st.session_state["ozel_takip_kutusu"]:
