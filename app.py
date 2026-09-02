@@ -192,7 +192,7 @@ if st.session_state["ozel_takip_kutusu"]:
             st.rerun()
 
 # ==========================================
-# ⚠️ SPK YASAL UYARI METNİ (ÜSTE SABİTLENDİ)
+# ⚠️ SPK YASAL UYARI METNİ
 # ==========================================
 st.markdown("---")
 st.markdown(
@@ -214,4 +214,5 @@ st.markdown(
 # 💬 3. BÖLÜM: BTA SOHBET ODASI & YÖNETİM
 # ==========================================
 st.markdown("---")
-st.subheader("💬 BTA Sohbet Odası")
+
+# Kullanıcı "Nurican" yazdığında başlığın yanına gizli oda ikonu ve sayısı gelecek
