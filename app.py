@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -199,12 +200,12 @@ with sol_taraf:
 
 with sag_taraf:
     # ==========================================
-    # ⭐ YUKARI TAŞINAN KALICI YILDIZ OYLAMA ALANI (DÜZELTİLDİ)
+    # ⭐ YUKARI TAŞINAN KALICI YILDIZ OYLAMA ALANI (KÖKTEN DÜZELTİLDİ)
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
     st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
     yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
 
+    # Çökmeye sebep olan tüm karmaşık yapılar ve boşluk riskleri tamamen kaldırıldı
     if yildiz_skor is not None:
         gercek_puan = yildiz_skor + 1
-        if "son_verilen_oy" not in st.session_state or st.session_state["son_verilen_oy"] != yildiz_skor:
