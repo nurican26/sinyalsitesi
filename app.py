@@ -78,7 +78,8 @@ if yuklenen_dosya is not None:
     try:
         excel_obj = pd.ExcelFile(yuklenen_dosya)
         sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
-        df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=sheet)
+        # pandas başlık satırlarını ham veri kaybı olmaması için header=None ile okuyoruz
+        df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=sheet, header=None)
         st.info("🔒 Güncel Excel dosyası güvenli bellek üzerinde işlendi. Dış erişime tamamen kapatıldı.")
     except Exception as e:
         st.error(f"Yüklenen dosya okunurken hata oluştu: {e}")
@@ -86,11 +87,10 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
     try:
         excel_obj = pd.ExcelFile(DEFAULT_EXCEL_PATH)
         sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
-        df_kaynak = pd.read_excel(DEFAULT_EXCEL_PATH, sheet_name=sheet)
+        df_kaynak = pd.read_excel(DEFAULT_EXCEL_PATH, sheet_name=sheet, header=None)
     except Exception as e:
         st.error(f"Varsayılan Excel okunurken hata oluştu: {e}")
 
-# Takip edilecek net borsa listesi
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM"]
 
 # ==========================================
@@ -106,31 +106,41 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
+    # 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (U SÜTUNU -> 20. İNDEKS)
     if al_sat_butonu:
         with st.spinner("Excel verileri işleniyor..."):
             if df_kaynak is not None:
                 try:
                     tablo_verisi = []
-                    for i in range(len(df_kaynak)):
-                        satir_degerleri = [str(val).strip().upper() for val in df_kaynak.iloc[i].values]
-                        satir_metni_bütün = " ".join(satir_degerleri)
+                    # u3 hücresinden (yani Excel'de 3. satır, Python indeksinde 2) başladığı için döngü 2'den başlar
+                    for i in range(2, len(df_kaynak)):
+                        if df_kaynak.shape[1] <= 20:
+                            continue
+                            
+                        u_hücre_degeri = str(df_kaynak.iloc[i, 20]).strip().upper() # U sütunu
+                        satir_metni = " ".join([str(val).strip().upper() for val in df_kaynak.iloc[i].values])
                         
+                        # Satırda "ANA" kelimesi geçiyorsa hatalı eşleşmeleri engellemek için atla
+                        if "ANA" in u_hücre_degeri:
+                            continue
+                            
                         hisse_temiz = None
                         for hisse in BORSA_HISSELERI:
-                            if hisse in satir_metni_bütün:
+                            if hisse in satir_metni:
                                 hisse_temiz = hisse
                                 break
                         
                         if not hisse_temiz:
                             continue
                             
-                        excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
-                        
-                        # Rastgele "AL" harflerini engellemek için sadece belirgin sembol veya SÖNME koşulu
-                        if "+" in satir_metni_bütün or "[AL]" in satir_metni_bütün or "[SAT]" in satir_metni_bütün or "SONME" in satir_metni_bütün:
-                            sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                        # Eğer U sütunundaki değer boş değilse veya + işareti/AL-SAT ibaresi içeriyorsa sinyal kabul edilir
+                        if u_hücre_degeri and u_hücre_degeri != "NAN" and ("+" in u_hücre_degeri or "AL" in u_hücre_degeri or "SAT" in u_hücre_degeri or "SONME" in u_hücre_degeri):
+                            try:
+                                excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
+                                sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
+                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            except:
+                                yüklenen_fiy = 0.0
                             
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -138,58 +148,51 @@ with sol_taraf:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
                                 yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                                tablo_verisi.append({"Hisse Kodu": hisse_temiz, "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                                tablo_verisi.append({"Hisse Kodu": hisse_temiz, "Sinyal Metni": u_hücre_degeri, "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                     if tablo_verisi:
                         st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
                     else:
-                        st.warning("Excel içerisinde aktif kritere uyan sinyal tespit edilemedi.")
+                        st.warning("U3 koordinatından itibaren aktif [AL SAT] sinyali bulunamadı.")
                 except Exception as e:
                     st.error(f"Hata: {e}")
             else:
                 st.error("İşlenecek Excel veri kaynağı bulunamadı!")
 
-    # 🟢 2. ADIM: AL SİNYALİNİ ÖZEL KUTUYA KAYDETME (TAM NOKTA ATIŞI FİLTRE)
+    # 🟢 2. ADIM: AL SİNYALİNİ ÖZEL KUTUYA KAYDETME (W SÜTUNU -> 22. İNDEKS)
     if al_butonu:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             if df_kaynak is not None:
                 try:
                     tablo_verisi_al = []
-                    for i in range(len(df_kaynak)):
-                        satir_degerleri = [str(val).strip().upper() for val in df_kaynak.iloc[i].values]
-                        satir_metni_bütün = " ".join(satir_degerleri)
+                    # w4 hücresinden (yani Excel'de 4. satır, Python indeksinde 3) başladığı için döngü 3'den başlar
+                    for i in range(3, len(df_kaynak)):
+                        if df_kaynak.shape[1] <= 22:
+                            continue
+                            
+                        w_hücre_degeri = str(df_kaynak.iloc[i, 22]).strip().upper() # W sütunu
+                        satir_metni = " ".join([str(val).strip().upper() for val in df_kaynak.iloc[i].values])
                         
+                        if "ANA" in w_hücre_degeri:
+                            continue
+                            
                         hisse_temiz = None
                         for hisse in BORSA_HISSELERI:
-                            if hisse in satir_metni_bütün:
+                            if hisse in satir_metni:
                                 hisse_temiz = hisse
                                 break
                         
                         if not hisse_temiz:
                             continue
-                            
-                        excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
                         
-                        # 🎯 KRİTİK GÜNCELLEME: Kelime içi "AL" harflerini (Ana pazar vb.) eler. Sadece tam "[AL]" etiketi veya doğrudan "SONME" içeren satırı listeler.
-                        if "[AL]" in satir_metni_bütün or "SONME" in satir_metni_bütün or "SONME [AL]" in satir_metni_bütün:
-                            sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
-                            
-                            ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
+                        # W sütunundaki değer boş değilse veya net biçimde AL sinyali/SÖNME ifadesi taşıyorsa
+                        if w_hücre_degeri and w_hücre_degeri != "NAN" and ("AL" in w_hücre_degeri or "SONME" in w_hücre_degeri):
+                            try:
+                                excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
+                                sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
+                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            except:
+                                yüklenen_fiy = 0.0
+                                
+                            ticker_kod = f"{hisse_temiz}.IS"
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
                             if not hisse_data.empty:
-                                canli_fiyat = hisse_data['Close'].iloc[-1]
-                                yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
-                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                                st.session_state["ozel_takip_kutusu"][hisse_temiz] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")}
-                                tablo_verisi_al.append({"Hisse Kodu": hisse_temiz, "Sinyal": f"{hisse_temiz} [AL]", "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
-                    if tablo_verisi_al:
-                        st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-                    else:
-                        st.warning("Filtreye uygun aktif [AL] sinyali bulunamadı.")
-                except Exception as e:
-                    st.error(f"Hata: {e}")
-
-    # 📦 SADECE AL SİNYALİ GELEN HİSSELERİN TAKİP KUTUSU
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("---")
-        st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
