@@ -15,15 +15,12 @@ arka_plan_resmi_url = "https://unsplash.com"
 st.markdown(
     f"""
     <style>
-    /* Ana arka plan resmi */
     .stApp {{
         background-image: url("{arka_plan_resmi_url}");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }}
-    
-    /* Şeffaf buzlu cam kart efekti */
     .block-container {{
         background: rgba(15, 23, 42, 0.85);
         backdrop-filter: blur(10px);
@@ -34,19 +31,15 @@ st.markdown(
         margin-top: 2rem;
         margin-bottom: 2rem;
     }}
-    
-    /* 🎨 SON GÜNCELLEME SAYFASI BOYAMA (Özel Renkli Şerit) */
     .custom-update-box {{
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-left: 6px solid #eab308; /* Sol tarafta canlı sarı şerit */
+        border-left: 6px solid #eab308;
         padding: 15px;
         border-radius: 8px;
         box-shadow: 0 4px 15px rgba(234, 179, 8, 0.15);
         margin-top: 10px;
         margin-bottom: 20px;
     }}
-    
-    /* Yazı renklerini sabitleme */
     h1, h2, h3, h4, h5, h6, p, span, label {{
         color: #ffffff !important;
     }}
@@ -96,11 +89,10 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
         return "Hata", "⚠️ Bağlantı Sorunu"
 
 # ==========================================
-# 📈 PANEL ANA EKRANI
+# 📈 1. BÖLÜM: PANEL ANA EKRANI VE GÜNCELLEME NOTU
 # ==========================================
 st.title("⚡ Sinyal Takip Merkezi")
 
-# 🎨 Boyanmış Son Güncelleme Sayfası Alanı
 st.markdown(
     f"""
     <div class="custom-update-box">
@@ -112,10 +104,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ==========================================
+# 📈 2. BÖLÜM: SİNYAL ÜRETİM MERKEZİ (BUTONLAR VE TABLOLAR)
+# ==========================================
 st.subheader("Sinyal Üretim Merkezi")
 
-# İstediğiniz gibi dosya adı uzantısı tamamen 'nurican.xls' olarak düzeltildi
-EXCEL_FILE_PATH = "nurican.xls" 
+# Excel dosyanızın adı sol menüde 'nurican.xlsx' görünüyor, aynen korundu
+EXCEL_FILE_PATH = "nurican.xlsx" 
 
 col1, col2 = st.columns(2)
 with col1:
@@ -125,7 +120,7 @@ with col2:
 
 # 🟡 1. BUTON: AL SAT SİNYALİ
 if al_sat_butonu:
-    with st.spinner("Excel verileri okunuyor..."):
+    with st.spinner("Excel verileri okunuyor ve canlı borsa takibi yapılıyor..."):
         try:
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
@@ -164,7 +159,7 @@ if al_sat_butonu:
                         "Canlı Kar/Zarar Oranı": canli_durum
                     })
                     
-                st.success("Sinyaller Listelendi!")
+                st.success("Sinyaller Büyükten Küçüğe Listelendi!")
                 result_df = pd.DataFrame(tablo_verisi)
                 st.dataframe(result_df, use_container_width=True, hide_index=True)
             else:
@@ -172,9 +167,9 @@ if al_sat_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# 🟢 2. BUTON: AL SİNYALİ (TARİH VE SAAT SÜTUNLU KAYIT SİSTEMİ EKLENDİ)
+# 🟢 2. BUTON: AL SİNYALİ
 if al_butonu:
-    with st.spinner("Aktif AL veren hisseler hesaplanıyor ve geçmişe kaydediliyor..."):
+    with st.spinner("Aktif AL veren hisseler canlı borsa verileriyle hesaplanıyor..."):
         try:
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
@@ -188,8 +183,6 @@ if al_butonu:
             w_sutun_verisi = df.iloc[:, 22].astype(str) 
             
             tablo_verisi_al = []
-            
-            # Anlık tarih ve saat bilgisini ayırıyoruz
             kayit_tarihi = datetime.datetime.now().strftime("%d.%m.%Y")
             kayit_saati = datetime.datetime.now().strftime("%H:%M:%S")
             
@@ -202,8 +195,8 @@ if al_butonu:
                     canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
                     
                     tablo_verisi_al.append({
-                        "Sorgulama_Tarihi": kayit_tarihi, # Yeni Sütun - Tarih
-                        "Sorgulama_Saati": kayit_saati,   # Yeni Sütun - Saat
+                        "Sorgulama_Tarihi": kayit_tarihi,
+                        "Sorgulama_Saati": kayit_saati,
                         "Hisse Kodu": hisse_ismi,
                         "Sinyal Durumu": "🟢 [AL]",
                         "Paylaştığınız Fiyat": f"{yüklenen_fiy:.2f} TL" if pd.notnull(yüklenen_fiy) else "Veri Yok",
@@ -216,7 +209,6 @@ if al_butonu:
                 result_df_al = pd.DataFrame(tablo_verisi_al)
                 st.dataframe(result_df_al, use_container_width=True, hide_index=True)
                 
-                # 💾 FARKLI BİR DOSYADA GEÇMİŞİ SÜTUN SÜTUN KAYDETME MEKANİZMASI
                 gecmis_dosya = "nurican_sinyal_gecmisi.csv"
                 if os.path.exists(gecmis_dosya):
                     eski_gecmis = pd.read_csv(gecmis_dosya)
@@ -224,15 +216,13 @@ if al_butonu:
                     yeni_gecmis.to_csv(gecmis_dosya, index=False)
                 else:
                     result_df_al.to_csv(gecmis_dosya, index=False)
-                st.caption("ℹ️ *Bu veriler tarih ve saat notuyla kalıcı sinyal geçmişi sütununa kaydedildi.*")
-                
             else:
                 st.warning("Aktif [AL] sinyali veren hisse bulunamadı.")
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
 # ==========================================
-# 💬 BTA SOHBET ODASI BÖLÜMÜ
+# 💬 3. BÖLÜM: BTA SOHBET ODASI
 # ==========================================
 st.markdown("---")
 st.subheader("💬 BTA SOHBET ODASI")
@@ -254,4 +244,8 @@ else:
     st.info("Henüz mesaj yazılmamış. İlk mesajı siz yazın! 👇")
 
 # ==========================================
-# ⚠️ SPK MEVZUATINA UYGUN YASAL UYARI KUTUSU
+# ⚠️ 4. BÖLÜM: YASAL UYARI KUTUSU (Eksiksiz Tam Metin)
+# ==========================================
+st.markdown("---")
+st.error("""
+⚠️ **YASAL UYARI (SPK Mevzuatı Uyarınca):**
