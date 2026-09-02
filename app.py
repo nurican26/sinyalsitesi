@@ -78,7 +78,6 @@ if yuklenen_dosya is not None:
     try:
         excel_obj = pd.ExcelFile(yuklenen_dosya)
         sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
-        # Excel'i en saf haliyle (başlıksız) okuyoruz ki koordinat hesabı şaşmasın
         df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=sheet, header=None)
         st.info("🔒 Güncel Excel dosyası güvenli bellek üzerinde işlendi. Dış erişime tamamen kapatıldı.")
     except Exception as e:
@@ -91,7 +90,6 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
     except Exception as e:
         st.error(f"Varsayılan Excel okunurken hata oluştu: {e}")
 
-# Tarayacağımız borsa kodları listesi
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM"]
 
 # ==========================================
@@ -111,26 +109,27 @@ with sol_taraf:
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
-            # Excel'in 1. satırından itibaren (0'dan başlayarak) tüm tablo taranır
             for i in range(len(df_kaynak)):
                 try:
-                    if df_kaynak.shape[1] > 20:
-                        u_hücre_degeri = str(df_kaynak.iloc[i, 20]).strip().upper() # U Sütunu
-                        hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()      # A Sütunu
+                    if df_kaynak.shape > 20:
+                        u_hücre_degeri = str(df_kaynak.iloc[i, 20]).strip().upper() 
+                        hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()      
                         
-                        # Satırda geçerli bir hisse adı veya sinyal hücresinde doğrudan hisse ismi geçiyorsa
                         hisse_temiz = None
                         for hisse in BORSA_HISSELERI:
                             if hisse in hisse_ham or hisse in u_hücre_degeri:
                                 hisse_temiz = hisse
                                 break
                         
+                        # 🎯 KRİTİK GÜNCELLEME: SONME hissesinin AL-SAT (Sarı buton) altında görünmesini tamamen engelliyoruz
+                        if hisse_temiz == "SONME":
+                            continue
+                            
                         if hisse_temiz and u_hücre_degeri and u_hücre_degeri != "NAN":
-                            # Sinyal hücresinde artı işareti, AL, SAT veya SONME kelimesi tetiklenirse
-                            if "+" in u_hücre_degeri or "AL" in u_hücre_degeri or "SAT" in u_hücre_degeri or "SONME" in u_hücre_degeri:
-                                excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
+                            if "+" in u_hücre_degeri or "AL" in u_hücre_degeri or "SAT" in u_hücre_degeri:
+                                excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
                                 
                                 ticker_kod = f"{hisse_temiz}.IS"
                                 hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -152,9 +151,9 @@ with sol_taraf:
             tablo_verisi_al = []
             for i in range(len(df_kaynak)):
                 try:
-                    if df_kaynak.shape[1] > 22:
-                        w_hücre_degeri = str(df_kaynak.iloc[i, 22]).strip().upper() # W Sütunu
-                        hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()      # A Sütunu
+                    if df_kaynak.shape > 22:
+                        w_hücre_degeri = str(df_kaynak.iloc[i, 22]).strip().upper() 
+                        hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()      
                         
                         hisse_temiz = None
                         for hisse in BORSA_HISSELERI:
@@ -163,10 +162,11 @@ with sol_taraf:
                                 break
                         
                         if hisse_temiz and w_hücre_degeri and w_hücre_degeri != "NAN":
+                            # 🎯 SÖNME sadece bu yeşil buton altında AL sinyali olarak tetiklenecek
                             if "AL" in w_hücre_degeri or "SONME" in w_hücre_degeri:
-                                excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
+                                excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
                                     
                                 ticker_kod = f"{hisse_temiz}.IS"
                                 hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -188,3 +188,6 @@ with sol_taraf:
     if st.session_state["ozel_takip_kutusu"]:
         st.markdown("---")
         st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
+        kutu_tablo = []
+        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+            try:
