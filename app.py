@@ -30,7 +30,7 @@ st.markdown(
 
 DEFAULT_EXCEL_PATH = "nurican.xls.xlsm"
 
-# Hafıza Başlatmaları
+# Hafıza Başlatmaları (Session State)
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state:
@@ -44,6 +44,7 @@ if "oda_sayisi" not in st.session_state:
 if "ziyaret_sayaci" not in st.session_state:
     st.session_state["ziyaret_sayaci"] = 0
 
+# Her sayfa yenilendiğinde ziyaret sayısını güvenli şekilde artırır
 st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ Sinyal Takip Merkezi")
@@ -52,7 +53,7 @@ st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 📂 Excel Dosya Yükleme
+# 📂 Excel Dosya Yükleme (GİZLİLİK KORUMALI - SADECE BELLEKTE İŞLENİR)
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Excel dosyasını seçin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 
@@ -60,7 +61,7 @@ df_kaynak = None
 if yuklenen_dosya is not None:
     try:
         df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=0, header=None)
-        st.info("🔒 Excel dosyası belleğe yüklendi.")
+        st.info("🔒 Excel dosyası sadece sizin oturum belleğinize yüklendi. Dış erişime tamamen kapalıdır.")
     except Exception as e:
         st.error(f"Dosya okuma hatası: {e}")
 elif os.path.exists(DEFAULT_EXCEL_PATH):
@@ -68,6 +69,8 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
         df_kaynak = pd.read_excel(DEFAULT_EXCEL_PATH, header=None)
     except:
         pass
+
+BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
 # ==========================================
 # 📊 YAN YANA PANEL DÜZENI
@@ -88,23 +91,20 @@ with sol_taraf:
         sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
             if sutun_sayisi > 20:
-                u_val = str(df_kaynak.iloc[i, 20]).strip().upper() # U Sütunu
+                u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
                 
-                # Geçersiz başlık veya boşlukları atla
                 if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                     continue
                 
-                # SÖNME ve ALKLC yeşil butona ayrıldığı için sarıdan muaf tutulur
                 if "SONME" in u_val or "ALKLC" in u_val:
                     continue
                     
                 try:
-                    # Hücrenin içindeki boşluklara göre ayırıp ilk kelimeyi string olarak alıyoruz
                     kelimeler = u_val.split()
                     if len(kelimeler) > 0:
                         ham_kelime = str(kelimeler[0])
                         hisse_adi = ham_kelime.replace("[AL]", "").replace("[SAT]", "").replace("+", "").replace("-", "").strip()
-                        hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi) # Sadece harfleri koru
+                        hisse_adi = re.sub(r'[^A-Z]', '', hisse_adi)
                         
                         if hisse_adi and len(hisse_adi) >= 3:
                             fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
@@ -130,7 +130,7 @@ with sol_taraf:
         sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
             if sutun_sayisi > 22:
-                w_val = str(df_kaynak.iloc[i, 22]).strip().upper() # W Sütunu
+                w_val = str(df_kaynak.iloc[i, 22]).strip().upper()
                 
                 if not w_val or w_val in ["NAN", "AL", ""]:
                     continue
@@ -185,12 +185,16 @@ with sag_taraf:
     st.subheader("💬 BTA Sohbet Odası")
     isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
     
+    # 👑 SADECE SİZİN GÖRECEĞİNİZ GİZLİ YÖNETİCİ SAYACI
     if isat.strip().lower() == "nurican":
-        st.markdown(f"### 🚪 Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi")
-        st.markdown(f"📊 **Ziyaret Sayısı:** `{st.session_state['ziyaret_sayaci']}`")
+        st.markdown("---")
+        st.markdown("### 👑 Yetkili Takip Paneli")
+        st.markdown(f"🚪 **Odadaki/Sitedeki Aktif Oturum Sayısı:** `{st.session_state['oda_sayisi']}`")
+        st.markdown(f"📊 **Toplam Sayfa Yenilenme / Giriş Sayısı:** `{st.session_state['ziyaret_sayaci']}`")
         if st.button("🗑️ Tüm Mesajları Temizle"):
             st.session_state["chat_history"] = []
             st.rerun()
+        st.markdown("---")
             
     mesaj = st.text_input("Mesajınızı yazın:")
     if st.button("Mesajı Gönder 🚀") and mesaj.strip():
@@ -200,10 +204,3 @@ with sag_taraf:
             st.rerun()
 
     st.markdown("<div style='background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto;'>", unsafe_allow_html=True)
-    for ch in reversed(st.session_state["chat_history"]):
-        st.markdown(ch, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ⭐ Yıldız Değerlendirme
-st.markdown("---")
-yildiz_skor = st.feedback("stars")
