@@ -54,6 +54,9 @@ if "ozel_takip_kutusu" not in st.session_state:
 if "kisitli_kullanicilar" not in st.session_state:
     st.session_state["kisitli_kullanicilar"] = set()
 
+if "oda_sayisi" not in st.session_state:
+    st.session_state["oda_sayisi"] = 1  # Varsayılan oda sayısı
+
 # ==========================================
 # 📈 PANEL ANA EKRANI
 # ==========================================
@@ -70,9 +73,9 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
+# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (Sadece Canlı Veri + Kar/Zarar)
 if al_sat_butonu:
-    with st.spinner("Excel verileri okunuyor..."):
+    with st.spinner("Excel okunuyor ve canlı veriler hesaplanıyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
@@ -118,16 +121,15 @@ if al_sat_butonu:
         else:
             st.error("Excel dosyası bulunamadı!")
 
-# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ & KUTUYA ANLIK FIYAT KAYDI
+# 🟢 2. ADIM: AL SİNYALİNİ FARKLI KUTUYA ANLIK FİYATIYLA KAYDETME
 if al_butonu:
-    with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
+    with st.spinner("AL sinyali veren hisseler kutuya kaydediliyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
             try:
                 excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
                 sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                 
-                tablo_verisi_al = []
                 for i in range(len(df)):
                     hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
                     excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
@@ -147,37 +149,23 @@ if al_butonu:
                         
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
-                            yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
-                            durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
                             
+                            # Sadece AL sinyaline gelen hisseleri farklı kutuya o anki fiyatıyla kaydeder
                             st.session_state["ozel_takip_kutusu"][hisse_temiz] = {
                                 "kayit_fiyati": canli_fiyat,
+                                "yuklenen_fiyat": yüklenen_fiy,
                                 "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")
                             }
-                            
-                            tablo_verisi_al.append({
-                                "Hisse Kodu": hisse_temiz,
-                                "Sinyal Durumu": f"{hisse_temiz} [AL]",
-                                "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL",
-                                "Anlık Canlı Fiyat": f"{canli_fiyat:.2f} TL",
-                                "Canlı Kar/Zarar Oranı": durum_str
-                            })
-                
-                if tablo_verisi_al:
-                    st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-                else:
-                    st.warning("W sütununda aktif [AL] sinyali bulunamadı.")
+                st.toast("🟢 [AL] Sinyalli hisseler aşağıdaki özel kutuya başarıyla kaydedildi!")
             except Exception as e:
                 st.error(f"Sinyal hesaplama hatası: {e}")
         else:
             st.error("Excel dosyası bulunamadı!")
 
-# ==========================================
-# 📦 ÖZEL AL SİNYALİ TAKİP KUTUSU
-# ==========================================
+# 📦 SADECE AL SİNYALİ GELEN HİSSELERİN KAYDEDİLDİĞİ FARKLI KUTU
 if st.session_state["ozel_takip_kutusu"]:
     st.markdown("---")
-    st.subheader("📥 Özel Kayıt Kutusu (Canlı Oranlı)")
+    st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
     
     kutu_tablo_verisi = []
     for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
@@ -192,10 +180,10 @@ if st.session_state["ozel_takip_kutusu"]:
             
             kutu_tablo_verisi.append({
                 "Hisse Kodu": hisse,
-                "Kutuya Kayıt Fiyatı": f"{eski_fiyat:.2f} TL",
-                "Anlık Canlı Fiyat": f"{guncel_canli:.2f} TL",
+                "Kayıt Anındaki Canlı Fiyat": f"{eski_fiyat:.2f} TL",
+                "Güncel Canlı Fiyat": f"{guncel_canli:.2f} TL",
                 "Anlık Kar/Zarar Oranı": durum_str,
-                "Kayıt Zamanı": bilgi["kayit_zamani"]
+                "Kayıt Tarihi": bilgi["kayit_zamani"]
             })
             
     if kutu_tablo_verisi:
@@ -205,14 +193,26 @@ if st.session_state["ozel_takip_kutusu"]:
             st.rerun()
 
 # ==========================================
-# 💬 3. BÖLÜM: BTA SOHBET ODASI
+# 💬 3. BÖLÜM: BTA SOHBET ODASI & YÖNETİM
 # ==========================================
 st.markdown("---")
 st.subheader("💬 BTA Sohbet Odası")
 
+# Sohbet Alanında Varsayılan İsim: BTA Sohbet
 isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
 
-# GÜVENLİ VE HİZALAMASI BOZULMAZ ADMİN PANELİ YAPISI
+# 🔒 Sadece 'Nurican' yazıldığında görünecek Oda sayısı ikonu ve Admin Yetkileri
 if isat.strip().lower() == "nurican":
-    with st.expander("⚙️ Yönetici Kontrolleri (Sadece Nurican Görebilir)", expanded=False):
-        engellenecek = st.text_input("Kısıtlanacak / Mesaj Engellenecek Kişi:")
+    st.info(f"📊 Aktif Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi Yapıldı.")
+    
+    with st.expander("⚙️ Nurican Yönetim ve Kısıtlama Paneli", expanded=True):
+        engellenecek = st.text_input("Kısıtlanacak / Odadan Atılacak Kullanıcı Adı:")
+        
+        col_adm1, col_adm2 = st.columns(2)
+        with col_adm1:
+            if st.button("❌ Kullanıcıyı Odadan At / Kısıtla"):
+                if engellenecek.strip():
+                    st.session_state["kisitli_kullanicilar"].add(engellenecek.strip())
+                    st.success(f"⚠️ {engellenecek} kullanıcısının mesaj yazma yetkisi kısıtlandı!")
+        with col_adm2:
+            if st.button("🔓 Kısıtlamaları Kaldır"):
