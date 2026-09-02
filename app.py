@@ -51,7 +51,6 @@ if "chat_history" not in st.session_state:
 # ==========================================
 def excel_makro_tetikle(buton_adi):
     """ Arka planda Excel'i açar, ilgili makro butonunu çalıştırır ve kaydeder """
-    # Eğer kod Streamlit Cloud (Linux) üzerinde çalışıyorsa win32com hata vermesin diye kontrol ekledik
     if os.name != 'nt':
         print(f"⚠️ Bulut ortamındasınız. Windows olmadığı için Excel Makrosu tetiklenemedi: {buton_adi}")
         return False
@@ -243,7 +242,7 @@ if al_sat_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# 🟢 AL SİNYAL GÖSTERİMİ (Hata düzeltilen kısım)
+# 🟢 AL SİNYAL GÖSTERİMİ
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         try:
@@ -258,3 +257,4 @@ if al_butonu:
                 
                 if "[AL]" in satir_metni:
                     yüklenen_fiy = saf_fiyat_al(excel_anlik_verisi)
+                    canli_fiy, canli_durum = canli_verileri_getir(satir_hisse_adi, yüklenen_fiy)
