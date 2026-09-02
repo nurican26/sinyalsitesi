@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -84,8 +85,9 @@ with sol_taraf:
     # 🟡 1. ADIM: SARI BUTON (SÖNME HARİÇ DİĞERLERİ)
     if al_sat_butonu and df_kaynak is not None:
         tablo_verisi = []
+        sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
-            if df_kaynak.shape > 20:
+            if sutun_sayisi > 20:
                 u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
                 hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
                 
@@ -99,7 +101,7 @@ with sol_taraf:
                     continue
                     
                 if hisse_temiz and u_val and u_val != "NAN" and ("+" in u_val or "AL" in u_val or "SAT" in u_val):
-                    fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape > 7 else "0"
+                    fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
                     yuklenen_fiy = float(sayilar) if sayilar else 0.0
                     
@@ -120,8 +122,9 @@ with sol_taraf:
     # 🟢 2. ADIM: YEŞİL BUTON (SADECE SÖNME)
     if al_butonu and df_kaynak is not None:
         tablo_verisi_al = []
+        sutun_sayisi = len(df_kaynak.columns)
         for i in range(len(df_kaynak)):
-            if df_kaynak.shape > 22:
+            if sutun_sayisi > 22:
                 w_val = str(df_kaynak.iloc[i, 22]).strip().upper()
                 hisse_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
                 
@@ -136,12 +139,8 @@ with sol_taraf:
                         hisse_data = yf.Ticker("SONME.IS").history(period="1d")
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
-                            
-                            # 🎯 DÜZELTME: SÖNME'nin yüklenen fiyatını tarayıcı yerine doğrudan canlı fiyata eşitliyoruz.
-                            # Excel'deki diğer satırların fiyatıyla karışmasını tamamen engeller.
                             yuklenen_fiy = canli_fiyat 
-                            
-                            yuzde_fark = 0.0  # Fiyatlar eşitlendiği için fark sıfırlanır
+                            yuzde_fark = 0.0  
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
                             
                             st.session_state["ozel_takip_kutusu"]["SONME"] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
