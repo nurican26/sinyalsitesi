@@ -60,7 +60,7 @@ st.title("⚡ Sinyal Takip Merkezi")
 st.markdown("---")
 st.subheader("Sinyal Üretim Merkezi")
 
-EXCEL_FILE_PATH = "nurcan.xls" 
+EXCEL_FILE_PATH = "nurican.xls" 
 
 col1, col2 = st.columns(2)
 with col1:
