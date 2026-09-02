@@ -101,9 +101,13 @@ with sol_taraf:
                     continue
                     
                 if hisse_temiz and u_val and u_val != "NAN" and ("+" in u_val or "AL" in u_val or "SAT" in u_val):
-                    fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                    yuklenen_fiy = float(sayilar) if sayilar else 0.0
+                    # 🎯 SARI BUTON ÇÖKME KORUMASI: Fiyat okuma hatası tamamen try-except içine alındı
+                    try:
+                        fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
+                        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
+                        yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                    except:
+                        yuklenen_fiy = 0.0
                     
                     try:
                         hisse_data = yf.Ticker(f"{hisse_temiz}.IS").history(period="1d")
@@ -117,7 +121,7 @@ with sol_taraf:
         if tablo_verisi:
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
         else:
-            st.warning("Aktif veri bulunamadı.")
+            st.warning("Aktif AL SAT verisi bulunamadı.")
 
     # 🟢 2. ADIM: YEŞİL BUTON (SADECE SÖNME)
     if al_butonu and df_kaynak is not None:
