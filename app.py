@@ -2,16 +2,14 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import pytz
 import yfinance as yf
 
 # Sayfa Tasarım Ayarları
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
-# Türkiye Saat Dilimi Ayarı (Sunucuda saatin şaşmaması için)
-turkey_tz = pytz.timezone('Europe/Istanbul')
-su_an_tr = datetime.datetime.now(turkey_tz)
-guncel_tarih_saat = su_an_tr.strftime("%d.%m.%Y - %H:%M:%S")
+# Sabit Zaman Ayarı (Hata veren pytz kütüphanesi kaldırıldı)
+su_an = datetime.datetime.now()
+guncel_tarih_saat = su_an.strftime("%d.%m.%Y - %H:%M:%S")
 
 # Sohbet geçmişi için kalıcı hafıza oluşturuyoruz
 if "chat_history" not in st.session_state:
@@ -20,35 +18,35 @@ if "chat_history" not in st.session_state:
 # ==========================================
 # 📊 YFINANCE CANLI FIYAT VE KAR/ZARAR FONKSİYONU
 # ==========================================
-def canli_durum_hesapla(hisse_adi, giris_fiyati):
+def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
     """
-    Excel'den gelen hisse adını alıp Yahoo Finance üzerinden canlı fiyatını çeker
-    ve sinyal fiyatına göre yüzde kaç kazandırdığını hesaplar.
+    Excel'deki yüklenen fiyat ile internetteki canlı fiyatı karşılaştırır.
     """
     try:
-        # Hisse adını temizle ve Borsa İstanbul formatına çevir (Örn: THYAO -> THYAO.IS)
         temiz_hisse = str(hisse_adi).strip().upper()
         if not temiz_hisse.endswith(".IS"):
             ticker_kod = f"{temiz_hisse}.IS"
         else:
             ticker_kod = temiz_hisse
 
-        # İnternetten anlık hisse verisini çek
+        # İnternetten anlık canlı borsa fiyatını çekiyoruz
         hisse = yf.Ticker(ticker_kod)
-        # En son kapanış veya anlık fiyatı al
         df_live = hisse.history(period="1d")
+        
         if not df_live.empty:
-            anlik_fiyat = df_live['Close'].iloc[-1]
-            # Kar / Zarar Yüzdesi Hesaplama
-            yuzde_fark = ((anlik_fiyat - giris_fiyati) / giris_fiyati) * 100
+            canli_fiyat = df_live['Close'].iloc[-1]
             
-            # Görsel renkli formatlama
-            if yuzde_fark >= 0:
-                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandırdı"
+            # Eğer yüklediğiniz fiyat geçerliyse yüzde hesapla
+            if yuklenen_fiyat > 0:
+                yuzde_fark = ((canli_fiyat - yuklenen_fiyat) / yuklenen_fiyat) * 100
+                if yuzde_fark >= 0:
+                    durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
+                else:
+                    durum_str = f"🔴 %{abs(yuzde_fark):.2f} İçeride"
             else:
-                durum_str = f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                durum_str = " Hesaplamaya Uygun Değil"
                 
-            return f"{anlik_fiyat:.2f} TL", durum_str
+            return f"{canli_fiyat:.2f} TL", durum_str
         else:
             return "Veri Yok", "⚠️ Canlı Fiyat Çekilemedi"
     except:
@@ -69,8 +67,7 @@ with col_info1:
 with col_info2:
     st.metric(label="📊 Toplam Giriş Sayısı", value="1")
 with col_info3:
-    # Sayfa her yenilendiğinde Türkiye saatiyle tam zamanı gösterir
-    st.metric(label="🕒 Son Güncelleme", value=su_an_tr.strftime("%H:%M:%S"))
+    st.metric(label="🕒 Son Güncelleme", value=su_an.strftime("%H:%M:%S"))
 
 # 💡 bta analiz Özel Güncelleme Notu (Tam istediğiniz formatta)
 st.info(f"💡 Bu sayfa **{guncel_tarih_saat}** tarihinde **bta analiz** tarafından güncellenmiştir.")
@@ -86,44 +83,52 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 1. BUTON: AL SAT SİNYALİ (CANLI KAR/ZARAR ENTEGRELİ)
+# 🟡 1. BUTON: AL SAT SİNYALİ
 if al_sat_butonu:
-    with st.spinner("Excel verileri okunuyor ve Yahoo Finance üzerinden canlı kâr/zarar hesaplanıyor..."):
+    with st.spinner("Excel verileri okunuyor ve canlı borsa takibi yapılıyor..."):
         try:
             df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
             df.columns = df.columns.str.strip()
             
-            # Excel'inizdeki 1. sütun Hisse adı, 20. sütun (index 19) ise girdiğiniz sinyal fiyatı
-            hisse_verisi = df.iloc[:, 0]
-            al_sat_verisi = pd.to_numeric(df.iloc[:, 19], errors='coerce')
+            # Sütunları görseldeki düzene göre tam indeksleriyle seçiyoruz:
+            hisse_verisi = df.iloc[:, 0]          # A Sütunu - Hisse Adı
+            excel_anlik_verisi = df.iloc[:, 7]    # H Sütunu - Excel'e yüklediğiniz andaki fiyat
+            bta_verisi = pd.to_numeric(df.iloc[:, 16], errors='coerce') # Q Sütunu - BTA Değeri
             
-            temp_df = pd.DataFrame({"Hisse": hisse_verisi, "Sinyal_Fiyati": al_sat_verisi})
-            # Girdiğiniz fiyat 0'dan büyük olan geçerli hisseleri filtrele
-            df_filtered = temp_df[temp_df["Sinyal_Fiyati"] > 0.01].copy()
+            temp_df = pd.DataFrame({
+                "Hisse": hisse_verisi, 
+                "Yuklenen_Fiyat": pd.to_numeric(excel_anlik_verisi, errors='coerce'), 
+                "BTA_Deger": bta_verisi
+            })
+            
+            # BTA değeri 0.01 ve üzeri olan aktif sinyalleri filtrele
+            df_filtered = temp_df[temp_df["BTA_Deger"] >= 0.01].copy()
             
             if not df_filtered.empty:
+                # Büyükten küçüğe sırala
+                df_sorted = df_filtered.sort_values(by="BTA_Deger", ascending=False)
                 tablo_verisi = []
                 
-                # Her bir hisse için döngü başlatıp internetten canlı fiyat topluyoruz
-                for idx, row in df_filtered.iterrows():
+                for idx, row in df_sorted.iterrows():
                     hisse_ismi = row['Hisse']
-                    giris_fiy = row['Sinyal_Fiyati']
+                    yüklenen_fiy = row['Yuklenen_Fiyat']
                     
-                    # Canlı fiyat ve kar oranını yfinance fonksiyonundan çek
-                    anlik_fiy, canli_durum = canli_durum_hesapla(hisse_ismi, giris_fiy)
+                    # İnternetten anlık canlı fiyatı ve yüzdeyi fonksiyonla çek
+                    canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
                     
                     tablo_verisi.append({
                         "Hisse Kodu": hisse_ismi,
-                        "Sinyal Fiyatı (Giriş)": f"{giris_fiy:.2f} TL",
-                        "Anlık Canlı Fiyat": anlik_fiy,
-                        "Canlı Durum / Değişim": canli_durum
+                        "BTA Sinyal Skoru": f"{row['BTA_Deger']:.2f}",
+                        "Yüklediğiniz Fiyat": f"{yüklenen_fiy:.2f} TL" if pd.notnull(yüklenen_fiy) else "Veri Yok",
+                        "Anlık Canlı Fiyat": canli_fiy,
+                        "Canlı Kar/Zarar Oranı": canli_durum
                     })
                     
-                st.success("AL SAT Sinyalleri ve Canlı Kar/Zarar Durumları Listelendi!")
+                st.success("Sinyaller Büyükten Küçüğe Listelendi ve Canlı Verilerle Eşleştirildi!")
                 result_df = pd.DataFrame(tablo_verisi)
                 st.dataframe(result_df, use_container_width=True, hide_index=True)
             else:
-                st.warning("Geçerli sinyal fiyatı içeren hisse bulunamadı.")
+                st.warning("Pozitif BTA sinyali bulunamadı.")
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
@@ -132,6 +137,7 @@ if al_butonu:
     with st.spinner("Veriler işleniyor..."):
         try:
             df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
+            # W Sütunu (Index 22) [AL] durumunu kontrol eder
             w_sutun_verisi = df.iloc[:, 22].astype(str)
             aktif_aller = w_sutun_verisi[w_sutun_verisi.str.contains(r"\[AL\]", na=False)].tolist()
             
@@ -155,7 +161,7 @@ yeni_mesaj = st.text_input("Mesajınızı yazın:", placeholder="Örn: Hisseler 
 
 if st.button("Mesajı Gönder 🚀", use_container_width=True):
     if yeni_mesaj.strip() != "":
-        su_an_mesaj = datetime.datetime.now(turkey_tz).strftime("%H:%M")
+        su_an_mesaj = datetime.datetime.now().strftime("%H:%M")
         st.session_state["chat_history"].append(f"[{su_an_mesaj}] 👤 {sohbet_adi}: {yeni_mesaj}")
         st.rerun()
 
