@@ -78,7 +78,6 @@ if yuklenen_dosya is not None:
     try:
         excel_obj = pd.ExcelFile(yuklenen_dosya)
         sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names
-        # pandas başlık satırlarını ham veri kaybı olmaması için header=None ile okuyoruz
         df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=sheet, header=None)
         st.info("🔒 Güncel Excel dosyası güvenli bellek üzerinde işlendi. Dış erişime tamamen kapatıldı.")
     except Exception as e:
@@ -112,15 +111,14 @@ with sol_taraf:
             if df_kaynak is not None:
                 try:
                     tablo_verisi = []
-                    # u3 hücresinden (yani Excel'de 3. satır, Python indeksinde 2) başladığı için döngü 2'den başlar
+                    # U3'ten başladığı için döngü Python indeksinde 2'den başlar
                     for i in range(2, len(df_kaynak)):
                         if df_kaynak.shape[1] <= 20:
                             continue
                             
-                        u_hücre_degeri = str(df_kaynak.iloc[i, 20]).strip().upper() # U sütunu
+                        u_hücre_degeri = str(df_kaynak.iloc[i, 20]).strip().upper()
                         satir_metni = " ".join([str(val).strip().upper() for val in df_kaynak.iloc[i].values])
                         
-                        # Satırda "ANA" kelimesi geçiyorsa hatalı eşleşmeleri engellemek için atla
                         if "ANA" in u_hücre_degeri:
                             continue
                             
@@ -133,12 +131,11 @@ with sol_taraf:
                         if not hisse_temiz:
                             continue
                             
-                        # Eğer U sütunundaki değer boş değilse veya + işareti/AL-SAT ibaresi içeriyorsa sinyal kabul edilir
                         if u_hücre_degeri and u_hücre_degeri != "NAN" and ("+" in u_hücre_degeri or "AL" in u_hücre_degeri or "SAT" in u_hücre_degeri or "SONME" in u_hücre_degeri):
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                             
@@ -164,12 +161,12 @@ with sol_taraf:
             if df_kaynak is not None:
                 try:
                     tablo_verisi_al = []
-                    # w4 hücresinden (yani Excel'de 4. satır, Python indeksinde 3) başladığı için döngü 3'den başlar
+                    # W4'ten başladığı için döngü Python indeksinde 3'ten başlar
                     for i in range(3, len(df_kaynak)):
                         if df_kaynak.shape[1] <= 22:
                             continue
                             
-                        w_hücre_degeri = str(df_kaynak.iloc[i, 22]).strip().upper() # W sütunu
+                        w_hücre_degeri = str(df_kaynak.iloc[i, 22]).strip().upper()
                         satir_metni = " ".join([str(val).strip().upper() for val in df_kaynak.iloc[i].values])
                         
                         if "ANA" in w_hücre_degeri:
@@ -184,15 +181,18 @@ with sol_taraf:
                         if not hisse_temiz:
                             continue
                         
-                        # W sütunundaki değer boş değilse veya net biçimde AL sinyali/SÖNME ifadesi taşıyorsa
                         if w_hücre_degeri and w_hücre_degeri != "NAN" and ("AL" in w_hücre_degeri or "SONME" in w_hücre_degeri):
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                                 
                             ticker_kod = f"{hisse_temiz}.IS"
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
                             if not hisse_data.empty:
+                                canli_fiyat = hisse_data['Close'].iloc[-1]
+                                yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
+                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                                st.session_state["ozel_takip_kutusu"][hisse_temiz] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")}
