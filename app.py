@@ -90,7 +90,7 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
     except Exception as e:
         st.error(f"Varsayılan Excel okunurken hata oluştu: {e}")
 
-# Borsa İstanbul Popüler Hisse Kodları Listesi (Genişletilebilir)
+# Borsa İstanbul Popüler Hisse Kodları Listesi
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM"]
 
 # ==========================================
@@ -113,11 +113,9 @@ with sol_taraf:
                 try:
                     tablo_verisi = []
                     for i in range(len(df_kaynak)):
-                        # Satırdaki tüm hücre metinlerini birleştiriyoruz
                         satir_degerleri = [str(val).strip().upper() for val in df_kaynak.iloc[i].values]
                         satir_metni_bütün = " ".join(satir_degerleri)
                         
-                        # Satırda kayıtlı borsa hissesi var mı diye bakıyoruz
                         hisse_temiz = None
                         for hisse in BORSA_HISSELERI:
                             if hisse in satir_metni_bütün:
@@ -127,13 +125,12 @@ with sol_taraf:
                         if not hisse_temiz:
                             continue
                             
-                        # Anlık fiyat verisini (7. indeksteki sütundan) çekiyoruz
                         excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
                         
-                        # Eğer satırda tetikleyici bir sinyal (+ veya AL veya SAT veya SONME) varsa ekle
                         if "+" in satir_metni_bütün or "AL" in satir_metni_bütün or "SAT" in satir_metni_bütün or "SONME" in satir_metni_bütün:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                            # 🔄 DÜZELTME: Güvenli liste kontrolü (Liste boşsa hata vermez, 0.0 kabul eder)
+                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -172,10 +169,10 @@ with sol_taraf:
                             
                         excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
                         
-                        # Satırda net bir şekilde AL sinyali veya SONME durumu geçiyorsa
                         if "[AL]" in satir_metni_bütün or "AL" in satir_metni_bütün or "SONME" in satir_metni_bütün:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                            # 🔄 DÜZELTME: Güvenli liste kontrolü (Liste boşsa hata vermez, 0.0 kabul eder)
+                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
                             hisse_data = yf.Ticker(ticker_kod).history(period="1d")
@@ -191,3 +188,9 @@ with sol_taraf:
                         st.warning("Filtreye uygun aktif [AL] sinyali bulunamadı.")
                 except Exception as e:
                     st.error(f"Hata: {e}")
+
+    # 📦 SADECE AL SİNYALİ GELEN HİSSELERİN TAKİP KUTUSU
+    if st.session_state["ozel_takip_kutusu"]:
+        st.markdown("---")
+        st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
+        kutu_tablo = []
