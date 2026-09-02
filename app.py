@@ -37,16 +37,23 @@ if "ozel_takip_kutusu" not in st.session_state:
     st.session_state["ozel_takip_kutusu"] = {}
 if "kisitli_liste" not in st.session_state:
     st.session_state["kisitli_liste"] = []
+    
+# 🛡️ OTOMATİK KÜFÜR VE ARGO FİLTRESİ
 if "engellenen_kelimeler" not in st.session_state:
-    st.session_state["engellenen_kelimeler"] = ["salak", "aptal", "küfür1", "küfür2"]
+    st.session_state["engellenen_kelimeler"] = [
+        "salak", "aptal", "gerizekali", "manyak", "kufur", "argo", "piç", "oç", 
+        "sik", "amk", "aq", "orospu", "kahpe", "it", "kopek", "şerefsiz", "yavşak",
+        "lan", "pust", "gavat", "mal", "hıyar", "göt"
+    ]
+    
 if "oda_sayisi" not in st.session_state:
     st.session_state["oda_sayisi"] = 1
 if "ziyaret_sayaci" not in st.session_state:
     st.session_state["ziyaret_sayaci"] = 0
-if "topham_oy_sayisi" not in st.session_state:
-    st.session_state["topham_oy_sayisi"] = 0
-if "topham_yildiz_puani" not in st.session_state:
-    st.session_state["topham_yildiz_puani"] = 0
+if "toplam_oy_sayisi" not in st.session_state:
+    st.session_state["toplam_oy_sayisi"] = 0
+if "toplam_yildiz_puani" not in st.session_state:
+    st.session_state["toplam_yildiz_puani"] = 0
 
 st.session_state["ziyaret_sayaci"] += 1
 
@@ -55,11 +62,12 @@ st.title("⚡ Sinyal Takip Merkezi")
 # ==========================================
 # 📊 HERKESİN GÖRECEĞİ BEĞENİ VE POPÜLARİTE VİTRİNİ
 # ==========================================
-ortalama_puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
+# Harf hatası tamamen düzeltildi (topham -> toplam yapıldı)
+ortalama_puan = st.session_state["toplam_yildiz_puani"] / st.session_state["toplam_oy_sayisi"] if st.session_state["toplam_oy_sayisi"] > 0 else 0.0
 
 col_vitrin1, col_vitrin2 = st.columns(2)
 with col_vitrin1:
-    st.metric(label="🔥 Toplam Panel Beğenisi (Oy)", value=f"{st.session_state['topham_oy_sayisi']} Kişi")
+    st.metric(label="🔥 Toplam Panel Beğenisi (Oy)", value=f"{st.session_state['toplam_oy_sayisi']} Kişi")
 with col_vitrin2:
     st.metric(label="⭐ Topluluk Puan Ortalaması", value=f"{ortalama_puan:.2f} / 5.0")
 
@@ -205,10 +213,3 @@ with sol_taraf:
                 st.rerun()
 
 with sag_taraf:
-    # ⭐ YILLDIZ OYLAMA ALANI
-    st.markdown("### ✨ Paneli Beğendiniz mi?")
-    st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
-    yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
-
-    if yildiz_skor is not None:
-        gercek_puan = yildiz_skor + 1
