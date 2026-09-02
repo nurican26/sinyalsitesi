@@ -124,7 +124,7 @@ with st.spinner("Anlık borsa fiyatları çekiliyor..."):
     if canli_borsa_listesi:
         st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
     else:
-        st.error("Borsa canlı verileri şu anda çekilemedi. Lütfen requirements.txt dosyasını güncelleyin.")
+        st.error("Borsa canlı verileri şu anda çekilemedi.")
 
 st.divider()
 
@@ -175,7 +175,7 @@ if al_sat_butonu and df_kaynak is not None:
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
                             if yuklenen_fiy == 0.0:
-                                yuklenen_fiy = canli_fiyat
+                                    yuklenen_fiy = canli_fiyat
                                 
                             yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
                             durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
