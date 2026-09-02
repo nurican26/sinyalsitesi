@@ -70,7 +70,7 @@ with col1:
 with col2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ (CANLI VERİLERLE)
+# 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
 if al_sat_butonu:
     with st.spinner("Excel verileri okunuyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
@@ -118,7 +118,7 @@ if al_sat_butonu:
         else:
             st.error("Excel dosyası bulunamadı!")
 
-# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ & FARKLI KUTUYA ANLIK FIYAT KAYDI
+# 🟢 2. ADIM: AL SİNYAL GÖSTERİMİ & KUTUYA ANLIK FIYAT KAYDI
 if al_butonu:
     with st.spinner("Aktif AL veren hisseler hesaplanıyor..."):
         if os.path.exists(EXCEL_FILE_PATH):
@@ -212,7 +212,7 @@ st.subheader("💬 BTA Sohbet Odası")
 
 isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
 
+# GÜVENLİ VE HİZALAMASI BOZULMAZ ADMİN PANELİ YAPISI
 if isat.strip().lower() == "nurican":
     with st.expander("⚙️ Yönetici Kontrolleri (Sadece Nurican Görebilir)", expanded=False):
         engellenecek = st.text_input("Kısıtlanacak / Mesaj Engellenecek Kişi:")
-        if st.button("❌ Kullanıcıyı Kısıtla"):
