@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -135,7 +134,7 @@ with sol_taraf:
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                             
@@ -184,7 +183,7 @@ with sol_taraf:
                             try:
                                 excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if df_kaynak.shape[1] > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                                yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             except:
                                 yüklenen_fiy = 0.0
                                 
@@ -194,4 +193,8 @@ with sol_taraf:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
                                 yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                                st.session_state["ozel_takip_kutusu"][hisse_temiz] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")}
+                                # 🎯 SÖZDİZİMİ (SYNTAX) HATASI VEREN SATIR TAMAMEN DÜZELTİLDİ:
+                                st.session_state["ozel_takip_kutusu"][hisse_temiz] = {
+                                    "kayit_fiyati": canli_fiyat, 
+                                    "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M")
+                                }
