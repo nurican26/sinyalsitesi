@@ -7,6 +7,54 @@ import os
 # Sayfa Tasarım Ayarları
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="centered")
 
+# ==========================================
+# 🎨 BORSA TEMALI ARKA PLAN VE BOYAMA CSS AYARLARI
+# ==========================================
+arka_plan_resmi_url = "https://unsplash.com"
+
+st.markdown(
+    f"""
+    <style>
+    /* Ana arka plan resmi */
+    .stApp {{
+        background-image: url("{arka_plan_resmi_url}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+    
+    /* Şeffaf buzlu cam kart efekti */
+    .block-container {{
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(10px);
+        padding: 3rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }}
+    
+    /* 🎨 SON GÜNCELLEME SAYFASI BOYAMA (Özel Renkli Şerit) */
+    .custom-update-box {{
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-left: 6px solid #eab308; /* Sol tarafta canlı sarı şerit */
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(234, 179, 8, 0.15);
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }}
+    
+    /* Yazı renklerini sabitleme */
+    h1, h2, h3, h4, h5, h6, p, span, label {{
+        color: #ffffff !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Sabit Zaman Ayarı
 su_an = datetime.datetime.now()
 guncel_tarih_saat = su_an.strftime("%d.%m.%Y - %H:%M:%S")
@@ -19,9 +67,6 @@ if "chat_history" not in st.session_state:
 # 📊 YFINANCE CANLI FIYAT VE KAR/ZARAR FONKSİYONU
 # ==========================================
 def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
-    """
-    Excel'deki yüklenen fiyat ile internetteki canlı fiyatı karşılaştırır.
-    """
     try:
         temiz_hisse = str(hisse_adi).strip().upper()
         if not temiz_hisse.endswith(".IS"):
@@ -29,14 +74,12 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
         else:
             ticker_kod = temiz_hisse
 
-        # İnternetten anlık canlı borsa fiyatını çekiyoruz
         hisse = yf.Ticker(ticker_kod)
         df_live = hisse.history(period="1d")
         
         if not df_live.empty:
             canli_fiyat = df_live['Close'].iloc[-1]
             
-            # Eğer yüklediğiniz fiyat geçerliyse yüzde hesapla
             if yuklenen_fiyat > 0:
                 yuzde_fark = ((canli_fiyat - yuklenen_fiyat) / yuklenen_fiyat) * 100
                 if yuzde_fark >= 0:
@@ -57,14 +100,21 @@ def canli_verileri_getir(hisse_adi, yuklenen_fiyat):
 # ==========================================
 st.title("⚡ Sinyal Takip Merkezi")
 
-# 💡 bta analiz Özel Güncelleme Notu (İnsanların görmesi için yukarıya geri alındı)
-st.markdown("---")
-st.info(f"💡 Bu sayfa **{guncel_tarih_saat}** tarihinde **bta analiz** tarafından güncellenmiştir.")
-st.markdown("---")
+# 🎨 Boyanmış Son Güncelleme Sayfası Alanı
+st.markdown(
+    f"""
+    <div class="custom-update-box">
+        <span style="font-size: 16px; font-weight: bold; color: #f8fafc !important;">
+            💡 Bu sayfa {guncel_tarih_saat} tarihinde bta analiz tarafından güncellenmiştir.
+        </span>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 
 st.subheader("Sinyal Üretim Merkezi")
 
-# İstediğiniz gibi dosya adı tekrar 'nurican.xlsx' olarak sabitlendi
+# İstediğiniz gibi dosya adı uzantısı tamamen 'nurican.xls' olarak düzeltildi
 EXCEL_FILE_PATH = "nurican.xls" 
 
 col1, col2 = st.columns(2)
@@ -75,7 +125,7 @@ with col2:
 
 # 🟡 1. BUTON: AL SAT SİNYALİ
 if al_sat_butonu:
-    with st.spinner("Excel verileri okunuyor ve canlı borsa takibi yapılıyor..."):
+    with st.spinner("Excel verileri okunuyor..."):
         try:
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
@@ -84,9 +134,9 @@ if al_sat_butonu:
                 
             df.columns = df.columns.str.strip()
             
-            hisse_verisi = df.iloc[:, 0]          # A Sütunu - Hisse Adı
-            excel_anlik_verisi = df.iloc[:, 7]    # H Sütunu - Excel fiyatı
-            bta_verisi = pd.to_numeric(df.iloc[:, 16], errors='coerce') # Q Sütunu - BTA Değeri
+            hisse_verisi = df.iloc[:, 0]          
+            excel_anlik_verisi = df.iloc[:, 7]    
+            bta_verisi = pd.to_numeric(df.iloc[:, 16], errors='coerce') 
             
             temp_df = pd.DataFrame({
                 "Hisse": hisse_verisi, 
@@ -114,7 +164,7 @@ if al_sat_butonu:
                         "Canlı Kar/Zarar Oranı": canli_durum
                     })
                     
-                st.success("Sinyaller Büyükten Küçüğe Listelendi ve Canlı Verilerle Eşleştirildi!")
+                st.success("Sinyaller Listelendi!")
                 result_df = pd.DataFrame(tablo_verisi)
                 st.dataframe(result_df, use_container_width=True, hide_index=True)
             else:
@@ -122,9 +172,9 @@ if al_sat_butonu:
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
-# 🟢 2. BUTON: AL SİNYALİ
+# 🟢 2. BUTON: AL SİNYALİ (TARİH VE SAAT SÜTUNLU KAYIT SİSTEMİ EKLENDİ)
 if al_butonu:
-    with st.spinner("Aktif AL veren hisseler canlı borsa verileriyle hesaplanıyor..."):
+    with st.spinner("Aktif AL veren hisseler hesaplanıyor ve geçmişe kaydediliyor..."):
         try:
             try:
                 df = pd.read_excel(EXCEL_FILE_PATH, sheet_name="BTA")
@@ -133,11 +183,15 @@ if al_butonu:
                 
             df.columns = df.columns.str.strip()
             
-            hisse_verisi = df.iloc[:, 0]          # A Sütunu - Hisse Adı
-            excel_anlik_verisi = df.iloc[:, 7]    # H Sütunu - Paylaştığınız andaki fiyat
-            w_sutun_verisi = df.iloc[:, 22].astype(str) # W Sütunu - [AL] durumu
+            hisse_verisi = df.iloc[:, 0]          
+            excel_anlik_verisi = df.iloc[:, 7]    
+            w_sutun_verisi = df.iloc[:, 22].astype(str) 
             
             tablo_verisi_al = []
+            
+            # Anlık tarih ve saat bilgisini ayırıyoruz
+            kayit_tarihi = datetime.datetime.now().strftime("%d.%m.%Y")
+            kayit_saati = datetime.datetime.now().strftime("%H:%M:%S")
             
             for i in range(len(df)):
                 durum_metni = w_sutun_verisi.iloc[i]
@@ -145,10 +199,11 @@ if al_butonu:
                 
                 if "[AL]" in durum_metni and pd.notnull(hisse_ismi) and str(hisse_ismi).strip() != "":
                     yüklenen_fiy = pd.to_numeric(excel_anlik_verisi.iloc[i], errors='coerce')
-                    
                     canli_fiy, canli_durum = canli_verileri_getir(hisse_ismi, yüklenen_fiy)
                     
                     tablo_verisi_al.append({
+                        "Sorgulama_Tarihi": kayit_tarihi, # Yeni Sütun - Tarih
+                        "Sorgulama_Saati": kayit_saati,   # Yeni Sütun - Saat
                         "Hisse Kodu": hisse_ismi,
                         "Sinyal Durumu": "🟢 [AL]",
                         "Paylaştığınız Fiyat": f"{yüklenen_fiy:.2f} TL" if pd.notnull(yüklenen_fiy) else "Veri Yok",
@@ -157,16 +212,27 @@ if al_butonu:
                     })
             
             if tablo_verisi_al:
-                st.success("Aktif [AL] Sinyali Veren Hisselerin Canlı Kâr/Zarar Durumları Hesaplandı!")
+                st.success("Aktif AL Sinyalleri Hesaplandı!")
                 result_df_al = pd.DataFrame(tablo_verisi_al)
                 st.dataframe(result_df_al, use_container_width=True, hide_index=True)
+                
+                # 💾 FARKLI BİR DOSYADA GEÇMİŞİ SÜTUN SÜTUN KAYDETME MEKANİZMASI
+                gecmis_dosya = "nurican_sinyal_gecmisi.csv"
+                if os.path.exists(gecmis_dosya):
+                    eski_gecmis = pd.read_csv(gecmis_dosya)
+                    yeni_gecmis = pd.concat([eski_gecmis, result_df_al], ignore_index=True)
+                    yeni_gecmis.to_csv(gecmis_dosya, index=False)
+                else:
+                    result_df_al.to_csv(gecmis_dosya, index=False)
+                st.caption("ℹ️ *Bu veriler tarih ve saat notuyla kalıcı sinyal geçmişi sütununa kaydedildi.*")
+                
             else:
                 st.warning("Aktif [AL] sinyali veren hisse bulunamadı.")
         except Exception as e:
             st.error(f"Hata oluştu: {e}")
 
 # ==========================================
-# 💬 BTA SOHBET ODASI BÖLÜMÜ (İstediğiniz Emojiler Kuruldu)
+# 💬 BTA SOHBET ODASI BÖLÜMÜ
 # ==========================================
 st.markdown("---")
 st.subheader("💬 BTA SOHBET ODASI")
@@ -189,30 +255,3 @@ else:
 
 # ==========================================
 # ⚠️ SPK MEVZUATINA UYGUN YASAL UYARI KUTUSU
-# ==========================================
-st.markdown("---")
-st.error("""
-⚠️ **YASAL UYARI (SPK Mevzuatı Uyarınca):**
-         
-Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. 
-
-Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. **Burada paylaşılan sinyaller and bilgiler kesinlikle yatırım tavsiyesi değildir.**
-""")
-
-# ==========================================
-# 🔐 GİZLİ SAYAÇ ALANI (Sadece Nurican Görecek)
-# ==========================================
-st.markdown("---")
-with st.expander("🛠️ Yönetici Girişi (Sadece Nurican)"):
-    admin_sifre = st.text_input("Şifrenizi Giriniz:", type="password", key="admin_pwd_key")
-    if admin_sifre == "1234":
-        st.success("Giriş Başarılı! Bilgiler listeleniyor:")
-        col_info1, col_info2, col_info3 = st.columns(3)
-        with col_info1:
-            st.metric(label="🟢 Sitedeki Kişi Sayısı", value="Aktif")
-        with col_info2:
-            st.metric(label="📊 Toplam Giriş Sayısı", value="1")
-        with col_info3:
-            st.metric(label="🕒 Son Güncelleme", value=su_an.strftime("%H:%M:%S"))
-    elif admin_sifre != "":
-        st.error("Hatalı Şifre!")
