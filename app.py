@@ -9,7 +9,7 @@ import re
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="wide")
 
 # ==========================================
-# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
+# 🎨 BORSA TEMALY ARKA PLAN VE CSS AYARLARI
 # ==========================================
 arka_plan_resmi_url = "https://unsplash.com"
 
@@ -43,7 +43,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-EXCEL_FILE_PATH = "nurican.xls.xlsm"
+DEFAULT_EXCEL_PATH = "nurican.xls.xlsm"
 
 # Hafıza Başlatmaları (Session State)
 if "chat_history" not in st.session_state:
@@ -52,11 +52,17 @@ if "ozel_takip_kutusu" not in st.session_state:
     st.session_state["ozel_takip_kutusu"] = {}
 if "kisitli_liste" not in st.session_state:
     st.session_state["kisitli_liste"] = []
+if "engellenen_kelimeler" not in st.session_state:
+    st.session_state["engellenen_kelimeler"] = ["salak", "aptal", "küfür1", "küfür2"]
 if "oda_sayisi" not in st.session_state:
     st.session_state["oda_sayisi"] = 1
+if "ziyaret_sayaci" not in st.session_state:
+    st.session_state["ziyaret_sayaci"] = 0
+if "yildiz_skorlari" not in st.session_state:
+    st.session_state["yildiz_skorlari"] = []
 
-# Yasaklı Kelimeler Filtresi
-YASAKLI_KELIMELER = ["salak", "aptal", "küfür1", "küfür2"]
+# Her sayfa yenilendiğinde ziyaretçi sayısını 1 artırır
+st.session_state["ziyaret_sayaci"] += 1
 
 # Başlık ve Zaman Bilgisi
 st.title("⚡ Sinyal Takip Merkezi")
@@ -65,6 +71,30 @@ st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 # SPK Yasal Uyarı Şeridi
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Burada yer alan yatırım bilgi ve yorumları yatırım danışmanlığı kapsamında değildir. YATIRIM TAVSİYESİ KESİNLİKLE DEĞİLDİR.</p></div>", unsafe_allow_html=True)
+
+# ==========================================
+# 📂 YENİ: EXCEL DOSYA YÜKLEME ALANI
+# ==========================================
+st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
+yuklenen_dosya = st.file_uploader("Güncel sinyal verilerinizi içeren Excel dosyasını seçin veya sürükleyin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
+
+# Okunacak nihai veri kaynağını belirleme
+df_kaynak = None
+if yuklenen_dosya is not None:
+    try:
+        excel_obj = pd.ExcelFile(yuklenen_dosya)
+        sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+        df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=sheet)
+        st.info("🔄 Güncel yüklediğiniz Excel dosyası başarıyla sisteme entegre edildi.")
+    except Exception as e:
+        st.error(f"Yüklenen dosya okunurken hata oluştu: {e}")
+elif os.path.exists(DEFAULT_EXCEL_PATH):
+    try:
+        excel_obj = pd.ExcelFile(DEFAULT_EXCEL_PATH)
+        sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+        df_kaynak = pd.read_excel(DEFAULT_EXCEL_PATH, sheet_name=sheet)
+    except Exception as e:
+        st.error(f"Varsayılan Excel okunurken hata oluştu: {e}")
 
 # ==========================================
 # 📊 YAN YANA PANEL DÜZENI
@@ -81,29 +111,23 @@ with sol_taraf:
         
     # 🟡 1. ADIM: AL SAT SİNYAL GÖSTERİMİ
     if al_sat_butonu:
-        with st.spinner("Excel verileri okunuyor..."):
-            if os.path.exists(EXCEL_FILE_PATH):
+        with st.spinner("Excel verileri işleniyor..."):
+            if df_kaynak is not None:
                 try:
-                    excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
-                    df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                     tablo_verisi = []
-                    for i in range(len(df)):
-                        hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
-                        excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                        
-                        # DÜZELTME: df.shape yerine df.shape[1] (Sütun sayısı) kontrol ediliyor
-                        bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
+                    for i in range(len(df_kaynak)):
+                        hisse_kodu_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
+                        excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
+                        bta_sinyal_al_sat = str(df_kaynak.iloc[i, 20]).strip().upper() if df_kaynak.shape[1] > 20 else ""
                         
                         if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                             continue
                         
                         hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
                         
-                        # Görseldeki "SONME +1,06" veya "AL" gibi ifadelere uyumluluk sağlandı
-                        if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat or "SAT" in bta_sinyal_al_sat:
+                        # Eğer hücre içeriğinde AL, SAT, +, veya SÖNME gibi özel durumlar varsa yakala
+                        if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat or "SAT" in bta_sinyal_al_sat or "SONME" in bta_sinyal_al_sat:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            # DÜZELTME: Listenin ilk elemanı sayıya çevriliyor [0] eklendi
                             yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
@@ -116,36 +140,30 @@ with sol_taraf:
                     if tablo_verisi:
                         st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
                     else:
-                        st.warning("Eşleşen sinyal veya hisse kodu bulunamadı. Lütfen Excel sütun adlarını/indekslerini kontrol edin.")
+                        st.warning("Excel içerisinde aktif kritere uyan [AL/SAT] sinyali tespit edilemedi.")
                 except Exception as e:
                     st.error(f"Hata: {e}")
             else:
-                st.error("Excel bulunamadı!")
+                st.error("İşlenecek Excel veri kaynağı bulunamadı!")
 
     # 🟢 2. ADIM: AL SİNYALİNİ ÖZEL KUTUYA KAYDETME
     if al_butonu:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
-            if os.path.exists(EXCEL_FILE_PATH):
+            if df_kaynak is not None:
                 try:
-                    excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
-                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
-                    df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
                     tablo_verisi_al = []
-                    for i in range(len(df)):
-                        hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
-                        excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
-                        
-                        # DÜZELTME: df.shape yerine df.shape[1] (Sütun sayısı) kontrol ediliyor
-                        w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
+                    for i in range(len(df_kaynak)):
+                        hisse_kodu_ham = str(df_kaynak.iloc[i, 0]).strip().upper()
+                        excel_anlik_verisi = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
+                        w_sutun_verisi = str(df_kaynak.iloc[i, 22]).strip().upper() if df_kaynak.shape[1] > 22 else ""
                         
                         if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]:
                             continue
                         
                         hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
                         
-                        if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi:
+                        if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi or "SONME" in w_sutun_verisi:
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
-                            # DÜZELTME: Listenin ilk elemanı sayıya çevriliyor [0] eklendi
                             yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
                             
                             ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
@@ -159,7 +177,7 @@ with sol_taraf:
                     if tablo_verisi_al:
                         st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
                     else:
-                        st.warning("Filtreye uygun [AL] sinyali bulunamadı.")
+                        st.warning("Filtreye uygun aktif [AL] veya Sönme durumu bulunamadı.")
                 except Exception as e:
                     st.error(f"Hata: {e}")
 
@@ -173,11 +191,3 @@ with sol_taraf:
             if not hisse_data.empty:
                 guncel_canli = hisse_data['Close'].iloc[-1]
                 eski_fiyat = bilge["kayit_fiyati"]
-                yuzde_fark = ((guncel_canli - eski_fiyat) / eski_fiyat) * 100 if eski_fiyat > 0 else 0.0
-                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if guncel_canli >= eski_fiyat else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                kutu_tablo.append({"Hisse Kodu": hisse, "Kutuya Kayıt Fiyatı (O Anlık)": f"{eski_fiyat:.2f} TL", "Güncel Canlı Fiyat": f"{guncel_canli:.2f} TL", "Anlık Kar/Zarar Oranı": durum_str, "Kayıt Zamanı": bilge["kayit_zamani"]})
-        if kutu_tablo:
-            st.dataframe(pd.DataFrame(kutu_tablo), use_container_width=True, hide_index=True)
-            if st.button("🗑️ Kutuyu Sıfırla"):
-                st.session_state["ozel_takip_kutusu"] = {}
-                st.rerun()
