@@ -65,7 +65,6 @@ st.title("⚡ Sinyal Takip Merkezi")
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
-# SPK Yasal Uyarı Şeridi
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Burada yer alan yatırım bilgi ve yorumları yatırım danışmanlığı kapsamında değildir. YATIRIM TAVSİYESİ KESİNLİKLE DEĞİLDİR.</p></div>", unsafe_allow_html=True)
 
 # ==========================================
@@ -112,7 +111,6 @@ with sol_taraf:
             if df_kaynak is not None:
                 try:
                     tablo_verisi = []
-                    # U3'ten başladığı için döngü Python indeksinde 2'den başlar
                     for i in range(2, len(df_kaynak)):
                         if df_kaynak.shape[1] <= 20:
                             continue
@@ -162,7 +160,6 @@ with sol_taraf:
             if df_kaynak is not None:
                 try:
                     tablo_verisi_al = []
-                    # W4'ten başladığı için döngü Python indeksinde 3'ten başlar
                     for i in range(3, len(df_kaynak)):
                         if df_kaynak.shape[1] <= 22:
                             continue
