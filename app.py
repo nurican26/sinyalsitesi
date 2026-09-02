@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -102,7 +101,7 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ -> HATA RİSKİ SIFIRLANDI)
+    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
@@ -115,15 +114,13 @@ with sol_taraf:
                         if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                             continue
                         
-                        # SÖNME ve ALKLC sarı butonda görünmez
                         if "SONME" in u_val or "ALKLC" in u_val:
                             continue
                             
-                        # 🎯 YENİ NOKTA ATIŞI EŞLEŞTİRME (Metni parçalamadan doğrudan hücreyi tarar)
                         hisse_adi = None
                         for h in BORSA_HISSELERI:
                             if h in u_val:
-                                hisse_adi = h
+                                h_adi = h
                                 break
                         
                         if hisse_adi:
@@ -204,10 +201,12 @@ with sol_taraf:
 
 with sag_taraf:
     # ==========================================
-    # ⭐ KALICI YILDIZ OYLAMA ALANI
+    # ⭐ KALICI YILDIZ OYLAMA ALANI (GİRİNTİ HATASI TAMAMEN DÜZELTİLDİ)
     # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
     st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
     yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
 
     if yildiz_skor is not None:
+        gercek_puan = yildiz_skor + 1
+        st.session_state["toplam_oy_sayisi"] = st.session_state["toplam_oy_sayisi"] + 1
