@@ -35,7 +35,7 @@ if not st.session_state["logged_in"]:
 # 📈 PANEL ANA EKRANI (ŞİFRE DOĞRUYSA AÇILIR)
 # ==========================================
 else:
-    col_title, col_logout = st.columns()
+    col_title, col_logout = st.columns(2)
     with col_title:
         st.title("⚡ Sinyal Takip Merkezi")
     with col_logout:
