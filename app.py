@@ -95,7 +95,7 @@ elif os.path.exists(DEFAULT_EXCEL_PATH):
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
 # ==========================================
-# 📊 YAN YANA PANEL DÜZENI (SOL VE SAĞ ALAN BAŞLANGICI)
+# 📊 YAN YANA PANEL DÜZENI
 # ==========================================
 sol_taraf, sag_taraf = st.columns([1.1, 0.9])
 
@@ -208,6 +208,7 @@ with sol_taraf:
                 st.session_state["ozel_takip_kutusu"] = {}
                 st.rerun()
 
-# 🎯 İŞTE KRİTİK DÜZELTME: SARI BUTONUN İÇİNDEN ÇIKARILDI, TAM BAĞIMSIZ SAĞ TARAF ALANI BAŞLADI
+# 🎯 SAĞ TARAF ALANI VE İÇERİĞİ TAMAMEN GİRİNTİLİ HALE GETİRİLDİ (HATA KALKTI)
 with sag_taraf:
     # ⭐ KALICI YILDIZ OYLAMA ALANI
+    st.markdown("### ✨ Paneli Beğendiniz mi?")
