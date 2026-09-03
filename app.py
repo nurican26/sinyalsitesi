@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #3b82f6; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta2026"         # Sadece hisseleri görme yetkisi
@@ -19,11 +19,9 @@ DURUM_DOSYASI = "site_durumu.txt"
 
 # 💾 Kalıcı Kilit Durumunu Dosyadan Okuma
 if not os.path.exists(DURUM_DOSYASI):
-    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
-        f.write("Açık")
+    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
 
-with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
-    mevcut_kilit = f.read().strip()
+with open(DURUM_DOSYASI, "r", encoding="utf-8") as f: mevcut_kilit = f.read().strip()
 
 # Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
@@ -58,7 +56,7 @@ if is_admin:
 # 🛠️ ERİŞİM KONTROL MANTIĞI
 erisim_izni = mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or is_admin
 
-# 💥 CANLI FİYAT MOTORU (Parantezleri ezerek internet fiyat donmasını engeller)
+# 💥 CANLI HİSSE VE PİYASA MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -74,26 +72,32 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 📬 GİZLİ MESAJLARI LİSTELEME FONKSİYONU (Girinti hatasını sıfırlayan bağımsız yapı)
-def yonetici_mesajlarini_goster():
-    if os.path.exists(MESAJ_DOSYASI):
-        st.write("---")
-        st.subheader("📩 Gelen Kullanıcı Mesajları")
-        try:
-            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar_listesi = f.readlines()
-            if mesajlar_listesi:
-                for m in reversed(mesajlar_listesi[-15:]): st.text(f"💬 {m.strip()}")
-                st.write("")
-                if st.button("🗑️ Tüm Mesajları Temizle"):
-                    os.remove(MESAJ_DOSYASI)
-                    st.rerun()
-        except: pass
+def doviz_altin_cek(ticker_kod):
+    try:
+        data = yf.Ticker(ticker_kod).history(period="1d")
+        if not data.empty: return float(data['Close'].iloc[-1])
+    except: pass
+    return 0.0
 
-# 🟢 1. ANA PARÇA: ERİŞİM İZNİ VARSA TABLOLAR YÜKLENİR
+# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+
+    # 📊 CANLI DÖVİZ VE ALTIN PANELDEN GÖRÜNÜM (Yeni Eklenen Alan)
+    st.markdown("#### 🌍 Canlı Makro Piyasalar")
+    p_usd = doviz_altin_cek("USDTRY=X")
+    p_eur = doviz_altin_cek("EURTRY=X")
+    p_ons = doviz_altin_cek("GC=F")
+    p_gram = (p_ons / 31.10347) * p_usd if p_ons > 0 and p_usd > 0 else 0.0
+    
+    c1, c2, c3, c4 = st.columns(4)
+    c1.markdown(f'<div class="piyasa-kutusu">💵 DOLAR (USD/TRY)<br><span style="color:#10b981; font-size:1.4rem;">{p_usd:.2f} TL</span></div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="piyasa-kutusu">💶 EURO (EUR/TRY)<br><span style="color:#10b981; font-size:1.4rem;">{p_eur:.2f} TL</span></div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="piyasa-kutusu">🟡 GRAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:.2f} TL</span></div>', unsafe_allow_html=True)
+    c4.markdown(f'<div class="piyasa-kutusu">🔱 ONS ALTIN<br><span style="color:#ca8a04; font-size:1.4rem;">{p_ons:.1f} $</span></div>', unsafe_allow_html=True)
+    st.write("")
 
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
@@ -113,7 +117,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam ham metin olarak aldık
+                            hisse = str(h_ara)
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -122,7 +126,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam ham metin olarak aldık
+                            hisse = str(h_ara)
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -149,20 +153,3 @@ if erisim_izni:
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
             if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-                st.session_state["ozel_takip_kutusu"] = {}
-                st.rerun()
-
-    st.write("---")
-    st.subheader("⭐ Paneli Değerlendir")
-    yildiz_secimi = st.feedback("stars") 
-    if yildiz_secimi is not None:
-        st.session_state["topham_oy_sayisi"] += 1
-        st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
-        st.success("Oyunuz kaydedildi!")
-        time.sleep(1)
-        st.rerun()
-
-    # Yönetici mesaj okuma panelini izole çalıştırıyoruz
-    if is_admin:
-        yonetici_mesajlarini_goster()
-
