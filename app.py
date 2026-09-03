@@ -7,7 +7,12 @@ import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTa", page_icon="📈", layout="wide")
+
+# Google Fonts'tan el yazısı fontu (Sacramento) yüklüyoruz ve stilleri tanımlıyoruz
 st.markdown("""
+<link rel="preconnect" href="https://googleapis.com">
+<link rel="preconnect" href="https://gstatic.com" crossorigin>
+<link href="https://googleapis.com/css2?family=Sacramento&display=swap" rel="stylesheet">
 <style>
     .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} 
     h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
@@ -25,29 +30,23 @@ st.markdown("""
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
     }
     
-    /* Yeni BTa Modern Logo ve Başlık Alanı */
+    /* Yeni Okunaklı ve Şık El Yazısı Logosu */
     .bta-logo-konteyner {
         display: flex;
         align-items: center;
-        gap: 15px;
         margin-top: 15px;
-        margin-bottom: 20px;
+        margin-bottom: 25px;
     }
     .bta-logo {
         background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
         color: white !important;
-        font-weight: 900;
-        font-size: 1.6rem;
-        padding: 8px 18px;
-        border-radius: 12px;
-        box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
-        letter-spacing: 1px;
-    }
-    .bta-ana-baslik {
-        font-size: 2.2rem !important; 
-        font-weight: 800 !important; 
-        margin: 0 !important;
-        text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        font-family: 'Sacramento', cursive, sans-serif !important;
+        font-weight: bold;
+        font-size: 3.2rem; /* El yazısı fontları küçük göründüğü için büyütüldü */
+        padding: 2px 25px;
+        border-radius: 16px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        line-height: 1.2;
     }
     
     .mesaj-kutusu {
@@ -69,7 +68,6 @@ st.markdown("""
         text-align: justify;
         line-height: 1.4;
     }
-    /* Aşağıya taşınan metrik alanı için şık stil */
     .alt-metrik-kutusu {
         background: rgba(255, 255, 255, 0.03);
         padding: 10px 15px;
@@ -140,11 +138,10 @@ else:
 
 puan, toplam_oy_sayisi = puanlari_yukle()
 
-# MODERN LOGO VE SADE BAŞLIK ALANI
+# SADECE ŞIK EL YAZISI LOGOSU (Yanındaki ikinci yazı kaldırıldı)
 st.markdown("""
 <div class="bta-logo-konteyner">
-    <div class="bta-logo">BTA</div>
-    <div class="bta-ana-baslik">BTa</div>
+    <div class="bta-logo">Bta</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -194,10 +191,10 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara
+                        hisse = hisse_ara[0] # Listenin ilk elemanı string olarak seçildi (Hisselerin geri gelmesini sağlar)
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         tablo_alsat.append({
                             "Hisse Kodu 📈": hisse, 
@@ -208,16 +205,16 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara
+                        hisse = hisse_ara[0] # Listenin ilk elemanı string olarak seçildi (Hisselerin geri gelmesini sağlar)
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
                         
                         tablo_al.append({
-                            "Hisse Kodu": hisse, # Füze kelimesi kaldırıldı
+                            "Hisse Kodu": hisse, 
                             "BTA PUAN (T)": bta_puan,
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
@@ -251,10 +248,3 @@ with sol_kolon:
 with sag_kolon:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
     
-    if st.session_state["ozel_takip_kutusu"]:
-        tk_list = []
-        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-            cfiy = hızlı_canli_fiyat_bul(hisse)
-            if cfiy == 0.0: 
-                cfiy = bilge["kayit_fiyati"]
-                
