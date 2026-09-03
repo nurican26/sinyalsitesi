@@ -8,70 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# Google Fonts'tan el yazısı fontu (Sacramento) yükleniyor ve stiller tanımlanıyor
-st.markdown("""
-<link rel="preconnect" href="https://googleapis.com">
-<link rel="preconnect" href="https://gstatic.com" crossorigin>
-<link href="https://googleapis.com/css2?family=Sacramento&display=swap" rel="stylesheet">
-<style>
-    .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} 
-    h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
-    input {color: #000!important; background-color: #fff!important;}
-    
-    .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}
-    div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;}
-    
-    .alsat-baslik {
-        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%);
-        padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
-    }
-    .al-baslik {
-        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%);
-        padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
-    }
-    .spk-kutusu {
-        background-color: rgba(220, 38, 38, 0.1);
-        border: 1px solid #dc2626; padding: 8px;
-        border-radius: 6px; margin-top: 15px; margin-bottom: 10px;
-        color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;
-    }
-    
-    /* 🟢 BÜYÜK HARFLİ YEŞİL OKUNAKLI EL YAZISI BTA LOGOSU */
-    .bta-logo-konteyner {
-        display: flex;
-        align-items: center;
-        margin-top: 15px;
-        margin-bottom: 25px;
-    }
-    .bta-logo {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        color: white !important;
-        font-family: 'Sacramento', cursive, sans-serif !important;
-        font-weight: bold;
-        font-size: 3.2rem;
-        padding: 2px 25px;
-        border-radius: 16px;
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-        line-height: 1.2;
-    }
-    
-    /* Kilitli ekran uyarı kutusu */
-    .kilit-uyari {
-        background: rgba(255, 255, 255, 0.05);
-        border-left: 4px solid #ca8a04;
-        padding: 15px;
-        border-radius: 6px;
-        margin-bottom: 20px;
-        font-size: 1.1rem;
-    }
-    
-    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
-        font-size: 1.25rem !important;
-        font-weight: bold !important;
-        color: #ffffff !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # 🔑 SABİT PARAMETRELER
 GIRIS_SIFRESI = "bta2026"
@@ -205,7 +142,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Girintiler milimetrik olarak kilitlendi)
     if panel_modu == "Site Şifreli / Kilitli" and erisim_izni:
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -220,3 +157,13 @@ if erisim_izni:
                     os.remove(MESAJ_DOSYASI)
                     st.rerun()
             else:
+                st.info("Henüz yeni mesaj bulunmuyor.")
+        else:
+            st.info("Henüz yeni mesaj bulunmuyor.")
+
+else:
+    # 🔒 MOD "KİLİTLİ" SEÇİLDİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK EKRAN
+    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sol menüden şifrenizi giriniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
+    
+    st.subheader("📬 Yatırımcı İletişim Formu")
+    ziyaretci_isim = st.text_input("Rumuzunuz / İletişim Bilginiz (E-posta veya Tel):", value="Anonim")
