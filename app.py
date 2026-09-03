@@ -11,13 +11,11 @@ st.markdown("""
 <style>
     .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} 
     h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
-    input {color: #000!important; background-color: #fff!important;}
+    input, textarea {color: #000!important; background-color: #fff!important;}
     
-    /* Mobil ve Masaüstü için tabloları rahatlatan ayar */
     .stDataFrame {width: 100% !important; border: 1px solid #4338ca !important; border-radius: 8px;}
     div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;}
     
-    /* Canlı sinyal başlıkları için özel neon kutular */
     .alsat-baslik {
         background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
@@ -25,12 +23,6 @@ st.markdown("""
     .al-baslik {
         background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
-    }
-    .spk-kutusu {
-        background-color: rgba(220, 38, 38, 0.1);
-        border: 1px solid #dc2626; padding: 8px;
-        border-radius: 6px; margin-top: 15px; margin-bottom: 10px;
-        color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;
     }
     .bta-ana-baslik {
         font-size: 2rem !important; 
@@ -44,18 +36,30 @@ st.markdown("""
         color: #cbd5e1 !important;
         margin-bottom: 15px !important;
     }
+    /* Mesaj kutusu için şık arka plan kutusu */
+    .mesaj-kutusu {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid #6366f1;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Hafıza Kontrolleri
+# 2. Hafıza Kontrolleri (Sonsuz döngüyü engellemek için optimize edildi)
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
+if "ziyaret_sayaci" not in st.session_state: st.session_state["ziyaret_sayaci"] = 1
+else:
+    # Sayfa her tıklamada değil, sadece gerçek yenilemelerde kontrollü artsın diye rerun döngüsünden çıkarıldı
+    if "sayac_arttirildi" not in st.session_state:
+        st.session_state["ziyaret_sayaci"] += 1
+        st.session_state["sayac_arttirildi"] = True
 
-for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
-    if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
-
-st.session_state["ziyaret_sayaci"] += 1
+for k in ["kisitli_liste", "topham_oy_sayisi", "topham_yildiz_puani"]:
+    if k not in st.session_state: st.session_state[k] = 0
 
 # BAŞLIK VE METRİK ALANI
 st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
@@ -73,11 +77,11 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel okuma hatası: {e}")
 
-# 📌 OPTİMİZE EDİLMİŞ HIZLI FİYAT MOTORU (Sonsuz yükleme döngüsünü bitirir)
+# 📌 OPTİMİZE EDİLMİŞ HIZLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: # 5 dakika hafızada tutar
+        if time.time() - saved_time < 300: # 5 dakika hafıza
             return saved_price
             
     try:
@@ -103,9 +107,9 @@ if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
-                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20]) # U Sütunu
-                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) # W Sütunu
-                t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  # T Sütunu
+                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+                t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
                 
                 # 🟡 1. ADIM: AL SAT Sinyal Taraması
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
@@ -175,33 +179,43 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 7. ⭐ TOPLULUK PUANLAMA SİSTEMİ
+# 💬 STABİL TOPLULUK DUVARI & MESAJ KUTUSU
+st.write("---")
+st.subheader("💬 Topluluk Mesaj Panosu")
+
+# Yeni mesaj gönderme formu (Yazı yazarken ekranın sıfırlanmasını engeller)
+with st.form(key="mesaj_formu", clear_on_submit=True):
+    kullanici_adi = st.text_input("İsminiz / Rumuzunuz", value="Anonim")
+    yeni_mesaj = st.text_area("Mesajınız veya Analiz Notunuz", placeholder="Buraya yazabilirsiniz...")
+    gonder_butonu = st.form_submit_button("Mesajı Yayınla 🚀")
+    
+    if gonder_butonu and yeni_mesaj.strip():
+        zaman_damgasi = datetime.datetime.now().strftime("%H:%M")
+        st.session_state["chat_history"].insert(0, {"isim": kullanici_adi, "mesaj": yeni_mesaj, "saat": zaman_damgasi})
+        st.toast("Mesajınız panoya eklendi!")
+
+# Gönderilen Mesajların Listelenmesi
+if st.session_state["chat_history"]:
+    for m in st.session_state["chat_history"][:10]: # Son 10 mesajı gösterir
+        st.markdown(f"""
+        <div class="mesaj-kutusu">
+            <b>👤 {m['isim']}</b> <span style='color:#818cf8; font-size:0.8rem;'>({m['saat']})</span><br>
+            <p style='margin-top:5px; color:#e2e8f0!important;'>{m['mesaj']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info("Henüz mesaj yazılmamış. İlk notu siz bırakın!")
+
+# 7. ⭐ PANELİ DEĞERLENDİR
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
-yildiz_secimi = st.feedback("stars") 
+yildiz_secimi = st.feedback("stars", key="panel_puanlama") 
 if yildiz_secimi is not None:
-    verilen_puan = yildiz_secimi + 1
-    st.session_state["topham_oy_sayisi"] += 1
-    st.session_state["topham_yildiz_puani"] += verilen_puan
-    st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. 🎉")
-    st.rerun()
-
-# 8. BTa Sohbet Odası Bölümü
-st.write("---")
-st.subheader("💬 BTa Canlı Sohbet")
-for msg in st.session_state["chat_history"]:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
-
-user_input = st.chat_input("Mesajınızı buraya yazın...")
-if user_input:
-    st.session_state["chat_history"].append({"role": "user", "content": user_input})
-    st.rerun()
-
-# 🚨 SPK YASAL UYARI KUTUSU EN ALTA SABİT
-st.markdown("""
-<div class="spk-kutusu">
-    <strong>⚖️ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-    Veriler matematiksel olarak listelenmektedir.
-</div>
-""", unsafe_allow_html=True)
+    # Aynı puanın tekrar tekrar basılmasını engellemek için kontrol
+    puan_anahtari = f"puanlandi_{yildiz_secimi}"
+    if puan_anahtari not in st.session_state:
+        verilen_puan = yildiz_secimi + 1
+        st.session_state["topham_oy_sayisi"] += 1
+        st.session_state["topham_yildiz_puani"] += verilen_puan
+        st.session_state[puan_anahtari] = True
+        st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. Güncel puan yukarıya yansıtıldı.")
