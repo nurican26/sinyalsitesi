@@ -116,8 +116,10 @@ with sol_taraf:
                 try:
                     if sutun_sayisi > 20:
                         u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
+                        
                         if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
                             continue
+                        
                         if "SONME" in u_val or "ALKLC" in u_val:
                             continue
                             
@@ -131,19 +133,19 @@ with sol_taraf:
                             try:
                                 fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                                yüklenen_fiy = float(sayilar) if sayilar else 0.0
+                                yuklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
-                                yüklenen_fiy = 0.0
+                                yuklenen_fiy = 0.0
                             
                             hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
                             if not hisse_data.empty:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
-                                if yüklenen_fiy == 0.0:
-                                    yüklenen_fiy = canli_fiyat
+                                if yuklenen_fiy == 0.0:
+                                    yuklenen_fiy = canli_fiyat
                                     
-                                yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
-                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                                tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                                yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
+                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                                tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
             if tablo_verisi:
@@ -160,6 +162,7 @@ with sol_taraf:
                 try:
                     if sutun_sayisi > 22:
                         w_val = str(df_kaynak.iloc[i, 22]).strip().upper()
+                        
                         if not w_val or w_val in ["NAN", "AL", ""]:
                             continue
                             
@@ -173,12 +176,12 @@ with sol_taraf:
                             hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
                             if not hisse_data.empty:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
-                                yüklenen_fiy = canli_fiyat 
+                                yuklenen_fiy = canli_fiyat 
                                 yuzde_fark = 0.0  
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
                                 
                                 st.session_state["ozel_takip_kutusu"][hisse_adi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                                tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                                tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
                 except:
                     pass
             if tablo_verisi_al:
@@ -208,7 +211,6 @@ with sol_taraf:
                 st.session_state["ozel_takip_kutusu"] = {}
                 st.rerun()
 
-# 🎯 SAĞ TARAF ALANI VE İÇERİĞİ TAMAMEN GİRİNTİLİ HALE GETİRİLDİ (HATA KALKTI)
 with sag_taraf:
     # ⭐ KALICI YILDIZ OYLAMA ALANI
     st.markdown("### ✨ Paneli Beğendiniz mi?")
