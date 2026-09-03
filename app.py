@@ -177,7 +177,7 @@ if df_kaynak is not None:
         except:
             pass
 
-# 🔎 1. YENİLİK: CANLI HİSSE ARAMA ÇUBUĞU
+# CANLI HİSSE ARAMA ÇUBUĞU
 arama_kelimesi = st.text_input("🔍 Listede Hisse Ara:", placeholder="Eregl, Thyao, Asels vb. yazın...", value="").strip().upper()
 
 # Filtreleme İşlemi
@@ -221,9 +221,8 @@ if st.session_state["ozel_takip_kutusu"]:
     if tk_list:
         df_havuz = pd.DataFrame(tk_list)
         
-        # 🟢 2. YENİLİK: KÂR / ZARAR DURUMUNA GÖRE SATIR RENKLENDİRME
+        # KÂR / ZARAR DURUMUNA GÖRE SATIR RENKLENDİRME
         def renkli_stil_uygula(row):
-            # Güncel fiyat maliyetten yüksekse yeşil tonu, düşükse kırmızı tonu
             renk = 'background-color: rgba(22, 163, 74, 0.25)' if row['Anlık Güncel'] >= row['Havuz Maliyeti'] else 'background-color: rgba(220, 38, 38, 0.25)'
             return [renk] * len(row)
             
@@ -241,7 +240,10 @@ if st.session_state["ozel_takip_kutusu"]:
 # 💬 BEĞENİ ALANI
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
+
+# 🛠️ BURASI KESİN OLARAK DÜZELTİLDİ: Rakam listesi hatasız gömüldü
 puan_secenekleri = [1, 2, 3, 4, 5]
 secilen_oy = st.selectbox("Paneli puanlayın:", options=puan_secenekleri, format_func=lambda x: f"{'⭐' * x} ({x} Yıldız)")
 if st.button("Oyu Gönder 🟩", use_container_width=True):
     st.session_state["topham_oy_sayisi"] += 1
+    st.session_state["topham_yildiz_puani"] += secilen_oy
