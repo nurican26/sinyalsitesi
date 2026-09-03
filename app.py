@@ -8,13 +8,13 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .bta-marka-alani {text-align: left; margin-top: 15px; margin-bottom: 30px;} .bta-logo-kesin-net {font-size: 4.5rem !important; font-weight: 900 !important; color: #ffffff !important; display: inline-block; font-family: "Arial Black", "Segoe UI", sans-serif !important; transform: rotate(-2deg); padding-left: 5px; margin-bottom: 5px; text-shadow: 3px 6px 15px rgba(16, 185, 129, 0.7), -3px -3px 0px #059669, 3px 3px 0px #eab308; letter-spacing: 2px;} .bta-alt-yazi {font-size: 1.15rem; color: #a7f3d0 !important; font-weight: 600; letter-spacing: 1px; margin-top: 5px; opacity: 0.95; text-shadow: 1px 1px 4px rgba(0,0,0,0.6); font-style: italic;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15) !important; border: 3px solid #dc2626 !important; padding: 15px !important; border-radius: 8px !important; margin-top: 20px !important; margin-bottom: 25px !important; color: #fca5a5 !important; font-family: "Segoe UI", sans-serif !important; font-size: 1rem !important; text-align: justify !important; line-height: 1.6 !important; display: block !important; font-weight: 500 !important;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .bta-marka-alani {text-align: left; margin-top: 15px; margin-bottom: 30px;} .bta-logo-kesin-net {font-size: 4.8rem !important; font-weight: 900 !important; color: #ffffff !important; display: inline-block; font-family: "Arial Black", "Segoe UI", sans-serif !important; transform: rotate(-2deg); padding-left: 5px; margin-bottom: 5px; text-shadow: 4px 8px 20px rgba(16, 185, 129, 0.7), -3px -3px 0px #059669, 3px 3px 0px #eab308; letter-spacing: 3px;} .bta-alt-yazi {font-size: 1.2rem; color: #a7f3d0 !important; font-weight: 600; letter-spacing: 1px; margin-top: 5px; opacity: 0.95; text-shadow: 1px 1px 4px rgba(0,0,0,0.6); font-style: italic;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15) !important; border: 3px solid #dc2626 !important; padding: 15px !important; border-radius: 8px !important; margin-top: 25px !important; margin-bottom: 25px !important; color: #fca5a5 !important; font-family: "Segoe UI", sans-serif !important; font-size: 1rem !important; text-align: justify !important; line-height: 1.6 !important; display: block !important; font-weight: 500 !important;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# 🟢 OKUNAKLI BÜYÜK HARFLİ DERİN GÖLGELİ BTA LOGO PANELİ
+# 🟢 OKUNAKLI BÜYÜK HARFLİ DERİN GÖLGELİ VE KAVİSLİ BTA LOGO PANELİ
 st.markdown("""
 <div class="bta-marka-alani">
     <div class="bta-logo-kesin-net">BTA</div>
@@ -92,9 +92,9 @@ if df_kaynak is not None:
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                    h_ara = re.findall(r'[A-Z]+', uv)
+                    h_ara = re.findall(r'[A-A-Z]+', uv) or re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        # 🛠️ GÜVENLİ PARANTEZ ÇÖZÜMÜ: Listenin [0] elemanı ham metin olarak çekilip parantezler kalıcı imha edildi!
+                        # 🛠️ GÜVENLİ PARANTEZ ÇÖZÜMÜ: Listenin ilk elemanını direkt temiz metin olarak seçtik.
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
@@ -102,9 +102,9 @@ if df_kaynak is not None:
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                    h_ara = re.findall(r'[A-Z]+', wv)
+                    h_ara = re.findall(r'[A-A-Z]+', wv) or re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        # 🛠️ GÜVENLİ PARANTEZ ÇÖZÜMÜ: Listenin [0] elemanı ham metin olarak çekilip parantezler kalıcı imha edildi!
+                        # 🛠️ GÜVENLİ PARANTEZ ÇÖZÜMÜ: Listenin ilk elemanını direkt temiz metin olarak seçtik.
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
