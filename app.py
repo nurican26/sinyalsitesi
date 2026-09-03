@@ -98,7 +98,8 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER VE LISTE KALINTILARI TAMAMEN KAZINDI
+                        # 🛠️ GÜVENLİ PARANTEZ TEMİZLİK SİSTEMİ: Listenin ilk elemanı stringe kırıldı.
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul if p_bul else t_deg
@@ -107,7 +108,8 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER VE LISTE KALINTILARI TAMAMEN KAZINDI
+                        # 🛠️ GÜVENLİ PARANTEZ TEMİZLİK SİSTEMİ: Listenin ilk elemanı stringe kırıldı.
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul if p_bul else t_deg
@@ -135,5 +137,5 @@ if st.session_state["ozel_takip_kutusu"]:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
         if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
 
-# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Sayfa tabanında hiçbir yapının ezemeyeceği HTML standardında)
+# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Ezilmesi veya gizlenmesi imkansız bağımsız kırmızı kalın çerçeve)
 st.write("---")
