@@ -61,7 +61,7 @@ erisim_izni = False
 if mevcut_kilit == "Açık":
     erisim_izni = True
 
-# 🟢 1. DURUM: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER YÜKLENİR
+# 🟢 1. KAPALILIK/AÇIKLIK MANTIĞININ KESİN DAĞILIMI
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -111,7 +111,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -120,7 +120,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -181,4 +181,5 @@ if erisim_izni:
         else:
             st.info("Henüz yeni mesaj bulunmuyor.")
 
-# 🔒 2. DURUM: KİLİTLİ EKRAN ALANI (Hiçbir girintiye bağlı olmayan, mutlak korumalı form)
+# 🔒 2. KAPALILIK DURUMU: ERİŞİM İZNİ YOKSA (SİTE KİLİTLİYSE) KESİN OLARAK BU FORM ÇALIŞIR
+else:
