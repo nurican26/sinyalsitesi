@@ -12,7 +12,6 @@ st.markdown("""
     h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} 
     input {color: #000!important; background-color: #fff!important;}
     .stDataFrame {width: 100% !important;}
-    .stButton>button {margin-bottom: 5px;}
     div.block-container {padding-top: 1rem; padding-bottom: 1rem;}
 </style>
 """, unsafe_allow_html=True)
@@ -35,13 +34,14 @@ puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_say
 st.write(f"⭐ **Puan:** {puan:.2f} | 🚪 **Giriş:** {st.session_state['ziyaret_sayaci']}")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Canlı Fiyat Sorgulama Optimize Edildi. {guncel_an}")
+st.success(f"💡 Sistem Aktif. Hücre tarama algoritması güncellendi. {guncel_an}")
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: 
+        # Veri kilitlenmelerini önlemek için formülleri değil ham metinleri okumaya zorluyoruz
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except Exception as e:
         st.error(f"Excel dosyası okuma hatası: {e}")
@@ -57,10 +57,9 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 5. BTA SİNYAL MERKEZİ (BUTONLAR GERİ GELDİ)
+# 5. BTA SİNYAL MERKEZİ
 st.subheader("📈 BTA SİNYAL MERKEZİ")
 
-# Mobil cihazlarda butonların yan yana sıkışmaması için ayrı satırlar veya esnek butonlar
 b1 = st.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 b2 = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
@@ -72,17 +71,18 @@ if st.session_state["al_sat_goster"]:
     if df_kaynak is not None:
         tablo_verisi = []
         for idx in range(len(df_kaynak)):
-            # İlk hücreden temiz hisse kodunu bul (Örn: RAYSG veya KUVVA)
             ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
             hisse = "".join(re.findall(r'[A-Z]+', ilk_hucre))
             
             if hisse and hisse != "RAYSG" and len(hisse) >= 4 and hisse not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
                 if len(df_kaynak.columns) > 20:
                     uv = str(df_kaynak.iloc[idx, 20]).strip().upper()
-                    # Hücre tamamen boş veya geçersiz değilse listele (KUVVA gibi)
-                    if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"]:
+                    
+                    # 🌟 KESİN ÇÖZÜM: Hücre boş değilse, 0 değilse veya içinde hisse kodu tetikleniyorsa listele
+                    if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"] or hisse in uv:
                         cfiy = internetten_canli_fiyat_bul(hisse)
                         raw_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else uv
+                        if raw_puan in ["NAN", "0", "0.0"]: raw_puan = uv
                         
                         tablo_verisi.append({
                             "Hisse Kodu": hisse, 
@@ -92,6 +92,8 @@ if st.session_state["al_sat_goster"]:
                         })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
+        else:
+            st.info("U sütununda (AL SAT) kriterlere uyan aktif veri okunamadı.")
 
 # 🟢 AL Sinyal Mantığı (W Sütunu - İndeks 22)
 if st.session_state["al_goster"]:
@@ -104,11 +106,13 @@ if st.session_state["al_goster"]:
             if hisse and hisse != "RAYSG" and len(hisse) >= 4 and hisse not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
                 if len(df_kaynak.columns) > 22:
                     wv = str(df_kaynak.iloc[idx, 22]).strip().upper()
-                    # Hücre boş değilse veya içinde 'AL' kelimesi geçiyorsa listele (SONME gibi)
-                    if (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]) or "AL" in wv:
+                    
+                    # 🌟 KESİN ÇÖZÜM: Hücre içinde 'AL' kelimesi geçiyorsa veya direkt doluysa listele
+                    if (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]) or "AL" in wv or hisse in wv:
                         cfiy = internetten_canli_fiyat_bul(hisse)
                         st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         raw_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else wv
+                        if raw_puan in ["NAN", "0", "0.0"]: raw_puan = wv
                         
                         tablo_verisi_al.append({
                             "Hisse Kodu": hisse, 
@@ -118,6 +122,8 @@ if st.session_state["al_goster"]:
                         })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+        else:
+            st.info("W sütununda (AL) kriterlere uyan aktif veri okunamadı.")
 
 # 6. Sinyal Havuzu Bölümü
 st.markdown("#### 🌟 Sinyal Havuzu")
@@ -139,7 +145,7 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 7. BTa Sohbet Odası Bölümü (Daha kompakt mobil yerleşim)
+# 7. BTa Sohbet Odası Bölümü
 st.divider()
 st.subheader("💬 BTa Sohbet")
 for msg in st.session_state["chat_history"]:
