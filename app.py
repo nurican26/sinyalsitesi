@@ -3,19 +3,22 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os, re
-import time
 
-# 1. Sayfa Yapılandırması ve Tasarım
+# 1. Sayfa Yapılandırması ve Tasarım (Mobil Uyumlu)
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
-st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
+st.markdown("""
+<style>
+    .stApp {background: rgba(15,23,42,0.95)!important; padding: 1rem;} 
+    h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} 
+    input {color: #000!important; background-color: #fff!important;}
+    /* Mobil cihazlarda tabloların taşmasını önleyen ve rahat kaydırılan ayar */
+    .stDataFrame {width: 100% !important;}
+</style>
+""", unsafe_allow_html=True)
 
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
-# 🌟 Butonların açık/kapalı durumunu hafızada tutmak için yeni değişkenler ekledik
-if "al_sat_goster" not in st.session_state: st.session_state["al_sat_goster"] = False
-if "al_goster" not in st.session_state: st.session_state["al_goster"] = False
-
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
 
@@ -23,15 +26,12 @@ st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ BTa Sinyal Takip Merkezi")
 
-# Puanlama ve Giriş Sayısı Metrikleri
+# Metrikleri telefonda düzgün görünmesi için dikey/esnek formatta sunuyoruz
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-c1, c2, c3 = st.columns(3)
-c1.metric("🔥 Toplam Panel Beğenisi (Oy)", f"{st.session_state['topham_oy_sayisi']} Kişi")
-c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
-c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
+st.write(f"🔥 **Toplam Panel Beğenisi:** {st.session_state['topham_oy_sayisi']} Kişi | ⭐ **Topluluk Puanı:** {puan:.2f} / 5.0 | 🚪 **Oda Girişi:** {st.session_state['ziyaret_sayaci']}")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Canlı Fiyatlar %100 İnternetten Anlık Çekiliyor. Son Yenilenme: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Sadece sinyalli hisselerin canlı fiyatları anlık çekiliyor. Son Yenilenme: {guncel_an}")
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -42,24 +42,7 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# Excel A Sütunundaki tüm hisseleri dinamik toplar
-BORSA_HISSELERI = []
-if df_kaynak is not None:
-    for idx in range(len(df_kaynak)):
-        hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
-        saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
-        
-        if saf_kod == "RAYSG":
-            continue
-            
-        if len(saf_kod) >= 4 and saf_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
-            if saf_kod not in BORSA_HISSELERI:
-                BORSA_HISSELERI.append(saf_kod)
-
-if "RAYSG" in st.session_state["ozel_takip_kutusu"]:
-    del st.session_state["ozel_takip_kutusu"]["RAYSG"]
-
-# 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ
+# 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ (Sadece sinyalliler için çağrılacak)
 def internetten_canli_fiyat_bul(hisse_kodu):
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
@@ -70,100 +53,58 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 TAM SATIR BULUCU
-def hisse_satirini_bul(hisse_kodu):
-    if df_kaynak is not None:
-        for idx in range(len(df_kaynak)):
-            ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            saf_hucre_kodu = "".join(re.findall(r'[A-Z]+', ilk_hucre))
-            if hisse_kodu == saf_hucre_kodu:
-                return idx
-    return None
+# 🌟 AKTİF SİNYALLİ HİSSELİRİ TARAMA (Tıkanmayı önleyen ana motor)
+aktif_sinyal_listesi = []
 
-# 4. Canlı Takip Bölümü
-st.subheader("🎯 Canlı Takip")
-arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
-
-st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (İnternet Canlı Verileri)")
-canli_borsa_listesi = []
-
-listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI
-
-for hisse in listelenecek_hisseler:
-    if not hisse or hisse == "RAYSG": continue
-    ef = internetten_canli_fiyat_bul(hisse)
-    if ef > 0: 
-        canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🟢 İnternet Canlı"})
-
-if canli_borsa_listesi: 
-    st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=300)
-
-# 5. BTA SİNYAL MERKEZİ
-st.divider()
-st.subheader("📈 BTA SİNYAL MERKEZİ")
-b1, b2 = st.columns(2)
-
-# Butonlara basıldığında durumları hafızada tersine çeviriyoruz (Aç/Kapat mantığı)
-if b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True):
-    st.session_state["al_sat_goster"] = not st.session_state["al_sat_goster"]
-
-if b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True):
-    st.session_state["al_goster"] = not st.session_state["al_goster"]
-
-# 🟡 AL SAT Sinyal Tablosu (Hafızadan tetiklenir, ekranda sabit kalır)
-if st.session_state["al_sat_goster"]:
-    if df_kaynak is not None:
-        tablo_verisi = []
-        for hisse in BORSA_HISSELERI:
-            if hisse == "RAYSG": continue
-            s_idx = hisse_satirini_bul(hisse)
-            if s_idx is not None and len(df_kaynak.columns) > 20:
-                uv = str(df_kaynak.iloc[s_idx, 20]).strip().upper()
+if df_kaynak is not None:
+    for idx in range(len(df_kaynak)):
+        ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
+        hisse = "".join(re.findall(r'[A-Z]+', ilk_hucre))
+        
+        # Geçersiz satırları ve RAYSG'yi atla
+        if not hisse or hisse == "RAYSG" or len(hisse) < 4 or hisse in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
+            continue
+            
+        # Sütun kontrolleri (U:20, W:22, T:19)
+        uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if len(df_kaynak.columns) > 20 else ""
+        wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if len(df_kaynak.columns) > 22 else ""
+        raw_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else "-"
+        
+        is_al_sat = uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"]
+        is_al = (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]) or "AL" in wv
+        
+        # Eğer hissede AL veya AL SAT sinyallerinden biri varsa listeye ekle
+        if is_al_sat or is_al:
+            sinyal_tipi = "🟡 AL SAT" if is_al_sat else "🟢 AL"
+            cfiy = internetten_canli_fiyat_bul(hisse) # Sadece bu hisse için internete gidiyor!
+            
+            # Eğer AL sinyalindeyse otomatik havuz hafızasına ekle
+            if is_al and cfiy > 0:
+                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                 
-                if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"]:
-                    cfiy = internetten_canli_fiyat_bul(hisse)
-                    raw_puan = str(df_kaynak.iloc[s_idx, 19]).strip() if len(df_kaynak.columns) > 19 else uv
-                    
-                    tablo_verisi.append({
-                        "Hisse Kodu": hisse, 
-                        "BTA PUAN": raw_puan, 
-                        "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Veri Alınamadı", 
-                        "Durum Oranı": "🔄 Aktif Takip"
-                    })
-        if tablo_verisi: 
-            st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
+            aktif_sinyal_listesi.append({
+                "Hisse Kodu": hisse,
+                "Sinyal Tipi": sinyal_tipi,
+                "BTA PUAN (T)": raw_puan,
+                "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Veri Alınamadı"
+            })
 
-# 🟢 AL Sinyal Tablosu (Hafızadan tetiklenir, ekranda sabit kalır)
-if st.session_state["al_goster"]:
-    if df_kaynak is not None:
-        tablo_verisi_al = []
-        for hisse in BORSA_HISSELERI:
-            if hisse == "RAYSG": continue
-            s_idx = hisse_satirini_bul(hisse)
-            if s_idx is not None and len(df_kaynak.columns) > 22:
-                wv = str(df_kaynak.iloc[s_idx, 22]).strip().upper()
-                
-                if (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]) or "AL" in wv:
-                    cfiy = internetten_canli_fiyat_bul(hisse)
-                    st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                    raw_puan = str(df_kaynak.iloc[s_idx, 19]).strip() if len(df_kaynak.columns) > 19 else wv
-                    
-                    tablo_verisi_al.append({
-                        "Hisse Kodu": hisse, 
-                        "BTA PUAN": raw_puan, 
-                        "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Veri Alınamadı", 
-                        "Durum Oranı": "🔄 Havuzu Eklendi"
-                    })
-        if tablo_verisi_al: 
-            st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+# 4. AKTİF SİNYAL MERKEZİ TABLOSU (Açılışta direkt gösterilir, buton aramaya gerek kalmaz)
+st.subheader("📈 Aktif BTa Sinyal Listesi")
+if aktif_sinyal_listesi:
+    df_sinyal = pd.DataFrame(aktif_sinyal_listesi)
+    st.dataframe(df_sinyal, use_container_width=True, hide_index=True)
+else:
+    st.info("Excel dosyasında şu an aktif AL veya AL SAT sinyali veren hisse bulunamadı.")
 
-# 6. Sinyal Havuzu Bölümü
+# 5. Sinyal Havuzu Bölümü
 st.divider()
 st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         if hisse == "RAYSG": continue
+        # Havuzdaki az sayıda hisse için hızlı fiyat kontrolü
         cfiy = internetten_canli_fiyat_bul(hisse)
         if cfiy == 0.0: 
             cfiy = bilge["kayit_fiyati"]
@@ -172,31 +113,27 @@ if st.session_state["ozel_takip_kutusu"]:
             "Hisse Kodu": hisse,
             "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL",
             "Anlık Fiyat": f"{cfiy:.2f} TL",
-            "Kâr/Zarar Oranı": "🔄 Dengelendi",
             "Eklenme Zamanı": bilge["kayit_zamani"]
         })
     if tk_list:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=False):
+        if st.button("🗑️ Havuzu Temizle", use_container_width=True):
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 else:
     st.info("Şu anda sinyal havuzunda takip edilen hisse bulunmamaktadır.")
 
-# 7. Topluluk Puanlama Sistemi
+# 6. Topluluk Puanlama Sistemi (Telefona uygun alt alta tasarım)
 st.divider()
 st.subheader("🗳️ Paneli Değerlendir")
-col_p1, col_p2 = st.columns(2)
-with col_p1:
-    yildiz = st.slider("Puanınız:", 1, 5, 5, key="slider_puan")
-with col_p2:
-    if st.button("👍 Oy Ver ve Gönder", use_container_width=True):
-        st.session_state["topham_oy_sayisi"] += 1
-        st.session_state["topham_yildiz_puani"] += yildiz
-        st.success("Oyunuz başarıyla kaydedildi!")
-        st.rerun()
+yildiz = st.slider("Puanınız:", 1, 5, 5, key="slider_puan")
+if st.button("👍 Oy Ver ve Gönder", use_container_width=True):
+    st.session_state["topham_oy_sayisi"] += 1
+    st.session_state["topham_yildiz_puani"] += yildiz
+    st.success("Oyunuz başarıyla kaydedildi!")
+    st.rerun()
 
-# 8. BTa Sohbet Odası Bölümü
+# 7. BTa Sohbet Odası Bölümü
 st.divider()
 st.subheader("💬 BTa Sohbet")
 
