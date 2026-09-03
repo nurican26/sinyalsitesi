@@ -36,7 +36,6 @@ st.markdown("""
         color: #cbd5e1 !important;
         margin-bottom: 15px !important;
     }
-    /* Mesaj kutusu için şık arka plan kutusu */
     .mesaj-kutusu {
         background-color: rgba(255, 255, 255, 0.05);
         border-left: 4px solid #6366f1;
@@ -47,13 +46,29 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Hafıza Kontrolleri (Sonsuz döngüyü engellemek için optimize edildi)
-if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
+# 💾 ORTAK VERİ TABANI AYARLARI (Dosya Tabanlı Mesajlaşma)
+MESAJ_DOSYASI = "ortak_mesajlar.csv"
+
+def mesajlari_yukle():
+    if os.path.exists(MESAJ_DOSYASI):
+        try:
+            return pd.read_csv(MESAJ_DOSYASI).to_dict(orient="records")
+        except:
+            return []
+    return []
+
+def mesaj_kaydet(isim, mesaj, saat):
+    yeni_data = pd.DataFrame([{"isim": isim, "mesaj": mesaj, "saat": saat}])
+    if os.path.exists(MESAJ_DOSYASI):
+        yeni_data.to_csv(MESAJ_DOSYASI, mode='a', header=False, index=False)
+    else:
+        yeni_data.to_csv(MESAJ_DOSYASI, mode='w', header=True, index=False)
+
+# Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 if "ziyaret_sayaci" not in st.session_state: st.session_state["ziyaret_sayaci"] = 1
 else:
-    # Sayfa her tıklamada değil, sadece gerçek yenilemelerde kontrollü artsın diye rerun döngüsünden çıkarıldı
     if "sayac_arttirildi" not in st.session_state:
         st.session_state["ziyaret_sayaci"] += 1
         st.session_state["sayac_arttirildi"] = True
@@ -81,7 +96,7 @@ if os.path.exists(excel_yolu):
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: # 5 dakika hafıza
+        if time.time() - saved_time < 300:
             return saved_price
             
     try:
@@ -111,7 +126,6 @@ if df_kaynak is not None:
                 wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
                 t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
                 
-                # 🟡 1. ADIM: AL SAT Sinyal Taraması
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
@@ -126,7 +140,6 @@ if df_kaynak is not None:
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
                 
-                # 🟢 2. ADIM: AL Sinyal Taraması
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
@@ -179,24 +192,28 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 💬 STABİL TOPLULUK DUVARI & MESAJ KUTUSU
+# 💬 GERÇEK ZAMANLI VE ORTAK MESAJ KUTUSU
 st.write("---")
-st.subheader("💬 Topluluk Mesaj Panosu")
+st.subheader("💬 Topluluk Mesaj Panosu (Ortak Havuzlu)")
 
-# Yeni mesaj gönderme formu (Yazı yazarken ekranın sıfırlanmasını engeller)
 with st.form(key="mesaj_formu", clear_on_submit=True):
     kullanici_adi = st.text_input("İsminiz / Rumuzunuz", value="Anonim")
     yeni_mesaj = st.text_area("Mesajınız veya Analiz Notunuz", placeholder="Buraya yazabilirsiniz...")
     gonder_butonu = st.form_submit_button("Mesajı Yayınla 🚀")
     
     if gonder_butonu and yeni_mesaj.strip():
-        zaman_damgasi = datetime.datetime.now().strftime("%H:%M")
-        st.session_state["chat_history"].insert(0, {"isim": kullanici_adi, "mesaj": yeni_mesaj, "saat": zaman_damgasi})
-        st.toast("Mesajınız panoya eklendi!")
+        zaman_damgasi = datetime.datetime.now().strftime("%d.%m %H:%M")
+        # Mesajı kalıcı olarak yerel dosyaya kaydet
+        mesaj_kaydet(kullanici_adi, yeni_mesaj.strip(), zaman_damgasi)
+        st.toast("Mesajınız ortak panoya kaydedildi! Görmek için sayfayı yenileyin.")
+        time.sleep(0.5)
+        st.rerun()
 
-# Gönderilen Mesajların Listelenmesi
-if st.session_state["chat_history"]:
-    for m in st.session_state["chat_history"][:10]: # Son 10 mesajı gösterir
+# Mesajları yerel dosyadan çekerek listele (Her cihazda görünür olur)
+tum_mesajlar = mesajlari_yukle()
+if tum_mesajlar:
+    # Son atılan mesaj en üstte görünecek şekilde ters çeviriyoruz
+    for m in reversed(tum_mesajlar[-15:]): 
         st.markdown(f"""
         <div class="mesaj-kutusu">
             <b>👤 {m['isim']}</b> <span style='color:#818cf8; font-size:0.8rem;'>({m['saat']})</span><br>
@@ -204,18 +221,16 @@ if st.session_state["chat_history"]:
         </div>
         """, unsafe_allow_html=True)
 else:
-    st.info("Henüz mesaj yazılmamış. İlk notu siz bırakın!")
+    st.info("Henüz mesaj yazılmamış. İlk ortak notu siz bırakın!")
 
 # 7. ⭐ PANELİ DEĞERLENDİR
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
 yildiz_secimi = st.feedback("stars", key="panel_puanlama") 
 if yildiz_secimi is not None:
-    # Aynı puanın tekrar tekrar basılmasını engellemek için kontrol
     puan_anahtari = f"puanlandi_{yildiz_secimi}"
     if puan_anahtari not in st.session_state:
         verilen_puan = yildiz_secimi + 1
         st.session_state["topham_oy_sayisi"] += 1
         st.session_state["topham_yildiz_puani"] += verilen_puan
         st.session_state[puan_anahtari] = True
-        st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. Güncel puan yukarıya yansıtıldı.")
