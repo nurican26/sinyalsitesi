@@ -4,8 +4,8 @@ import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Tasarım
-st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="wide")
+# 1. Sayfa Yapılandırması ve Tasarım (Başlık BTa Olarak Değiştirildi)
+st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
 # 2. Hafıza (Session State) Kontrolleri
@@ -15,7 +15,7 @@ for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
 
 st.session_state["ziyaret_sayaci"] += 1
-st.title("⚡ Sinyal Takip Merkezi")
+st.title("⚡ BTa Sinyal Takip Merkezi")
 
 # Puanlama Metrikleri
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -40,6 +40,11 @@ BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN",
 
 # 4. Canlı Takip Bölümü
 st.subheader("🎯 Canlı Takip")
+
+# 🔄 Özel Fiyat Güncelleme Butonu
+if st.button("🔄 ANLIK FİYATLARI GÜNCELLE", use_container_width=True):
+    st.rerun()
+
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
 canli_borsa_listesi = []
 
@@ -195,12 +200,9 @@ with st.form("mesaj_formu", clear_on_submit=True):
 for msg in st.session_state["chat_history"]: 
     st.write(msg)
 
-# 8. Paneli Değerlendir Bölümü (Hata Riski Sıfırlandı)
+# 8. Paneli Değerlendir Bölümü
 st.divider()
 st.markdown("#### 🗳️ Paneli Değerlendir")
 secilen_puan = st.slider("Panele Puan Verin:", 1, 5, 5)
 if st.button("⭐ Oyumu Gönder", use_container_width=True):
     st.session_state["topham_oy_sayisi"] += 1
-    st.session_state["topham_yildiz_puani"] += secilen_puan
-    st.success("Oyunuz başarıyla kaydedildi!")
-    st.rerun()
