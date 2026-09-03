@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .bta-marka-alani {text-align: left; margin-top: 15px; margin-bottom: 30px;} .bta-logo-kesin-net {font-size: 4.8rem !important; font-weight: 900 !important; color: #ffffff !important; display: inline-block; font-family: "Arial Black", "Segoe UI", sans-serif !important; transform: rotate(-2deg); padding-left: 5px; margin-bottom: 5px; text-shadow: 4px 8px 20px rgba(16, 185, 129, 0.7), -3px -3px 0px #059669, 3px 3px 0px #eab308; letter-spacing: 3px;} .bta-alt-yazi {font-size: 1.2rem; color: #a7f3d0 !important; font-weight: 600; letter-spacing: 1px; margin-top: 5px; opacity: 0.95; text-shadow: 1px 1px 4px rgba(0,0,0,0.6); font-style: italic;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .bta-marka-alani {text-align: left; margin-top: 15px; margin-bottom: 30px;} .bta-logo-kesin-net {font-size: 4.8rem !important; font-weight: 900 !important; color: #ffffff !important; display: inline-block; font-family: "Arial Black", "Segoe UI", sans-serif !important; transform: rotate(-2deg); padding-left: 5px; margin-bottom: 5px; text-shadow: 4px 8px 20px rgba(16, 185, 129, 0.7), -3px -3px 0px #059669, 3px 3px 0px #eab308; letter-spacing: 3px;} .bta-alt-yazi {font-size: 1.2rem; color: #a7f3d0 !important; font-weight: 600; letter-spacing: 1px; margin-top: 5px; opacity: 0.95; text-shadow: 1px 1px 4px rgba(0,0,0,0.6); font-style: italic;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15) !important; border: 2px solid #dc2626 !important; padding: 15px !important; border-radius: 6px !important; margin-top: 30px !important; margin-bottom: 20px !important; color: #fca5a5 !important; font-size: 0.95rem !important; text-align: justify !important; line-height: 1.5 !important; display: block !important; font-weight: 500 !important;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
@@ -73,7 +73,7 @@ st.write("")
 # 📰 BORSA VE EKONOMİ GÜNDEMİ HABER BLOKLARI
 st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
 st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın og ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
 st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
 st.write("")
 
@@ -95,29 +95,34 @@ if df_kaynak is not None:
                 # 🛠️ GELİŞMİŞ VE KESİN PARANTEZSİZ-EK SÖZCÜKSÜZ HİSSE MOTORU
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     uv_temiz = "".join([c for c in uv if c.isalnum() or c == "."])
-                    hisse_eslesme = "".join(re.findall(r'[A-Z]', uv_temiz))
-                    if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
-                    elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
-                    elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
-                    
-                    if hisse_eslesme:
-                        cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
-                        tablo_alsat.append({"Hisse Kodu 📈": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                    h_ara = re.findall(r'[A-Z]+', uv_temiz)
+                    if h_ara:
+                        hisse_eslesme = str(h_ara[0]).strip()
+                        if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
+                        elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
+                        elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
+                        
+                        if hisse_eslesme:
+                            cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
+                            tablo_alsat.append({"Hisse Kodu 📈": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     wv_temiz = "".join([c for c in wv if c.isalnum() or c == "."])
-                    hisse_eslesme = "".join(re.findall(r'[A-Z]', wv_temiz))
-                    if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
-                    elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
-                    elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
-                    
-                    if hisse_eslesme:
-                        cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
-                        if hisse_eslesme not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                            st.session_state["ozel_takip_kutusu"][hisse_eslesme] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        tablo_al.append({"Hisse Kodu 🚀": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                    h_ara = re.findall(r'[A-Z]+', wv_temiz)
+                    if h_ara:
+                        hisse_eslesme = str(h_ara[0]).strip()
+                        if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
+                        elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
+                        elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
+                        
+                        if hisse_eslesme:
+                            cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
+                            if hisse_eslesme not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                                st.session_state["ozel_takip_kutusu"][hisse_eslesme] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                            tablo_al.append({"Hisse Kodu 🚀": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
 
+# 🟢 ATTIĞINIZ TAM ÇALIŞAN ŞABLON ENTEGRASYONU BAŞLADI
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
@@ -131,11 +136,3 @@ if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         cfiy = hızlı_canli_fiyat_bul(hisse)
-        if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-        tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
-
-# ⚖️ MUTLAK SABİT VE ÇAKILI YASAL UYARI KUTUSU (Ezilmesi imkansız bağımsız üst katman HTML)
-st.write("---")
