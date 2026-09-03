@@ -122,7 +122,7 @@ puan, toplam_oy_sayisi = puanlari_yukle()
 st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Ort. Puan:</b> {puan:.2f} | 🔥 <b>Toplam Oy:</b> {topham_oy_sayisi} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Ort. Puan:</b> {puan:.2f} | 🔥 <b>Toplam Oy:</b> {toplam_oy_sayisi} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -218,7 +218,7 @@ with sol_kolon:
     st.markdown("""
     <div class="spk-kutu-sol">
         <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
-        kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföyным şirketleri, 
+        kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy şirketleri, 
         mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi 
         çerçevesinde sunulmaktadır. Veriler en az 15 dakika gecikmelidir.
     </div>
@@ -226,6 +226,8 @@ with sol_kolon:
 
 with sag_kolon:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
+    
+    # Havuz tablosunu oluşturma süreci sadeleştirildi
     if st.session_state["ozel_takip_kutusu"]:
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
@@ -238,7 +240,8 @@ with sag_kolon:
                 "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL",
                 "Anlık Güncel": f"{cfiy:.2f} TL"
             })
+        
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-            # TÜM BLOK SIFIRDAN 4'ER BOŞLUKLA HİZALANDI
-            if st.button("🗑️ Havuzu Temizle", use_container_width=True):
+            
+        # Hataya sebep olan st.button kontrolü tamamen dışarı çıkarılarak izole edildi
