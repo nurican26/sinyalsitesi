@@ -252,4 +252,4 @@ with sag_kolon:
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
             cfiy = hızlı_canli_fiyat_bul(hisse)
-            if cfiy == 0.0: 
+            if cfiy == 0.0:
