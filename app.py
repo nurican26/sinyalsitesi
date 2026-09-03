@@ -31,7 +31,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 st.sidebar.markdown("### ⚙️ Yönetici Odası")
 yonetici_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Şifre yazın...")
 
-# Şifre doğruyse butonlar görünür
+# Şifre doğruysa butonlar görünür
 if yonetici_sifre == GIRIS_SIFRESI:
     st.sidebar.success(f"Yönetici Aktif. Durum: {st.session_state['kilit_durumu']}")
     col_kilitle, col_ac = st.sidebar.columns(2)
@@ -42,7 +42,7 @@ if yonetici_sifre == GIRIS_SIFRESI:
         st.session_state["kilit_durumu"] = "Açık"
         st.rerun()
 
-# 🛠️ NET KONTROL: Site kilitliyse içerik mutlak olarak gizlenir
+# 🛠️ GİRİNTİ HATASINI BİTİREN YENİ BAĞIMSIZ ERİŞİM SİSTEMİ
 erisim_izni = False
 if st.session_state["kilit_durumu"] == "Açık":
     erisim_izni = True
@@ -167,5 +167,6 @@ if erisim_izni:
         else:
             st.info("Henüz yeni mesaj bulunmuyor.")
 
-else:
-    # 🔒 YÖNETİCİ KİLİTLİ SEÇTİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN (Girintiler tam olarak hizalandı)
+# 🔒 HATA VEREN 'ELSE' SİLİNDİ, YERİNE SİTE KİLİTLİYSE GÖRÜNECEK BAĞIMSIZ BLOK GELDİ
+if not erisim_izni:
+    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Geçici Olarak Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sistem yöneticisiyle iletişime geçiniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
