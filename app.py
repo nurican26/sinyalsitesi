@@ -5,28 +5,16 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Neon Tasarım
+# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # 🔑 PARAMETRELER
 GIRIS_SIFRESI = "bta2026"
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
-DURUM_DOSYASI = "site_durumu.txt"
 
-# 💾 Kalıcı Dosya Hafızasından Kilit Durumunu Okuma Motoru
-def kilit_durumu_oku():
-    if os.path.exists(DURUM_DOSYASI):
-        with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    return "Açık"
-
-def kilit_durumu_yaz(durum):
-    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
-        f.write(durum)
-
-# Geçici hafıza kontrolleri
+# Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
@@ -38,31 +26,18 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# Mevcut kalıcı kilit durumunu yükle
-mevcut_kilit = kilit_durumu_oku()
+# 🔐 TEK VE SABİT GİRİŞ ALANI (Sol Menü)
+st.sidebar.markdown("### 🔐 Erişim Girişi")
+girilen_sifre = st.sidebar.text_input("Giriş Şifresini Yazın:", type="password", placeholder="Şifre...")
 
-# 🔐 YÖNETİCİ GİZLİ PANELİ (Sol Menü)
-st.sidebar.markdown("### ⚙️ Yönetici Odası")
-yonetici_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Şifre yazın...")
-
-# Şifre doğruysa kalıcı kilitleme butonları görünür
-if yonetici_sifre == GIRIS_SIFRESI:
-    st.sidebar.success(f"Yönetici Aktif. Kalıcı Durum: {mevcut_kilit}")
-    col_kilitle, col_ac = st.sidebar.columns(2)
-    if col_kilitle.button("🔒 SİTEYİ KİLİTLE"):
-        kilit_durumu_yaz("Kilitli")
-        st.rerun()
-    if col_ac.button("🔓 HERKESE AÇ"):
-        kilit_durumu_yaz("Açık")
-        st.rerun()
-
-# 🛠️ ERİŞİM KONTROLÜ
+# Şifre doğru mu kontrolü
 erisim_izni = False
-if mevcut_kilit == "Açık":
+if girilen_sifre == GIRIS_SIFRESI:
     erisim_izni = True
 
-# 🟢 1. DURUM: ERİŞİM İZNİ VARSA SİTE VE HİSSELER SORUNSUZ YÜKLENİR
+# 🚀 PARÇALANMA SİSTEMİ BAŞLADI
 if erisim_izni:
+    # 🟢 DOĞRU ŞİFRE GİRİLDİĞİNDE AÇILACAK AKTİF PANEL
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
@@ -162,22 +137,34 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Girinti hatası riski tamamen yok edildi)
-    if yonetici_sifre == GIRIS_SIFRESI:
-        st.write("---")
-        st.subheader("📩 Gelen Kullanıcı Mesajları")
-        if os.path.exists(MESAJ_DOSYASI):
-            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
-                mesajlar = f.readlines()
-            if mesajlar:
-                for m in reversed(mesajlar[-15:]): 
-                    st.text(f"💬 {m.strip()}")
-                st.write("")
-                if st.button("🗑️ Tüm Mesajları Temizle"):
-                    os.remove(MESAJ_DOSYASI)
-                    st.rerun()
-            if not mesajlar:
-                st.info("Henüz yeni mesaj bulunmuyor.")
-        if not os.path.exists(MESAJ_DOSYASI):
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yalnızca doğru şifreyi yazan yönetici okuyabilir)
+    st.write("---")
+    st.subheader("📩 Gelen Kullanıcı Mesajları")
+    if os.path.exists(MESAJ_DOSYASI):
+        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+            mesajlar = f.readlines()
+        if mesajlar:
+            for m in reversed(mesajlar[-15:]): 
+                st.text(f"💬 {m.strip()}")
+            st.write("")
+            if st.button("🗑️ Tüm Mesajları Temizle"):
+                os.remove(MESAJ_DOSYASI)
+                st.rerun()
+        else:
             st.info("Henüz yeni mesaj bulunmuyor.")
+    else:
+        st.info("Henüz yeni mesaj bulunmuyor.")
 
+else:
+    # 🔒 ŞİFRE YAZILMADIĞINDA ZİYARETÇİLERİN GÖRECEĞİ MUTLAK SABİT KİLİTLİ EKRAN
+    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen şifrenizi giriniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
+    
+    st.subheader("📬 Yatırımcı İletişim Formu")
+    ziyaretci_isim = st.text_input("Rumuzunuz / İletişim Bilginiz (E-posta veya Tel):", value="Anonim")
+    ziyaretci_mesaj = st.text_area("Mesajınız:", placeholder="Şifre talep etmek veya not bırakmak için yazabilirsiniz...")
+    
+    if st.button("Mesajı İlet 🚀", use_container_width=True):
+        if ziyaretci_mesaj.strip():
+            zaman_damgasi = datetime.datetime.now().strftime("%d.%m %H:%M")
+            with open(MESAJ_DOSYASI, "a", encoding="utf-8") as f:
+                f.write(f"[{zaman_damgasi}] {ziyaretci_isim}: {ziyaretci_mesaj.strip()}\n")
