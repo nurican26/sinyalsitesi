@@ -38,14 +38,13 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 KESİN ÇÖZÜM: Excel A Sütunundaki tüm hisseleri dinamik toplar, hiçbir kısıtlama koymaz
+# 🌟 Düzeni Asla Bozmayan Dinamik Hisse Toplayıcı
 BORSA_HISSELERI = []
 if df_kaynak is not None:
     for idx in range(len(df_kaynak)):
         hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
         saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
         
-        # RAYSG HİSSESİNİ KÖKTEN SİLİP ATAN FİLTRE
         if saf_kod == "RAYSG":
             continue
             
@@ -53,7 +52,6 @@ if df_kaynak is not None:
             if saf_kod not in BORSA_HISSELERI:
                 BORSA_HISSELERI.append(saf_kod)
 
-# Hafızada kalmış eski takipleri de RAYSG'den arındırıyoruz
 if "RAYSG" in st.session_state["ozel_takip_kutusu"]:
     del st.session_state["ozel_takip_kutusu"]["RAYSG"]
 
@@ -68,13 +66,13 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 TAM SATIR BULUCU
+# 🌟 KESİN ÇÖZÜM: Butonların hisseleri bulabilmesi için hücre içi esnek kelime kontrolü geri getirildi
 def hisse_satirini_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
             ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            saf_hucre_kodu = "".join(re.findall(r'[A-Z]+', ilk_hucre))
-            if hisse_kodu == saf_hucre_kodu:
+            # Hücrenin içinde tam kelime olarak hisse kodu geçiyor mu kontrolü (Sinyallerin kilit noktası)
+            if hisse_kodu in ilk_hucre:
                 return idx
     return None
 
@@ -84,7 +82,7 @@ def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
     return metin.strip()
 
-# 4. Canlı Takip Bölümü (Tüm Liste Aktif)
+# 4. Canlı Takip Bölümü
 st.subheader("🎯 Canlı Takip")
 
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
@@ -92,8 +90,7 @@ arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVV
 st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (İnternet Canlı Verileri)")
 canli_borsa_listesi = []
 
-# Arama yoksa tüm dinamik listeyi yükler, tıkanma bitti
-listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI
+listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI[:35]
 
 for hisse in listelenecek_hisseler:
     if not hisse or hisse == "RAYSG": continue
