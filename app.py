@@ -27,7 +27,7 @@ c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
 c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Canlı Fiyatlar İnternetten Çekiliyor. Son Yenilenme: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Canlı Fiyatlar %100 İnternetten (Yahoo Finance) Anlık Çekiliyor. Son Yenilenme: {guncel_an}")
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -38,16 +38,18 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 TALEP: Tam 25 adet borsa hisseniz listeye kilitlendi
-BORSA_HISSELERI = [
-    "RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", 
-    "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", 
-    "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", 
-    "INGRM", "FORTE", "PKENT", "DUNYH", "KUVVA",
-    "SAYAS", "LUKSK", "BUCIM", "YAPRK", "EKIM"
-]
+# 🌟 630+ TÜM HİSSELERİ OTOMATIK TARAMA ALTYAPISI
+BORSA_HISSELERI = []
+if df_kaynak is not None:
+    for idx in range(len(df_kaynak)):
+        hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
+        # Satır numaralarını temizleyip sadece saf harf kodunu alır (Örn: "529 SONME" -> "SONME")
+        saf_kod = re.sub(r'[^A-Z]', '', hucre_metni)
+        if len(saf_kod) >= 4 and saf_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
+            if saf_kod not in BORSA_HISSELERI:
+                BORSA_HISSELERI.append(saf_kod)
 
-# 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ (Yahoo Finance)
+# 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ
 def internetten_canli_fiyat_bul(hisse_kodu):
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
@@ -58,13 +60,13 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 KESİN SATIR BULUCU: Satır kaymalarını önler, tam satır indeksini yakalar
+# 🌟 KESİN SATIR BULUCU: RAYSG karışıklığını bitiren tam eşleşme kontrolü
 def hisse_satirini_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
             ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            kelimeler = re.findall(r'[A-Z0-9]+', ilk_hucre)
-            if hisse_kodu in kelimeler:
+            saf_hucre_kodu = re.sub(r'[^A-Z]', '', ilk_hucre)
+            if hisse_kodu == saf_hucre_kodu:
                 return idx
     return None
 
@@ -74,15 +76,16 @@ def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
     return metin.strip()
 
-# 4. Canlı Takip Bölümü (25 Hisse ile Sınırlandırıldı)
+# 4. Canlı Takip Bölümü
 st.subheader("🎯 Canlı Takip")
 
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
 
-st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (İnternet Verisi)")
+st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (630+ Tüm Hisse Ağı)")
 canli_borsa_listesi = []
 
-listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI
+# Arama kutusu doluysa sadece arananı, boşsa tüm hisselerden veri gösterir
+listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI[:30] # Ana ekranda donma yapmaması için ilk 30 akar, arama yapınca hepsi gelir
 
 for hisse in listelenecek_hisseler:
     if not hisse: continue
@@ -100,7 +103,7 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı (U Sütununda tetiklenir, Puanı T Sütunundan - İndeks 19 alır)
+# AL SAT Sinyal Mantığı (U Sütununda veri arar, Puanı T Sütunundan alır)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -110,8 +113,6 @@ if al_sat_butonu:
                 uv = str(df_kaynak.iloc[s_idx, 20]).strip().upper()
                 if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-"]:
                     cfiy = internetten_canli_fiyat_bul(hisse)
-                    
-                    # 🛠️ Puan verisi kesin olarak T sütunundan (indeks 19) çekilir
                     raw_puan = df_kaynak.iloc[s_idx, 19] if len(df_kaynak.columns) > 19 else uv
                     puan_temiz = sinyal_metni_temizle(raw_puan, hisse)
                     
@@ -126,7 +127,7 @@ if al_sat_butonu:
         else: 
             st.warning("Excel dosyasında aktif AL SAT sinyali bulunamadı.")
 
-# AL Sinyal Mantığı (W Sütununda tetiklenir, Puanı T Sütunundan - İndeks 19 alır)
+# AL Sinyal Mantığı (W Sütununda veri arar, Puanı T Sütunundan alır)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -137,8 +138,6 @@ if al_butonu:
                 if wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-"]:
                     cfiy = internetten_canli_fiyat_bul(hisse)
                     st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                    
-                    # 🛠️ Puan verisi kesin olarak T sütunundan (indeks 19) çekilir
                     raw_puan = df_kaynak.iloc[s_idx, 19] if len(df_kaynak.columns) > 19 else wv
                     puan_al_temiz = sinyal_metni_temizle(raw_puan, hisse)
                     
