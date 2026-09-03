@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os
+import os, re
 import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
