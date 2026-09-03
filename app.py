@@ -37,15 +37,8 @@ if "ozel_takip_kutusu" not in st.session_state:
     st.session_state["ozel_takip_kutusu"] = {}
 if "kisitli_liste" not in st.session_state:
     st.session_state["kisitli_liste"] = []
-    
-# 🛡️ GENİŞLETİLMİŞ OTOMATİK KÜFÜR VE ARGO FİLTRESİ
 if "engellenen_kelimeler" not in st.session_state:
-    st.session_state["engellenen_kelimeler"] = [
-        "salak", "aptal", "gerizekali", "manyak", "kufur", "argo", "piç", "oç", 
-        "sik", "amk", "aq", "orospu", "kahpe", "it", "kopek", "şerefsiz", "yavşak",
-        "lan", "pust", "gavat", "mal", "hıyar", "göt"
-    ]
-    
+    st.session_state["engellenen_kelimeler"] = ["salak", "aptal", "küfür1", "küfür2"]
 if "oda_sayisi" not in st.session_state:
     st.session_state["oda_sayisi"] = 1
 if "ziyaret_sayaci" not in st.session_state:
@@ -214,3 +207,8 @@ with sol_taraf:
 with sag_taraf:
     # ⭐ YILLDIZ OYLAMA ALANI
     st.markdown("### ✨ Paneli Beğendiniz mi?")
+    st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
+    yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
+
+    if yildiz_skor is not None:
+        gercek_puan = yildiz_skor + 1
