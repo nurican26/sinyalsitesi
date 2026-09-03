@@ -59,7 +59,9 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
         if time.time() - saved_time < 300: 
             return saved_price
     try:
-        ticker = yf.Ticker(f"{hisse_kodu}.IS")
+        # Hisse kodunu parantez kirliliğinden tamamen kurtaran regex temizliği
+        temiz_kod = str(hisse_kodu).replace("['", "").replace("']", "").replace("[\"", "").replace("\"]", "").strip()
+        ticker = yf.Ticker(f"{temiz_kod}.IS")
         data = ticker.history(period="1d")
         if not data.empty and not pd.isna(data['Close'].iloc[-1]):
             fiyat = float(data['Close'].iloc[-1])
@@ -114,7 +116,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]).strip()
+                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ VE TIRNAKLAR SİLİNDİ (DÜZ YAZI YAPILDI)
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -123,7 +125,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]).strip()
+                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ VE TIRNAKLAR SİLİNDİ (DÜZ YAZI YAPILDI)
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -159,18 +161,9 @@ if erisim_izni:
                 st.session_state["ozel_takip_kutusu"] = {}
                 st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yalnızca Yönetici Görür)
     if is_admin and os.path.exists(MESAJ_DOSYASI):
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
         try:
             with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: 
-                m_liste = f.readlines()
-            if m_liste:
-                for m in reversed(m_liste[-15:]): 
-                    st.text(f"💬 {m.strip()}")
-                st.write("")
-                if st.button("🗑️ Tüm Mesajları Temizle"):
-                    os.remove(MESAJ_DOSYASI)
-                    st.rerun()
-        except: 
