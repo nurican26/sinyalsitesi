@@ -89,21 +89,21 @@ if erisim_izni:
                     t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
                     
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        hisse_ara = re.findall(r'[A-Z]{4,5}', uv_degeri) # 4 veya 5 harfli borsa kodlarını temiz süzer
+                        hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]) # 🛠️ KRİTİK TAMİR: Liste yerine temiz metin seçildi
+                            hisse = str(hisse_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                        hisse_ara = re.findall(r'[A-Z]{4,5}', wv_degeri) # 4 veya 5 harfli borsa kodlarını temiz süzer
+                        hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]) # 🛠️ KRİTİK TAMİR: Liste yerine temiz metin seçildi
+                            hisse = str(hisse_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                             tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
@@ -131,35 +131,35 @@ if erisim_izni:
                 st.session_state["ozel_takip_kutusu"] = {}
                 st.rerun()
 
-# ⭐ TOPLULUK PUANLAMA SİSTEMİ
-st.write("---")
-st.subheader("⭐ Paneli Değerlendir")
-yildiz_secimi = st.feedback("stars") 
-if yildiz_secimi is not None:
-    st.session_state["topham_oy_sayisi"] += 1
-    st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
-    st.success("Oyunuz kaydedildi!")
-    time.sleep(1)
-    st.rerun()
-
-# 📬 GIZLI GELEN MESAJLAR PANELİ
-if panel_modu == "Site Şifreli / Kilitli" and erisim_izni:
+    # ⭐ TOPLULUK PUANLAMA SİSTEMİ
     st.write("---")
-    st.subheader("📩 Gelen Kullanıcı Mesajları")
-    if os.path.exists(MESAJ_DOSYASI):
-        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
-            mesajlar = f.readlines()
-        if mesajlar:
-            for m in reversed(mesajlar[-15:]): 
-                st.text(f"💬 {m.strip()}")
-            st.write("")
-            if st.button("🗑️ Tüm Mesajları Temizle"):
-                os.remove(MESAJ_DOSYASI)
-                st.rerun()
+    st.subheader("⭐ Paneli Değerlendir")
+    yildiz_secimi = st.feedback("stars") 
+    if yildiz_secimi is not None:
+        st.session_state["topham_oy_sayisi"] += 1
+        st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
+        st.success("Oyunuz kaydedildi!")
+        time.sleep(1)
+        st.rerun()
+
+    # 📬 GIZLI GELEN MESAJLAR PANELİ
+    if panel_modu == "Site Şifreli / Kilitli" and erisim_izni:
+        st.write("---")
+        st.subheader("📩 Gelen Kullanıcı Mesajları")
+        if os.path.exists(MESAJ_DOSYASI):
+            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+                mesajlar = f.readlines()
+            if mesajlar:
+                for m in reversed(mesajlar[-15:]): 
+                    st.text(f"💬 {m.strip()}")
+                st.write("")
+                if st.button("🗑️ Tüm Mesajları Temizle"):
+                    os.remove(MESAJ_DOSYASI)
+                    st.rerun()
+            else:
+                st.info("Henüz yeni mesaj bulunmuyor.")
         else:
             st.info("Henüz yeni mesaj bulunmuyor.")
-    else:
-        st.info("Henüz yeni mesaj bulunmuyor.")
 
 else:
     # 🔒 MOD "KİLİTLİ" SEÇİLDİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK EKRAN
