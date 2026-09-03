@@ -23,12 +23,12 @@ st.markdown("""
         width: 100% !important; 
         border: 2px solid #10b981 !important; 
         border-radius: 8px;
-        max-height: 280px !important; /* Fazla uzamasını engeller */
+        max-height: 280px !important;
     }
     
-    /* 🔎 TABLO İÇİNDEKİ YAZILARI KALINLAŞTIRAN VE BÜYÜTEN ÖZEL AYAR (Hisse, Puan ve Fiyat) */
+    /* 🔎 TABLO İÇİNDEKİ YAZILARI KALINLAŞTIRAN VEE BÜYÜTEN ÖZEL AYAR (Hisse, Puan ve Fiyat) */
     div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
-        font-size: 1.15rem !important;
+        font-size: 1.25rem !important;
         font-weight: bold !important;
         color: #ffffff !important;
     }
@@ -135,10 +135,10 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara
+                        hisse = hisse_ara[0] # String dönüşümü sabitlendi
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         tablo_alsat.append({
                             "Hisse Kodu 📈": hisse, 
@@ -150,10 +150,10 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara
+                        hisse = hisse_ara[0] # String dönüşümü sabitlendi
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
@@ -166,14 +166,14 @@ if df_kaynak is not None:
         except:
             pass
 
-# 🟡 AL SAT SİNYAL ALANI (5 hisse sığacak boyuta sabitlendi)
+# 🟡 AL SAT SİNYAL ALANI
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat:
     st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else:
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-# 🟢 BTA SİNYAL MERKEZİ (5 hisse sığacak boyuta sabitlendi)
+# 🟢 BTA SİNYAL MERKEZİ
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if tablo_al:
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
@@ -199,12 +199,12 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 💬 HER TARAYICIDA VE TELEFONDA GÖRÜNEN GARANTİ BEĞENİ ALANI
+# 💬 BEĞENİ ALANI (Hatasız ve Eksiksiz Liste)
 st.write("---")
-st.subheader("⭐ Paneli Beğerlendir")
+st.subheader("⭐ Paneli Değerlendir")
 
-# Puanlama butonu (Ekrandan asla kaybolmaz)
-secilen_oy = st.selectbox("Paneli puanlayın:", [5, 4, 3, 2, 1], format_func=lambda x: f"{'⭐' * x} ({x} Yıldız)")
+puan_secenekleri = [1, 2, 3, 4, 5]
+secilen_oy = st.selectbox("Paneli puanlayın:", options=puan_secenekleri, format_func=lambda x: f"{'⭐' * x} ({x} Yıldız)")
 if st.button("Oyu Gönder 🟩", use_container_width=True):
     st.session_state["topham_oy_sayisi"] += 1
     st.session_state["topham_yildiz_puani"] += secilen_oy
@@ -212,7 +212,6 @@ if st.button("Oyu Gönder 🟩", use_container_width=True):
     time.sleep(1)
     st.rerun()
 
-# Güncel oy durumunu en altta şık bir metinle listeler
 puan_sonuc = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
 st.markdown(f"📊 **Mevcut Durum:** Ortalama Puan: `{puan_sonuc:.2f}` | Toplam Oy: `{st.session_state['topham_oy_sayisi']}` | Panel Girişi: `{st.session_state['ziyaret_sayaci']}`")
 
