@@ -30,7 +30,7 @@ st.markdown("""
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
     }
     
-    /* 🟢 YENİ YEŞİL TONLARINDA BÜYÜK HARFLİ BTA LOGOSU */
+    /* 🟢 BÜYÜK HARFLİ YEŞİL BTA LOGOSU */
     .bta-logo-konteyner {
         display: flex;
         align-items: center;
@@ -38,20 +38,20 @@ st.markdown("""
         margin-bottom: 25px;
     }
     .bta-logo {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%); /* Zümrüt ve Canlı Yeşil */
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
         color: white !important;
         font-family: 'Sacramento', cursive, sans-serif !important;
         font-weight: bold;
         font-size: 3.2rem;
         padding: 2px 25px;
         border-radius: 16px;
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); /* Yeşil Neon Işıma */
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
         line-height: 1.2;
     }
     
     .mesaj-kutusu {
         background-color: rgba(255, 255, 255, 0.05);
-        border-left: 4px solid #10b981; /* Mesaj şeridi de yeşil tonuna uyarlandı */
+        border-left: 4px solid #10b981;
         padding: 10px;
         border-radius: 4px;
         margin-bottom: 8px;
@@ -250,3 +250,6 @@ with sag_kolon:
     
     if st.session_state["ozel_takip_kutusu"]:
         tk_list = []
+        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+            cfiy = hızlı_canli_fiyat_bul(hisse)
+            if cfiy == 0.0: 
