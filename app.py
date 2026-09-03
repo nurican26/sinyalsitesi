@@ -41,11 +41,10 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
-# 🎛️ YÖNETİCİ KONTROL PANELİ
-is_admin = False
-if girilen_sifre == YONETICI_SIFRESI:
-    is_admin = True
+# Yönetici yetki kontrolü
+is_admin = girilen_sifre == YONETICI_SIFRESI
 
+# 🎛️ YÖNETİCİ ODASI PANELİ
 if is_admin:
     st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
@@ -57,17 +56,14 @@ if is_admin:
         st.rerun()
 
 # 🛠️ ERİŞİM KONTROL MANTIĞI
-erisim_izni = False
-if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
-    erisim_izni = True
+erisim_izni = mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or is_admin
 
-# 💥 CANLI FİYAT MOTORU
+# 💥 CANLI FİYAT MOTORU (Parantezleri ezerek internet fiyat donmasını engeller)
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
         if time.time() - saved_time < 300: return saved_price
     try:
-        # Hisse kodunun etrafındaki temizliği garantiye alıyoruz
         temiz_kod = str(hisse_kodu).replace("['", "").replace("']", "").replace("[\"", "").replace("\"]", "").strip()
         ticker = yf.Ticker(f"{temiz_kod}.IS")
         data = ticker.history(period="1d")
@@ -78,7 +74,22 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
+# 📬 GİZLİ MESAJLARI LİSTELEME FONKSİYONU (Girinti hatasını sıfırlayan bağımsız yapı)
+def yonetici_mesajlarini_goster():
+    if os.path.exists(MESAJ_DOSYASI):
+        st.write("---")
+        st.subheader("📩 Gelen Kullanıcı Mesajları")
+        try:
+            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar_listesi = f.readlines()
+            if mesajlar_listesi:
+                for m in reversed(mesajlar_listesi[-15:]): st.text(f"💬 {m.strip()}")
+                st.write("")
+                if st.button("🗑️ Tüm Mesajları Temizle"):
+                    os.remove(MESAJ_DOSYASI)
+                    st.rerun()
+        except: pass
+
+# 🟢 1. ANA PARÇA: ERİŞİM İZNİ VARSA TABLOLAR YÜKLENİR
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -102,7 +113,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam metin olarak aldık
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam ham metin olarak aldık
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -111,7 +122,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam metin olarak aldık
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam ham metin olarak aldık
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -151,19 +162,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-# 📬 GIZLI GELEN MESAJLAR PANELİ (Riskli tüm iç içe bloklar tamamen düzleştirildi)
-if is_admin and os.path.exists(MESAJ_DOSYASI):
-    st.write("---")
-    st.subheader("📩 Gelen Kullanıcı Mesajları")
-    try:
-        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar_listesi = f.readlines()
-        if mesajlar_listesi:
-            for m in reversed(mesajlar_listesi[-15:]): st.text(f"💬 {m.strip()}")
-            st.write("")
-            if st.button("🗑️ Tüm Mesajları Temizle"):
-                os.remove(MESAJ_DOSYASI)
-                st.rerun()
-    except: pass
+    # Yönetici mesaj okuma panelini izole çalıştırıyoruz
+    if is_admin:
+        yonetici_mesajlarini_goster()
 
-# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN (Yatırımcı İmkanı Eksiksiz Açık)
-if not erisim_izni:
