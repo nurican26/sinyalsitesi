@@ -92,35 +92,39 @@ if df_kaynak is not None:
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                    h_ara = re.findall(r'[A-A-Z]+', uv) or re.findall(r'[A-Z]+', uv)
+                    h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        # 🛠️ GÜVENLİ PARANTEZ ÇÖZÜMÜ: Listenin ilk elemanını direkt temiz metin olarak seçtik.
+                        # 🛠️ GÜVENLİ VE KESİN PARANTEZSİZ METİN ALMA MOTORU
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                    h_ara = re.findall(r'[A-A-Z]+', wv) or re.findall(r'[A-Z]+', wv)
+                    h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        # 🛠️ GÜVENLİ PARANTEZ ÇÖZÜMÜ: Listenin ilk elemanını direkt temiz metin olarak seçtik.
+                        # 🛠️ GÜVENLİ VE KESİN PARANTEZSİZ METİN ALMA MOTORU
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
 
-st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+# 🛡️ GÜVENLİK ZIRHI: Sinyal tablolarını hataya karşı tamamen izole ettik
+try:
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif BTA sinyali taranıyor...")
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif BTA sinyali taranıyor...")
+except:
+    st.write("⚠️ Veriler işlenirken küçük bir gecikme yaşanıyor, lütfen sayfayı tazeleyin.")
 
 if st.session_state["ozel_takip_kutusu"]:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
@@ -134,4 +138,3 @@ if st.session_state["ozel_takip_kutusu"]:
         if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
 
 # ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Ezilmesi veya gizlenmesi imkansız bağımsız kırmızı kalın çerçeve)
-st.write("---")
