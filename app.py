@@ -73,7 +73,7 @@ st.write("")
 # 📰 BORSA VE EKONOMİ GÜNDEMİ HABER BLOKLARI
 st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
 st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın og ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
 st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
 st.write("")
 
@@ -92,12 +92,12 @@ if df_kaynak is not None:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # 🛠️ GELİŞMİŞ VE KESİN PARANTEZSİZ-EK SÖZCÜKSÜZ HİSSE MOTORU
+                # 🛠️ GÜVENLİ VE KESİN PARANTEZSİZ-EK SÖZCÜKSÜZ HİSSE MOTORU
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     uv_temiz = "".join([c for c in uv if c.isalnum() or c == "."])
-                    h_ara = re.findall(r'[A-Z]+', uv_temiz)
-                    if h_ara:
-                        hisse_eslesme = str(h_ara[0]).strip()
+                    h_eslesme = re.findall(r'[A-Z]+', uv_temiz)
+                    if h_eslesme:
+                        hisse_eslesme = str(h_eslesme[0]).strip()
                         if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
                         elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
                         elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
@@ -108,9 +108,9 @@ if df_kaynak is not None:
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     wv_temiz = "".join([c for c in wv if c.isalnum() or c == "."])
-                    h_ara = re.findall(r'[A-Z]+', wv_temiz)
-                    if h_ara:
-                        hisse_eslesme = str(h_ara[0]).strip()
+                    h_eslesme = re.findall(r'[A-Z]+', wv_temiz)
+                    if h_eslesme:
+                        hisse_eslesme = str(h_eslesme[0]).strip()
                         if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
                         elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
                         elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
@@ -122,7 +122,7 @@ if df_kaynak is not None:
                             tablo_al.append({"Hisse Kodu 🚀": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
 
-# 🟢 ATTIĞINIZ TAM ÇALIŞAN ŞABLON ENTEGRASYONU BAŞLADI
+# 🟢 TAM ÇALIŞAN ŞABLON ENTEGRASYONU
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
