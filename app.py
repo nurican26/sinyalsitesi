@@ -34,17 +34,15 @@ df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: 
-        # Sütun veya satır filtrelemesi yapmadan ham tabloyu çeker
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 KESİN ÇÖZÜM: Excel A Sütununda yazan 630+ tüm satırları sırayla tarar, hiçbir hisseyi atlamaz
+# 🌟 Excel A Sütunundaki tüm hisseleri dinamik toplayan altyapı (630+ hisse)
 BORSA_HISSELERI = []
 if df_kaynak is not None:
     for idx in range(len(df_kaynak)):
         hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
-        # Satırdaki metinden sadece harfleri ayıklar (Örn: "529 SONME" -> "SONME")
         saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
         
         # RAYSG hissesini tablolardan tamamen uzaklaştırır
@@ -70,13 +68,13 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 SAF PUAN TEMİZLEYİCİ: Yazılması yasak kelimeleri eler
+# 🌟 SAF PUAN TEMİZLEYİCİ
 def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = str(ham_metin).strip().upper()
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
     return metin.strip()
 
-# 4. Canlı Takip Bölümü (630+ Tüm Hisse Ağı Açıldı)
+# 4. Canlı Takip Bölümü (630+ Tüm Hisse Ağı)
 st.subheader("🎯 Canlı Takip")
 
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
@@ -84,7 +82,7 @@ arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVV
 st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (İnternet Canlı Verileri)")
 canli_borsa_listesi = []
 
-# Arama çubuğu boşsa donma yapmaması için ilk 35 hisseyi akıtır; arama yapılınca 630+ ağın tamamından bulur
+# Arama çubuğu boşsa ilk 35 hisseyi akıtır; arama yapılınca 630+ ağın tamamından bulur
 listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI[:35]
 
 for hisse in listelenecek_hisseler:
@@ -96,14 +94,14 @@ for hisse in listelenecek_hisseler:
 if canli_borsa_listesi: 
     st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=300)
 
-# 5. BTA SİNYAL MERKEZİ (Dinamik ve Sıralı Satır Okuma Motoru)
+# 5. BTA SİNYAL MERKEZİ (Dinamik ve Satır Sıralı Okuma)
 st.divider()
 st.subheader("📈 BTA SİNYAL MERKEZİ")
 b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı (Doğrudan Excel satırlarını sırayla okur - U Sütunu indeks 20, Puan T Sütunu indeks 19)
+# AL SAT Sinyal Mantığı (U Sütununda tetiklenir, Puanı T Sütunundan alır)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -113,7 +111,6 @@ if al_sat_butonu:
                     uv = str(df_kaynak.iloc[idx, 20]).strip().upper()
                     if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-"]:
                         
-                        # Satırdaki gerçek hisse kodunu bul
                         hucre_adi = str(df_kaynak.iloc[idx, 0]).strip().upper()
                         hisse = "".join(re.findall(r'[A-Z]+', hucre_adi))
                         
@@ -135,7 +132,7 @@ if al_sat_butonu:
         else: 
             st.warning("Excel dosyasında aktif AL SAT sinyali bulunamadı.")
 
-# AL Sinyal Mantığı (Doğrudan Excel satırlarını sırayla okur - W Sütunu indeks 22, Puan T Sütunu indeks 19)
+# AL Sinyal Mantığı (W Sütununda tetiklenir, Puanı T Sütunundan alır)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -145,7 +142,6 @@ if al_butonu:
                     wv = str(df_kaynak.iloc[idx, 22]).strip().upper()
                     if wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-"]:
                         
-                        # Satırdaki gerçek hisse kodunu bul
                         hucre_adi = str(df_kaynak.iloc[idx, 0]).strip().upper()
                         hisse = "".join(re.findall(r'[A-Z]+', hucre_adi))
                         
@@ -207,9 +203,15 @@ with col_p2:
         st.success("Oyunuz başarıyla kaydedildi!")
         st.rerun()
 
-# 8. BTa Sohbet Odası Bölümü
+# 8. BTa Sohbet Odası Bölümü (Girinti hatası kesin olarak düzeltildi)
 st.divider()
 st.subheader("💬 BTa Sohbet")
 
 for msg in st.session_state["chat_history"]:
     with st.chat_message(msg["role"]):
+        st.write(msg["content"])  # Hata veren girinti alanı düzeltildi
+
+user_input = st.chat_input("Mesajınızı buraya yazın...")
+if user_input:
+    st.session_state["chat_history"].append({"role": "user", "content": user_input})
+    st.rerun()
