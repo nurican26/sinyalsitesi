@@ -67,7 +67,6 @@ if erisim_izni:
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-    # Excel Okuma
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
@@ -76,7 +75,6 @@ if erisim_izni:
         except:
             pass
 
-    # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if hisse_kodu in st.session_state["fiyat_hafizasi"]:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -111,7 +109,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -120,7 +118,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -161,7 +159,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Sorun çıkarabilecek tüm girintiler tamamen kaldırıldı)
     if girilen_sifre == GIRIS_SIFRESI and os.path.exists(MESAJ_DOSYASI):
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
