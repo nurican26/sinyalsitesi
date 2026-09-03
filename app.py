@@ -43,23 +43,23 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası okuma hatası: {e}")
 
-# 🌟 AKILLI SÜTUN ENDEKSİ BULUCU (İndeks kaymalarını sıfırlayan motor)
+# 🌟 AKILLI SÜTUN ENDEKSİ BULUCU (Çalışan Sistemi Koruyoruz)
 u_idx, w_idx, t_idx = None, None, None
 if df_kaynak is not None:
-    # Excel'in ilk 5 satırında başlık kelimelerini arıyoruz
     for r_idx in range(min(5, len(df_kaynak))):
         satir_degerleri = [str(val).strip().upper() for val in df_kaynak.iloc[r_idx]]
         for c_idx, cell in enumerate(satir_degerleri):
             if "AL_SAT" in cell or "AL SAT" in cell: u_idx = c_idx
             if "AL" in cell and "AL_SAT" not in cell and "AL SAT" not in cell: w_idx = c_idx
-            if "BTA" in cell or "PUAN" in cell: t_idx = c_idx
+            # T sütunu tespiti için kriterleri genişlettik
+            if "BTA" in cell or "PUAN" in cell or "BTAPUAN" in cell: t_idx = c_idx
         if u_idx is not None or w_idx is not None:
             break
 
-# Eğer akıllı bulucu başarısız olursa eski el yordamı indeksleri koru (Güvenlik önlemi)
-if u_idx == None: u_idx = 20
-if w_idx == None: w_idx = 22
-if t_idx == None: t_idx = 19
+# Eşleşme olmazsa garanti indeksleri ata
+if u_idx is None: u_idx = 20
+if w_idx is None: w_idx = 22
+if t_idx is None: t_idx = 19
 
 # 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ
 def internetten_canli_fiyat_bul(hisse_kodu):
@@ -95,8 +95,8 @@ if st.session_state["al_sat_goster"]:
                     
                     if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"] or hisse in uv:
                         cfiy = internetten_canli_fiyat_bul(hisse)
-                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else uv
-                        if raw_puan in ["NAN", "0", "0.0"]: raw_puan = uv
+                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else "-"
+                        if raw_puan in ["NAN", "0", "0.0", "NAN"]: raw_puan = "-"
                         
                         tablo_verisi.append({
                             "Hisse Kodu": hisse, 
@@ -121,9 +121,12 @@ if st.session_state["al_goster"]:
                     
                     if (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]) or "AL" in wv or hisse in wv:
                         cfiy = internetten_canli_fiyat_bul(hisse)
-                        st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else wv
-                        if raw_puan in ["NAN", "0", "0.0"]: raw_puan = wv
+                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else "-"
+                        if raw_puan in ["NAN", "0", "0.0", "NAN"]: raw_puan = "-"
+                        
+                        # 🌟 DÜZELTME: Sadece havuzda henüz kayıtlı olmayan yeni hisseleri maliyetlendirir
+                        if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         
                         tablo_verisi_al.append({
                             "Hisse Kodu": hisse, 
@@ -146,7 +149,7 @@ if st.session_state["ozel_takip_kutusu"]:
         tk_list.append({
             "Hisse Kodu": hisse,
             "Maliyet": f"{bilge['kayit_fiyati']:.2f} TL",
-            "Anlık": f"{cfiy:.2f} TL"
+            "Anlık Fiyat": f"{cfiy:.2f} TL"
         })
     if tk_list:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
