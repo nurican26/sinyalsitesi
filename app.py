@@ -97,7 +97,6 @@ with st.spinner("Anlık borsa fiyatları işleniyor..."):
             hisse_obj = yf.Ticker(f"{hisse}.IS")
             hisse_data = hisse_obj.history(period="2d")
             
-            # Eğer Yahoo Finance veriyi çekebildiyse
             if len(hisse_data) >= 2 and not pd.isna(hisse_data['Close'].iloc[-1]):
                 guncel_fiy = hisse_data['Close'].iloc[-1]
                 onceki_kapanis = hisse_data['Close'].iloc[-2]
@@ -109,7 +108,6 @@ with st.spinner("Anlık borsa fiyatları işleniyor..."):
                     "Günlük Değişim": f"🟢 %+{gunluk_degisim:.2f}" if gunluk_degisim >= 0 else f"🔴 %{gunluk_degisim:.2f}"
                 })
             else:
-                # Yahoo Finance boş veya nan dönerse, Excel'den arayıp bulma koruması
                 excel_fiyat = 0.0
                 if df_kaynak is not None:
                     for idx in range(2, len(df_kaynak)):
@@ -118,7 +116,7 @@ with st.spinner("Anlık borsa fiyatları işleniyor..."):
                             if hisse in cell_v:
                                 f_str = str(df_kaynak.iloc[idx, 7]).replace(",", ".").strip()
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", f_str)
-                                excel_fiyat = float(sayilar[0]) if sayilar else 0.0
+                                excel_fiyat = float(sayilar) if sayilar else 0.0
                                 break
                 
                 if excel_fiyat > 0:
@@ -181,7 +179,7 @@ if al_sat_butonu and df_kaynak is not None:
                         try:
                             fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                             sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                            yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            yuklenen_fiy = float(sayilar) if sayilar else 0.0
                         except:
                             yuklenen_fiy = 0.0
                         
@@ -190,7 +188,6 @@ if al_sat_butonu and df_kaynak is not None:
                         if not hisse_data.empty:
                             canli_fiyat = hisse_data['Close'].iloc[-1]
                         
-                        # Eğer Yahoo'dan gelen fiyat nan ise Excel fiyatına eşitle
                         if pd.isna(canli_fiyat) or canli_fiyat == 0.0:
                             canli_fiyat = yuklenen_fiy
                             
@@ -227,3 +224,9 @@ if al_butonu and df_kaynak is not None:
                         
                     hisse_adi = None
                     for h in BORSA_HISSELERI:
+                        if h in w_val:
+                            hisse_adi = h
+                            break
+                    
+                    if hisse_adi:
+                        try:
