@@ -43,7 +43,6 @@ st.markdown("""
         border-radius: 4px;
         margin-bottom: 8px;
     }
-    /* SPK Uyarısı için Sol Alt Köşe Tasarımı */
     .spk-kutu-sol {
         background-color: rgba(220, 38, 38, 0.1);
         border-left: 4px solid #dc2626; 
@@ -63,15 +62,12 @@ st.markdown("""
 MESAJ_DOSYASI = "ortak_mesajlar.csv"
 
 # 🚫 KÜFÜR VE UYGUNSUZ KELİME FİLTRE MOTORU
-# Engellemek istediğiniz kelimeleri bu listenin içine virgülle ekleyebilirsiniz.
 YASAKLI_KELIMELER = ["küfür1", "küfür2", "argo1", "hakaret1", "salak", "aptal"] 
 
 def sansurle(metin):
     temiz_metin = metin
     for kelime in YASAKLI_KELIMELER:
-        # Büyük/küçük harf duyarsız eşleşme sağlar
         pattern = re.compile(re.escape(kelime), re.IGNORECASE)
-        # Kelime uzunluğu kadar yıldız (*) koyar
         temiz_metin = pattern.sub("*" * len(kelime), temiz_metin)
     return temiz_metin
 
@@ -84,10 +80,8 @@ def mesajlari_yukle():
     return []
 
 def mesaj_kaydet(isim, mesaj, saat):
-    # Kaydedilmeden önce ismi ve mesajı filtreden geçiriyoruz
     güvenli_isim = sansurle(isim)
     güvenli_mesaj = sansurle(mesaj)
-    
     yeni_data = pd.DataFrame([{"isim": güvenli_isim, "mesaj": güvenli_mesaj, "saat": saat}])
     if os.path.exists(MESAJ_DOSYASI):
         yeni_data.to_csv(MESAJ_DOSYASI, mode='a', header=False, index=False)
@@ -159,7 +153,7 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = hisse_ara[0] # Hata veren düzeltme noktası
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -173,7 +167,7 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = hisse_ara[0] # Hata veren düzeltme noktası
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else wv_degeri)
@@ -189,25 +183,22 @@ if df_kaynak is not None:
         except:
             pass
 
-# Layout'u Sol ve Sağ kolon olarak ikiye bölüyoruz (SPK uyarısını sol alta hizalamak için)
-sol_kolon, sag_kolon = st.columns([1, 1])
+# Sayfa Yerleşimi
+sol_kolon, sag_kolon = st.columns()
 
 with sol_kolon:
-    # 🟡 AL SAT SİNYAL ALANI
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
     if tablo_alsat:
         st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
     else:
         st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-    # 🟢 BTA SİNYAL MERKEZİ
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
     if tablo_al:
         st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
     else:
         st.write("🔒 Aktif BTA sinyali taranıyor...")
 
-    # ⚖️ YASAL SPK UYARI KUTUSU (SOL ALT KÖŞE)
     st.markdown("""
     <div class="spk-kutu-sol">
         <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
@@ -221,7 +212,6 @@ with sol_kolon:
     """, unsafe_allow_html=True)
 
 with sag_kolon:
-    # 6. Sinyal Havuzu Bölümü
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
     if st.session_state["ozel_takip_kutusu"]:
         tk_list = []
@@ -231,3 +221,13 @@ with sag_kolon:
                 
             tk_list.append({
                 "Hisse Kodu 🗝️": hisse,
+                "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL",
+                "Anlık Güncel": f"{cfiy:.2f} TL"
+            })
+        if tk_list:
+            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+            if st.button("🗑️ Havuzu Temizle", use_container_width=True):
+                st.session_state["ozel_takip_kutusu"] = {}
+                st.rerun()
+
+    st.write("---")
