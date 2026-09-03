@@ -38,7 +38,7 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 KESİN ÇÖZÜM: Excel A Sütunundaki tüm hisseleri dinamik toplar, hiçbir kısıtlama koymaz
+# 🌟 Excel A Sütunundaki tüm hisseleri dinamik toplar
 BORSA_HISSELERI = []
 if df_kaynak is not None:
     for idx in range(len(df_kaynak)):
@@ -53,7 +53,6 @@ if df_kaynak is not None:
             if saf_kod not in BORSA_HISSELERI:
                 BORSA_HISSELERI.append(saf_kod)
 
-# Hafızada kalmış eski takipleri de RAYSG'den arındırıyoruz
 if "RAYSG" in st.session_state["ozel_takip_kutusu"]:
     del st.session_state["ozel_takip_kutusu"]["RAYSG"]
 
@@ -78,21 +77,13 @@ def hisse_satirini_bul(hisse_kodu):
                 return idx
     return None
 
-# 🌟 SAF PUAN TEMİZLEYİCİ
-def sinyal_metni_temizle(ham_metin, hisse_kodu):
-    metin = str(ham_metin).strip().upper()
-    metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
-    return metin.strip()
-
 # 4. Canlı Takip Bölümü (Tüm Liste Aktif)
 st.subheader("🎯 Canlı Takip")
-
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
 
 st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (İnternet Canlı Verileri)")
 canli_borsa_listesi = []
 
-# Arama yoksa tüm dinamik listeyi yükler, tıkanma bitti
 listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI
 
 for hisse in listelenecek_hisseler:
@@ -111,7 +102,7 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 AL SAT Sinyal Mantığı (U Sütunu - İndeks 20, Puanı T Sütunundan - İndeks 19 alır)
+# 🟡 AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -119,26 +110,24 @@ if al_sat_butonu:
             if hisse == "RAYSG": continue
             s_idx = hisse_satirini_bul(hisse)
             if s_idx is not None and len(df_kaynak.columns) > 20:
-                uv = str(df_kaynak.iloc[s_idx, 20]).strip().upper() # U Sütunu
-                # Sütun boş değilse ve geçersiz kelimeler içermiyorsa listele
+                uv = str(df_kaynak.iloc[s_idx, 20]).strip().upper()
+                
+                # Excel'deki U sütununda herhangi bir sinyal/metin var mı kontrolü
                 if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"]:
                     cfiy = internetten_canli_fiyat_bul(hisse)
-                    
-                    # Puan bilgisini kesinlikle T sütunundan (indeks 19) çekiyoruz
                     raw_puan = str(df_kaynak.iloc[s_idx, 19]).strip() if len(df_kaynak.columns) > 19 else uv
                     
                     tablo_verisi.append({
                         "Hisse Kodu": hisse, 
-                        "BTA PUAN (T Sütunu)": raw_puan, 
+                        "BTA PUAN": raw_puan, 
                         "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Veri Alınamadı", 
                         "Durum Oranı": "🔄 Aktif Takip"
                     })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
-        else: 
-            st.warning("Excel dosyasında aktif AL SAT (U Sütunu) sinyali bulunamadı.")
+        # Sinyal yoksa artık st.warning() veya hata mesajı GÖSTERİLMEYECEK, ekran temiz kalacak.
 
-# 🟢 AL Sinyal Mantığı (W Sütunu - İndeks 22, Puanı T Sütunundan - İndeks 19 alır)
+# 🟢 AL Sinyal Mantığı (W Sütunu - İndeks 22)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -146,25 +135,23 @@ if al_butonu:
             if hisse == "RAYSG": continue
             s_idx = hisse_satirini_bul(hisse)
             if s_idx is not None and len(df_kaynak.columns) > 22:
-                wv = str(df_kaynak.iloc[s_idx, 22]).strip().upper() # W Sütunu
-                # Sütun boş değilse ve geçersiz kelimeler içermiyorsa listele
-                if wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]:
+                wv = str(df_kaynak.iloc[s_idx, 22]).strip().upper()
+                
+                # Excel'deki W sütununda 'AL' kelimesi geçiyor mu veya hücre dolu mu kontrolü
+                if wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"] or "AL" in wv:
                     cfiy = internetten_canli_fiyat_bul(hisse)
                     st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                    
-                    # Puan bilgisini kesinlikle T sütunundan (indeks 19) çekiyoruz
                     raw_puan = str(df_kaynak.iloc[s_idx, 19]).strip() if len(df_kaynak.columns) > 19 else wv
                     
                     tablo_verisi_al.append({
                         "Hisse Kodu": hisse, 
-                        "BTA PUAN (T Sütunu)": raw_puan, 
+                        "BTA PUAN": raw_puan, 
                         "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Veri Alınamadı", 
                         "Durum Oranı": "🔄 Havuzu Eklendi"
                     })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-        else: 
-            st.warning("Excel dosyasında aktif AL (W Sütunu) sinyali bulunamadı.")
+        # Sinyal yoksa artık st.warning() veya hata mesajı GÖSTERİLMEYECEK, ekran temiz kalacak.
 
 # 6. Sinyal Havuzu Bölümü
 st.divider()
