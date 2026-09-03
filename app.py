@@ -10,7 +10,7 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
-# 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
+# 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERI
 ZIYARETCI_SIFRESI = "bta2026"         # Sadece hisseleri görme yetkisi
 YONETICI_SIFRESI = "adminBTA2026"     # Kilitleyip açma (Yönetici) yetkisi
 
@@ -69,7 +69,7 @@ if erisim_izni:
         try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except: pass
 
-    # 💥 CANLI FİYAT MOTORU (String dönüşümüyle Yahoo Finance hatası tamamen tamir edildi)
+    # 💥 CANLI FİYAT MOTORU (Hisse ismini liste dışına çıkararak donma hatasını çözer)
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if hisse_kodu in st.session_state["fiyat_hafizasi"]:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -100,22 +100,22 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak aldık
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
-                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor..."})
+                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                             
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak aldık
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor..."})
+                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
             except: pass
 
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
@@ -149,17 +149,18 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GELEN MESAJLAR PANELİ (Girinti hatası yapabilecek tüm iç içe yapılar tamamen temizlendi)
-    if girilen_sifre == YONETICI_SIFRESI and os.path.exists(MESAJ_DOSYASI):
-        st.write("---")
-        st.subheader("📩 Gelen Kullanıcı Mesajları")
-        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar = f.readlines()
-        if mesajlar:
-            for m in reversed(mesajlar[-15:]): st.text(f"💬 {m.strip()}")
-            st.write("")
-            if st.button("🗑️ Tüm Mesajları Temizle"):
-                os.remove(MESAJ_DOSYASI)
-                st.rerun()
+# 📬 GIZLI GELEN MESAJLAR PANELİ (Girinti hatası riski taşımayan tamamen bağımsız satır)
+if erisim_izni and girilen_sifre == YONETICI_SIFRESI and os.path.exists(MESAJ_DOSYASI):
+    st.write("---")
+    st.subheader("📩 Gelen Kullanıcı Mesajları")
+    with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+        mesajlar = f.readlines()
+    if mesajlar:
+        for m in reversed(mesajlar[-15:]): st.text(f"💬 {m.strip()}")
+        st.write("")
+        if st.button("🗑️ Tüm Mesajları Temizle"):
+            os.remove(MESAJ_DOSYASI)
+            st.rerun()
 
 # 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN
 if not erisim_izni:
