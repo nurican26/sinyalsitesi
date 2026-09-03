@@ -2,14 +2,31 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os, re
-from streamlit_autorefresh import st_autorefresh
+import time
 
 # 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
-# 🔁 TARAYICIYI KİLLEMEYEN OTOMATİK YENİLEME: Sayfayı her 5 saniyede bir arka planda yeniler
-st_autorefresh(interval=5000, key="datarefresh")
+# 🔁 HARİCİ KÜTÜPHANESİZ OTOMATİK YENİLEME (Streamlit Cloud Uyumlu)
+@st.fragment
+def otomatik_yenileme_tetikleyici():
+    st.markdown(
+        """
+        <noscript><meta http-equiv="refresh" content="5"></noscript>
+        <script>
+            if (!window.refreshIntervalSet) {
+                window.refreshIntervalSet = true;
+                setInterval(function() {
+                    window.parent.postMessage({type: 'streamlit:rerun'}, '*');
+                }, 5000);
+            }
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
+
+otomatik_yenileme_tetikleyici()
 
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
@@ -54,15 +71,14 @@ def temiz_fiyat_al(val):
         val_str = val_str.replace(",", ".")
     
     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
-    return float(sayilar[0]) if sayilar else 0.0
+    return float(sayilar) if sayilar else 0.0
 
-# 🌟 GÖRSELDEKİ "ANLIK" SÜTUNU (İNDEKS 5 - F SÜTUNU) OLARAK GÜNCELLENDİ
+# 🌟 DOĞRU SATIR VE F SÜTUNU (İNDEKS 5) EŞLEŞMESİ
 def hisse_fiyati_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
             val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
             if hisse_kodu in val_hisse:  
-                # Görselinizde 138,00 yazan kolon F sütunudur, yani indeks 5'tir.
                 return temiz_fiyat_al(df_kaynak.iloc[idx, 5])
     return 0.0
 
@@ -135,7 +151,7 @@ if al_butonu:
                         cfiy = hisse_fiyati_bul(h_adi)
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         
-                        # 🌟 DÜZELTME: Ham veri çekimi W sütununa (indeks 22) sabitlendi, yasak kelimeler filtrelendi
+                        # Excel'deki ham hücre değerini doğrudan çeker (Örn: SONME +0,08 veya +8)
                         bta_puan_al_ham = str(df_kaynak.iloc[i, 22]).strip()
                         
                         tablo_verisi_al.append({
