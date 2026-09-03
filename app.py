@@ -2,25 +2,14 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os, re
-import streamlit.components.v1 as components
+from streamlit_autorefresh import st_autorefresh
 
 # 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
-# 🔁 KESİN ÇÖZÜM OTOMATİK YENİLEME: Sayfayı her 5 saniyede bir arka planda takılmadan otomatik yeniler
-components.html(
-    """
-    <script>
-        window.parent.document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
-                window.parent.location.reload();
-            }, 5000);
-        });
-    </script>
-    """,
-    height=0,
-)
+# 🔁 TARAYICIYI KİLLEMEYEN OTOMATİK YENİLEME: Sayfayı her 5 saniyede bir arka planda yeniler
+st_autorefresh(interval=5000, key="datarefresh")
 
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
@@ -67,13 +56,14 @@ def temiz_fiyat_al(val):
     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
     return float(sayilar[0]) if sayilar else 0.0
 
-# 🌟 KRİTİK ÇÖZÜM ARAMA MOTORU: Satır başında indeks numarası (Örn: 529 SONME) olsa dahi hisseyi hücre içinde bulur ve doğru fiyata ulaşır
+# 🌟 GÖRSELDEKİ "ANLIK" SÜTUNU (İNDEKS 5 - F SÜTUNU) OLARAK GÜNCELLENDİ
 def hisse_fiyati_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
             val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            if hisse_kodu in val_hisse:  # Hücre içerik kontrolü düzeltildi
-                return temiz_fiyat_al(df_kaynak.iloc[idx, 7])
+            if hisse_kodu in val_hisse:  
+                # Görselinizde 138,00 yazan kolon F sütunudur, yani indeks 5'tir.
+                return temiz_fiyat_al(df_kaynak.iloc[idx, 5])
     return 0.0
 
 # 4. Canlı Takip Bölümü
@@ -98,7 +88,7 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı
+# AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -129,7 +119,7 @@ if al_sat_butonu:
     else:
         st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadı.")
 
-# AL Sinyal Mantığı
+# AL Sinyal Mantığı (W Sütunu - İndeks 22)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -145,7 +135,7 @@ if al_butonu:
                         cfiy = hisse_fiyati_bul(h_adi)
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         
-                        # 🌟 DÜZELTME: "AL" yazısı temizlenmiyor, buton basıldığı andaki ham puan hücresi (Örn: SONME +0,08) ekrana yansıtılıyor
+                        # 🌟 DÜZELTME: Ham veri çekimi W sütununa (indeks 22) sabitlendi, yasak kelimeler filtrelendi
                         bta_puan_al_ham = str(df_kaynak.iloc[i, 22]).strip()
                         
                         tablo_verisi_al.append({
