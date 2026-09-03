@@ -4,6 +4,8 @@ import datetime
 import yfinance as yf
 import os, re
 import time
+import urllib.request
+import xml.etree.ElementTree as ET
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
@@ -142,14 +144,14 @@ if df_kaynak is not None:
                 wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) 
                 t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  
                 
-                # 🟡 1. ADIM: AL SAT Sinyal Taraması (0 ve T değerleri dahil geri getirildi)
+                # 🟡 1. ADIM: AL SAT Sinyal Taraması (0 ve T değerleri tamamen görünür yapıldı)
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = hisse_ara
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         tablo_alsat.append({
                             "Hisse Kodu 📈": hisse, 
@@ -157,14 +159,14 @@ if df_kaynak is not None:
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
                 
-                # 🟢 2. ADIM: AL Sinyal Taraması (0 ve T değerleri dahil geri getirildi)
+                # 🟢 2. ADIM: AL Sinyal Taraması (0 ve T değerleri tamamen görünür yapıldı)
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = hisse_ara
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
@@ -221,7 +223,6 @@ if st.session_state["ozel_takip_kutusu"]:
     if tk_list:
         df_havuz = pd.DataFrame(tk_list)
         
-        # KÂR / ZARAR DURUMUNA GÖRE SATIR RENKLENDİRME
         def renkli_stil_uygula(row):
             renk = 'background-color: rgba(22, 163, 74, 0.25)' if row['Anlık Güncel'] >= row['Havuz Maliyeti'] else 'background-color: rgba(220, 38, 38, 0.25)'
             return [renk] * len(row)
@@ -230,9 +231,7 @@ if st.session_state["ozel_takip_kutusu"]:
             "Havuz Maliyeti": "{:.2f} TL",
             "Anlık Güncel": "{:.2f} TL"
         })
-        
         st.dataframe(df_havuz_gorsel, use_container_width=True, hide_index=True)
-        
         if st.button("🗑️ Havuzu Temizle", use_container_width=True):
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
@@ -241,8 +240,8 @@ if st.session_state["ozel_takip_kutusu"]:
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
 
-# Hata veren liste doldurularak kilitlendi
-puan_secenekleri = [1, 2, 3, 4, 5]
-secilen_oy = st.selectbox("Paneli puanlayın:", options=puan_secenekleri, format_func=lambda x: f"{'⭐' * x} ({x} Yıldız)")
+# 🛠️ Yapay zekanın silmesini engellemek için range motoruna bağlandı (Kesin Çözüm)
+secilen_oy = st.selectbox("Paneli puanlayın:", options=list(range(1, 6)), format_func=lambda x: f"{'⭐' * x} ({x} Yıldız)")
 if st.button("Oyu Gönder 🟩", use_container_width=True):
     st.session_state["topham_oy_sayisi"] += 1
+    st.session_state["topham_yildiz_puani"] += secilen_oy
