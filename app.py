@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
+# 1. Sayfa Yapılandırması ve Neon Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("""
 <style>
@@ -12,11 +12,11 @@ st.markdown("""
     h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
     input {color: #000!important; background-color: #fff!important;}
     
-    /* Mobil cihazlar için tabloları genişleten ve parmakla kaydırmayı rahatlatan ayar */
+    /* Mobil ve Masaüstü için tabloları rahatlatan ayar */
     .stDataFrame {width: 100% !important; border: 1px solid #4338ca !important; border-radius: 8px;}
-    div.block-container {padding-top: 0.5rem; padding-bottom: 0.5rem;}
+    div.block-container {padding-top: 2rem; padding-bottom: 0.5rem;}
     
-    /* Canlı sinyal başlıkları için özel neon kutular */
+    /* Neon sinyal kutuları */
     .alsat-baslik {
         background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
@@ -31,16 +31,15 @@ st.markdown("""
         border-radius: 6px; margin-top: 15px; margin-bottom: 10px;
         color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;
     }
-    /* Telefon başlık kayması ve boyut ayarları için CSS */
     .bta-ana-baslik {
-        font-size: 1.8rem !important; 
+        font-size: 2rem !important; 
         font-weight: bold !important; 
-        margin-top: 10px !important; 
+        margin-top: 20px !important; 
         margin-bottom: 5px !important;
         text-align: left;
     }
     .bta-alt-metrik {
-        font-size: 0.9rem !important; 
+        font-size: 0.95rem !important; 
         color: #cbd5e1 !important;
         margin-bottom: 15px !important;
     }
@@ -56,13 +55,11 @@ for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_
 
 st.session_state["ziyaret_sayaci"] += 1
 
-# 🌟 DÜZELTME: Yukarı kaymayı engelleyen ve metin boyutunu dengeleyen tek parça başlık düzeni
+# 🌟 BAŞLIK VE METRİK ALANI (Kayma engellendi)
 st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-
-# Küçültülmüş metrik satırı ve kibar zaman göstergesi tek satırda birleştirildi
 st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
 # 3. Arka Planda Excel Okuma
@@ -85,56 +82,51 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-def sayisal_mi(deger):
-    try:
-        float(str(deger).strip().replace(",", "."))
-        return True
-    except:
-        return False
-
-def sayiya_cevir(deger):
-    try:
-        return float(str(deger).strip().replace(",", "."))
-    except:
-        return 0.0
-
-# 🌟 EXCEL VERİLERİNE GÖRE OTOMATİK LİSTELEME MOTORU
+# 🌟 ESNEK EXCEL VERİ AYIKLAMA MOTORU
 tablo_alsat = []
 tablo_al = []
 
 if df_kaynak is not None:
     son_gecerli_hisse = "-"
-    for idx in range(2, len(df_kaynak)):
+    for idx in range(len(df_kaynak)):
         ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-        saf_kod = "".join(re.findall(r'[A-Z]+', ilk_hucre))
-        if saf_kod and len(saf_kod) >= 4 and saf_kod not in ["NONE", "NAN", "AL_SAT", "PUAN", "BTA", "UCUZ", "ANAPAZAR", "YILDIZ"]:
-            son_gecerli_hisse = saf_kod
         
-        if len(df_kaynak.columns) > 22:
-            uv_degeri = str(df_kaynak.iloc[idx, 20]).strip().upper() # U Sütunu
-            wv_degeri = str(df_kaynak.iloc[idx, 22]).strip().upper() # W Sütunu
-            t_degeri = str(df_kaynak.iloc[idx, 19]).strip()         # T Sütunu
-            
-            hisse = son_gecerli_hisse
-            if hisse and hisse != "RAYSG":
-                # 🟡 AL SAT Şartı: U sütununda aktif veri varsa ve KUVVA ise tetiklenir
-                if hisse == "KUVVA" and uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-"]:
+        # Akıllı Tarama: Satırın içinde kilit hisseler geçiyor mu kontrol et
+        if "KUVVA" in ilk_hucre:
+            son_gecerli_hisse = "KUVVA"
+        elif "SONME" in ilk_hucre:
+            son_gecerli_hisse = "SONME"
+        else:
+            saf_kod = "".join(re.findall(r'[A-Z]+', ilk_hucre))
+            if saf_kod and len(saf_kod) >= 4 and saf_kod not in ["NONE", "NAN", "AL_SAT", "PUAN", "BTA", "UCUZ", "ANAPAZAR", "YILDIZ"]:
+                son_gecerli_hisse = saf_kod
+        
+        hisse = son_gecerli_hisse
+        if hisse and hisse != "RAYSG":
+            # Sütun uzunluğu güvenli kontrolü
+            if len(df_kaynak.columns) > 22:
+                uv_degeri = str(df_kaynak.iloc[idx, 20]).strip().upper() # U Sütunu
+                wv_degeri = str(df_kaynak.iloc[idx, 22]).strip().upper() # W Sütunu
+                t_degeri = str(df_kaynak.iloc[idx, 19]).strip()         # T Sütunu
+                
+                # 🟡 AL SAT Şartı: U sütunu boş veya 0 değilse ve hisse KUVVA ise listeler
+                if hisse == "KUVVA" and uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", ""]:
                     canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     tablo_alsat.append({
                         "Hisse Kodu 📈": hisse, 
-                        "BTA PUAN (T)": t_degeri if t_degeri and t_degeri != "nan" else uv_degeri,
+                        "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "nan") else uv_degeri,
                         "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                     })
                 
-                # 🟢 AL Şartı: W sütununda aktif veri varsa ve SONME ise tetiklenir
-                if hisse == "SONME" and wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL"]:
+                # 🟢 AL Şartı: W sütunu boş veya 0 değilse ve hisse SONME ise listeler
+                if hisse == "SONME" and wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", ""]:
                     canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                         st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                     
                     tablo_al.append({
                         "Hisse Kodu 🚀": hisse, 
-                        "BTA PUAN (T)": t_degeri if t_degeri and t_degeri != "nan" else wv_degeri,
+                        "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "nan") else wv_degeri,
                         "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                     })
 
@@ -157,7 +149,6 @@ st.markdown("#### 🌟 Özel Takip Havuzu 💰")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        if hisse == "RAYSG": continue
         cfiy = internetten_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
             
@@ -172,7 +163,7 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 7. ⭐ ŞIK YILDIZ PUANLAMA SİSTEMİ
+# 7. ⭐ TOPLULUK PUANLAMA SİSTEMİ
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
 yildiz_secimi = st.feedback("stars") 
@@ -195,7 +186,7 @@ if user_input:
     st.session_state["chat_history"].append({"role": "user", "content": user_input})
     st.rerun()
 
-# 🚨 SPK YASAL UYARISI SAYFA SONUNDA SABİT
+# 🚨 SPK YASAL UYARI KUTUSU EN ALTA SABİT
 st.markdown("""
 <div class="spk-kutusu">
     <strong>⚖️ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
