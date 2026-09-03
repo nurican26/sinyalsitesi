@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Tasarım (Mobil Uyumlu)
+# 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("""
 <style>
@@ -16,7 +16,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Hafıza (Session State) Kontrolleri
+# 2. Hafıza Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "al_sat_goster" not in st.session_state: st.session_state["al_sat_goster"] = False
@@ -40,6 +40,7 @@ df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: 
+        # Excel'i tamamen ham haliyle, hiçbir başlığı atlamadan okuyoruz
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except Exception as e:
         st.error(f"Excel dosyası okuma hatası: {e}")
@@ -55,19 +56,16 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 Excel Satırlarında Gerçek Hisse Bulucu (A Sütununu Tarar)
-def temiz_hisse_kodu_al(satir_idx):
-    if df_kaynak is not None:
-        hucre_metni = str(df_kaynak.iloc[satir_idx, 0]).strip().upper()
-        # Sadece harflerden oluşan kodu ayıkla
-        saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
-        if saf_kod and saf_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR", "HISSE", "DOLASIM"]:
-            # Satırda 'ANA PAZAR' veya alt metinler yazıyorsa üstteki ana hisse satırını korumak için 4 karakter ve üzerini süz
-            if len(saf_kod) >= 4:
-                return saf_kod
+# 🌟 METNİN İÇİNDEN HİSSE KODUNU AYIKLAYAN SİHRİBAZ (Örn: "KUVVA +2,80" -> "KUVVA")
+def metinden_hisse_kodu_bul(metin):
+    parcalar = str(metin).strip().upper().split()
+    if parcalar:
+        temiz_kod = "".join(re.findall(r'[A-Z]+', parcalar[0]))
+        if len(temiz_kod) >= 4 and temiz_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR", "HISSE", "NONE", "NAN"]:
+            return temiz_kod
     return None
 
-# 5. BTA SİNYAL MERKEZİ (BUTONLAR KENDİ YERİNDE)
+# 5. BTA SİNYAL MERKEZİ
 st.subheader("📈 BTA SİNYAL MERKEZİ")
 
 b1 = st.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
@@ -76,21 +74,28 @@ b2 = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 if b1: st.session_state["al_sat_goster"] = not st.session_state["al_sat_goster"]
 if b2: st.session_state["al_goster"] = not st.session_state["al_goster"]
 
-
-# 🟡 AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
+# 🟡 AL SAT Sinyal Mantığı
 if st.session_state["al_sat_goster"]:
     if df_kaynak is not None:
         tablo_verisi = []
+        # Excel'deki tüm sütunları tarayarak dinamik AL_SAT başlığını buluyoruz
+        col_idx = None
+        for c in df_kaynak.columns:
+            column_str = str(df_kaynak[c].iloc[:5]).upper()
+            if "AL_SAT" in column_str or "AL SAT" in column_str:
+                col_idx = c
+                break
+        if col_idx is None: col_idx = 20 # Bulamazsa varsayılan U sütunu
+
         for idx in range(len(df_kaynak)):
-            hisse = temiz_hisse_kodu_al(idx)
-            # RAYSG filtresi ve sütun uzunluk kontrolü
-            if hisse and hisse != "RAYSG" and len(df_kaynak.columns) > 20:
-                uv = str(df_kaynak.iloc[idx, 20]).strip().upper()
-                
-                # Görseldeki gibi 0,00, 0, NAN veya boş olmayan, KUVVA +2,80 benzeri dolu veriyi yakalar
-                if uv and uv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
-                    excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() if len(df_kaynak.columns) > 18 else "-" # S Sütunu
-                    bta_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else "-" # T Sütunu
+            uv = str(df_kaynak.iloc[idx, col_idx]).strip().upper()
+            
+            # Sütunda 0,00 veya boşluk harici gerçek bir yazı/sinyal var mı?
+            if uv and uv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
+                hisse = metinden_hisse_kodu_bul(uv)
+                if hisse and hisse != "RAYSG":
+                    excel_anlik = str(df_kaynak.iloc[idx, col_idx - 2]).strip() if col_idx >= 2 else "-" # S Sütunu
+                    bta_puan = str(df_kaynak.iloc[idx, col_idx - 1]).strip() if col_idx >= 1 else "-" # T Sütunu
                     canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     
                     tablo_verisi.append({
@@ -104,23 +109,30 @@ if st.session_state["al_sat_goster"]:
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
 
 
-# 🟢 AL Sinyal Mantığı (W Sütunu - İndeks 22)
+# 🟢 AL Sinyal Mantığı
 if st.session_state["al_goster"]:
     if df_kaynak is not None:
         tablo_verisi_al = []
+        # Excel'deki tüm sütunları tarayarak dinamik AL başlığını buluyoruz
+        col_idx_w = None
+        for c in df_kaynak.columns:
+            column_str = str(df_kaynak[c].iloc[:5]).upper()
+            if "AL" in column_str and "AL_SAT" not in column_str and "AL SAT" not in column_str:
+                col_idx_w = c
+                break
+        if col_idx_w is None: col_idx_w = 22 # Bulamazsa varsayılan W sütunu
+
         for idx in range(len(df_kaynak)):
-            hisse = temiz_hisse_kodu_al(idx)
-            # RAYSG filtresi ve sütun uzunluk kontrolü
-            if hisse and hisse != "RAYSG" and len(df_kaynak.columns) > 22:
-                wv = str(df_kaynak.iloc[idx, 22]).strip().upper()
-                
-                # Görseldeki gibi 0,00, 0, NAN veya boş olmayan, SONME [AL] benzeri dolu veriyi yakalar
-                if wv and wv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
-                    excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() if len(df_kaynak.columns) > 18 else "-" # S Sütunu
-                    bta_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else "-" # T Sütunu
+            wv = str(df_kaynak.iloc[idx, col_idx_w]).strip().upper()
+            
+            # Sütunda 0,00 veya boşluk harici gerçek bir yazı/sinyal var mı?
+            if wv and wv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
+                hisse = metinden_hisse_kodu_bul(wv)
+                if hisse and hisse != "RAYSG":
+                    excel_anlik = str(df_kaynak.iloc[idx, col_idx_w - 4]).strip() if col_idx_w >= 4 else "-" # S Sütunu
+                    bta_puan = str(df_kaynak.iloc[idx, col_idx_w - 3]).strip() if col_idx_w >= 3 else "-" # T Sütunu
                     canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     
-                    # Havuz mantığı entegrasyonu
                     if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                         st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                     
