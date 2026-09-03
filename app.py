@@ -14,7 +14,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# 🟢 ÜÇ BOYUTLU GÖLGELİ BTA LOGOSU VE GÜNCELLEME METNİ
+# 🟢 MODERN GÖLGELİ HAREKETLİ BTA LOGOSU VE ALT YAZISI
 st.markdown("""
 <div class="bta-marka-alani">
     <div class="bta-logo-yeni">BTA</div>
@@ -22,7 +22,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 💥 FİYAT VE ALTIN MOTORLARI
+# 💥 CANLI BORSA VE ALTIN MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -51,7 +51,7 @@ def canli_altin_fiyatlarini_hesapla():
     except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
-# VERİLER VE TABLOLAR YÜKLENİR
+# VERİLER VE ZAMAN DAMGASI
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
@@ -65,7 +65,7 @@ c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM ALTIN<br><span style="color:
 c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
 st.write("")
 
-# 📰 SABİT VE GÜVENLİ BORSA MAKRO GÜNDEMİ
+# 📰 BORSA VE EKONOMİ GÜNDEMİ HABER BLOKLARI
 st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
 st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
 st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
@@ -90,7 +90,8 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ SEÇİM TAMİRİ: Listenin ilk elemanı çekildi, tırnak ve parantezler kalıcı imha edildi!
+                        # 🛠️ GÜVENLİ VE KESİN ÇÖZÜM: Listenin ilk elemanı doğrudan temiz metin olarak seçildi! Parantezler imha edildi.
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul[0] if p_bul else t_deg
@@ -99,10 +100,11 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ SEÇİM TAMİRİ: Listenin ilk elemanı çekildi, tırnak ve parantezler kalıcı imha edildi!
+                        # 🛠️ GÜVENLİ VE KESİN ÇÖZÜM: Listenin ilk elemanı doğrudan temiz metin olarak seçildi! Parantezler imha edildi.
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -127,5 +129,5 @@ if st.session_state["ozel_takip_kutusu"]:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
         if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
 
-# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Bağımsız HTML olarak sayfa tabanına gömüldü)
+# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Ezilmesi imkansız, en altta kırmızı şık çerçevede)
 st.write("---")
