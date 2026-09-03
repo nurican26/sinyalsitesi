@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Tasarım (Başlık BTa Olarak Değiştirildi)
+# 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
@@ -14,14 +14,17 @@ if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kut
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
 
+# Giriş/Ziyaret sayısını artır
 st.session_state["ziyaret_sayaci"] += 1
+
 st.title("⚡ BTa Sinyal Takip Merkezi")
 
-# Puanlama Metrikleri
+# Puanlama ve Giriş Sayısı Metrikleri
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-c1, c2 = st.columns(2)
+c1, c2, c3 = st.columns(3)
 c1.metric("🔥 Toplam Panel Beğenisi (Oy)", f"{st.session_state['topham_oy_sayisi']} Kişi")
 c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
+c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
@@ -78,14 +81,14 @@ for hisse in BORSA_HISSELERI:
 if canli_borsa_listesi: 
     st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
 
-# 5. Sinyal Üretim Merkezi
+# 5. BTA SİNYAL MERKEZİ (İsim Güncellendi, Butonlar Duruyor)
 st.divider()
-st.subheader("📈 Sinyal Üretim Merkezi")
+st.subheader("📈 BTA SİNYAL MERKEZİ")
 b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı (Sarı Sütun - U Sütunu - İndeks 20)
+# AL SAT Sinyal Mantığı
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -107,10 +110,10 @@ if al_sat_butonu:
                         if pd.isna(cfiy) or cfiy == 0.0: cfiy = yfiy
                         
                         zfark = ((cfiy - yfiy) / yfiy) * 100 if yfiy > 0 else 0.0
+                        # Maliyet Fiyatı sütunu kaldırıldı, buton yerinde aktif
                         tablo_verisi.append({
                             "Hisse Kodu": h_adi, 
                             "Sinyal Metni": uv, 
-                            "Maliyet Fiyatı": f"{yfiy:.2f} TL", 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
                             "Durum Oranı": f"🟢 %{zfark:.2f} Kazandı" if cfiy >= yfiy else f"🔴 %{abs(zfark):.2f} İçeride"
                         })
@@ -123,7 +126,7 @@ if al_sat_butonu:
     else:
         st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadı.")
 
-# AL Sinyal Mantığı (Yeşil Sütun - W Sütunu - İndeks 22)
+# AL Sinyal Mantığı
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -144,13 +147,13 @@ if al_butonu:
                         cfiy = h_obj['Close'].iloc[-1] if not h_obj.empty else efiy
                         if pd.isna(cfiy) or cfiy == 0.0: cfiy = efiy
                         
-                        st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                        st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": efiy, "kayit_zamani": guncel_an}
+                        # Maliyet Fiyatı sütunu kaldırıldı, buton yerinde aktif
                         tablo_verisi_al.append({
                             "Hisse Kodu": h_adi, 
                             "Sinyal": wv, 
-                            "Maliyet Fiyatı": f"{efiy:.2f} TL", 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
-                            "Durum Oranı": "🔄 Havuza Eklendi"
+                            "Durum Oranı": "🔄 Havuzu Eklendi"
                         })
             except:
                 pass
@@ -166,43 +169,49 @@ st.divider()
 st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
-    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+    for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
         try:
             h_obj = yf.Ticker(f"{hisse}.IS").history(period="1d")
-            cf = h_obj['Close'].iloc[-1] if not h_obj.empty else bilge["kayit_fiyati"]
-            if pd.isna(cf) or cf == 0.0: cf = bilge["kayit_fiyati"]
-            deg = ((cf - bilge["kayit_fiyati"]) / bilge["kayit_fiyati"]) * 100 if bilge["kayit_fiyati"] > 0 else 0.0
+            cfiy = h_obj['Close'].iloc[-1] if not h_obj.empty else bilgi["kayit_fiyati"]
+            if pd.isna(cfiy) or cfiy == 0.0: cfiy = bilgi["kayit_fiyati"]
+            
+            kfiy = bilgi["kayit_fiyati"]
+            zfark = ((cfiy - kfiy) / kfiy) * 100 if kfiy > 0 else 0.0
+            
             tk_list.append({
-                "Hisse Kodu": hisse, 
-                "Giriş Fiyatı": f"{bilge['kayit_fiyati']:.2f} TL", 
-                "Anlık Fiyat": f"{cf:.2f} TL", 
-                "Performans": f"🟢 %{deg:.2f}" if deg >= 0 else f"🔴 %{deg:.2f}", 
-                "Kayıt Zamanı": bilge["kayit_zamani"]
+                "Hisse Kodu": hisse,
+                "Havuz Maliyeti": f"{kfiy:.2f} TL",
+                "Anlık Fiyat": f"{cfiy:.2f} TL",
+                "Kâr/Zarar Oranı": f"🟢 %+{zfark:.2f}" if zfark >= 0 else f"🔴 %{zfark:.2f}",
+                "Eklenme Zamanı": bilgi["kayit_zamani"]
             })
-        except: 
+        except:
             pass
     if tk_list:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Takip Listesini Temizle", use_container_width=True): 
+        if st.button("🗑️ Havuzu Temizle", use_container_width=False):
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
-else: 
-    st.info("Henüz takibe alınan dinamik bir hisse bulunmuyor.")
+else:
+    st.info("Şu anda sinyal havuzunda takip edilen hisse bulunmamaktadır.")
 
-# 7. Topluluk Sohbet Odası
+# 7. Topluluk Puanlama Sistemi
 st.divider()
-st.subheader("💬 Topluluk Sohbet Odası")
-with st.form("mesaj_formu", clear_on_submit=True):
-    mesaj = st.text_input("Mesajınızı yazın:", placeholder="Buraya yazın...")
-    if st.form_submit_button("Gönder", use_container_width=True) and mesaj:
-        st.session_state["chat_history"].insert(0, f"[{datetime.datetime.now().strftime('%H:%M')}] Kullanıcı: {mesaj}")
+st.subheader("🗳️ Paneli Değerlendir")
+col_p1, col_p2 = st.columns(2)
+with col_p1:
+    yildiz = st.slider("Puanınız:", 1, 5, 5, key="slider_puan")
+with col_p2:
+    if st.button("👍 Oy Ver ve Gönder", use_container_width=True):
+        st.session_state["topham_oy_sayisi"] += 1
+        st.session_state["topham_yildiz_puani"] += yildiz
+        st.success("Oyunuz başarıyla kaydedildi!")
         st.rerun()
-for msg in st.session_state["chat_history"]: 
-    st.write(msg)
 
-# 8. Paneli Değerlendir Bölümü
+# 8. BTa Sohbet Asistanı Bölümü
 st.divider()
-st.markdown("#### 🗳️ Paneli Değerlendir")
-secilen_puan = st.slider("Panele Puan Verin:", 1, 5, 5)
-if st.button("⭐ Oyumu Gönder", use_container_width=True):
-    st.session_state["topham_oy_sayisi"] += 1
+st.subheader("💬 BTa Sohbet")
+
+# Önce geçmiş mesajları ekranda yazdırıyoruz
+for msg in st.session_state["chat_history"]:
+    with st.chat_message(msg["role"]):
