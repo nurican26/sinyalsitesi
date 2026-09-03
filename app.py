@@ -92,7 +92,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = hisse_ara
+                            hisse = hisse_ara[0] # Listenin ilk elemanını string olarak seçtik (Hata düzeldi)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -101,7 +101,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = hisse_ara
+                            hisse = hisse_ara[0] # Listenin ilk elemanını string olarak seçtik (Hata düzeldi)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -162,10 +162,9 @@ if panel_modu == "Site Şifreli / Kilitli" and erisim_izni:
     else:
         st.info("Henüz yeni mesaj bulunmuyor.")
 
-# ŞİFRE GİRİLMEYİNCE GÖRÜNECEK KİLİTLİ EKRAN BLOKLARI (Girintiler Tamamen Düzeltildi)
+# ŞİFRE GİRİLMEYİNCE GÖRÜNECEK KİLİTLİ EKRAN BLOKLARI
 if not erisim_izni and panel_modu == "Site Şifreli / Kilitli":
     st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sol menüden şifrenizi giriniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki formdan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
     
     st.subheader("📬 Yatırımcı İletişim Formu")
     with st.form(key="iletisim_formu", clear_on_submit=True):
-        ziyaretci_isim = st.text_input("Rumuzunuz / İletişim Bilginiz (E-posta veya Tel):", value="Anonim")
