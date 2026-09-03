@@ -31,7 +31,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 st.sidebar.markdown("### ⚙️ Yönetici Odası")
 yonetici_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Şifre yazın...")
 
-# Şifre doğruysa butonlar görünür
+# Şifre doğruyse butonlar görünür
 if yonetici_sifre == GIRIS_SIFRESI:
     st.sidebar.success(f"Yönetici Aktif. Durum: {st.session_state['kilit_durumu']}")
     col_kilitle, col_ac = st.sidebar.columns(2)
@@ -42,7 +42,7 @@ if yonetici_sifre == GIRIS_SIFRESI:
         st.session_state["kilit_durumu"] = "Açık"
         st.rerun()
 
-# 🛠️ NET KONTROL: Site kilitliyse, yönetici şifresi yazsa bile içerik gizlenir (Gerçek kilit testi için)
+# 🛠️ NET KONTROL: Site kilitliyse içerik mutlak olarak gizlenir
 erisim_izni = False
 if st.session_state["kilit_durumu"] == "Açık":
     erisim_izni = True
@@ -97,7 +97,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -106,7 +106,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -168,4 +168,4 @@ if erisim_izni:
             st.info("Henüz yeni mesaj bulunmuyor.")
 
 else:
-    # 🔒 YÖNETİCİ KİLİTLİ SEÇTİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN
+    # 🔒 YÖNETİCİ KİLİTLİ SEÇTİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN (Girintiler tam olarak hizalandı)
