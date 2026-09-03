@@ -248,8 +248,7 @@ with sol_kolon:
 with sag_kolon:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
     
+    # 🛠️ HATAYA NEDEN OLAN TÜM GİRİNTİLER VE DÖNGÜLER DÜZ BİR MİMARİDE SIFIRLANDI
     if st.session_state["ozel_takip_kutusu"]:
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-            cfiy = hızlı_canli_fiyat_bul(hisse)
-            if cfiy == 0.0:
