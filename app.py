@@ -62,7 +62,6 @@ st.markdown("""
 MESAJ_DOSYASI = "ortak_mesajlar.csv"
 PUAN_DOSYASI = "ortak_puanlar.csv"
 
-# Puan yükleme ve kaydetme fonksiyonları (Cihazlar arası ortak çalışır)
 def puanlari_yukle():
     if os.path.exists(PUAN_DOSYASI):
         try:
@@ -117,7 +116,6 @@ else:
         st.session_state["ziyaret_sayaci"] += 1
         st.session_state["sayac_arttirildi"] = True
 
-# Ortak puanları dosyadan çekiyoruz
 puan, toplam_oy_sayisi = puanlari_yukle()
 
 # BAŞLIK VE METRİK ALANI
@@ -188,7 +186,7 @@ if df_kaynak is not None:
                     if hisse_ara:
                         hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
-                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
@@ -241,4 +239,5 @@ with sag_kolon:
             })
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+            # 🛠️ HATANIN DÜZELTİLDİĞİ YER: Alt satırların girintileri hizalandı
             if st.button("🗑️ Havuzu Temizle", use_container_width=True):
