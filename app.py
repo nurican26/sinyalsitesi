@@ -49,6 +49,7 @@ st.markdown("""
 # 2. Hafıza Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
+if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
@@ -71,13 +72,21 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel okuma hatası: {e}")
 
-# 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ (Yahoo Finance)
-def internetten_canli_fiyat_bul(hisse_kodu):
+# 📌 OPTİMİZE EDİLMİŞ HIZLI FİYAT MOTORU: Bisiklet süren simgenin kilitlenmesini kesin olarak engeller
+def hızlı_canli_fiyat_bul(hisse_kodu):
+    # Eğer fiyat son 5 dakika içinde çekildiyse hafızadan getirir, interneti boşuna yormaz
+    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+        saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        if time.time() - saved_time < 300:
+            return saved_price
+            
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
         data = ticker.history(period="1d")
         if not data.empty and not pd.isna(data['Close'].iloc[-1]):
-            return float(data['Close'].iloc[-1])
+            fiyat = float(data['Close'].iloc[-1])
+            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+            return fiyat
     except:
         pass
     return 0.0
@@ -86,12 +95,11 @@ def temiz_metin_al(val):
     if pd.isna(val): return ""
     return str(val).strip().upper()
 
-# 🌟 MAKRO VERİ YAPINIZA UYGUN DİNAMİK TABLOLAMA MOTORU
+# 🌟 EXCEL VERİ AYIKLAMA VE TABLOLAMA MOTORU
 tablo_alsat = []
 tablo_al = []
 
 if df_kaynak is not None:
-    # Makronuzdaki gibi satır 3'ten taramaya başlıyoruz
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
@@ -99,15 +107,12 @@ if df_kaynak is not None:
                 wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) # W Sütunu (AL SİNYALİ)
                 t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  # T Sütunu (BTA PUAN)
                 
-                # 🟡 1. ADIM: AL SAT Sinyal Taraması (U Sütununda Makro Verisi Varsa)
+                # 🟡 1. ADIM: AL SAT Sinyal Taraması
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
-                    # Hücreden sadece harf olan hisse kodunu ayırır (Örn: "MARTI +5,19" -> "MARTI")
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
                         hisse = hisse_ara[0]
-                        canli_fiyat = internetten_canli_fiyat_bul(hisse)
-                        
-                        # Hücredeki ham sayısal puanı (+5,19 gibi) ayıklar
+                        canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
@@ -117,13 +122,12 @@ if df_kaynak is not None:
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
                 
-                # 🟢 2. ADIM: AL Sinyal Taraması (W Sütununda Makro Verisi Varsa)
+                # 🟢 2. ADIM: AL Sinyal Taraması
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
                         hisse = hisse_ara[0]
-                        canli_fiyat = internetten_canli_fiyat_bul(hisse)
-                        
+                        canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else wv_degeri)
                         
@@ -145,20 +149,19 @@ if tablo_alsat:
 else:
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-# 🟢 AL SİNYAL ALANI
-st.markdown('<div class="al-baslik">🟢 AKTİF AL SİNYALLERİ</div>', unsafe_allow_html=True)
+# 🟢 BTA SİNYAL MERKEZİ (İsim Tam İstediğiniz Gibi Kilitlendi)
+st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if tablo_al:
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else:
-    st.write("🔒 Aktif AL sinyali taranıyor...")
+    st.write("🔒 Aktif BTA sinyali taranıyor...")
 
 # 6. Sinyal Havuzu Bölümü
 st.markdown("#### 🌟 Özel Takip Havuzu 💰")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        if hisse == "RAYSG": continue
-        cfiy = internetten_canli_fiyat_bul(hisse)
+        cfiy = hızlı_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
             
         tk_list.append({
