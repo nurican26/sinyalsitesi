@@ -1,10 +1,10 @@
-import streamlit as st
+import streamlit st
 import pandas as pd
 import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Neon Tasarım
+# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("""
 <style>
@@ -14,7 +14,7 @@ st.markdown("""
     
     /* Mobil ve Masaüstü için tabloları rahatlatan ayar */
     .stDataFrame {width: 100% !important; border: 1px solid #4338ca !important; border-radius: 8px;}
-    div.block-container {padding-top: 2rem; padding-bottom: 0.5rem;}
+    div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;}
     
     /* Neon sinyal başlıkları */
     .alsat-baslik {
@@ -71,7 +71,7 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel okuma hatası: {e}")
 
-# 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ
+# 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ (Yahoo Finance)
 def internetten_canli_fiyat_bul(hisse_kodu):
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
@@ -86,40 +86,53 @@ def temiz_metin_al(val):
     if pd.isna(val): return ""
     return str(val).strip().upper()
 
-# 🌟 EXCEL VERİ AYIKLAMA VE TABLOLAMA MOTORU
+# 🌟 DİNAMİK EXCEL VERİ AYIKLAMA MOTORU (Makrolarınıza Göre Sıfırdan Yazıldı)
 tablo_alsat = []
 tablo_al = []
 
 if df_kaynak is not None:
-    for idx in range(len(df_kaynak)):
+    # Makronuzdaki gibi satır 3'ten (indeks 2) taramaya başlıyoruz
+    for idx in range(2, len(df_kaynak)):
         try:
-            ilk_hucre = temiz_metin_al(df_kaynak.iloc[idx, 0])
-            
             if len(df_kaynak.columns) > 22:
-                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
-                t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
+                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20]) # U Sütunu (AL_SAT SİNYALİ)
+                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) # W Sütunu (AL SİNYALİ)
+                t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  # T Sütunu (BTA PUAN)
                 
-                # 🟡 AL SAT Şartı: Hücrede KUVVA geçiyorsa ve U sütunu doluysa
-                if "KUVVA" in ilk_hucre:
-                    if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", ""]:
-                        canli_fiyat = internetten_canli_fiyat_bul("KUVVA")
+                # 🟡 1. ADIM: AL SAT Sinyal Taraması (U Sütunu Boş Değilse)
+                if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
+                    # Hücre içindeki birleşik metinden sadece saf hisse kodunu ayıklar (Örn: "MARTI +5,19" -> "MARTI")
+                    hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
+                    if hisse_ara:
+                        hisse = hisse_ara[0]
+                        canli_fiyat = internetten_canli_fiyat_bul(hisse)
+                        
+                        # Hücredeki ham sayısal puanı (+5,19 gibi) temiz bir şekilde ayıklar
+                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        
                         tablo_alsat.append({
-                            "Hisse Kodu 📈": "KUVVA", 
-                            "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "NAN") else uv_degeri,
+                            "Hisse Kodu 📈": hisse, 
+                            "BTA PUAN (T)": bta_puan,
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
                 
-                # 🟢 AL Şartı: Hücrede SONME geçiyorsa ve W sütunu doluysa
-                if "SONME" in ilk_hucre:
-                    if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", ""]:
-                        canli_fiyat = internetten_canli_fiyat_bul("SONME")
-                        if "SONME" not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                            st.session_state["ozel_takip_kutusu"]["SONME"] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                # 🟢 2. ADIM: AL Sinyal Taraması (W Sütunu Boş Değilse)
+                if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
+                    hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
+                    if hisse_ara:
+                        hisse = hisse_ara[0]
+                        canli_fiyat = internetten_canli_fiyat_bul(hisse)
+                        
+                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else wv_degeri)
+                        
+                        if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                         
                         tablo_al.append({
-                            "Hisse Kodu 🚀": "SONME", 
-                            "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "NAN") else wv_degeri,
+                            "Hisse Kodu 🚀": hisse, 
+                            "BTA PUAN (T)": bta_puan,
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
         except:
@@ -144,7 +157,6 @@ st.markdown("#### 🌟 Özel Takip Havuzu 💰")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        if hisse == "RAYSG": continue
         cfiy = internetten_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
             
@@ -159,7 +171,7 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 7. ⭐ TOPLULUK PUANLAMA SİSTEMİ (Hata veren time bağımlılığı kaldırıldı)
+# 7. ⭐ TOPLULUK PUANLAMA SİSTEMİ
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
 yildiz_secimi = st.feedback("stars") 
@@ -170,7 +182,7 @@ if yildiz_secimi is not None:
     st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. 🎉")
     st.rerun()
 
-# 8. BTa Sohbet Odası Bölümü
+# 8. BTa Sohbet Odası Bölümü (Formsuz, Kalıcı ve Hatasız Yapı)
 st.write("---")
 st.subheader("💬 BTa Canlı Sohbet")
 for msg in st.session_state["chat_history"]:
