@@ -162,20 +162,19 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Girinti hatası yapabilecek ELSE yapıları tamamen silindi)
-    if yonetici_sifre == GIRIS_SIFRESI:
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Tüm iç içe geçen yapılar düzleştirildi)
+    if yonetici_sifre == GIRIS_SIFRESI and os.path.exists(MESAJ_DOSYASI):
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
-        if os.path.exists(MESAJ_DOSYASI):
-            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
-                mesajlar = f.readlines()
-            if mesajlar:
-                for m in reversed(mesajlar[-15:]): 
-                    st.text(f"💬 {m.strip()}")
-                st.write("")
-                if st.button("🗑️ Tüm Mesajları Temizle"):
-                    os.remove(MESAJ_DOSYASI)
-                    st.rerun()
+        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+            mesajlar = f.readlines()
+        if mesajlar:
+            for m in reversed(mesajlar[-15:]): 
+                st.text(f"💬 {m.strip()}")
+            st.write("")
+            if st.button("🗑️ Tüm Mesajları Temizle"):
+                os.remove(MESAJ_DOSYASI)
+                st.rerun()
 
-# 🔒 2. BLOK: HATA VEREN GRUPLAR KALDIRILDI. SİTE KİLİTLİYSE BAĞIMSIZ BU KISIM AÇILIR
+# 🔒 2. BLOK: SİTE KİLİTLİYSE BAĞIMSIZ BU KISIM ÇALISIR
 if not erisim_izni:
