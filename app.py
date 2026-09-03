@@ -191,7 +191,7 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = str(hisse_ara[0])
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -205,7 +205,7 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = str(hisse_ara[0])
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
