@@ -6,7 +6,7 @@ import os, re
 import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
-st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
+st.set_page_config(page_title="BTa", page_icon="📈", layout="wide")
 st.markdown("""
 <style>
     .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} 
@@ -24,18 +24,32 @@ st.markdown("""
         background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
     }
+    
+    /* Yeni BTa Modern Logo ve Başlık Alanı */
+    .bta-logo-konteyner {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 15px;
+        margin-bottom: 20px;
+    }
+    .bta-logo {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        color: white !important;
+        font-weight: 900;
+        font-size: 1.6rem;
+        padding: 8px 18px;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+        letter-spacing: 1px;
+    }
     .bta-ana-baslik {
-        font-size: 2rem !important; 
-        font-weight: bold !important; 
-        margin-top: 20px !important; 
-        margin-bottom: 5px !important;
-        text-align: left;
+        font-size: 2.2rem !important; 
+        font-weight: 800 !important; 
+        margin: 0 !important;
+        text-shadow: 0 0 10px rgba(255,255,255,0.2);
     }
-    .bta-alt-metrik {
-        font-size: 0.95rem !important; 
-        color: #cbd5e1 !important;
-        margin-bottom: 15px !important;
-    }
+    
     .mesaj-kutusu {
         background-color: rgba(255, 255, 255, 0.05);
         border-left: 4px solid #6366f1;
@@ -54,6 +68,14 @@ st.markdown("""
         font-size: 0.82rem; 
         text-align: justify;
         line-height: 1.4;
+    }
+    /* Aşağıya taşınan metrik alanı için şık stil */
+    .alt-metrik-kutusu {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -118,11 +140,13 @@ else:
 
 puan, toplam_oy_sayisi = puanlari_yukle()
 
-# BAŞLIK VE METRİK ALANI
-st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
-
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Ort. Puan:</b> {puan:.2f} | 🔥 <b>Toplam Oy:</b> {toplam_oy_sayisi} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+# MODERN LOGO VE SADE BAŞLIK ALANI
+st.markdown("""
+<div class="bta-logo-konteyner">
+    <div class="bta-logo">BTA</div>
+    <div class="bta-ana-baslik">BTa</div>
+</div>
+""", unsafe_allow_html=True)
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -170,10 +194,10 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = hisse_ara
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         tablo_alsat.append({
                             "Hisse Kodu 📈": hisse, 
@@ -184,16 +208,16 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0]
+                        hisse = hisse_ara
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
                         
                         tablo_al.append({
-                            "Hisse Kodu 🚀": hisse, 
+                            "Hisse Kodu": hisse, # Füze kelimesi kaldırıldı
                             "BTA PUAN (T)": bta_puan,
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
@@ -227,7 +251,6 @@ with sol_kolon:
 with sag_kolon:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
     
-    # Havuz tablosunu oluşturma süreci sadeleştirildi
     if st.session_state["ozel_takip_kutusu"]:
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
@@ -235,13 +258,3 @@ with sag_kolon:
             if cfiy == 0.0: 
                 cfiy = bilge["kayit_fiyati"]
                 
-            tk_list.append({
-                "Hisse Kodu 🗝️": hisse,
-                "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL",
-                "Anlık Güncel": f"{cfiy:.2f} TL"
-            })
-        
-        if tk_list:
-            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-            
-        # Hataya sebep olan st.button kontrolü tamamen dışarı çıkarılarak izole edildi
