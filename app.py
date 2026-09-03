@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# Google Fonts'tan el yazısı fontu (Sacramento) ve Tablo Stilleri
+# Google Fonts'tan el yazısı fontu (Sacramento) ve Stil Tanımlamaları
 st.markdown("""
 <link rel="preconnect" href="https://googleapis.com">
 <link rel="preconnect" href="https://gstatic.com" crossorigin>
@@ -43,6 +43,10 @@ st.markdown("""
         background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
     }
+    .piyasa-baslik {
+        background: linear-gradient(90deg, #4b5563 0%, #1e1b4b 100%);
+        padding: 8px; border-radius: 5px; font-weight: bold; margin-top: 15px; margin-bottom: 5px;
+    }
     .haber-baslik {
         background: linear-gradient(90deg, #2563eb 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-top: 20px; margin-bottom: 10px;
@@ -73,13 +77,19 @@ st.markdown("""
         line-height: 1.2;
     }
     
-    /* Haber kartı tasarımı */
     .haber-kart {
         background-color: rgba(255, 255, 255, 0.05);
         border-left: 4px solid #2563eb;
         padding: 12px;
         border-radius: 6px;
         margin-bottom: 10px;
+    }
+    .alt-metrik-kutusu {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -144,7 +154,6 @@ if df_kaynak is not None:
                 wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) 
                 t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  
                 
-                # 🟡 1. ADIM: AL SAT Sinyal Taraması (0 ve T değerleri tamamen görünür yapıldı)
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
@@ -159,7 +168,6 @@ if df_kaynak is not None:
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
                 
-                # 🟢 2. ADIM: AL Sinyal Taraması (0 ve T değerleri tamamen görünür yapıldı)
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
@@ -182,7 +190,6 @@ if df_kaynak is not None:
 # CANLI HİSSE ARAMA ÇUBUĞU
 arama_kelimesi = st.text_input("🔍 Listede Hisse Ara:", placeholder="Eregl, Thyao, Asels vb. yazın...", value="").strip().upper()
 
-# Filtreleme İşlemi
 df_alsat_son = pd.DataFrame(tablo_alsat)
 df_al_son = pd.DataFrame(tablo_al)
 
@@ -196,6 +203,9 @@ if arama_kelimesi:
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if not df_alsat_son.empty:
     st.dataframe(df_alsat_son, use_container_width=True, hide_index=True)
+    # 💾 EXCEL/CSV İNDİRME BUTONU
+    csv_alsat = df_alsat_son.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 AL SAT Listesini İndir (CSV)", data=csv_alsat, file_name="bta_alsat_sinyalleri.csv", mime="text/csv")
 else:
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
@@ -203,6 +213,9 @@ else:
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if not df_al_son.empty:
     st.dataframe(df_al_son, use_container_width=True, hide_index=True)
+    # 💾 EXCEL/CSV İNDİRME BUTONU
+    csv_bta = df_al_son.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 BTA Listesini İndir (CSV)", data=csv_bta, file_name="bta_merkez_sinyalleri.csv", mime="text/csv")
 else:
     st.write("🔒 Aktif BTA sinyali taranıyor...")
 
@@ -231,17 +244,3 @@ if st.session_state["ozel_takip_kutusu"]:
             "Havuz Maliyeti": "{:.2f} TL",
             "Anlık Güncel": "{:.2f} TL"
         })
-        st.dataframe(df_havuz_gorsel, use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-            st.session_state["ozel_takip_kutusu"] = {}
-            st.rerun()
-
-# 💬 BEĞENİ ALANI
-st.write("---")
-st.subheader("⭐ Paneli Değerlendir")
-
-# 🛠️ Yapay zekanın silmesini engellemek için range motoruna bağlandı (Kesin Çözüm)
-secilen_oy = st.selectbox("Paneli puanlayın:", options=list(range(1, 6)), format_func=lambda x: f"{'⭐' * x} ({x} Yıldız)")
-if st.button("Oyu Gönder 🟩", use_container_width=True):
-    st.session_state["topham_oy_sayisi"] += 1
-    st.session_state["topham_yildiz_puani"] += secilen_oy
