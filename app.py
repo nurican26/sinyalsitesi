@@ -81,7 +81,7 @@ for hisse in BORSA_HISSELERI:
 if canli_borsa_listesi: 
     st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
 
-# 5. BTA SİNYAL MERKEZİ (İsim Güncellendi, Butonlar Duruyor)
+# 5. BTA SİNYAL MERKEZİ
 st.divider()
 st.subheader("📈 BTA SİNYAL MERKEZİ")
 b1, b2 = st.columns(2)
@@ -110,7 +110,7 @@ if al_sat_butonu:
                         if pd.isna(cfiy) or cfiy == 0.0: cfiy = yfiy
                         
                         zfark = ((cfiy - yfiy) / yfiy) * 100 if yfiy > 0 else 0.0
-                        # Maliyet Fiyatı sütunu kaldırıldı, buton yerinde aktif
+                        # Maliyet Fiyatı kaldırıldı
                         tablo_verisi.append({
                             "Hisse Kodu": h_adi, 
                             "Sinyal Metni": uv, 
@@ -148,7 +148,7 @@ if al_butonu:
                         if pd.isna(cfiy) or cfiy == 0.0: cfiy = efiy
                         
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": efiy, "kayit_zamani": guncel_an}
-                        # Maliyet Fiyatı sütunu kaldırıldı, buton yerinde aktif
+                        # Maliyet Fiyatı kaldırıldı
                         tablo_verisi_al.append({
                             "Hisse Kodu": h_adi, 
                             "Sinyal": wv, 
@@ -208,10 +208,13 @@ with col_p2:
         st.success("Oyunuz başarıyla kaydedildi!")
         st.rerun()
 
-# 8. BTa Sohbet Asistanı Bölümü
+# 8. BTa Sohbet Asistanı Bölümü (Hatalar Giderildi)
 st.divider()
 st.subheader("💬 BTa Sohbet")
 
 # Önce geçmiş mesajları ekranda yazdırıyoruz
 for msg in st.session_state["chat_history"]:
     with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+# Yeni girdi kontrolü
