@@ -43,11 +43,37 @@ st.markdown("""
         border-radius: 4px;
         margin-bottom: 8px;
     }
+    /* SPK Uyarısı için Sol Alt Köşe Tasarımı */
+    .spk-kutu-sol {
+        background-color: rgba(220, 38, 38, 0.1);
+        border-left: 4px solid #dc2626; 
+        padding: 12px;
+        border-radius: 6px; 
+        margin-top: 30px; 
+        margin-bottom: 20px;
+        color: #fca5a5 !important; 
+        font-size: 0.82rem; 
+        text-align: justify;
+        line-height: 1.4;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # 💾 ORTAK VERİ TABANI AYARLARI (Dosya Tabanlı Mesajlaşma)
 MESAJ_DOSYASI = "ortak_mesajlar.csv"
+
+# 🚫 KÜFÜR VE UYGUNSUZ KELİME FİLTRE MOTORU
+# Engellemek istediğiniz kelimeleri bu listenin içine virgülle ekleyebilirsiniz.
+YASAKLI_KELIMELER = ["küfür1", "küfür2", "argo1", "hakaret1", "salak", "aptal"] 
+
+def sansurle(metin):
+    temiz_metin = metin
+    for kelime in YASAKLI_KELIMELER:
+        # Büyük/küçük harf duyarsız eşleşme sağlar
+        pattern = re.compile(re.escape(kelime), re.IGNORECASE)
+        # Kelime uzunluğu kadar yıldız (*) koyar
+        temiz_metin = pattern.sub("*" * len(kelime), temiz_metin)
+    return temiz_metin
 
 def mesajlari_yukle():
     if os.path.exists(MESAJ_DOSYASI):
@@ -58,7 +84,11 @@ def mesajlari_yukle():
     return []
 
 def mesaj_kaydet(isim, mesaj, saat):
-    yeni_data = pd.DataFrame([{"isim": isim, "mesaj": mesaj, "saat": saat}])
+    # Kaydedilmeden önce ismi ve mesajı filtreden geçiriyoruz
+    güvenli_isim = sansurle(isim)
+    güvenli_mesaj = sansurle(mesaj)
+    
+    yeni_data = pd.DataFrame([{"isim": güvenli_isim, "mesaj": güvenli_mesaj, "saat": saat}])
     if os.path.exists(MESAJ_DOSYASI):
         yeni_data.to_csv(MESAJ_DOSYASI, mode='a', header=False, index=False)
     else:
@@ -159,78 +189,45 @@ if df_kaynak is not None:
         except:
             pass
 
-# 🟡 AL SAT SİNYAL ALANI
-st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-if tablo_alsat:
-    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else:
-    st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+# Layout'u Sol ve Sağ kolon olarak ikiye bölüyoruz (SPK uyarısını sol alta hizalamak için)
+sol_kolon, sag_kolon = st.columns([1, 1])
 
-# 🟢 BTA SİNYAL MERKEZİ
-st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-if tablo_al:
-    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else:
-    st.write("🔒 Aktif BTA sinyali taranıyor...")
+with sol_kolon:
+    # 🟡 AL SAT SİNYAL ALANI
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat:
+        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else:
+        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-# 6. Sinyal Havuzu Bölümü
-st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-if st.session_state["ozel_takip_kutusu"]:
-    tk_list = []
-    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        cfiy = hızlı_canli_fiyat_bul(hisse)
-        if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-            
-        tk_list.append({
-            "Hisse Kodu 🗝️": hisse,
-            "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL",
-            "Anlık Güncel": f"{cfiy:.2f} TL"
-        })
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-            st.session_state["ozel_takip_kutusu"] = {}
-            st.rerun()
+    # 🟢 BTA SİNYAL MERKEZİ
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al:
+        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else:
+        st.write("🔒 Aktif BTA sinyali taranıyor...")
 
-# 💬 GERÇEK ZAMANLI VE ORTAK MESAJ KUTUSU
-st.write("---")
-st.subheader("💬 Topluluk Mesaj Panosu (Ortak Havuzlu)")
+    # ⚖️ YASAL SPK UYARI KUTUSU (SOL ALT KÖŞE)
+    st.markdown("""
+    <div class="spk-kutu-sol">
+        <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
+        kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, 
+        mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi 
+        çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların 
+        kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize 
+        uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi 
+        beklentilerinize uygun sonuçlar doğurmayabilir. Veriler en az 15 dakika gecikmelidir.
+    </div>
+    """, unsafe_allow_html=True)
 
-with st.form(key="mesaj_formu", clear_on_submit=True):
-    kullanici_adi = st.text_input("İsminiz / Rumuzunuz", value="Anonim")
-    yeni_mesaj = st.text_area("Mesajınız veya Analiz Notunuz", placeholder="Buraya yazabilirsiniz...")
-    gonder_butonu = st.form_submit_button("Mesajı Yayınla 🚀")
-    
-    if gonder_butonu and yeni_mesaj.strip():
-        zaman_damgasi = datetime.datetime.now().strftime("%d.%m %H:%M")
-        # Mesajı kalıcı olarak yerel dosyaya kaydet
-        mesaj_kaydet(kullanici_adi, yeni_mesaj.strip(), zaman_damgasi)
-        st.toast("Mesajınız ortak panoya kaydedildi! Görmek için sayfayı yenileyin.")
-        time.sleep(0.5)
-        st.rerun()
-
-# Mesajları yerel dosyadan çekerek listele (Her cihazda görünür olur)
-tum_mesajlar = mesajlari_yukle()
-if tum_mesajlar:
-    # Son atılan mesaj en üstte görünecek şekilde ters çeviriyoruz
-    for m in reversed(tum_mesajlar[-15:]): 
-        st.markdown(f"""
-        <div class="mesaj-kutusu">
-            <b>👤 {m['isim']}</b> <span style='color:#818cf8; font-size:0.8rem;'>({m['saat']})</span><br>
-            <p style='margin-top:5px; color:#e2e8f0!important;'>{m['mesaj']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-else:
-    st.info("Henüz mesaj yazılmamış. İlk ortak notu siz bırakın!")
-
-# 7. ⭐ PANELİ DEĞERLENDİR
-st.write("---")
-st.subheader("⭐ Paneli Değerlendir")
-yildiz_secimi = st.feedback("stars", key="panel_puanlama") 
-if yildiz_secimi is not None:
-    puan_anahtari = f"puanlandi_{yildiz_secimi}"
-    if puan_anahtari not in st.session_state:
-        verilen_puan = yildiz_secimi + 1
-        st.session_state["topham_oy_sayisi"] += 1
-        st.session_state["topham_yildiz_puani"] += verilen_puan
-        st.session_state[puan_anahtari] = True
+with sag_kolon:
+    # 6. Sinyal Havuzu Bölümü
+    st.markdown("#### 🌟 Özel Takip Havuzu 💰")
+    if st.session_state["ozel_takip_kutusu"]:
+        tk_list = []
+        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+            cfiy = hızlı_canli_fiyat_bul(hisse)
+            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
+                
+            tk_list.append({
+                "Hisse Kodu 🗝️": hisse,
