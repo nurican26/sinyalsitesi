@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os, re
-import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
@@ -32,6 +31,19 @@ st.markdown("""
         border-radius: 6px; margin-top: 15px; margin-bottom: 10px;
         color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;
     }
+    /* Telefon başlık kayması ve boyut ayarları için CSS */
+    .bta-ana-baslik {
+        font-size: 1.8rem !important; 
+        font-weight: bold !important; 
+        margin-top: 10px !important; 
+        margin-bottom: 5px !important;
+        text-align: left;
+    }
+    .bta-alt-metrik {
+        font-size: 0.9rem !important; 
+        color: #cbd5e1 !important;
+        margin-bottom: 15px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -44,16 +56,14 @@ for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_
 
 st.session_state["ziyaret_sayaci"] += 1
 
-# 🌟 ÜST BAŞLIK VE KÖŞEDE KİBAR TARİH/SAAT DÜZENLEMESİ
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-head_c1, head_c2 = st.columns([2, 1])
-with head_c1:
-    st.title("⚡ BTa Sinyal Takip Paneli 🚀")
-with head_c2:
-    st.markdown(f"<p style='text-align: right; margin-top: 15px; font-weight: bold; color: #10B981!important;'>🕒 {guncel_an}</p>", unsafe_allow_html=True)
+# 🌟 DÜZELTME: Yukarı kaymayı engelleyen ve metin boyutunu dengeleyen tek parça başlık düzeni
+st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
 
+guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-st.write(f"⭐ **Ortalama Puan:** {puan:.2f} | 🔥 **Toplam Oy:** {st.session_state['topham_oy_sayisi']} | 🚪 **Giriş:** {st.session_state['ziyaret_sayaci']}")
+
+# Küçültülmüş metrik satırı ve kibar zaman göstergesi tek satırda birleştirildi
+st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -75,7 +85,20 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 EXCEL VERİLERİNİ AYIKLAMA VE AYRI TABLOLARA BÖLME MOTORU
+def sayisal_mi(deger):
+    try:
+        float(str(deger).strip().replace(",", "."))
+        return True
+    except:
+        return False
+
+def sayiya_cevir(deger):
+    try:
+        return float(str(deger).strip().replace(",", "."))
+    except:
+        return 0.0
+
+# 🌟 EXCEL VERİLERİNE GÖRE OTOMATİK LİSTELEME MOTORU
 tablo_alsat = []
 tablo_al = []
 
@@ -94,7 +117,7 @@ if df_kaynak is not None:
             
             hisse = son_gecerli_hisse
             if hisse and hisse != "RAYSG":
-                # 🟡 AL SAT Şartı: U sütununda veri varsa ve KUVVA ise tetiklenir
+                # 🟡 AL SAT Şartı: U sütununda aktif veri varsa ve KUVVA ise tetiklenir
                 if hisse == "KUVVA" and uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-"]:
                     canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     tablo_alsat.append({
@@ -103,7 +126,7 @@ if df_kaynak is not None:
                         "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                     })
                 
-                # 🟢 AL Şartı: W sütununda veri varsa ve SONME ise tetiklenir
+                # 🟢 AL Şartı: W sütununda aktif veri varsa ve SONME ise tetiklenir
                 if hisse == "SONME" and wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL"]:
                     canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
@@ -114,9 +137,6 @@ if df_kaynak is not None:
                         "BTA PUAN (T)": t_degeri if t_degeri and t_degeri != "nan" else wv_degeri,
                         "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                     })
-
-# 5. NET VE KARIŞMAYAN SİNYAL EKRANLARI
-st.write("---")
 
 # 🟡 AL SAT SİNYAL ALANI
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
@@ -152,7 +172,7 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 7. ⭐ ŞIK YILDIZ PUANLAMA SİSTEMİ (Slider Kaldırıldı)
+# 7. ⭐ ŞIK YILDIZ PUANLAMA SİSTEMİ
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
 yildiz_secimi = st.feedback("stars") 
@@ -161,7 +181,6 @@ if yildiz_secimi is not None:
     st.session_state["topham_oy_sayisi"] += 1
     st.session_state["topham_yildiz_puani"] += verilen_puan
     st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. 🎉")
-    time.sleep(1)
     st.rerun()
 
 # 8. BTa Sohbet Odası Bölümü
@@ -176,14 +195,10 @@ if user_input:
     st.session_state["chat_history"].append({"role": "user", "content": user_input})
     st.rerun()
 
-# 🚨 TALEP: SPK YASAL UYARISI EN ALTA TAŞINDI
+# 🚨 SPK YASAL UYARISI SAYFA SONUNDA SABİT
 st.markdown("""
 <div class="spk-kutusu">
     <strong>⚖️ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
     Veriler matematiksel olarak listelenmektedir.
 </div>
 """, unsafe_allow_html=True)
-
-# Arka Plan Akış Tetikleyicisi
-time.sleep(10)
-st.rerun()
