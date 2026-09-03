@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Tasarım (Başlık BTa Olarak Değiştirildi)
+# 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
@@ -68,7 +68,7 @@ for hisse in BORSA_HISSELERI:
                     if hisse in val_hisse:
                         raw_fiyat = str(df_kaynak.iloc[idx, 7]).replace(",", ".").strip()
                         sayi = re.findall(r"[-+]?\d*\.\d+|\d+", raw_fiyat)
-                        ef = float(sayi[0]) if sayi else 0.0
+                        ef = float(sayi) if sayi else 0.0
                         break
             if ef > 0: 
                 canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🔄 Sabit"})
@@ -78,9 +78,9 @@ for hisse in BORSA_HISSELERI:
 if canli_borsa_listesi: 
     st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
 
-# 5. Sinyal Üretim Merkezi
+# 5. Sinyal Üretim Merkezi (Başlık BTa Olarak Değiştirildi)
 st.divider()
-st.subheader("📈 Sinyal Üretim Merkezi")
+st.subheader("📈 BTa Sinyal Üretim Merkezi")
 b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
@@ -100,7 +100,7 @@ if al_sat_butonu:
                     if h_adi:
                         raw_fiyat = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
                         sayi = re.findall(r"[-+]?\d*\.\d+|\d+", raw_fiyat)
-                        yfiy = float(sayi[0]) if sayi else 0.0
+                        yfiy = float(sayi) if sayi else 0.0
                         
                         h_obj = yf.Ticker(f"{h_adi}.IS").history(period="1d")
                         cfiy = h_obj['Close'].iloc[-1] if not h_obj.empty else yfiy
@@ -138,7 +138,7 @@ if al_butonu:
                     if h_adi:
                         raw_fiyat = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
                         sayi = re.findall(r"[-+]?\d*\.\d+|\d+", raw_fiyat)
-                        efiy = float(sayi[0]) if sayi else 0.0
+                        efiy = float(sayi) if sayi else 0.0
                         
                         h_obj = yf.Ticker(f"{h_adi}.IS").history(period="1d")
                         cfiy = h_obj['Close'].iloc[-1] if not h_obj.empty else efiy
@@ -206,3 +206,4 @@ st.markdown("#### 🗳️ Paneli Değerlendir")
 secilen_puan = st.slider("Panele Puan Verin:", 1, 5, 5)
 if st.button("⭐ Oyumu Gönder", use_container_width=True):
     st.session_state["topham_oy_sayisi"] += 1
+    st.session_state["topham_yildiz_puani"] += secilen_puan
