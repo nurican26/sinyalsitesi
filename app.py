@@ -41,7 +41,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifre yazıp Enter'a basın...")
 
-# YÖNETİCİ KONTROL ODASI
+# 🎛️ BAĞIMSIZ YÖNETİCİ KONTROL PANELİ
 is_admin = False
 if girilen_sifre == YONETICI_SIFRESI:
     is_admin = True
@@ -76,7 +76,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🟢 1. BLOK: SİTE AÇIKSAN VEYA DOĞRU ŞİFRE GİRİLDİYSE DETAYLAR VE HİSSELER SORUNSUZ YÜKLENİR
+# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -100,7 +100,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını string olarak tam temizledik
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -109,7 +109,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını string olarak tam temizledik
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -149,17 +149,19 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 YÖNETİCİ MESAJ OKUMA ODASI
-    if is_admin and os.path.exists(MESAJ_DOSYASI):
-        st.write("---")
-        st.subheader("📩 Gelen Kullanıcı Mesajları")
-        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar = f.readlines()
-        if mesajlar:
-            for m in reversed(mesajlar[-15:]): st.text(f"💬 {m.strip()}")
-            st.write("")
-            if st.button("🗑️ Tüm Mesajları Temizle"):
-                os.remove(MESAJ_DOSYASI)
-                st.rerun()
+# 📬 GIZLI GELEN MESAJLAR PANELİ (Girinti hatası yapabilecek her şey tamamen kaldırıldı)
+if is_admin and os.path.exists(MESAJ_DOSYASI):
+    st.write("---")
+    st.subheader("📩 Gelen Kullanıcı Mesajları")
+    with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+        mesajlar_listesi = f.readlines()
+    if mesajlar_listesi:
+        for m in reversed(mesajlar_listesi[-15:]):
+            st.text(f"💬 {m.strip()}")
+        st.write("")
+        if st.button("🗑️ Tüm Mesajları Temizle"):
+            os.remove(MESAJ_DOSYASI)
+            st.rerun()
 
-# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE GİRİLMEDİYSE ÇIKACAK İLETİŞİM FORMU (Eksik alan tamamen getirildi)
+# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN (Yatırımcı İletişim Kutusu Eksiksiz Geldi)
 if not erisim_izni:
