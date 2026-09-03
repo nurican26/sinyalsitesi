@@ -26,7 +26,7 @@ def kilit_durumu_yaz(durum):
     with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
         f.write(durum)
 
-# Hafıza Kontrolleri
+# Geçici hafıza kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
@@ -47,7 +47,7 @@ yonetici_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", p
 
 # Şifre doğruysa kalıcı kilitleme butonları görünür
 if yonetici_sifre == GIRIS_SIFRESI:
-    st.sidebar.success(f"Yönetici Aktif. Kalıcı Durum: {mevcut_kilit}")
+    st.sidebar.success(f"Yönetici Aktif. Durum: {mevcut_kilit}")
     col_kilitle, col_ac = st.sidebar.columns(2)
     if col_kilitle.button("🔒 SİTEYİ KİLİTLE"):
         kilit_durumu_yaz("Kilitli")
@@ -61,7 +61,7 @@ erisim_izni = False
 if mevcut_kilit == "Açık":
     erisim_izni = True
 
-# 🟢 1. DURUM: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER YÜKLENİR
+# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -111,7 +111,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -120,7 +120,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -162,7 +162,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yönetici Odası)
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Girinti hatası yapabilecek ELSE yapıları tamamen silindi)
     if yonetici_sifre == GIRIS_SIFRESI:
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -176,10 +176,6 @@ if erisim_izni:
                 if st.button("🗑️ Tüm Mesajları Temizle"):
                     os.remove(MESAJ_DOSYASI)
                     st.rerun()
-            else:
-                st.info("Henüz yeni mesaj bulunmuyor.")
-        else:
-            st.info("Henüz yeni mesaj bulunmuyor.")
 
-# 🔒 2. DURUM: SİTE KİLİTLİYSE KESİN OLARAK BU FORM ÇALIŞIR
-else:
+# 🔒 2. BLOK: HATA VEREN GRUPLAR KALDIRILDI. SİTE KİLİTLİYSE BAĞIMSIZ BU KISIM AÇILIR
+if not erisim_izni:
