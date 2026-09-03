@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os
+import os, re
 import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
@@ -77,6 +77,11 @@ st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın 
 st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
 st.write("")
 
+# 🛡️ KRİTİK DEĞİŞİKLİK: YASAL UYARI KODUNUN EN BAŞINA VE TABLOLARIN ÜSTÜNE ÇIKARILDI (Asla Ezilemez!)
+st.markdown('<div class="spk-kutusu"><b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Veriler borsa standartlarında en az 15 dakika gecikmelidir.</div>', unsafe_allow_html=True)
+st.write("---")
+
+# 📊 EXCEL VERİ OKUMA VE TABLO OLUŞTURMA ALANI
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
@@ -92,7 +97,6 @@ if df_kaynak is not None:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # 🛠️ GÜVENLİ VE KESİN PARANTEZSİZ DÜZ METİN AYIKLAMA SİSTEMİ
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     uv_sadece_harf = "".join(re.findall(r'[A-Z]', uv))
                     if uv_sadece_harf.endswith("ALSAT"): uv_sadece_harf = uv_sadece_harf[:-5]
@@ -116,23 +120,7 @@ if df_kaynak is not None:
                         tablo_al.append({"Hisse Kodu 🚀": wv_sadece_harf, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
 
-# 🟢 ATTIĞINIZ TAM ÇALIŞAN ŞABLON ENTEGRASYONU
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
-st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif BTA sinyali taranıyor...")
-
-if st.session_state["ozel_takip_kutusu"]:
-    st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-    tk_list = []
-    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        cfiy = hızlı_canli_fiyat_bul(hisse)
-        if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-        tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
 
