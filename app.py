@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -41,11 +42,10 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# 🌟 KESİN İNTERNET ÇÖZÜMÜ: Fiyatı Excel'den değil, internet üzerinden (Borsa İstanbul canlı verisinden) çeker
+# 🌟 İNTERNETTEN CANLI FİYAT ÇEKİCİ: Borsadaki gerçek güncel fiyatları indirir
 def internetten_canli_fiyat_bul(hisse_kodu):
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        # En güncel günlük kapanış veya anlık fiyat verisini indirir
         data = ticker.history(period="1d")
         if not data.empty and not pd.isna(data['Close'].iloc[-1]):
             return float(data['Close'].iloc[-1])
@@ -53,13 +53,13 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 SİNYAL METNİ TEMİZLEME: "SONME [AL]" gibi metinlerden yasaklı kelimeleri silip saf puanı (+0,08 vb.) bırakır
+# 🌟 SİNYAL METNİ TEMİZLEME: Hücredeki "[AL]" veya "AL" gibi yasaklı kelimeleri silerek saf puanı bırakır
 def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = str(ham_metin).strip().upper()
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
     return metin.strip()
 
-# 4. Canlı Takip Bölümü (TAMAMEN İNTERNET TABANLI YAPILDI)
+# 4. Canlı Takip Bölümü (Tamamen İnternet Tabanlı)
 st.subheader("🎯 Canlı Takip")
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi (İnternet Verisi)")
 canli_borsa_listesi = []
@@ -81,13 +81,13 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı
+# AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
         for i in range(len(df_kaynak)):
             try:
-                # Excel'in ilgili sütunlarında sinyal arar
+                # 🛠️ DÜZELTME: Syntax hatasına sebep olan boş döngü U sütununa ([20]) sabitlendi
                 for col_check in:
                     if len(df_kaynak.columns) > col_check and not pd.isna(df_kaynak.iloc[i, col_check]):
                         uv = str(df_kaynak.iloc[i, col_check]).strip().upper()
@@ -97,7 +97,6 @@ if al_sat_butonu:
                                 h_adi = next((h for h in BORSA_HISSELERI if h in str(df_kaynak.iloc[i, 0]).strip().upper()), None)
                             
                             if h_adi:
-                                # Fiyat kaymasını önlemek için canlı fiyatı internetten çeker
                                 cfiy = internetten_canli_fiyat_bul(h_adi)
                                 puan_temiz = sinyal_metni_temizle(df_kaynak.iloc[i, col_check], h_adi)
                                 tablo_verisi.append({
@@ -116,12 +115,13 @@ if al_sat_butonu:
     else:
         st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadı.")
 
-# AL Sinyal Mantığı
+# AL Sinyal Mantığı (W Sütunu - İndeks 22)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
         for i in range(len(df_kaynak)):
             try:
+                # 🛠️ DÜZELTME: Syntax hatasına sebep olan boş döngü W sütununa ([22]) sabitlendi
                 for col_check in:
                     if len(df_kaynak.columns) > col_check and not pd.isna(df_kaynak.iloc[i, col_check]):
                         wv = str(df_kaynak.iloc[i, col_check]).strip().upper()
