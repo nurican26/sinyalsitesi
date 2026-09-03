@@ -56,9 +56,9 @@ if yonetici_sifre == GIRIS_SIFRESI:
         kilit_durumu_yaz("Açık")
         st.rerun()
 
-# 🛠️ ERİŞİM KONTROLÜ (Kalıcı hafızaya ve şifreye bakar)
+# 🛠️ ERİŞİM KONTROLÜ (Kalıcı hafızaya bakar)
 erisim_izni = False
-if mevcut_kilit == "Açık" or yonetici_sifre == GIRIS_SIFRESI:
+if mevcut_kilit == "Açık":
     erisim_izni = True
 
 # 🟢 İÇERİK GÖSTERME ALANI (Giriş İzni Varsa Açılır)
@@ -111,7 +111,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -120,7 +120,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -162,7 +162,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yönetici Odası)
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yönetici Odası Girintileri Tamamen Kilitlendi)
     if yonetici_sifre == GIRIS_SIFRESI:
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -179,3 +179,6 @@ if erisim_izni:
             else:
                 st.info("Henüz yeni mesaj bulunmuyor.")
         else:
+            st.info("Henüz yeni mesaj bulunmuyor.")
+
+# 🔒 KİLİTLİ EKRAN ALANI (Erişim İzni Yoksa Kusursuz Form Yapısıyla Açılır)
