@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os, re
+import os
 import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
@@ -92,37 +92,31 @@ if df_kaynak is not None:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # 🛠️ GÜVENLİ VE KESİN PARANTEZSİZ-EK SÖZCÜKSÜZ HİSSE MOTORU
+                # 🛠️ GÜVENLİ VE KESİN PARANTEZSİZ DÜZ METİN AYIKLAMA SİSTEMİ
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                    uv_temiz = "".join([c for c in uv if c.isalnum() or c == "."])
-                    h_eslesme = re.findall(r'[A-Z]+', uv_temiz)
-                    if h_eslesme:
-                        hisse_eslesme = str(h_eslesme[0]).strip()
-                        if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
-                        elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
-                        elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
-                        
-                        if hisse_eslesme:
-                            cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
-                            tablo_alsat.append({"Hisse Kodu 📈": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                    uv_sadece_harf = "".join(re.findall(r'[A-Z]', uv))
+                    if uv_sadece_harf.endswith("ALSAT"): uv_sadece_harf = uv_sadece_harf[:-5]
+                    elif uv_sadece_harf.endswith("AL"): uv_sadece_harf = uv_sadece_harf[:-2]
+                    elif uv_sadece_harf.endswith("SAT"): uv_sadece_harf = uv_sadece_harf[:-3]
+                    
+                    if uv_sadece_harf:
+                        cfiy = hızlı_canli_fiyat_bul(uv_sadece_harf)
+                        tablo_alsat.append({"Hisse Kodu 📈": uv_sadece_harf, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                    wv_temiz = "".join([c for c in wv if c.isalnum() or c == "."])
-                    h_eslesme = re.findall(r'[A-Z]+', wv_temiz)
-                    if h_eslesme:
-                        hisse_eslesme = str(h_eslesme[0]).strip()
-                        if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
-                        elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
-                        elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
-                        
-                        if hisse_eslesme:
-                            cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
-                            if hisse_eslesme not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                                st.session_state["ozel_takip_kutusu"][hisse_eslesme] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                            tablo_al.append({"Hisse Kodu 🚀": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                    wv_sadece_harf = "".join(re.findall(r'[A-Z]', wv))
+                    if wv_sadece_harf.endswith("ALSAT"): wv_sadece_harf = wv_sadece_harf[:-5]
+                    elif wv_sadece_harf.endswith("AL"): wv_sadece_harf = wv_sadece_harf[:-2]
+                    elif wv_sadece_harf.endswith("SAT"): wv_sadece_harf = wv_sadece_harf[:-3]
+                    
+                    if wv_sadece_harf:
+                        cfiy = hızlı_canli_fiyat_bul(wv_sadece_harf)
+                        if wv_sadece_harf not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                            st.session_state["ozel_takip_kutusu"][wv_sadece_harf] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                        tablo_al.append({"Hisse Kodu 🚀": wv_sadece_harf, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
 
-# 🟢 TAM ÇALIŞAN ŞABLON ENTEGRASYONU
+# 🟢 ATTIĞINIZ TAM ÇALIŞAN ŞABLON ENTEGRASYONU
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
@@ -136,3 +130,9 @@ if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         cfiy = hızlı_canli_fiyat_bul(hisse)
+        if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
+        tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
+    if tk_list:
+        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+        if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
+
