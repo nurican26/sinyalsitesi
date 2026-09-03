@@ -35,7 +35,7 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🔐 GİRİŞ KUTUSU
+# 🔐 ORTADA DURAN GİRİŞ KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
@@ -85,7 +85,7 @@ if erisim_izni:
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-    # 📊 CANLI DÖVİZ VE ALTIN PANELDEN GÖRÜNÜM (Yeni Eklenen Alan)
+    # 📊 CANLI DÖVİZ VE ALTIN PANELDEN GÖRÜNÜM
     st.markdown("#### 🌍 Canlı Makro Piyasalar")
     p_usd = doviz_altin_cek("USDTRY=X")
     p_eur = doviz_altin_cek("EURTRY=X")
@@ -152,4 +152,4 @@ if erisim_izni:
             tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-            if st.button("🗑️ Havuzu Temizle", use_container_width=True):
+            # 🛠️ GİRİNTİ HATASINI ENGELLEYEN TEK SATIRLIK GÜVENLİ BUTON YAPISI
