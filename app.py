@@ -44,12 +44,10 @@ if is_admin:
     st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
     if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: 
-            f.write("Açık")
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
         st.rerun()
     if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: 
-            f.write("Kilitli")
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
 
 # 💥 FİYAT MOTORLARI
@@ -70,7 +68,6 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
-    # 🛠️ GÜVENLİ VE GERÇEK SERBEST PİYASA ENTEGRASYONU
     try:
         ons_ticker = yf.Ticker("GC=F").history(period="5d")
         usd_ticker = yf.Ticker("USDTRY=X").history(period="5d")
@@ -78,16 +75,28 @@ def canli_altin_fiyatlarini_hesapla():
             ons_fiyat = float(ons_ticker['Close'].iloc[-1])
             usd_fiyat = float(usd_ticker['Close'].iloc[-1])
             if ons_fiyat > 100 and usd_fiyat > 10:
-                # 24 Ayar saf gram altın maliyeti
                 saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
-                # Serbest piyasa kuyumcu/makas ve darphane işçilik katsayıları
-                gram_22_ayar = saf_gram * 0.916 
-                ceyrek_fiyat = (saf_gram * 1.635) + (saf_gram * 0.07) # İşçilik ve darphane marjı eklendi
+                ceyrek_fiyat = (saf_gram * 1.635) + (saf_gram * 0.07)
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
     except: 
         pass
-    # İnternet gecikmesi durumunda Kapalıçarşı güncel taban canlı fiyat ortalamaları
     return 3020.0, 4980.0, 9960.0, 19920.0 
+
+# 📬 GIZLI GELEN MESAJLAR PANELİNİ OKUYAN İZOLE GÜVENLİ FONKSİYON
+def yonetici_mesaj_odasi():
+    if os.path.exists(MESAJ_DOSYASI):
+        st.write("---")
+        st.subheader("📩 Gelen Kullanıcı Mesajları")
+        try:
+            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: m_liste = f.readlines()
+            if m_liste:
+                for m in reversed(m_liste[-15:]): st.text(f"💬 {m.strip()}")
+                st.write("")
+                if st.button("🗑️ Tüm Mesajları Temizle", use_container_width=True):
+                    os.remove(MESAJ_DOSYASI)
+                    st.rerun()
+        except:
+            pass
 
 # 🟢 1. DURUM: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER YÜKLENİR
 if erisim_izni:
@@ -107,10 +116,8 @@ if erisim_izni:
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: 
-            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        except: 
-            pass
+        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        except: pass
 
     tablo_alsat, tablo_al = [], []
     if df_kaynak is not None:
@@ -124,19 +131,19 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ TIRNAK KÜRLÜĞÜ BİTTİ (KESİN DÜZ YAZI)
+                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ KIRILMASI VE DÜZ YAZI ENTEGRASYONU TAMAMLANDI
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
+                            bta_puan = p_bul if p_bul else t_deg
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                             
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ TIRNAK KÜRLÜĞÜ BİTTİ (KESİN DÜZ YAZI)
+                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ KIRILMASI VE DÜZ YAZI ENTEGRASYONU TAMAMLANDI
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
+                            bta_puan = p_bul if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                             tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -144,23 +151,16 @@ if erisim_izni:
                 pass
 
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat: 
-        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Taranıyor...")
+    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Taranıyor...")
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: 
-        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Taranıyor...")
+    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Taranıyor...")
 
     if st.session_state["ozel_takip_kutusu"]:
         st.markdown("#### 🌟 Özel Takip Havuzu 💰")
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
             cfiy = hızlı_canli_fiyat_bul(hisse)
-            if cfiy == 0.0: 
-                cfiy = bilge["kayit_fiyati"]
-            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-        if tk_list:
+            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
