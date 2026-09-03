@@ -27,7 +27,7 @@ c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
 c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Canlı Fiyatlar İnternetten Çekiliyor. Puanlar T Sütunundan Okunuyor. Son Yenilenme: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Canlı Fiyatlar İnternetten Çekiliyor. Son Yenilenme: {guncel_an}")
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -38,20 +38,14 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 Excel dosyasından tüm hisse kodlarını otomatik çıkaran dinamik liste altyapısı (630+ hisse uyumlu)
-DURUM_HISSELERI = []
-if df_kaynak is not None:
-    for idx in range(len(df_kaynak)):
-        hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
-        kodlar = re.findall(r'[A-Z]+', hucre_metni)
-        if kodlar and kodlar[0] not in DURUM_HISSELERI:
-            # Geçersiz veya kısa tanımları filtrele, gerçek borsa kodlarını listeye ekle
-            if len(kodlar[0]) >= 4 and kodlar[0] not in ["ANLIK", "SIRALA", "LOT", "PİYASA", "BTA", "UCUZ"]:
-                DURUM_HISSELERI.append(kodlar[0])
-
-# Kod içinde yedek olarak sabit listenizi de koruyoruz
-SABIT_LISTE = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH", "KUVVA"]
-BORSA_HISSELERI = list(set(DURUM_HISSELERI + SABIT_LISTE))
+# 🌟 TALEP: Tam 25 adet borsa hisseniz listeye kilitlendi
+BORSA_HISSELERI = [
+    "RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", 
+    "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", 
+    "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", 
+    "INGRM", "FORTE", "PKENT", "DUNYH", "KUVVA",
+    "SAYAS", "LUKSK", "BUCIM", "YAPRK", "EKIM"
+]
 
 # 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ (Yahoo Finance)
 def internetten_canli_fiyat_bul(hisse_kodu):
@@ -64,13 +58,13 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 EXCEL SATIR EŞLEŞTİRİCİ
+# 🌟 KESİN SATIR BULUCU: Satır kaymalarını önler, tam satır indeksini yakalar
 def hisse_satirini_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
             ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            parcalar = re.findall(r'[A-Z]+', ilk_hucre)
-            if hisse_kodu in parcalar:
+            kelimeler = re.findall(r'[A-Z0-9]+', ilk_hucre)
+            if hisse_kodu in kelimeler:
                 return idx
     return None
 
@@ -80,24 +74,21 @@ def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
     return metin.strip()
 
-# 4. Canlı Takip Bölümü
+# 4. Canlı Takip Bölümü (25 Hisse ile Sınırlandırıldı)
 st.subheader("🎯 Canlı Takip")
 
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
 
-st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi (İnternet Verisi)")
+st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (İnternet Verisi)")
 canli_borsa_listesi = []
 
-# Sadece ekranda kalabalık yapmaması için ilk aşamada aranan veya aktif takipteki hisseleri gösterir
-listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI[:25] # İlk 25 veya aranan hisse
+listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI
 
 for hisse in listelenecek_hisseler:
     if not hisse: continue
     ef = internetten_canli_fiyat_bul(hisse)
     if ef > 0: 
         canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🟢 İnternet Canlı"})
-    elif arama_kutusu:
-        canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": "Veri Yok / Bulunamadı", "Günlük Değişim": "🔄"})
 
 if canli_borsa_listesi: 
     st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
@@ -117,9 +108,10 @@ if al_sat_butonu:
             s_idx = hisse_satirini_bul(hisse)
             if s_idx is not None and len(df_kaynak.columns) > 20:
                 uv = str(df_kaynak.iloc[s_idx, 20]).strip().upper()
-                if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ"]:
+                if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-"]:
                     cfiy = internetten_canli_fiyat_bul(hisse)
-                    # Puan verisi talep doğrultusunda T sütunundan (indeks 19) çekilir
+                    
+                    # 🛠️ Puan verisi kesin olarak T sütunundan (indeks 19) çekilir
                     raw_puan = df_kaynak.iloc[s_idx, 19] if len(df_kaynak.columns) > 19 else uv
                     puan_temiz = sinyal_metni_temizle(raw_puan, hisse)
                     
@@ -142,11 +134,11 @@ if al_butonu:
             s_idx = hisse_satirini_bul(hisse)
             if s_idx is not None and len(df_kaynak.columns) > 22:
                 wv = str(df_kaynak.iloc[s_idx, 22]).strip().upper()
-                if list(wv) and wv not in ["", "0", "0.0", "0,00", "NAN", "AL"] and "-" not in wv:
+                if wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-"]:
                     cfiy = internetten_canli_fiyat_bul(hisse)
                     st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                     
-                    # Puan verisi talep doğrultusunda T sütunundan (indeks 19) çekilir
+                    # 🛠️ Puan verisi kesin olarak T sütunundan (indeks 19) çekilir
                     raw_puan = df_kaynak.iloc[s_idx, 19] if len(df_kaynak.columns) > 19 else wv
                     puan_al_temiz = sinyal_metni_temizle(raw_puan, hisse)
                     
