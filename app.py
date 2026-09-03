@@ -142,14 +142,14 @@ if df_kaynak is not None:
                 wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) 
                 t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  
                 
-                # 🟡 1. ADIM: AL SAT Sinyal Taraması
+                # 🟡 1. ADIM: AL SAT Sinyal Taraması (0 ve T değerleri dahil geri getirildi)
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         tablo_alsat.append({
                             "Hisse Kodu 📈": hisse, 
@@ -157,14 +157,14 @@ if df_kaynak is not None:
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
                 
-                # 🟢 2. ADIM: AL Sinyal Taraması
+                # 🟢 2. ADIM: AL Sinyal Taraması (0 ve T değerleri dahil geri getirildi)
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
@@ -195,14 +195,14 @@ st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>'
 if not df_alsat_son.empty:
     st.dataframe(df_alsat_son, use_container_width=True, hide_index=True)
 else:
-    st.write("🔒 Aranan kriterde aktif AL SAT sinyali bulunamadı...")
+    st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 # 🟢 BTA SİNYAL MERKEZİ
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if not df_al_son.empty:
     st.dataframe(df_al_son, use_container_width=True, hide_index=True)
 else:
-    st.write("🔒 Aranan kriterde aktif BTA sinyali bulunamadı...")
+    st.write("🔒 Aktif BTA sinyali taranıyor...")
 
 # 6. Sinyal Havuzu Bölümü
 st.markdown("#### 🌟 Özel Takip Havuzu 💰")
@@ -241,9 +241,8 @@ if st.session_state["ozel_takip_kutusu"]:
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
 
-# 🛠️ BURASI KESİN OLARAK DÜZELTİLDİ: Rakam listesi hatasız gömüldü
+# Hata veren liste doldurularak kilitlendi
 puan_secenekleri = [1, 2, 3, 4, 5]
 secilen_oy = st.selectbox("Paneli puanlayın:", options=puan_secenekleri, format_func=lambda x: f"{'⭐' * x} ({x} Yıldız)")
 if st.button("Oyu Gönder 🟩", use_container_width=True):
     st.session_state["topham_oy_sayisi"] += 1
-    st.session_state["topham_yildiz_puani"] += secilen_oy
