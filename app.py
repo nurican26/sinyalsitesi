@@ -11,7 +11,6 @@ st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
-if "last_refresh" not in st.session_state: st.session_state["last_refresh"] = time.time()
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
 
@@ -41,21 +40,28 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# 📌 DÜZELTME: Listeyi doğrudan float yapmaya çalışma hatası giderildi ([0] indeksi eklendi)
+# 📌 GELİŞMİŞ SAYI TEMİZLEME: Listenin bölünmesini engeller, sayıyı tek parça halinde float yapar
 def temiz_fiyat_al(val):
     if pd.isna(val):
         return 0.0
-    val_str = str(val).strip()
+    val_str = str(val).strip().replace(" TL", "").replace("TL", "").strip()
+    
+    # Sadece sayı, nokta ve virgülleri koru, diğer karakterleri temizle
+    val_str = re.sub(r'[^\d.,+-]', '', val_str)
+    
     if "," in val_str and "." in val_str:
         val_str = val_str.replace(".", "").replace(",", ".")
     elif "," in val_str:
         val_str = val_str.replace(",", ".")
-    
-    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
-    # Bulunan listenin ilk elemanını alarak çökme hatasını kesin olarak çözer
-    return float(sayilar[0]) if sayilar else 0.0
+        
+    try:
+        return float(val_str) if val_str else 0.0
+    except:
+        # Eğer dönüşüm başarısız olursa regex'e güvenli geri dönüş yap
+        sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
+        return float("".join(sayilar)) if sayilar else 0.0
 
-# 🌟 ARANAN HİSSEYİ BULMA VE F SÜTUNU (İNDEKS 5) EŞLEŞMESİ
+# 🌟 GÖRSELDEKİ "ANLIK" SÜTUNU (İNDEKS 5 - F SÜTUNU) DOĞRULAMASI
 def hisse_fiyati_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
@@ -63,6 +69,13 @@ def hisse_fiyati_bul(hisse_kodu):
             if hisse_kodu in val_hisse:  
                 return temiz_fiyat_al(df_kaynak.iloc[idx, 5])
     return 0.0
+
+# 🌟 SİNYAL METNİ TEMİZLEME: "SONME [AL]" gibi metinlerden hisse adını ve yasaklı kelimeleri silip saf puanı (+0,08 vb.) bırakır
+def sinyal_metni_temizle(ham_metin, hisse_kodu):
+    metin = str(ham_metin).strip().upper()
+    # Yasaklı kelimeleri ve hisse kodunu sil
+    metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
+    return metin.strip()
 
 # 4. Canlı Takip Bölümü
 st.subheader("🎯 Canlı Takip")
@@ -100,11 +113,11 @@ if al_sat_butonu:
                     h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                     if h_adi:
                         cfiy = hisse_fiyati_bul(h_adi)
-                        bta_puan_temiz = str(df_kaynak.iloc[i, 20]).strip()
+                        puan_temiz = sinyal_metni_temizle(df_kaynak.iloc[i, 20], h_adi)
                         
                         tablo_verisi.append({
                             "Hisse Kodu": h_adi, 
-                            "BTA PUAN": bta_puan_temiz, 
+                            "BTA PUAN": puan_temiz, 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
                             "Durum Oranı": "🔄 Aktif Takip"
                         })
@@ -133,11 +146,12 @@ if al_butonu:
                         cfiy = hisse_fiyati_bul(h_adi)
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         
-                        bta_puan_al_ham = str(df_kaynak.iloc[i, 22]).strip()
+                        # 🌟 DÜZELTME: "AL" kelimesini ve hisse adını tamamen temizleyip sadece saf puanı getirir (+0,08 veya +8 gibi)
+                        puan_al_temiz = sinyal_metni_temizle(df_kaynak.iloc[i, 22], h_adi)
                         
                         tablo_verisi_al.append({
                             "Hisse Kodu": h_adi, 
-                            "BTA PUAN": bta_puan_al_ham, 
+                            "BTA PUAN": puan_al_temiz, 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
                             "Durum Oranı": "🔄 Havuzu Eklendi"
                         })
@@ -203,10 +217,3 @@ with st.form("bta_chat_form", clear_on_submit=True):
     if gonder_butonu and user_input:
         st.session_state["chat_history"].append({"role": "user", "content": user_input})
         bot_response = f"🤖 BTa Sohbet: '{user_input}' mesajınız sisteme ulaştı. Excel tablonuzdaki veriler taban alınarak BTA Sinyal algoritması tarafından analiz ediliyor."
-        st.session_state["chat_history"].append({"role": "assistant", "content": bot_response})
-        st.rerun()
-
-# --- 🔁 GÜVENLİ VE BULUT UYUMLU OTOMATİK YENİLEME ---
-# Sayfa sonuna eklenen bu kod, her 5 saniyede bir sayfayı güvenle tetikler ve tarayıcıyı kilitlemez
-time.sleep(5)
-st.rerun()
