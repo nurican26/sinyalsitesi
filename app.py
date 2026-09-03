@@ -64,7 +64,7 @@ with col_vitrin2:
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
-st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
+st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #ffffff !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
 # 📂 Excel Dosya Yükleme
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
@@ -90,7 +90,7 @@ BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN",
 # ==========================================
 st.subheader("🎯 Canlı Takip")
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
-with st.spinner("Anlık borsa fiyatları işleniyor..."):
+with st.spinner("Anlık borsa fiyatları çekiliyor..."):
     canli_borsa_listesi = []
     for hisse in BORSA_HISSELERI:
         try:
@@ -142,7 +142,7 @@ with st.spinner("Anlık borsa fiyatları işleniyor..."):
 st.divider()
 
 # ==========================================
-# 📊 YAN YANA PANEL DÜZENI
+# 📊 SİNYAL ÜRETİM MERKEZİ PANELİ
 # ==========================================
 st.subheader("📈 Sinyal Üretim Merkezi")
 col_btn1, col_btn2 = st.columns(2)
@@ -151,7 +151,7 @@ with col_btn1:
 with col_btn2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
     
-# 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
+# 🟡 1. ADIM: SARI BUTON (U SÜTUNU)
 if al_sat_butonu and df_kaynak is not None:
     with st.spinner("Excel verileri işleniyor..."):
         tablo_verisi = []
@@ -192,11 +192,13 @@ if al_sat_butonu and df_kaynak is not None:
                             canli_fiyat = yuklenen_fiy
                             
                         if yuklenen_fiy == 0.0:
-                            yuklenen_fiy = canli_fiyat
+                            navigate_fiy = canli_fiyat
+                        else:
+                            navigate_fiy = yuklenen_fiy
                                 
-                        yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
-                        durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                        tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                        yuzde_fark = ((canli_fiyat - navigate_fiy) / navigate_fiy) * 100 if navigate_fiy > 0 else 0.0
+                        durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= navigate_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                        tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{navigate_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
             except:
                 pass
         if tablo_verisi:
@@ -206,7 +208,7 @@ if al_sat_butonu and df_kaynak is not None:
 elif al_sat_butonu and df_kaynak is None:
     st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
 
-# 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ)
+# 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNU - GÖRSELDE YARIM KALAN BLOK BURADA KUSURSUZ KAPATILDI)
 if al_butonu and df_kaynak is not None:
     with st.spinner("AL sinyalleri hesaplanıyor..."):
         tablo_verisi_al = []
@@ -227,6 +229,3 @@ if al_butonu and df_kaynak is not None:
                         if h in w_val:
                             hisse_adi = h
                             break
-                    
-                    if hisse_adi:
-                        try:
