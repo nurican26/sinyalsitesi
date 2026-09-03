@@ -28,8 +28,6 @@ for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_
 st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ BTa Sinyal Takip")
-
-# Üst Bilgiler
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
 st.write(f"⭐ **Puan:** {puan:.2f} | 🚪 **Giriş:** {st.session_state['ziyaret_sayaci']}")
 
@@ -40,7 +38,7 @@ df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: 
-        # Excel'i tamamen ham haliyle, hiçbir başlığı atlamadan okuyoruz
+        # Excel'i formülleri atlayarak, sadece ham metin olarak okuyoruz
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except Exception as e:
         st.error(f"Excel dosyası okuma hatası: {e}")
@@ -56,13 +54,14 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 METNİN İÇİNDEN HİSSE KODUNU AYIKLAYAN SİHRİBAZ (Örn: "KUVVA +2,80" -> "KUVVA")
-def metinden_hisse_kodu_bul(metin):
-    parcalar = str(metin).strip().upper().split()
+# Metinden sadece ilk kelimeyi alan temizleyici (Örn: "KUVVA +2,80" -> "KUVVA")
+def ilk_kelimeyi_ayikla(metin):
+    ham_metin = str(metin).strip().upper()
+    parcalar = ham_metin.split()
     if parcalar:
-        temiz_kod = "".join(re.findall(r'[A-Z]+', parcalar[0]))
-        if len(temiz_kod) >= 4 and temiz_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR", "HISSE", "NONE", "NAN"]:
-            return temiz_kod
+        saf_kelime = "".join(re.findall(r'[A-Z]+', parcalar[0]))
+        if len(saf_kelime) >= 4 and saf_kelime not in ["NONE", "NAN", "AL_SAT", "PUAN", "BTA", "UCUZ"]:
+            return saf_kelime
     return None
 
 # 5. BTA SİNYAL MERKEZİ
@@ -74,75 +73,71 @@ b2 = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 if b1: st.session_state["al_sat_goster"] = not st.session_state["al_sat_goster"]
 if b2: st.session_state["al_goster"] = not st.session_state["al_goster"]
 
-# 🟡 AL SAT Sinyal Mantığı
+# 🟡 AL SAT Sinyal Mantığı (Sabit Sütunlar: U=20, T=19, S=18)
 if st.session_state["al_sat_goster"]:
     if df_kaynak is not None:
         tablo_verisi = []
-        # Excel'deki tüm sütunları tarayarak dinamik AL_SAT başlığını buluyoruz
-        col_idx = None
-        for c in df_kaynak.columns:
-            column_str = str(df_kaynak[c].iloc[:5]).upper()
-            if "AL_SAT" in column_str or "AL SAT" in column_str:
-                col_idx = c
-                break
-        if col_idx is None: col_idx = 20 # Bulamazsa varsayılan U sütunu
-
         for idx in range(len(df_kaynak)):
-            uv = str(df_kaynak.iloc[idx, col_idx]).strip().upper()
+            # İlk 4 satır başlık veya çöp veridir, taramayı es geç
+            if idx < 4: continue
             
-            # Sütunda 0,00 veya boşluk harici gerçek bir yazı/sinyal var mı?
-            if uv and uv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
-                hisse = metinden_hisse_kodu_bul(uv)
-                if hisse and hisse != "RAYSG":
-                    excel_anlik = str(df_kaynak.iloc[idx, col_idx - 2]).strip() if col_idx >= 2 else "-" # S Sütunu
-                    bta_puan = str(df_kaynak.iloc[idx, col_idx - 1]).strip() if col_idx >= 1 else "-" # T Sütunu
-                    canli_fiyat = internetten_canli_fiyat_bul(hisse)
+            if len(df_kaynak.columns) > 20:
+                uv = str(df_kaynak.iloc[idx, 20]).strip().upper()
+                
+                # Hücre boş değilse, 0 veya 0,00 değilse aktif sinyaldir
+                if uv and uv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE", "AL_SAT SİNYALİ"]:
+                    hisse = ilk_kelimeyi_ayikla(uv)
+                    if not hisse: # Eğer U sütunundan çıkaramazsa A sütunundaki koda bak
+                        hisse = "".join(re.findall(r'[A-Z]+', str(df_kaynak.iloc[idx, 0]).strip().upper()))
                     
-                    tablo_verisi.append({
-                        "Hisse Kodu": hisse, 
-                        "BTA PUAN (T)": bta_puan,
-                        "Excel Anlık (S)": excel_anlik,
-                        "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
-                        "Sinyal İçeriği (U)": uv
-                    })
+                    if hisse and hisse != "RAYSG" and len(hisse) >= 4:
+                        excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() # S Sütunu
+                        bta_puan = str(df_kaynak.iloc[idx, 19]).strip() # T Sütunu
+                        canli_fiyat = internetten_canli_fiyat_bul(hisse)
+                        
+                        tablo_verisi.append({
+                            "Hisse Kodu": hisse, 
+                            "BTA PUAN (T)": bta_puan,
+                            "Excel Anlık (S)": excel_anlik,
+                            "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
+                            "Sinyal İçeriği (U)": uv
+                        })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
 
 
-# 🟢 AL Sinyal Mantığı
+# 🟢 AL Sinyal Mantığı (Sabit Sütunlar: W=22, T=19, S=18)
 if st.session_state["al_goster"]:
     if df_kaynak is not None:
         tablo_verisi_al = []
-        # Excel'deki tüm sütunları tarayarak dinamik AL başlığını buluyoruz
-        col_idx_w = None
-        for c in df_kaynak.columns:
-            column_str = str(df_kaynak[c].iloc[:5]).upper()
-            if "AL" in column_str and "AL_SAT" not in column_str and "AL SAT" not in column_str:
-                col_idx_w = c
-                break
-        if col_idx_w is None: col_idx_w = 22 # Bulamazsa varsayılan W sütunu
-
         for idx in range(len(df_kaynak)):
-            wv = str(df_kaynak.iloc[idx, col_idx_w]).strip().upper()
+            # İlk 4 satır başlık veya çöp veridir, taramayı es geç
+            if idx < 4: continue
             
-            # Sütunda 0,00 veya boşluk harici gerçek bir yazı/sinyal var mı?
-            if wv and wv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
-                hisse = metinden_hisse_kodu_bul(wv)
-                if hisse and hisse != "RAYSG":
-                    excel_anlik = str(df_kaynak.iloc[idx, col_idx_w - 4]).strip() if col_idx_w >= 4 else "-" # S Sütunu
-                    bta_puan = str(df_kaynak.iloc[idx, col_idx_w - 3]).strip() if col_idx_w >= 3 else "-" # T Sütunu
-                    canli_fiyat = internetten_canli_fiyat_bul(hisse)
+            if len(df_kaynak.columns) > 22:
+                wv = str(df_kaynak.iloc[idx, 22]).strip().upper()
+                
+                # Hücre boş değilse, 0 veya 0,00 değilse aktif sinyaldir
+                if wv and wv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE", "AL"]:
+                    hisse = ilk_kelimeyi_ayikla(wv)
+                    if not hisse: # Eğer W sütunundan çıkaramazsa A sütunundaki koda bak
+                        hisse = "".join(re.findall(r'[A-Z]+', str(df_kaynak.iloc[idx, 0]).strip().upper()))
                     
-                    if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                        st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                    
-                    tablo_verisi_al.append({
-                        "Hisse Kodu": hisse, 
-                        "BTA PUAN (T)": bta_puan,
-                        "Excel Anlık (S)": excel_anlik,
-                        "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
-                        "Sinyal İçeriği (W)": wv
-                    })
+                    if hisse and hisse != "RAYSG" and len(hisse) >= 4:
+                        excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() # S Sütunu
+                        bta_puan = str(df_kaynak.iloc[idx, 19]).strip() # T Sütunu
+                        canli_fiyat = internetten_canli_fiyat_bul(hisse)
+                        
+                        if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                        
+                        tablo_verisi_al.append({
+                            "Hisse Kodu": hisse, 
+                            "BTA PUAN (T)": bta_puan,
+                            "Excel Anlık (S)": excel_anlik,
+                            "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
+                            "Sinyal İçeriği (W)": wv
+                        })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
 
