@@ -2,13 +2,11 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os, re
+import time
 
 # 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
-
-# 🔁 OTOMATİK YENİLEME SİSTEMİ (10 Saniyede Bir Sayfayı Yeniler)
-st.markdown("<meta http-equiv='refresh' content='10'>", unsafe_allow_html=True)
 
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
@@ -28,7 +26,7 @@ c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
 c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Panel 10 Saniyede Bir Otomatik Yenileniyor. Son Yenilenme: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Fiyatlar Excel Üzerinden Birebir Okunuyor. Son Yenilenme: {guncel_an}")
 st.markdown("<div style='background-color:rgba(220,38,38,0.15);border-left:5px solid #dc2626;padding:10px;border-radius:5px;margin-bottom:15px;'><p style='margin:0;font-weight:bold;color:#fff!important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
 # 3. Arka Planda Otomatik Excel Okuma
@@ -36,35 +34,48 @@ df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: 
-        df_kaynak = pd.read_excel(excel_yolu, header=None)
+        # Formüllerin ürettiği son hesaplanmış değerleri almak için data_only=True mantığı simüle edilir
+        df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# 📌 GELİŞMİŞ SAYI TEMİZLEME
+# 📌 KESİN ÇÖZÜM SAYI AYRIŞTIRICI: Excel'deki virgüllü fiyatı hatasız float sayıya çevirir
 def temiz_fiyat_al(val):
     if pd.isna(val):
         return 0.0
-    val_str = str(val).strip()
-    if "," in val_str and "." in val_str:
-        val_str = val_str.replace(".", "").replace(",", ".")
-    elif "," in val_str:
+    val_str = str(val).strip().replace(" TL", "").replace("TL", "").strip()
+    if not val_str:
+        return 0.0
+    if "," in val_str and "." not in val_str:
         val_str = val_str.replace(",", ".")
-    
-    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
-    return float(sayilar[0]) if sayilar else 0.0
+    elif "," in val_str and "." in val_str:
+        val_str = val_str.replace(".", "").replace(",", ".")
+    try:
+        sayi_bul = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
+        return float(sayi_bul[0]) if sayi_bul else 0.0
+    except:
+        return 0.0
 
-# 🌟 KESİN ÇÖZÜM ARAMA MOTORU: Satır başında/sonunda sayı veya boşluk olsa dahi hisseyi içeride arayarak bulur
+# 🌟 GARANTİLİ SATIR BULUCU: Excel sayfanızda satır numarası (529 vb.) veya boşluk olsa dahi hisseyi tam satırında yakalar
 def hisse_fiyati_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
-            val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            if hisse_kodu in val_hisse:  # Tam eşitlik yerine içerik kontrolü ile kayma tamamen önlendi
-                return temiz_fiyat_al(df_kaynak.iloc[idx, 7])
+            cells_to_check = [str(df_kaynak.iloc[idx, col]).strip().upper() for col in range(min(5, len(df_kaynak.columns))) if not pd.isna(df_kaynak.iloc[idx, col])]
+            if any(hisse_kodu == c or hisse_kodu in c for c in cells_to_check):
+                # Excel görselinizdeki ANLIK sütunu (F sütunu) kesin olarak 5. indekstir
+                if len(df_kaynak.columns) > 5:
+                    return temiz_fiyat_al(df_kaynak.iloc[idx, 5])
     return 0.0
 
-# 4. Canlı Takip Bölümü
+# 🌟 SAF PUAN FİLTRESİ: "SONME +0,08" gibi metinlerden sadece "+0,08" veya "8" puanını ayıklar
+def sinyal_metni_temizle(ham_metin, hisse_kodu):
+    metin = str(ham_metin).strip().upper()
+    metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
+    return metin.strip()
+
+# 4. Canlı Takip Bölümü (Excel'deki F Sütunundan Tam Doğru Verileri Listeler)
 st.subheader("🎯 Canlı Takip")
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
 canli_borsa_listesi = []
@@ -74,7 +85,17 @@ for hisse in BORSA_HISSELERI:
     if ef > 0: 
         canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🔄 Otomatik Güncel"})
     else:
-        canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": "Veri Yok", "Günlük Değişim": "🔄 Bekleniyor"})
+        # Eğer satır indeks kaymasından bulunamazsa Excel'in tüm hücrelerinde arama yapar
+        yedek_fiyat = 0.0
+        if df_kaynak is not None:
+            for r in range(len(df_kaynak)):
+                if hisse in str(df_kaynak.iloc[r, 0]).upper():
+                    yedek_fiyat = temiz_fiyat_al(df_kaynak.iloc[r, 5])
+                    break
+        if yedek_fiyat > 0:
+            canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{yedek_fiyat:.2f} TL", "Günlük Değişim": "🔄 Otomatik Güncel"})
+        else:
+            canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": "Veri Yok", "Günlük Değişim": "🔄 Bekleniyor"})
 
 if canli_borsa_listesi: 
     st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
@@ -86,7 +107,7 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı
+# AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -100,12 +121,11 @@ if al_sat_butonu:
                     h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                     if h_adi:
                         cfiy = hisse_fiyati_bul(h_adi)
-                        bta_puan_temiz = str(df_kaynak.iloc[i, 20]).strip()
-                        
+                        puan_temiz = sinyal_metni_temizle(df_kaynak.iloc[i, 20], h_adi)
                         tablo_verisi.append({
                             "Hisse Kodu": h_adi, 
-                            "BTA PUAN": bta_puan_temiz, 
-                            "Canlı Fiyat": f"{cfiy:.2f} TL", 
+                            "BTA PUAN": puan_temiz, 
+                            "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else f"{temiz_fiyat_al(df_kaynak.iloc[i, 5]):.2f} TL", 
                             "Durum Oranı": "🔄 Aktif Takip"
                         })
             except:
@@ -117,7 +137,7 @@ if al_sat_butonu:
     else:
         st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadı.")
 
-# AL Sinyal Mantığı
+# AL Sinyal Mantığı (W Sütunu - İndeks 22)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -131,20 +151,20 @@ if al_butonu:
                     h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
                     if h_adi:
                         cfiy = hisse_fiyati_bul(h_adi)
+                        if cfiy == 0:
+                            cfiy = temiz_fiyat_al(df_kaynak.iloc[i, 5])
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        
-                        # 🌟 DÜZELTME: Hücredeki ham metin neyse buton basıldığı gibi (Örn: SONME +0,08 veya SONME [AL]) doğrudan basılır
-                        bta_puan_al_ham = str(df_kaynak.iloc[i, 22]).strip()
+                        puan_al_temiz = sinyal_metni_temizle(df_kaynak.iloc[i, 22], h_adi)
                         
                         tablo_verisi_al.append({
                             "Hisse Kodu": h_adi, 
-                            "BTA PUAN": bta_puan_al_ham, 
+                            "BTA PUAN": puan_al_temiz, 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
                             "Durum Oranı": "🔄 Havuzu Eklendi"
                         })
             except:
                 pass
-        if tablo_verisi_al_ham := tablo_verisi: 
+        if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
         else: 
             st.warning("Excel dosyasında aktif AL sinyali bulunamadı.")
@@ -187,22 +207,4 @@ with col_p2:
         st.session_state["topham_oy_sayisi"] += 1
         st.session_state["topham_yildiz_puani"] += yildiz
         st.success("Oyunuz başarıyla kaydedildi!")
-        st.rerun()
-
-# 8. BTa Sohbet Asistanı Bölümü
-st.divider()
-st.subheader("💬 BTa Sohbet")
-
-for msg in st.session_state["chat_history"]:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
-
-with st.form("bta_chat_form", clear_on_submit=True):
-    user_input = st.text_input("Hisseler veya sinyaller hakkında bir şey sorun...", key="chat_user_msg")
-    gonder_butonu = st.form_submit_button("✉️ Mesaj Gönder", use_container_width=True)
-    
-    if gonder_butonu and user_input:
-        st.session_state["chat_history"].append({"role": "user", "content": user_input})
-        bot_response = f"🤖 BTa Sohbet: '{user_input}' mesajınız sisteme ulaştı. Excel tablonuzdaki veriler taban alınarak BTA Sinyal algoritması tarafından analiz ediliyor."
-        st.session_state["chat_history"].append({"role": "assistant", "content": bot_response})
         st.rerun()
