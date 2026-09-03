@@ -66,7 +66,7 @@ st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 📂 Excel Dosya Yükleme (GİZLİLİK KORUMALI)
+# 📂 Excel Dosya Yükleme
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Excel dosyasını seçin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 
@@ -185,7 +185,7 @@ if al_sat_butonu and df_kaynak is not None:
 elif al_sat_butonu and df_kaynak is None:
     st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
 
-# 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ - HİZALAMA HATASI DÜZELTİLDİ)
+# 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ - HİZALAMA HATASI KESİN OLARAK DÜZELTİLDİ)
 if al_butonu and df_kaynak is not None:
     with st.spinner("AL sinyalleri hesaplanıyor..."):
         tablo_verisi_al = []
@@ -225,3 +225,4 @@ if al_butonu and df_kaynak is not None:
         else:
             st.warning("Excel şablonunda aktif AL sinyali bulunamadı.")
 elif al_butonu and df_kaynak is None:
+    st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
