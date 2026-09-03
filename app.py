@@ -56,7 +56,6 @@ for hisse in BORSA_HISSELERI:
                 "Günlük Değişim": f"🟢 %+{fark:.2f}" if fark >= 0 else f"🔴 %{fark:.2f}"
             })
         else:
-            # Excel'den temiz eşleşme sağla
             ef = 0.0
             if df_kaynak is not None:
                 for idx in range(len(df_kaynak)):
@@ -89,11 +88,9 @@ if al_sat_butonu:
             try:
                 if len(df_kaynak.columns) > 20 and not pd.isna(df_kaynak.iloc[i, 20]):
                     uv = str(df_kaynak.iloc[i, 20]).strip().upper()
-                    # Hücre sıfır veya başlık ise atla
                     if uv in ["", "0", "0.0", "NAN", "AL_SAT SİNYALİ"]: 
                         continue
                     
-                    # Hücre metninin içinden hangi hisseye ait olduğunu bul (Örn: SONME +0,08 içinden SONME'yi çeker)
                     h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                     if h_adi:
                         raw_fiyat = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
@@ -129,7 +126,6 @@ if al_butonu:
             try:
                 if len(df_kaynak.columns) > 22 and not pd.isna(df_kaynak.iloc[i, 22]):
                     wv = str(df_kaynak.iloc[i, 22]).strip().upper()
-                    # Hatalı formülleri ve sıfırları filtrele
                     if wv in ["", "0", "0.0", "NAN", "AL"] or "-" in wv: 
                         continue
                     
@@ -199,7 +195,12 @@ with st.form("mesaj_formu", clear_on_submit=True):
 for msg in st.session_state["chat_history"]: 
     st.write(msg)
 
-# 8. Paneli Değerlendir Formu (Hatalı Boşluk Girişleri Düzeltildi)
+# 8. Paneli Değerlendir Bölümü (Hata Riski Sıfırlandı)
 st.divider()
 st.markdown("#### 🗳️ Paneli Değerlendir")
-with st.form("oylama_formu", clear_on_submit=True):
+secilen_puan = st.slider("Panele Puan Verin:", 1, 5, 5)
+if st.button("⭐ Oyumu Gönder", use_container_width=True):
+    st.session_state["topham_oy_sayisi"] += 1
+    st.session_state["topham_yildiz_puani"] += secilen_puan
+    st.success("Oyunuz başarıyla kaydedildi!")
+    st.rerun()
