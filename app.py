@@ -27,7 +27,7 @@ guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 st.markdown("<div style='background-color:rgba(220,38,38,0.15);border-left:5px solid #dc2626;padding:10px;border-radius:5px;margin-bottom:15px;'><p style='margin:0;font-weight:bold;color:#fff!important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 3. Arka Planda Otomatik Excel Okuma (Yükleme Kutusu Kaldırıldı)
+# 3. Arka Planda Otomatik Excel Okuma
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
@@ -38,7 +38,7 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# 4. Canlı Takip Bölümü (Tamamen Canlı Veri)
+# 4. Canlı Takip Bölümü
 st.subheader("🎯 Canlı Takip")
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
 canli_borsa_listesi = []
@@ -56,18 +56,18 @@ for hisse in BORSA_HISSELERI:
                 "Günlük Değişim": f"🟢 %+{fark:.2f}" if fark >= 0 else f"🔴 %{fark:.2f}"
             })
         else:
-            # yfinance anlık yanıt vermezse Excel'deki tam satırdan fiyatı güvenli çek
+            # Excel'den temiz eşleşme sağla
             ef = 0.0
             if df_kaynak is not None:
                 for idx in range(len(df_kaynak)):
                     val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
-                    if hisse == val_hisse:
+                    if hisse in val_hisse:
                         raw_fiyat = str(df_kaynak.iloc[idx, 7]).replace(",", ".").strip()
                         sayi = re.findall(r"[-+]?\d*\.\d+|\d+", raw_fiyat)
                         ef = float(sayi[0]) if sayi else 0.0
                         break
             if ef > 0: 
-                canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL (Excel)", "Günlük Değişim": "🔄 Sabit Veri"})
+                canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🔄 Sabit"})
     except: 
         pass
 
@@ -81,30 +81,32 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı (Sütun T - İndeks 19)
+# AL SAT Sinyal Mantığı (Sarı Sütun - U Sütunu - İndeks 20)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
         for i in range(len(df_kaynak)):
             try:
-                val_hisse = str(df_kaynak.iloc[i, 0]).strip().upper()
-                if val_hisse in BORSA_HISSELERI:
-                    if len(df_kaynak.columns) > 19 and not pd.isna(df_kaynak.iloc[i, 19]):
-                        uv = str(df_kaynak.iloc[i, 19]).strip()
-                        if uv == "" or "AL SAT" in uv.upper() or uv.upper() == "NAN":
-                            continue
-                        
+                if len(df_kaynak.columns) > 20 and not pd.isna(df_kaynak.iloc[i, 20]):
+                    uv = str(df_kaynak.iloc[i, 20]).strip().upper()
+                    # Hücre sıfır veya başlık ise atla
+                    if uv in ["", "0", "0.0", "NAN", "AL_SAT SİNYALİ"]: 
+                        continue
+                    
+                    # Hücre metninin içinden hangi hisseye ait olduğunu bul (Örn: SONME +0,08 içinden SONME'yi çeker)
+                    h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
+                    if h_adi:
                         raw_fiyat = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
                         sayi = re.findall(r"[-+]?\d*\.\d+|\d+", raw_fiyat)
                         yfiy = float(sayi[0]) if sayi else 0.0
                         
-                        h_obj = yf.Ticker(f"{val_hisse}.IS").history(period="1d")
+                        h_obj = yf.Ticker(f"{h_adi}.IS").history(period="1d")
                         cfiy = h_obj['Close'].iloc[-1] if not h_obj.empty else yfiy
                         if pd.isna(cfiy) or cfiy == 0.0: cfiy = yfiy
                         
                         zfark = ((cfiy - yfiy) / yfiy) * 100 if yfiy > 0 else 0.0
                         tablo_verisi.append({
-                            "Hisse Kodu": val_hisse, 
+                            "Hisse Kodu": h_adi, 
                             "Sinyal Metni": uv, 
                             "Maliyet Fiyatı": f"{yfiy:.2f} TL", 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
@@ -115,34 +117,35 @@ if al_sat_butonu:
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
         else: 
-            st.warning("Excel dosyasında aktif AL SAT sinyali eşleşmesi bulunamadı.")
+            st.warning("Excel dosyasında aktif AL SAT sinyali bulunamadı.")
     else:
-        st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadığı için sinyaller işlenemiyor.")
+        st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadı.")
 
-# AL Sinyal Mantığı (Sütun V - İndeks 21)
+# AL Sinyal Mantığı (Yeşil Sütun - W Sütunu - İndeks 22)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
         for i in range(len(df_kaynak)):
             try:
-                val_hisse = str(df_kaynak.iloc[i, 0]).strip().upper()
-                if val_hisse in BORSA_HISSELERI:
-                    if len(df_kaynak.columns) > 21 and not pd.isna(df_kaynak.iloc[i, 21]):
-                        wv = str(df_kaynak.iloc[i, 21]).strip()
-                        if wv == "" or wv.upper() in ["AL", "NAN"]:
-                            continue
-                        
+                if len(df_kaynak.columns) > 22 and not pd.isna(df_kaynak.iloc[i, 22]):
+                    wv = str(df_kaynak.iloc[i, 22]).strip().upper()
+                    # Hatalı formülleri ve sıfırları filtrele
+                    if wv in ["", "0", "0.0", "NAN", "AL"] or "-" in wv: 
+                        continue
+                    
+                    h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
+                    if h_adi:
                         raw_fiyat = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip()
                         sayi = re.findall(r"[-+]?\d*\.\d+|\d+", raw_fiyat)
                         efiy = float(sayi[0]) if sayi else 0.0
                         
-                        h_obj = yf.Ticker(f"{val_hisse}.IS").history(period="1d")
+                        h_obj = yf.Ticker(f"{h_adi}.IS").history(period="1d")
                         cfiy = h_obj['Close'].iloc[-1] if not h_obj.empty else efiy
                         if pd.isna(cfiy) or cfiy == 0.0: cfiy = efiy
                         
-                        st.session_state["ozel_takip_kutusu"][val_hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                        st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_verisi_al.append({
-                            "Hisse Kodu": val_hisse, 
+                            "Hisse Kodu": h_adi, 
                             "Sinyal": wv, 
                             "Maliyet Fiyatı": f"{efiy:.2f} TL", 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
@@ -155,25 +158,25 @@ if al_butonu:
         else: 
             st.warning("Excel dosyasında aktif AL sinyali bulunamadı.")
     else:
-        st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadığı için sinyaller işlenemiyor.")
+        st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadı.")
 
 # 6. Sinyal Havuzu Bölümü
 st.divider()
 st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
-    for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
+    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         try:
             h_obj = yf.Ticker(f"{hisse}.IS").history(period="1d")
-            cf = h_obj['Close'].iloc[-1] if not h_obj.empty else bilgi["kayit_fiyati"]
-            if pd.isna(cf) or cf == 0.0: cf = bilgi["kayit_fiyati"]
-            deg = ((cf - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100 if bilgi["kayit_fiyati"] > 0 else 0.0
+            cf = h_obj['Close'].iloc[-1] if not h_obj.empty else bilge["kayit_fiyati"]
+            if pd.isna(cf) or cf == 0.0: cf = bilge["kayit_fiyati"]
+            deg = ((cf - bilge["kayit_fiyati"]) / bilge["kayit_fiyati"]) * 100 if bilge["kayit_fiyati"] > 0 else 0.0
             tk_list.append({
                 "Hisse Kodu": hisse, 
-                "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL", 
+                "Giriş Fiyatı": f"{bilge['kayit_fiyati']:.2f} TL", 
                 "Anlık Fiyat": f"{cf:.2f} TL", 
                 "Performans": f"🟢 %{deg:.2f}" if deg >= 0 else f"🔴 %{deg:.2f}", 
-                "Kayıt Zamanı": bilgi["kayit_zamani"]
+                "Kayıt Zamanı": bilge["kayit_zamani"]
             })
         except: 
             pass
@@ -200,4 +203,3 @@ for msg in st.session_state["chat_history"]:
 st.divider()
 st.markdown("#### 🗳️ Paneli Değerlendir")
 with st.form("oylama_formu", clear_on_submit=True):
-    secilen_puan = st.slider("Panele Puan Verin:", 1, 5, 5)
