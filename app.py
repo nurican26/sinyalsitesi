@@ -221,34 +221,39 @@ if df_kaynak is not None:
         except:
             pass
 
-sol_kolon, sag_kolon = st.columns(2)
+# 🛠️ GİZLİ BOŞLUKLARI ENGELLEMEK İÇİN BÜTÜN SAYFA DÜZ BİR YAPIYA ÇEVRİLDİ
+st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+if tablo_alsat:
+    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+else:
+    st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-with sol_kolon:
-    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat:
-        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else:
-        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+if tablo_al:
+    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+else:
+    st.write("🔒 Aktif BTA sinyali taranıyor...")
 
-    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al:
-        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else:
-        st.write("🔒 Aktif BTA sinyali taranıyor...")
+st.write("---")
+st.markdown("#### 🌟 Özel Takip Havuzu 💰")
+if st.session_state["ozel_takip_kutusu"]:
+    tk_list = []
+    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+        cfiy = hızlı_canli_fiyat_bul(hisse)
+        maliyet = bilge["kayit_fiyati"]
+        if cfiy == 0.0:
+            cfiy = maliyet
+        tk_list.append({
+            "Hisse Kodu 🗝️": hisse,
+            "Havuz Maliyeti": f"{maliyet:.2f} TL",
+            "Anlık Güncel": f"{cfiy:.2f} TL"
+        })
+    if tk_list:
+        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+    if st.button("🗑️ Havuzu Temizle", use_container_width=True):
+        st.session_state["ozel_takip_kutusu"] = {}
+        st.rerun()
+else:
+    st.write("🔒 Takip havuzunuz boş.")
 
-    st.markdown("""
-    <div class="spk-kutu-sol">
-        <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
-        kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy şirketleri, 
-        mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi 
-        çerçevesinde sunulmaktadır. Veriler en az 15 dakika gecikmelidir.
-    </div>
-    """, unsafe_allow_html=True)
-
-with sag_kolon:
-    st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-    
-    # 🛠️ TÜM BOŞLUK KAYMALARI EL İLE SIFIRLANARAK EN KARARLI HALE GETİRİLDİ
-    if st.session_state["ozel_takip_kutusu"]:
-        tk_list = []
-        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+st.write("---")
