@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Tasarım (Mobil Uyumlu & Ultra Temiz)
+# 1. Sayfa Yapılandırması ve Tasarım (Mobil Uyumlu)
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("""
 <style>
@@ -29,6 +29,7 @@ st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ BTa Sinyal Takip")
 
+# Üst Bilgiler
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
 st.write(f"⭐ **Puan:** {puan:.2f} | 🚪 **Giriş:** {st.session_state['ziyaret_sayaci']}")
 
@@ -43,22 +44,6 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası okuma hatası: {e}")
 
-# 🌟 AKILLI SÜTUN ENDEKSİ BULUCU
-u_idx, w_idx, t_idx = None, None, None
-if df_kaynak is not None:
-    for r_idx in range(min(5, len(df_kaynak))):
-        satir_degerleri = [str(val).strip().upper() for val in df_kaynak.iloc[r_idx]]
-        for c_idx, cell in enumerate(satir_degerleri):
-            if "AL_SAT" in cell or "AL SAT" in cell: u_idx = c_idx
-            if "AL" in cell and "AL_SAT" not in cell and "AL SAT" not in cell: w_idx = c_idx
-            if "BTA" in cell or "PUAN" in cell or "BTAPUAN" in cell: t_idx = c_idx
-        if u_idx is not None or w_idx is not None:
-            break
-
-if u_idx is None: u_idx = 20
-if w_idx is None: w_idx = 22
-if t_idx is None: t_idx = 19
-
 # 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ
 def internetten_canli_fiyat_bul(hisse_kodu):
     try:
@@ -70,16 +55,19 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 PUAN FORMATLAYICI (Gereksiz E-06 benzeri bilimsel yazıları düzeltir)
-def puan_formatla(deger):
-    try:
-        val = float(deger)
-        if val < 0.001 and val > 0: return "0.00"
-        return f"{val:.2f}"
-    except:
-        return str(deger)
+# 🌟 Excel Satırlarında Gerçek Hisse Bulucu (A Sütununu Tarar)
+def temiz_hisse_kodu_al(satir_idx):
+    if df_kaynak is not None:
+        hucre_metni = str(df_kaynak.iloc[satir_idx, 0]).strip().upper()
+        # Sadece harflerden oluşan kodu ayıkla
+        saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
+        if saf_kod and saf_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR", "HISSE", "DOLASIM"]:
+            # Satırda 'ANA PAZAR' veya alt metinler yazıyorsa üstteki ana hisse satırını korumak için 4 karakter ve üzerini süz
+            if len(saf_kod) >= 4:
+                return saf_kod
+    return None
 
-# 5. BTA SİNYAL MERKEZİ
+# 5. BTA SİNYAL MERKEZİ (BUTONLAR KENDİ YERİNDE)
 st.subheader("📈 BTA SİNYAL MERKEZİ")
 
 b1 = st.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
@@ -88,62 +76,64 @@ b2 = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 if b1: st.session_state["al_sat_goster"] = not st.session_state["al_sat_goster"]
 if b2: st.session_state["al_goster"] = not st.session_state["al_goster"]
 
-# 🟡 AL SAT Sinyal Mantığı (Örn: KUVVA)
+
+# 🟡 AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
 if st.session_state["al_sat_goster"]:
     if df_kaynak is not None:
         tablo_verisi = []
         for idx in range(len(df_kaynak)):
-            ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            hisse = "".join(re.findall(r'[A-Z]+', ilk_hucre))
-            
-            # Sadece gerçek borsa hisse kodlarını kabul et (Gereksiz kelimeleri engelle)
-            if hisse and hisse != "RAYSG" and len(hisse) == 5 and hisse not in ["ANAPAZAR", "YILDIZ", "SIRALA", "LOTS", "PIYASA"]:
-                if len(df_kaynak.columns) > u_idx:
-                    uv = str(df_kaynak.iloc[idx, u_idx]).strip().upper()
+            hisse = temiz_hisse_kodu_al(idx)
+            # RAYSG filtresi ve sütun uzunluk kontrolü
+            if hisse and hisse != "RAYSG" and len(df_kaynak.columns) > 20:
+                uv = str(df_kaynak.iloc[idx, 20]).strip().upper()
+                
+                # Görseldeki gibi 0,00, 0, NAN veya boş olmayan, KUVVA +2,80 benzeri dolu veriyi yakalar
+                if uv and uv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
+                    excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() if len(df_kaynak.columns) > 18 else "-" # S Sütunu
+                    bta_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else "-" # T Sütunu
+                    canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     
-                    # Hücre doluysa veya içerisinde hissenin kendi kodu/sinyali geçiyorsa tetiklen
-                    if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"]:
-                        cfiy = internetten_canli_fiyat_bul(hisse)
-                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else "-"
-                        
-                        tablo_verisi.append({
-                            "Hisse Kodu": hisse, 
-                            "BTA PUAN": puan_formatla(raw_puan), 
-                            "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Veri Alınamadı", 
-                            "Durum": "🔄 Aktif Takip"
-                        })
+                    tablo_verisi.append({
+                        "Hisse Kodu": hisse, 
+                        "BTA PUAN (T)": bta_puan,
+                        "Excel Anlık (S)": excel_anlik,
+                        "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
+                        "Sinyal İçeriği (U)": uv
+                    })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
 
-# 🟢 AL Sinyal Mantığı (Örn: SÖNME)
+
+# 🟢 AL Sinyal Mantığı (W Sütunu - İndeks 22)
 if st.session_state["al_goster"]:
     if df_kaynak is not None:
         tablo_verisi_al = []
         for idx in range(len(df_kaynak)):
-            ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            hisse = "".join(re.findall(r'[A-Z]+', ilk_hucre))
-            
-            # Sadece gerçek borsa hisse kodlarını kabul et (Gereksiz kelimeleri engelle)
-            if hisse and hisse != "RAYSG" and len(hisse) == 5 and hisse not in ["ANAPAZAR", "YILDIZ", "SIRALA", "LOTS", "PIYASA"]:
-                if len(df_kaynak.columns) > w_idx:
-                    wv = str(df_kaynak.iloc[idx, w_idx]).strip().upper()
+            hisse = temiz_hisse_kodu_al(idx)
+            # RAYSG filtresi ve sütun uzunluk kontrolü
+            if hisse and hisse != "RAYSG" and len(df_kaynak.columns) > 22:
+                wv = str(df_kaynak.iloc[idx, 22]).strip().upper()
+                
+                # Görseldeki gibi 0,00, 0, NAN veya boş olmayan, SONME [AL] benzeri dolu veriyi yakalar
+                if wv and wv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE"]:
+                    excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() if len(df_kaynak.columns) > 18 else "-" # S Sütunu
+                    bta_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else "-" # T Sütunu
+                    canli_fiyat = internetten_canli_fiyat_bul(hisse)
                     
-                    # İçinde bariz şekilde AL geçen hücreleri süz (SONME [AL] gibi durumlar için)
-                    if "AL" in wv or (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "-", "NONE"]):
-                        cfiy = internetten_canli_fiyat_bul(hisse)
-                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else "-"
-                        
-                        if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        
-                        tablo_verisi_al.append({
-                            "Hisse Kodu": hisse, 
-                            "BTA PUAN": puan_formatla(raw_puan), 
-                            "Canlı Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Veri Alınamadı", 
-                            "Durum": "🔄 Havuzda"
-                        })
+                    # Havuz mantığı entegrasyonu
+                    if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                        st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                    
+                    tablo_verisi_al.append({
+                        "Hisse Kodu": hisse, 
+                        "BTA PUAN (T)": bta_puan,
+                        "Excel Anlık (S)": excel_anlik,
+                        "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
+                        "Sinyal İçeriği (W)": wv
+                    })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+
 
 # 6. Sinyal Havuzu Bölümü
 st.markdown("#### 🌟 Sinyal Havuzu")
@@ -156,7 +146,7 @@ if st.session_state["ozel_takip_kutusu"]:
             
         tk_list.append({
             "Hisse Kodu": hisse,
-            "Maliyet": f"{bilge['kayit_fiyati']:.2f} TL",
+            "Havuz Giriş Fiyatı": f"{bilge['kayit_fiyati']:.2f} TL",
             "Anlık Fiyat": f"{cfiy:.2f} TL"
         })
     if tk_list:
