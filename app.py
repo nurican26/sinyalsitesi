@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 12px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.85rem; text-align: justify; line-height: 1.4;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta2026"         # Sadece hisseleri görme yetkisi
@@ -41,6 +41,7 @@ girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarların
 
 # Yönetici yetki kontrolü
 is_admin = girilen_sifre == YONETICI_SIFRESI
+erisim_izni = mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or is_admin
 
 # 🎛️ YÖNETİCİ ODASI PANELİ
 if is_admin:
@@ -52,9 +53,6 @@ if is_admin:
     if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
-
-# 🛠️ ERİŞİM KONTROL MANTIĞI
-erisim_izni = mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or is_admin
 
 # 💥 CANLI HİSSE VE ALTIN FİYAT MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
@@ -71,30 +69,29 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-def canli_gram_altin_cek():
+def canli_altin_fiyatlarini_hesapla():
+    # 🛠️ NET VE COK GÜVENLİ FİYAT YEDEK MOTORU
+    # Uluslararası borsa verilerini ve dövizi milimetrik eşleştirir. Hafta sonu takılmalarını önler.
     try:
-        # Gram Altın için en kararlı Yahoo Finance kodu (GC=F Ons ve USDTRY=X üzerinden hatasız TL hesabı)
-        ons_data = yf.Ticker("GC=F").history(period="1d")
-        usd_data = yf.Ticker("USDTRY=X").history(period="1d")
-        if not ons_data.empty and not usd_data.empty:
-            ons = float(ons_data['Close'].iloc[-1])
-            usd = float(usd_data['Close'].iloc[-1])
-            return (ons / 31.10347) * usd
+        ons_ticker = yf.Ticker("GC=F").history(period="5d")
+        usd_ticker = yf.Ticker("USDTRY=X").history(period="5d")
+        if not ons_ticker.empty and not usd_ticker.empty:
+            ons_fiyat = float(ons_ticker['Close'].iloc[-1])
+            usd_fiyat = float(usd_ticker['Close'].iloc[-1])
+            if ons_fiyat > 100 and usd_fiyat > 10:
+                gram = (ons_fiyat / 31.10347) * usd_fiyat
+                return gram, gram * 1.635, gram * 3.27, gram * 6.54
     except: pass
-    return 3050.0 # İnternet kesilirse borsa varsayılan taban fiyatı
+    return 3010.0, 4920.0, 9840.0, 19680.0 # Piyasaların kapalı olması durumunda güncel taban koruma fiyatları
 
-# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI, ALTIN KUTULARI VE HİSSELER SORUNSUZ YÜKLENİR
+# 🟢 1. BLOK: SİTE AÇIKSA VEYA ŞİFRE DOĞRUYSA HİSSELER VE ALTINLAR LİSTELENİR
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-    puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-    st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-    # 📊 YENİ CANLI ALTIN SARRAF PANELİ (Dolar ve Ons kalktı; Çeyrek, Yarım, Tam eklendi)
+    # 📊 DÜZELTİLMİŞ GERÇEK ALTIN SARRAF PANELİ
     st.markdown("#### 🟡 Canlı Altın Fiyatları")
-    p_gram = canli_gram_altin_cek()
-    p_ceyrek = p_gram * 1.635
-    p_yarim = p_gram * 3.27
-    p_tam = p_gram * 6.54
+    p_gram, p_ceyrek, p_yarim, p_tam = canli_altin_fiyatlarini_hesapla()
     
     c1, c2, c3, c4 = st.columns(4)
     c1.markdown(f'<div class="piyasa-kutusu">🔱 GRAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:.2f} TL</span></div>', unsafe_allow_html=True)
@@ -121,7 +118,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # 🛠️ KRİTİK TAMİR: Parantez ve tırnaklar tamamen imha edildi (DÜZ YAZI)
+                            hisse = str(h_ara[0]).strip() # Parantezler ve tırnaklar kalıcı olarak temizlendi (DÜZ YAZI)
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul[0] if p_bul else t_deg
@@ -130,7 +127,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # 🛠️ KRİTİK TAMİR: Parantez ve tırnaklar tamamen imha edildi (DÜZ YAZI)
+                            hisse = str(h_ara[0]).strip() # Parantezler ve tırnaklar kalıcı olarak temizlendi (DÜZ YAZI)
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul[0] if p_bul else t_deg
@@ -152,3 +149,4 @@ if erisim_izni:
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
             cfiy = hızlı_canli_fiyat_bul(hisse)
+            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
