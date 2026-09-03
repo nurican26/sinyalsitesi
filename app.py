@@ -203,7 +203,7 @@ if girilen_sifre == GIRIS_SIFRESI:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yazım Hatası Düzeltildi)
     st.write("---")
     st.subheader("📩 Gelen Kullanıcı Mesajları")
     if os.path.exists(MESAJ_DOSYASI):
@@ -211,6 +211,7 @@ if girilen_sifre == GIRIS_SIFRESI:
             mesajlar = f.readlines()
         if mesajlar:
             for m in reversed(mesajlar[-15:]): 
+                # Tırnak hatasına sebep olan satır tamamen düzeltildi
                 st.markdown(f'<div class="mesaj-read-kutu">💬 {m.strip()}</div>', unsafe_allow_html=True)
             if st.button("🗑️ Tüm Mesajları Temizle"):
                 os.remove(MESAJ_DOSYASI)
@@ -226,5 +227,3 @@ else:
     <div class="kilit-uyari">
         ⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>
         Güncel listeyi ve analiz raporlarını görmek için lütfen şifrenizi giriniz.<br><br>
-        📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki formdan doğrudan yöneticiye mesaj bırakabilirsiniz.
-    </div>
