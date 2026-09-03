@@ -205,10 +205,9 @@ with sol_taraf:
                 st.rerun()
 
 with sag_taraf:
-    # ⭐ YILLDIZ OYLAMA ALANI
+    # ==========================================
+    # ⭐ GÜVENLİ VE HER ZAMAN GÖRÜNÜR YILDIZ ALANI
+    # ==========================================
     st.markdown("### ✨ Paneli Beğendiniz mi?")
     st.write("Buradan yıldız vererek paneli öne çıkartabilirsiniz! 👇")
     yildiz_skor = st.feedback("stars", key="ana_yildiz_feedback")
-
-    if yildiz_skor is not None:
-        gercek_puan = yildiz_skor + 1
