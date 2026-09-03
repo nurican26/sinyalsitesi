@@ -12,6 +12,10 @@ st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
+# 🌟 Butonların açık/kapalı durumunu hafızada tutmak için yeni değişkenler ekledik
+if "al_sat_goster" not in st.session_state: st.session_state["al_sat_goster"] = False
+if "al_goster" not in st.session_state: st.session_state["al_goster"] = False
+
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
 
@@ -38,14 +42,13 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 Excel A Sütunundaki tüm hisseleri dinamik toplar
+# Excel A Sütunundaki tüm hisseleri dinamik toplar
 BORSA_HISSELERI = []
 if df_kaynak is not None:
     for idx in range(len(df_kaynak)):
         hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
         saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
         
-        # RAYSG HİSSESİNİ KÖKTEN SİLİP ATAN FİLTRE
         if saf_kod == "RAYSG":
             continue
             
@@ -77,7 +80,7 @@ def hisse_satirini_bul(hisse_kodu):
                 return idx
     return None
 
-# 4. Canlı Takip Bölümü (Tüm Liste Aktif)
+# 4. Canlı Takip Bölümü
 st.subheader("🎯 Canlı Takip")
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
 
@@ -99,11 +102,16 @@ if canli_borsa_listesi:
 st.divider()
 st.subheader("📈 BTA SİNYAL MERKEZİ")
 b1, b2 = st.columns(2)
-al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
-al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# 🟡 AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
-if al_sat_butonu:
+# Butonlara basıldığında durumları hafızada tersine çeviriyoruz (Aç/Kapat mantığı)
+if b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True):
+    st.session_state["al_sat_goster"] = not st.session_state["al_sat_goster"]
+
+if b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True):
+    st.session_state["al_goster"] = not st.session_state["al_goster"]
+
+# 🟡 AL SAT Sinyal Tablosu (Hafızadan tetiklenir, ekranda sabit kalır)
+if st.session_state["al_sat_goster"]:
     if df_kaynak is not None:
         tablo_verisi = []
         for hisse in BORSA_HISSELERI:
@@ -112,7 +120,6 @@ if al_sat_butonu:
             if s_idx is not None and len(df_kaynak.columns) > 20:
                 uv = str(df_kaynak.iloc[s_idx, 20]).strip().upper()
                 
-                # Excel'deki U sütununda herhangi bir sinyal/metin var mı kontrolü
                 if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"]:
                     cfiy = internetten_canli_fiyat_bul(hisse)
                     raw_puan = str(df_kaynak.iloc[s_idx, 19]).strip() if len(df_kaynak.columns) > 19 else uv
@@ -125,10 +132,9 @@ if al_sat_butonu:
                     })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
-        # Sinyal yoksa artık st.warning() veya hata mesajı GÖSTERİLMEYECEK, ekran temiz kalacak.
 
-# 🟢 AL Sinyal Mantığı (W Sütunu - İndeks 22)
-if al_butonu:
+# 🟢 AL Sinyal Tablosu (Hafızadan tetiklenir, ekranda sabit kalır)
+if st.session_state["al_goster"]:
     if df_kaynak is not None:
         tablo_verisi_al = []
         for hisse in BORSA_HISSELERI:
@@ -137,8 +143,7 @@ if al_butonu:
             if s_idx is not None and len(df_kaynak.columns) > 22:
                 wv = str(df_kaynak.iloc[s_idx, 22]).strip().upper()
                 
-                # Excel'deki W sütununda 'AL' kelimesi geçiyor mu veya hücre dolu mu kontrolü
-                if wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"] or "AL" in wv:
+                if (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]) or "AL" in wv:
                     cfiy = internetten_canli_fiyat_bul(hisse)
                     st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                     raw_puan = str(df_kaynak.iloc[s_idx, 19]).strip() if len(df_kaynak.columns) > 19 else wv
@@ -151,7 +156,6 @@ if al_butonu:
                     })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-        # Sinyal yoksa artık st.warning() veya hata mesajı GÖSTERİLMEYECEK, ekran temiz kalacak.
 
 # 6. Sinyal Havuzu Bölümü
 st.divider()
