@@ -26,7 +26,7 @@ def kilit_durumu_yaz(durum):
     with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
         f.write(durum)
 
-# Geçici hafıza kontrolleri
+# Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
@@ -61,22 +61,20 @@ erisim_izni = False
 if mevcut_kilit == "Açık":
     erisim_izni = True
 
-# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
-if erisim_izni:
+# 🟢 1. FONKSİYON: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
+def aktif_paneli_yukle():
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-    # Excel Okuma
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
         try: 
             df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        except Exception as e:
-            st.error(f"Excel okuma hatası: {e}")
+        except:
+            pass
 
-    # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if hisse_kodu in st.session_state["fiyat_hafizasi"]:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -151,7 +149,6 @@ if erisim_izni:
                 st.session_state["ozel_takip_kutusu"] = {}
                 st.rerun()
 
-    # ⭐ TOPLULUK PUANLAMA SİSTEMİ
     st.write("---")
     st.subheader("⭐ Paneli Değerlendir")
     yildiz_secimi = st.feedback("stars") 
@@ -162,7 +159,6 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Tüm iç içe geçen yapılar düzleştirildi)
     if yonetici_sifre == GIRIS_SIFRESI and os.path.exists(MESAJ_DOSYASI):
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -176,5 +172,7 @@ if erisim_izni:
                 os.remove(MESAJ_DOSYASI)
                 st.rerun()
 
-# 🔒 2. BLOK: SİTE KİLİTLİYSE BAĞIMSIZ BU KISIM ÇALISIR
-if not erisim_izni:
+# 🔒 2. FONKSİYON: SİTE KİLİTLİYSE GÖRÜNECEK KORUMALI EKRAN
+def kilitli_paneli_yukle():
+    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Geçici Olarak Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sistem yöneticisiyle iletişime geçiniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
+    
