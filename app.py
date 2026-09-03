@@ -59,16 +59,6 @@ st.markdown("""
         font-size: 1.1rem;
     }
     
-    /* Gelen mesajlar kutusu */
-    .mesaj-read-kutu {
-        background-color: rgba(255, 255, 255, 0.05);
-        border-left: 4px solid #6366f1;
-        padding: 10px;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        color: #ffffff !important;
-    }
-    
     div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
         font-size: 1.25rem !important;
         font-weight: bold !important;
@@ -203,7 +193,7 @@ if girilen_sifre == GIRIS_SIFRESI:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Çakışan tırnak yapısı tamamen temizlendi)
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Hata veren HTML tırnak işaretleri tamamen kaldırıldı)
     st.write("---")
     st.subheader("📩 Gelen Kullanıcı Mesajları")
     if os.path.exists(MESAJ_DOSYASI):
@@ -211,7 +201,9 @@ if girilen_sifre == GIRIS_SIFRESI:
             mesajlar = f.readlines()
         if mesajlar:
             for m in reversed(mesajlar[-15:]): 
-                st.markdown(f'<div class="mesaj-read-kutu">💬 {m.strip()}</div>', unsafe_allow_html=True)
+                # 🛠️ BURASI DEĞİŞTİ: Tırnak hatası riskini bitirmek için düz metin formatına geçildi
+                st.text(f"💬 {m.strip()}")
+            st.write("") # Boşluk bırakmak için
             if st.button("🗑️ Tüm Mesajları Temizle"):
                 os.remove(MESAJ_DOSYASI)
                 st.rerun()
@@ -226,3 +218,8 @@ else:
     <div class="kilit-uyari">
         ⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>
         Güncel listeyi ve analiz raporlarını görmek için lütfen şifrenizi giriniz.<br><br>
+        📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki formdan doğrudan yöneticiye mesaj bırakabilirsiniz.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.subheader("📬 Yatırımcı İletişim Formu")
