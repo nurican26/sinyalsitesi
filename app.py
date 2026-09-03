@@ -102,7 +102,7 @@ else:
     if girilen_sifre == GIRIS_SIFRESI:
         erisim_izni = True
 
-# 🟢 ERİŞİM İZNİ VARSA (YUKARIDAKİ AYARA GÖRE) SİTE YÜKLENİR
+# 🟢 ERİŞİM İZNİ VARSA SİTE YÜKLENİR
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -203,7 +203,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Sadece şifre girildiğinde veya yöneticiye özel açılır)
+    # 📬 GIZLI GELEN MESAJLAR PANELİ
     if panel_modu == "Site Şifreli / Kilitli":
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -227,3 +227,4 @@ else:
     st.markdown("""
     <div class="kilit-uyari">
         ⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>
+        Güncel listeyi ve analiz raporlarını görmek için lütfen sol menüden şifrenizi giriniz.<br><br>
