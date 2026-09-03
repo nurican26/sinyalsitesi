@@ -3,9 +3,13 @@ import pandas as pd
 import datetime
 import os, re
 
-# 1. Sayfa Yapılandırması ve Tasarım (Daha stabil bir form yapısı için padding düzenlendi)
+# 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
+
+# --- 🔁 OTOMATİK YENİLEME SİSTEMİ (Her 10 Saniyede Bir Sayfayı Yeniler) ---
+# Ekstra kütüphaneye ihtiyaç duymadan HTML metotla anlık otomatik yenileme tetiklenir
+st.markdown("<meta http-equiv='refresh' content='10'>", unsafe_allow_html=True)
 
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
@@ -13,7 +17,6 @@ if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kut
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
 
-# Giriş/Ziyaret sayısını artır
 st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ BTa Sinyal Takip Merkezi")
@@ -26,10 +29,10 @@ c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
 c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Otomatik Yenilenme Zamanı: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Panel 10 Saniyede Bir Otomatik Yenileniyor. Son Yenilenme: {guncel_an}")
 st.markdown("<div style='background-color:rgba(220,38,38,0.15);border-left:5px solid #dc2626;padding:10px;border-radius:5px;margin-bottom:15px;'><p style='margin:0;font-weight:bold;color:#fff!important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 3. Arka Planda Otomatik Excel Okuma (Sayısal dönüşümler iyileştirildi)
+# 3. Arka Planda Otomatik Excel Okuma
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
@@ -40,7 +43,6 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# Yardımcı Fonksiyon: Excel'deki karmaşık sayı veya metin halindeki fiyatları temiz bir float sayıya dönüştürür
 def temiz_fiyat_al(val):
     if pd.isna(val):
         return 0.0
@@ -48,22 +50,22 @@ def temiz_fiyat_al(val):
     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
     return float(sayilar[0]) if sayilar else 0.0
 
-# 4. Canlı Takip Bölümü (ANLIK FİYATLARI GÜNCELLE BUTONU KALDIRILDI - OTOMATİK YENİLENİR)
-st.subheader("🎯 Canlı Takip")
+# 🌟 KRİTİK DÜZELTME: Hisselerin fiyatlarını kaydırmadan tam satırından bulan fonksiyon
+def hisse_fiyati_bul(hisse_kodu):
+    if df_kaynak is not None:
+        for idx in range(len(df_kaynak)):
+            val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
+            if hisse_kodu == val_hisse or hisse_kodu in val_hisse:
+                return temiz_fiyat_al(df_kaynak.iloc[idx, 7])
+    return 0.0
 
+# 4. Canlı Takip Bölümü
+st.subheader("🎯 Canlı Takip")
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
 canli_borsa_listesi = []
 
 for hisse in BORSA_HISSELERI:
-    ef = 0.0
-    # Öncelikli olarak doğrulanmış Excel ANLIK (H Sütunu) verisini çekerek gecikmeli/hatalı fiyat sorununu çözer
-    if df_kaynak is not None:
-        for idx in range(len(df_kaynak)):
-            val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            if hisse in val_hisse:
-                ef = temiz_fiyat_al(df_kaynak.iloc[idx, 7])
-                break
-    
+    ef = hisse_fiyati_bul(hisse)
     if ef > 0: 
         canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🔄 Otomatik Güncel"})
     else:
@@ -92,10 +94,11 @@ if al_sat_butonu:
                     
                     h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                     if h_adi:
-                        cfiy = temiz_fiyat_al(df_kaynak.iloc[i, 7])
+                        # Kaymayı önlemek için fiyat doğrudan ilgili hisse adıyla aranarak çekilir
+                        cfiy = hisse_fiyati_bul(h_adi)
                         tablo_verisi.append({
                             "Hisse Kodu": h_adi, 
-                            "Sinyal Metni": uv, 
+                            "BTA PUAN": uv,  # İsim Sinyal Metni'nden BTA PUAN'a dönüştürüldü
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
                             "Durum Oranı": "🔄 Aktif Takip"
                         })
@@ -121,15 +124,13 @@ if al_butonu:
                     
                     h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
                     if h_adi:
-                        # SONME Son Maliyet/Anlık Fiyat hatasını düzeltmek için doğrudan H sütunundaki gerçek değer atanıyor
-                        cfiy = temiz_fiyat_al(df_kaynak.iloc[i, 7])
-                        
+                        cfiy = hisse_fiyati_bul(h_adi)
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_verisi_al.append({
                             "Hisse Kodu": h_adi, 
-                            "Sinyal": wv, 
+                            "BTA PUAN": wv,  # İsim Sinyal'den BTA PUAN'a dönüştürüldü
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
-                            "Durum Oranı": "🔄 Havuza Eklendi"
+                            "Durum Oranı": "🔄 Havuzu Eklendi"
                         })
             except:
                 pass
@@ -140,30 +141,22 @@ if al_butonu:
     else:
         st.error("Sistemde 'nurican.xls.xlsm' dosyası bulunamadı.")
 
-# 6. Sinyal Havuzu Bölümü (Havuz maliyeti son maliyet/güncel fiyata eşitlendi)
+# 6. Sinyal Havuzu Bölümü
 st.divider()
 st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
-    for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-        cfiy = 0.0
-        if df_kaynak is not None:
-            for idx in range(len(df_kaynak)):
-                if hisse in str(df_kaynak.iloc[idx, 0]).strip().upper():
-                    cfiy = temiz_fiyat_al(df_kaynak.iloc[idx, 7])
-                    break
-        
-        if cfiy == 0.0:
-            cfiy = bilgi["kayit_fiyati"]
+    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+        cfiy = hisse_fiyati_bul(hisse)
+        if cfiy == 0.0: 
+            cfiy = bilge["kayit_fiyati"]
             
-        kfiy = cfiy # Talep doğrultusunda sönme son maliyet = havuz maliyet olacak şekilde eşitlendi
-        
         tk_list.append({
             "Hisse Kodu": hisse,
-            "Havuz Maliyeti": f"{kfiy:.2f} TL",
+            "Havuz Maliyeti": f"{cfiy:.2f} TL",
             "Anlık Fiyat": f"{cfiy:.2f} TL",
             "Kâr/Zarar Oranı": "🔄 Dengelendi",
-            "Eklenme Zamanı": bilgi["kayit_zamani"]
+            "Eklenme Zamanı": bilge["kayit_zamani"]
         })
     if tk_list:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
@@ -186,23 +179,20 @@ with col_p2:
         st.success("Oyunuz başarıyla kaydedildi!")
         st.rerun()
 
-# 8. BTa Sohbet Asistanı Bölümü (Görünmeme sorunu için Form yapısına geçirildi)
+# 8. BTa Sohbet Asistanı Bölümü
 st.divider()
 st.subheader("💬 BTa Sohbet")
 
-# Önce geçmiş mesajları ekranda güvenli alanda listeliyoruz
 for msg in st.session_state["chat_history"]:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# Form yapısı sayesinde buton görünürlüğü ve mesaj iletimi garanti altına alınmıştır
 with st.form("bta_chat_form", clear_on_submit=True):
     user_input = st.text_input("Hisseler veya sinyaller hakkında bir şey sorun...", key="chat_user_msg")
     gonder_butonu = st.form_submit_button("✉️ Mesaj Gönder", use_container_width=True)
     
     if gonder_butonu and user_input:
         st.session_state["chat_history"].append({"role": "user", "content": user_input})
-        
         bot_response = f"🤖 BTa Sohbet: '{user_input}' mesajınız sisteme ulaştı. Excel tablonuzdaki veriler taban alınarak BTA Sinyal algoritması tarafından analiz ediliyor."
         st.session_state["chat_history"].append({"role": "assistant", "content": bot_response})
         st.rerun()
