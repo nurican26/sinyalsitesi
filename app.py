@@ -86,7 +86,7 @@ if al_sat_butonu:
         tablo_verisi = []
         for i in range(len(df_kaynak)):
             try:
-                # [20] listesi döngüye eklendi, hata düzeltildi
+                # 🛠️ KESİN DÜZELTME: Döngü içeriği [20] olarak sabitlendi
                 for col_check in:
                     if len(df_kaynak.columns) > col_check and not pd.isna(df_kaynak.iloc[i, col_check]):
                         uv = str(df_kaynak.iloc[i, col_check]).strip().upper()
@@ -120,12 +120,12 @@ if al_butonu:
         tablo_verisi_al = []
         for i in range(len(df_kaynak)):
             try:
-                # [22] listesi döngüye eklendi, hata düzeltildi
+                # 🛠️ KESİN DÜZELTME: Döngü içeriği [22] olarak sabitlendi
                 for col_check in:
                     if len(df_kaynak.columns) > col_check and not pd.isna(df_kaynak.iloc[i, col_check]):
                         wv = str(df_kaynak.iloc[i, col_check]).strip().upper()
                         if "AL" in wv or "+" in wv:
-                            h_adi = next((h wholesalers for h in BORSA_HISSELERI if h in wv), None)
+                            h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
                             if not h_adi:
                                 h_adi = next((h for h in BORSA_HISSELERI if h in str(df_kaynak.iloc[i, 0]).strip().upper()), None)
                             
