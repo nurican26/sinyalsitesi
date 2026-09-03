@@ -60,12 +60,13 @@ st.markdown("""
     }
     
     /* Gelen mesajlar kutusu */
-    .mesaj-oku-kutu {
+    .mesaj-read-kutu {
         background-color: rgba(255, 255, 255, 0.05);
         border-left: 4px solid #6366f1;
         padding: 10px;
         border-radius: 4px;
         margin-bottom: 8px;
+        color: #ffffff !important;
     }
     
     div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
@@ -202,14 +203,14 @@ if girilen_sifre == GIRIS_SIFRESI:
         time.sleep(1)
         st.rerun()
 
-    # 📬 SADECE SİZİN GÖREBİLECEĞİNİZ GELEN MESAJLAR PANELİ
+    # 📬 GIZLI GELEN MESAJLAR PANELİ
     st.write("---")
     st.subheader("📩 Gelen Kullanıcı Mesajları")
     if os.path.exists(MESAJ_DOSYASI):
         with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
             mesajlar = f.readlines()
         if mesajlar:
-            for m in reversed(mesajlar[-15:]): # Son 15 mesajı listeler
+            for m in reversed(mesajlar[-15:]): 
                 st.markdown(f'<div class="mesaj-read-kutu">💬 {m.strip()}</div>', unsafe_allow_html=True)
             if st.button("🗑️ Tüm Mesajları Temizle"):
                 os.remove(MESAJ_DOSYASI)
