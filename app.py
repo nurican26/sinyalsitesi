@@ -8,29 +8,10 @@ import time
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
-# 🔁 HARİCİ KÜTÜPHANESİZ OTOMATİK YENİLEME (Streamlit Cloud Uyumlu)
-@st.fragment
-def otomatik_yenileme_tetikleyici():
-    st.markdown(
-        """
-        <noscript><meta http-equiv="refresh" content="5"></noscript>
-        <script>
-            if (!window.refreshIntervalSet) {
-                window.refreshIntervalSet = true;
-                setInterval(function() {
-                    window.parent.postMessage({type: 'streamlit:rerun'}, '*');
-                }, 5000);
-            }
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
-
-otomatik_yenileme_tetikleyici()
-
 # 2. Hafıza (Session State) Kontrolleri
 if "chat_history" not in st.session_state: st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
+if "last_refresh" not in st.session_state: st.session_state["last_refresh"] = time.time()
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
 
@@ -46,7 +27,7 @@ c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
 c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Panel 5 Saniyede Bir Otomatik Yenileniyor. Son Yenilenme: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Panel Otomatik Yenileniyor. Son Yenilenme: {guncel_an}")
 st.markdown("<div style='background-color:rgba(220,38,38,0.15);border-left:5px solid #dc2626;padding:10px;border-radius:5px;margin-bottom:15px;'><p style='margin:0;font-weight:bold;color:#fff!important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
 # 3. Arka Planda Otomatik Excel Okuma
@@ -60,7 +41,7 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# 📌 GELİŞMİŞ SAYI TEMİZLEME
+# 📌 DÜZELTME: Listeyi doğrudan float yapmaya çalışma hatası giderildi ([0] indeksi eklendi)
 def temiz_fiyat_al(val):
     if pd.isna(val):
         return 0.0
@@ -71,9 +52,10 @@ def temiz_fiyat_al(val):
         val_str = val_str.replace(",", ".")
     
     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
-    return float(sayilar) if sayilar else 0.0
+    # Bulunan listenin ilk elemanını alarak çökme hatasını kesin olarak çözer
+    return float(sayilar[0]) if sayilar else 0.0
 
-# 🌟 DOĞRU SATIR VE F SÜTUNU (İNDEKS 5) EŞLEŞMESİ
+# 🌟 ARANAN HİSSEYİ BULMA VE F SÜTUNU (İNDEKS 5) EŞLEŞMESİ
 def hisse_fiyati_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
@@ -151,7 +133,6 @@ if al_butonu:
                         cfiy = hisse_fiyati_bul(h_adi)
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         
-                        # Excel'deki ham hücre değerini doğrudan çeker (Örn: SONME +0,08 veya +8)
                         bta_puan_al_ham = str(df_kaynak.iloc[i, 22]).strip()
                         
                         tablo_verisi_al.append({
@@ -224,3 +205,8 @@ with st.form("bta_chat_form", clear_on_submit=True):
         bot_response = f"🤖 BTa Sohbet: '{user_input}' mesajınız sisteme ulaştı. Excel tablonuzdaki veriler taban alınarak BTA Sinyal algoritması tarafından analiz ediliyor."
         st.session_state["chat_history"].append({"role": "assistant", "content": bot_response})
         st.rerun()
+
+# --- 🔁 GÜVENLİ VE BULUT UYUMLU OTOMATİK YENİLEME ---
+# Sayfa sonuna eklenen bu kod, her 5 saniyede bir sayfayı güvenle tetikler ve tarayıcıyı kilitlemez
+time.sleep(5)
+st.rerun()
