@@ -55,16 +55,20 @@ def temiz_fiyat_al(val):
         sayi_bul = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
         return float("".join(sayi_bul)) if sayi_bul else 0.0
 
-# 🌟 NOKTA ATIŞI FİYAT BULUCU: Kaymaları önler, tam satırdaki H sütununu (indeks 7) okur
-def hisse_fiyati_bul(hisse_kodu):
+# 🌟 TAM SATIR EŞLEŞTİRİCİ: Yanlış hisselerin (RAYSG vb.) listeye musallat olmasını engeller, H sütununu (indeks 7) net okur
+def hisse_satirini_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
-            satir_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            if hisse_kodu in satir_metni:
-                if len(df_kaynak.columns) > 7:
-                    return temiz_fiyat_al(df_kaynak.iloc[idx, 7])
-    return 0.0
+            # Satırın ilk hücresindeki metni kontrol et
+            ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
+            
+            # İçinde geçmesi yerine, kelime bazlı tam kontrol yaparak RAYSG'nin araya kaymasını engeller
+            parcalar = re.findall(r'[A-Z]+', ilk_hucre)
+            if hisse_kodu in parcalar:
+                return idx
+    return None
 
+# 🌟 SAF PUAN TEMİZLEYİCİ: Sadece hücredeki saf sayısal puanı (+0,08 veya 8) filtreler
 def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = str(ham_metin).strip().upper()
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
@@ -72,11 +76,20 @@ def sinyal_metni_temizle(ham_metin, hisse_kodu):
 
 # 4. Canlı Takip Bölümü
 st.subheader("🎯 Canlı Takip")
+
+# 🛠️ ARAMA BUTONU/KUTUSU GERİ GELDİ
+arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME):", "").strip().upper()
+
+st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
 canli_borsa_listesi = []
 
 for hisse in BORSA_HISSELERI:
-    ef = hisse_fiyati_bul(hisse)
-    if ef > 0: 
+    if arama_kutusu and arama_kutusu != hisse:
+        continue
+        
+    s_idx = hisse_satirini_bul(hisse)
+    if s_idx is not None and len(df_kaynak.columns) > 7:
+        ef = temiz_fiyat_al(df_kaynak.iloc[s_idx, 7])
         canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🔄 Otomatik Güncel"})
     else:
         canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": "Veri Yok", "Günlük Değişim": "🔄 Bekleniyor"})
@@ -91,65 +104,47 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı (Sadece U Sütunu - İndeks 20)
+# AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
-        for i in range(len(df_kaynak)):
-            try:
-                if len(df_kaynak.columns) > 20 and not pd.isna(df_kaynak.iloc[i, 20]):
-                    uv = str(df_kaynak.iloc[i, 20]).strip().upper()
-                    if uv in ["", "0", "0.0", "NAN", "AL_SAT SİNYALİ"]: 
-                        continue
-                    
-                    h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
-                    if not h_adi:
-                        h_adi = next((h for h in BORSA_HISSELERI if h in str(df_kaynak.iloc[i, 0]).strip().upper()), None)
-                    
-                    if h_adi:
-                        cfiy = hisse_fiyati_bul(h_adi)
-                        puan_temiz = sinyal_metni_temizle(df_kaynak.iloc[i, 20], h_adi)
-                        tablo_verisi.append({
-                            "Hisse Kodu": h_adi, 
-                            "BTA PUAN": puan_temiz, 
-                            "Canlı Fiyat": f"{cfiy:.2f} TL", 
-                            "Durum Oranı": "🔄 Aktif Takip"
-                        })
-            except:
-                pass
+        for hisse in BORSA_HISSELERI:
+            s_idx = hisse_satirini_bul(hisse)
+            if s_idx is not None and len(df_kaynak.columns) > 20:
+                uv = str(df_kaynak.iloc[s_idx, 20]).strip().upper()
+                if uv and uv not in ["", "0", "0.0", "NAN", "AL_SAT SİNYALİ"]:
+                    cfiy = temiz_fiyat_al(df_kaynak.iloc[s_idx, 7]) if len(df_kaynak.columns) > 7 else 0.0
+                    puan_temiz = sinyal_metni_temizle(df_kaynak.iloc[s_idx, 20], hisse)
+                    tablo_verisi.append({
+                        "Hisse Kodu": hisse, 
+                        "BTA PUAN": puan_temiz, 
+                        "Canlı Fiyat": f"{cfiy:.2f} TL", 
+                        "Durum Oranı": "🔄 Aktif Takip"
+                    })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
         else: 
             st.warning("Excel dosyasında aktif AL SAT sinyali bulunamadı.")
 
-# AL Sinyal Mantığı (Sadece W Sütunu - İndeks 22)
+# AL Sinyal Mantığı (W Sütunu - İndeks 22)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
-        for i in range(len(df_kaynak)):
-            try:
-                if len(df_kaynak.columns) > 22 and not pd.isna(df_kaynak.iloc[i, 22]):
-                    wv = str(df_kaynak.iloc[i, 22]).strip().upper()
-                    if wv in ["", "0", "0.0", "NAN", "AL"] or "-" in wv: 
-                        continue
+        for hisse in BORSA_HISSELERI:
+            s_idx = hisse_satirini_bul(hisse)
+            if s_idx is not None and len(df_kaynak.columns) > 22:
+                wv = str(df_kaynak.iloc[s_idx, 22]).strip().upper()
+                if wv and wv not in ["", "0", "0.0", "NAN", "AL"] and "-" not in wv:
+                    cfiy = temiz_fiyat_al(df_kaynak.iloc[s_idx, 7]) if len(df_kaynak.columns) > 7 else 0.0
+                    st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                    puan_al_temiz = sinyal_metni_temizle(df_kaynak.iloc[s_idx, 22], hisse)
                     
-                    h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
-                    if not h_adi:
-                        h_adi = next((h for h in BORSA_HISSELERI if h in str(df_kaynak.iloc[i, 0]).strip().upper()), None)
-                    
-                    if h_adi:
-                        cfiy = hisse_fiyati_bul(h_adi)
-                        st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        puan_al_temiz = sinyal_metni_temizle(df_kaynak.iloc[i, 22], h_adi)
-                        
-                        tablo_verisi_al.append({
-                            "Hisse Kodu": h_adi, 
-                            "BTA PUAN": puan_al_temiz, 
-                            "Canlı Fiyat": f"{cfiy:.2f} TL", 
-                            "Durum Oranı": "🔄 Havuzu Eklendi"
-                        })
-            except:
-                pass
+                    tablo_verisi_al.append({
+                        "Hisse Kodu": hisse, 
+                        "BTA PUAN": puan_al_temiz, 
+                        "Canlı Fiyat": f"{cfiy:.2f} TL", 
+                        "Durum Oranı": "🔄 Havuzu Eklendi"
+                    })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
         else: 
@@ -161,9 +156,8 @@ st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        cfiy = hisse_fiyati_bul(hisse)
-        if cfiy == 0.0: 
-            cfiy = bilge["kayit_fiyati"]
+        s_idx = hisse_satirini_bul(hisse)
+        cfiy = temiz_fiyat_al(df_kaynak.iloc[s_idx, 7]) if (s_idx is not None and len(df_kaynak.columns) > 7) else bilge["kayit_fiyati"]
             
         tk_list.append({
             "Hisse Kodu": hisse,
@@ -193,16 +187,14 @@ with col_p2:
         st.success("Oyunuz başarıyla kaydedildi!")
         st.rerun()
 
-# 8. BTa Sohbet Odası Bölümü (Form Kaldırıldı, Üst Üste Binme Hatası Kesin Çözüldü)
+# 8. BTa Sohbet Odası Bölümü
 st.divider()
 st.subheader("💬 BTa Sohbet")
 
-# Geçmiş mesajları ekrana basar
 for msg in st.session_state["chat_history"]:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# Form yerine doğrudan Streamlit'in orijinal güvenli chat_input yapısı kuruldu
 user_input = st.chat_input("Mesajınızı buraya yazın ve enter tuşuna basın...")
 if user_input:
     st.session_state["chat_history"].append({"role": "user", "content": user_input})
