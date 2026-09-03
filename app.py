@@ -6,7 +6,7 @@ import os, re
 import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
-st.set_page_config(page_title="BTa", page_icon="📈", layout="wide")
+st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 # Google Fonts'tan el yazısı fontu (Sacramento) yüklüyoruz ve stilleri tanımlıyoruz
 st.markdown("""
@@ -30,7 +30,7 @@ st.markdown("""
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
     }
     
-    /* Yeni Okunaklı ve Şık El Yazısı Logosu */
+    /* 🟢 YENİ YEŞİL TONLARINDA BÜYÜK HARFLİ BTA LOGOSU */
     .bta-logo-konteyner {
         display: flex;
         align-items: center;
@@ -38,20 +38,20 @@ st.markdown("""
         margin-bottom: 25px;
     }
     .bta-logo {
-        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%); /* Zümrüt ve Canlı Yeşil */
         color: white !important;
         font-family: 'Sacramento', cursive, sans-serif !important;
         font-weight: bold;
-        font-size: 3.2rem; /* El yazısı fontları küçük göründüğü için büyütüldü */
+        font-size: 3.2rem;
         padding: 2px 25px;
         border-radius: 16px;
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); /* Yeşil Neon Işıma */
         line-height: 1.2;
     }
     
     .mesaj-kutusu {
         background-color: rgba(255, 255, 255, 0.05);
-        border-left: 4px solid #6366f1;
+        border-left: 4px solid #10b981; /* Mesaj şeridi de yeşil tonuna uyarlandı */
         padding: 10px;
         border-radius: 4px;
         margin-bottom: 8px;
@@ -138,10 +138,10 @@ else:
 
 puan, toplam_oy_sayisi = puanlari_yukle()
 
-# SADECE ŞIK EL YAZISI LOGOSU (Yanındaki ikinci yazı kaldırıldı)
+# BÜYÜK HARFLİ YEŞİL BTA LOGOSU
 st.markdown("""
 <div class="bta-logo-konteyner">
-    <div class="bta-logo">Bta</div>
+    <div class="bta-logo">BTA</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -191,7 +191,7 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # Listenin ilk elemanı string olarak seçildi (Hisselerin geri gelmesini sağlar)
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -205,7 +205,7 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # Listenin ilk elemanı string olarak seçildi (Hisselerin geri gelmesini sağlar)
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -248,3 +248,5 @@ with sol_kolon:
 with sag_kolon:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
     
+    if st.session_state["ozel_takip_kutusu"]:
+        tk_list = []
