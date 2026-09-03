@@ -5,10 +5,11 @@ import yfinance as yf
 import os
 import re
 
-# Sayfa Tasarım Ayarları
+# ==========================================
+# 🎨 SAYFA TASARIM AYARLARI VE ARKA PLAN
+# ==========================================
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="wide")
 
-# 🎨 Arka Plan Ayarları
 st.markdown(
     """
     <style>
@@ -30,7 +31,9 @@ st.markdown(
 
 DEFAULT_EXCEL_PATH = "nurican.xls.xlsm"
 
-# Hafıza Başlatmaları (Session State)
+# ==========================================
+# 🧠 HAFIZA BAŞLATMALARI (SESSION STATE)
+# ==========================================
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 if "ozel_takip_kutusu" not in st.session_state:
@@ -39,8 +42,6 @@ if "kisitli_liste" not in st.session_state:
     st.session_state["kisitli_liste"] = []
 if "engellenen_kelimeler" not in st.session_state:
     st.session_state["engellenen_kelimeler"] = ["salak", "aptal", "küfür1", "küfür2"]
-if "oda_sayisi" not in st.session_state:
-    st.session_state["oda_sayisi"] = 1
 if "ziyaret_sayaci" not in st.session_state:
     st.session_state["ziyaret_sayaci"] = 0
 if "topham_oy_sayisi" not in st.session_state:
@@ -53,7 +54,7 @@ st.session_state["ziyaret_sayaci"] += 1
 st.title("⚡ Sinyal Takip Merkezi")
 
 # ==========================================
-# 📊 HERKESİN GÖRECEĞİ BEĞENİ VE POPÜLARİTE VİTRİNİ
+# 📊 BEĞENİ VE YILDIZ PUANI VİTRİNİ
 # ==========================================
 ortalama_puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
 
@@ -68,7 +69,9 @@ st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
 st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
 
-# 📂 Excel Dosya Yükleme
+# ==========================================
+# 📂 EXCEL DOSYA YÜKLEME
+# ==========================================
 st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
 yuklenen_dosya = st.file_uploader("Excel dosyasını seçin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
 
@@ -92,6 +95,9 @@ BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN",
 # ==========================================
 sol_taraf, sag_taraf = st.columns([1.1, 0.9])
 
+# ------------------------------------------
+# 📈 SOL TARAF: SİNYAL ÜRETİM MERKEZİ & MESAJ KUTUSU
+# ------------------------------------------
 with sol_taraf:
     st.subheader("📈 Sinyal Üretim Merkezi")
     col_btn1, col_btn2 = st.columns(2)
@@ -100,18 +106,23 @@ with sol_taraf:
     with col_btn2:
         al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
         
-    # 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ TÜM AL SAT SİNYALLERİ -> 20. İNDEKS)
+    # 🟡 1. ADIM: SARI BUTON
     if al_sat_butonu and df_kaynak is not None:
         with st.spinner("Excel verileri işleniyor..."):
             tablo_verisi = []
             sutun_sayisi = len(df_kaynak.columns)
-            # Logoları atlamak için döngü doğrudan 2. indeksteki satırdan başlar
             for i in range(2, len(df_kaynak)):
                 try:
                     if sutun_sayisi > 20:
-                        u_val = str(df_kaynak.iloc[i, 20]).strip().upper()
+                        raw_val = df_kaynak.iloc[i, 20]
+                        if pd.isna(raw_val): 
+                            continue
+                            
+                        u_val = str(raw_val).strip().upper()
+                        if not u_val or any(x in u_val for x in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]):
+                            continue
                         
-                        if not u_val or u_val in ["NAN", "AL SAT SİNYALİ", "AL_SAT SİNYALİ", ""]:
+                        if "SONME" in u_val or "ALKLC" in u_val:
                             continue
                             
                         hisse_adi = None
@@ -121,32 +132,39 @@ with sol_taraf:
                                 break
                         
                         if hisse_adi:
-                            # Fiyat hücresini güvenli okuma adımı
                             try:
                                 fiyat_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if sutun_sayisi > 7 else "0"
                                 sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", fiyat_str)
-                                yuklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                                yuklenen_fiy = float(sayilar) if sayilar else 0.0
                             except:
                                 yuklenen_fiy = 0.0
                             
                             hisse_data = yf.Ticker(f"{hisse_adi}.IS").history(period="1d")
                             if not hisse_data.empty:
                                 canli_fiyat = hisse_data['Close'].iloc[-1]
-                                # Eğer Excel fiyatı 0 ise canlı fiyata eşitleyip hatayı önlüyoruz
                                 if yuklenen_fiy == 0.0:
                                     yuklenen_fiy = canli_fiyat
                                     
                                 yuzde_fark = ((canli_fiyat - yuklenen_fiy) / yuklenen_fiy) * 100 if yuklenen_fiy > 0 else 0.0
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yuklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                                tablo_verisi.append({"Hisse Kodu": hisse_adi, "Sinyal Metni": u_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                                
+                                tablo_verisi.append({
+                                    "Hisse Kodu": hisse_adi, 
+                                    "Sinyal Metni": u_val, 
+                                    "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", 
+                                    "Canlı Fiyat": f"{canli_fiyat:.2f} TL", 
+                                    "Durum Oranı": durum_str
+                                })
                 except:
                     pass
             if tablo_verisi:
                 st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
             else:
                 st.warning("Excel şablonunda aktif AL SAT sinyali bulunamadı.")
+    elif al_sat_butonu and df_kaynak is None:
+        st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
 
-    # 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ -> 22. İNDEKS)
+    # 🟢 2. ADIM: YEŞİL BUTON
     if al_butonu and df_kaynak is not None:
         with st.spinner("AL sinyalleri hesaplanıyor..."):
             tablo_verisi_al = []
@@ -154,9 +172,12 @@ with sol_taraf:
             for i in range(2, len(df_kaynak)):
                 try:
                     if sutun_sayisi > 22:
-                        w_val = str(df_kaynak.iloc[i, 22]).strip().upper()
-                        
-                        if not w_val or w_val in ["NAN", "AL", ""]:
+                        raw_w = df_kaynak.iloc[i, 22]
+                        if pd.isna(raw_w):
+                            continue
+                            
+                        w_val = str(raw_w).strip().upper()
+                        if not w_val or any(x in w_val for x in ["NAN", "AL", ""]):
                             continue
                             
                         hisse_adi = None
@@ -174,38 +195,27 @@ with sol_taraf:
                                 durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı"
                                 
                                 st.session_state["ozel_takip_kutusu"][hisse_adi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                                tablo_verisi_al.append({"Hisse Kodu": hisse_adi, "Sinyal": w_val, "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                                tablo_verisi_al.append({
+                                    "Hisse Kodu": hisse_adi, 
+                                    "Sinyal": w_val, 
+                                    "Yüklenen Fiyat": f"{yuklenen_fiy:.2f} TL", 
+                                    "Canlı Fiyat": f"{canli_fiyat:.2f} TL", 
+                                    "Durum Oranı": durum_str
+                                })
                 except:
                     pass
             if tablo_verisi_al:
                 st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
             else:
-                st.warning("Excel şablonunda aktif [AL] sinyali bulunamadı.")
+                st.warning("Excel şablonunda aktif AL sinyali bulunamadı.")
+    elif al_butonu and df_kaynak is None:
+        st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
 
-    # Takip Kutusu Gösterimi
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("---")
-        st.subheader("📥 Kaydedilen AL Sinyali Takip Kutusu")
-        kutu_tablo = []
-        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-            try:
-                hisse_data = yf.Ticker(f"{hisse}.IS").history(period="1d")
-                if not hisse_data.empty:
-                    guncel_canli = hisse_data['Close'].iloc[-1]
-                    eski_fiyat = bilge["kayit_fiyati"]
-                    yuzde_fark = ((guncel_canli - eski_fiyat) / eski_fiyat) * 100 if eski_fiyat > 0 else 0.0
-                    durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if guncel_canli >= eski_fiyat else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
-                    kutu_tablo.append({"Hisse Kodu": hisse, "Kayıt Fiyatı": f"{eski_fiyat:.2f} TL", "Güncel Fiyat": f"{guncel_canli:.2f} TL", "Kar/Zarar": durum_str, "Zaman": bilge["kayit_zamani"]})
-            except:
-                pass
-        if kutu_tablo:
-            st.dataframe(pd.DataFrame(kutu_tablo), use_container_width=True, hide_index=True)
-            if st.button("🗑️ Kutuyu Sıfırla"):
-                st.session_state["ozel_takip_kutusu"] = {}
-                st.rerun()
+    st.divider()
 
-with sag_taraf:
-    # ==========================================
-    # ⭐ KALICI YILDIZ OYLAMA ALANI
-    # ==========================================
-    st.markdown("### ✨ Paneli Beğendiniz mi?")
+    # 💬 TOPLULUK SOHBET ODASI (Hata İhtimali Sıfırlanmış Düz Mimari)
+    st.subheader("💬 Topluluk Sohbet Odası")
+    
+    with st.form("mesaj_formu", clear_on_submit=True):
+        kullanici_mesaji = st.text_input("Mesajınızı yazın:", placeholder="Buraya yazın...")
+        mesaj_gonder = st.form_submit_button("Gönder", use_container_width=True)
