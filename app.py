@@ -44,10 +44,12 @@ if is_admin:
     st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
     if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: 
+            f.write("Açık")
         st.rerun()
     if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: 
+            f.write("Kilitli")
         st.rerun()
 
 # 💥 FİYAT MOTORLARI
@@ -78,8 +80,8 @@ def canli_gram_altin_cek():
         pass
     return 3050.0
 
-# 📬 GIZLI GELEN MESAJLAR PANELİNİ OKUYAN İZOLE GÜVENLİ FONKSİYON
-def yönetici_mesaj odasi():
+# 📬 GIZLI GELEN MESAJLAR PANELİNİ OKUYAN İZOLE GÜVENLİ FONKSİYON (Boşluk Yazım Hatası Düzeltildi)
+def yonetici_mesaj_odasi():
     if os.path.exists(MESAJ_DOSYASI):
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
