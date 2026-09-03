@@ -58,8 +58,28 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 💾 ORTAK VERİ TABANI AYARLARI (Dosya Tabanlı Mesajlaşma)
+# 💾 ORTAK VERI TABANI DOSYALARI
 MESAJ_DOSYASI = "ortak_mesajlar.csv"
+PUAN_DOSYASI = "ortak_puanlar.csv"
+
+# Puan yükleme ve kaydetme fonksiyonları (Cihazlar arası ortak çalışır)
+def puanlari_yukle():
+    if os.path.exists(PUAN_DOSYASI):
+        try:
+            df = pd.read_csv(PUAN_DOSYASI)
+            toplam_oy = len(df)
+            ortalama_puan = df["puan"].mean() if toplam_oy > 0 else 0.0
+            return ortalama_puan, toplam_oy
+        except:
+            return 0.0, 0
+    return 0.0, 0
+
+def puan_kaydet(verilen_puan):
+    yeni_puan = pd.DataFrame([{"puan": verilen_puan, "tarih": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}])
+    if os.path.exists(PUAN_DOSYASI):
+        yeni_puan.to_csv(PUAN_DOSYASI, mode='a', header=False, index=False)
+    else:
+        yeni_puan.to_csv(PUAN_DOSYASI, mode='w', header=True, index=False)
 
 # 🚫 KÜFÜR VE UYGUNSUZ KELİME FİLTRE MOTORU
 YASAKLI_KELIMELER = ["küfür1", "küfür2", "argo1", "hakaret1", "salak", "aptal"] 
@@ -97,15 +117,14 @@ else:
         st.session_state["ziyaret_sayaci"] += 1
         st.session_state["sayac_arttirildi"] = True
 
-for k in ["kisitli_liste", "topham_oy_sayisi", "topham_yildiz_puani"]:
-    if k not in st.session_state: st.session_state[k] = 0
+# Ortak puanları dosyadan çekiyoruz
+puan, toplam_oy_sayisi = puanlari_yukle()
 
 # BAŞLIK VE METRİK ALANI
 st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Ort. Puan:</b> {puan:.2f} | 🔥 <b>Toplam Oy:</b> {toplam_oy_sayisi} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -153,7 +172,7 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # Liste yerine ilk elemanı string olarak aldık
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -167,9 +186,9 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # Liste yerine ilk elemanı string olarak aldık
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
-                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
+                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
@@ -183,7 +202,6 @@ if df_kaynak is not None:
         except:
             pass
 
-# 🛠️ HATANIN DÜZELTİLDİĞİ YER: st.columns(2) argümanı eklendi
 sol_kolon, sag_kolon = st.columns(2)
 
 with sol_kolon:
@@ -204,10 +222,7 @@ with sol_kolon:
         <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
         kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, 
         mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi 
-        çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların 
-        kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize 
-        uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi 
-        beklentilerinize uygun sonuçlar doğurmayabilir. Veriler en az 15 dakika gecikmelidir.
+        çerçevesinde sunulmaktadır. Veriler en az 15 dakika gecikmelidir.
     </div>
     """, unsafe_allow_html=True)
 
@@ -227,4 +242,3 @@ with sag_kolon:
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
             if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-                st.session_state["ozel_takip_kutusu"] = {}
