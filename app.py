@@ -42,9 +42,9 @@ if yonetici_sifre == GIRIS_SIFRESI:
         st.session_state["kilit_durumu"] = "Açık"
         st.rerun()
 
-# Erişim Kontrolü
+# 🛠️ NET KONTROL: Site kilitliyse, yönetici şifresi yazsa bile içerik gizlenir (Gerçek kilit testi için)
 erisim_izni = False
-if st.session_state["kilit_durumu"] == "Açık" or yonetici_sifre == GIRIS_SIFRESI:
+if st.session_state["kilit_durumu"] == "Açık":
     erisim_izni = True
 
 # 🟢 ERİŞİM İZNİ VARSA SİTE DETAYLARI YÜKLENİR
@@ -97,7 +97,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -106,7 +106,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -169,5 +169,3 @@ if erisim_izni:
 
 else:
     # 🔒 YÖNETİCİ KİLİTLİ SEÇTİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN
-    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Geçici Olarak Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sistem yöneticisiyle iletişime geçiniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
-    
