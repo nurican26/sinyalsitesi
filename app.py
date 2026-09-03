@@ -153,7 +153,7 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # Hata veren düzeltme noktası
+                        hisse = hisse_ara[0] # Liste yerine ilk elemanı string olarak aldık
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -167,10 +167,10 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # Hata veren düzeltme noktası
+                        hisse = hisse_ara[0] # Liste yerine ilk elemanı string olarak aldık
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
-                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else wv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
@@ -183,8 +183,8 @@ if df_kaynak is not None:
         except:
             pass
 
-# Sayfa Yerleşimi
-sol_kolon, sag_kolon = st.columns()
+# 🛠️ HATANIN DÜZELTİLDİĞİ YER: st.columns(2) argümanı eklendi
+sol_kolon, sag_kolon = st.columns(2)
 
 with sol_kolon:
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
@@ -228,6 +228,3 @@ with sag_kolon:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
             if st.button("🗑️ Havuzu Temizle", use_container_width=True):
                 st.session_state["ozel_takip_kutusu"] = {}
-                st.rerun()
-
-    st.write("---")
