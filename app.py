@@ -39,9 +39,9 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 
 # 🔐 GİRİŞ KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
-girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifre yazıp Enter'a basın...")
+girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ KONTROL PANELİ
+# 🎛️ YÖNETİCİ KONTROL PANELİ
 is_admin = False
 if girilen_sifre == YONETICI_SIFRESI:
     is_admin = True
@@ -67,7 +67,9 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
         if time.time() - saved_time < 300: return saved_price
     try:
-        ticker = yf.Ticker(f"{hisse_kodu}.IS")
+        # Hisse kodunun etrafındaki temizliği garantiye alıyoruz
+        temiz_kod = str(hisse_kodu).replace("['", "").replace("']", "").replace("[\"", "").replace("\"]", "").strip()
+        ticker = yf.Ticker(f"{temiz_kod}.IS")
         data = ticker.history(period="1d")
         if not data.empty and not pd.isna(data['Close'].iloc[-1]):
             fiyat = float(data['Close'].iloc[-1])
@@ -100,7 +102,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam metin olarak aldık
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -109,7 +111,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Listenin ilk elemanını temiz metin olarak seçtik
+                            hisse = str(h_ara[0]) # Listenin ilk elemanını tam metin olarak aldık
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul if p_bul else t_deg
@@ -149,19 +151,19 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-# 📬 GIZLI GELEN MESAJLAR PANELİ (Girinti hatası yapabilecek her şey tamamen kaldırıldı)
+# 📬 GIZLI GELEN MESAJLAR PANELİ (Riskli tüm iç içe bloklar tamamen düzleştirildi)
 if is_admin and os.path.exists(MESAJ_DOSYASI):
     st.write("---")
     st.subheader("📩 Gelen Kullanıcı Mesajları")
-    with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
-        mesajlar_listesi = f.readlines()
-    if mesajlar_listesi:
-        for m in reversed(mesajlar_listesi[-15:]):
-            st.text(f"💬 {m.strip()}")
-        st.write("")
-        if st.button("🗑️ Tüm Mesajları Temizle"):
-            os.remove(MESAJ_DOSYASI)
-            st.rerun()
+    try:
+        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar_listesi = f.readlines()
+        if mesajlar_listesi:
+            for m in reversed(mesajlar_listesi[-15:]): st.text(f"💬 {m.strip()}")
+            st.write("")
+            if st.button("🗑️ Tüm Mesajları Temizle"):
+                os.remove(MESAJ_DOSYASI)
+                st.rerun()
+    except: pass
 
-# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN (Yatırımcı İletişim Kutusu Eksiksiz Geldi)
+# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN (Yatırımcı İmkanı Eksiksiz Açık)
 if not erisim_izni:
