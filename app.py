@@ -8,11 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15) !important; border: 1px solid #dc2626 !important; padding: 15px !important; border-radius: 6px !important; margin-top: 30px !important; margin-bottom: 20px !important; color: #fca5a5 !important; font-size: 0.9rem !important; text-align: justify !important; line-height: 1.5 !important; display: block !important;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;}'
-            '/* 🌟 3D DERİN GÖLGELİ VE HAREKETLİ YENİ BTA LOGO TASARIMI */'
-            '.bta-marka-alani {text-align: left; margin-top: 10px; margin-bottom: 30px;}'
-            '.bta-logo-yeni {font-size: 3.5rem; font-weight: 900; letter-spacing: 2px; background: linear-gradient(135deg, #10b981 0%, #059669 50%, #eab308 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(2px 4px 10px rgba(16, 185, 129, 0.5)); display: inline-block; font-family: "Impact", "Arial Black", sans-serif; text-shadow: 0px 15px 20px rgba(0,0,0,0.7);}'
-            '.bta-alt-yazi {font-size: 1.1rem; color: #a7f3d0 !important; font-weight: 600; letter-spacing: 1px; margin-top: -5px; opacity: 0.9; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); font-style: italic;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .bta-marka-alani {text-align: left; margin-top: 10px; margin-bottom: 30px;} .bta-logo-yeni {font-size: 3.5rem; font-weight: 900; letter-spacing: 2px; background: linear-gradient(135deg, #10b981 0%, #059669 50%, #eab308 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(2px 4px 10px rgba(16, 185, 129, 0.5)); display: inline-block; font-family: "Impact", "Arial Black", sans-serif; text-shadow: 0px 15px 20px rgba(0,0,0,0.7);} .bta-alt-yazi {font-size: 1.1rem; color: #a7f3d0 !important; font-weight: 600; letter-spacing: 1px; margin-top: -5px; opacity: 0.9; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); font-style: italic;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
@@ -55,7 +51,7 @@ def canli_altin_fiyatlarini_hesapla():
     except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
-# 🟢 VERİLER VE TABLOLAR DOĞRUDAN YÜKLENİR
+# VERİLER VE TABLOLAR YÜKLENİR
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
@@ -94,16 +90,16 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara).strip() # 🛠️ PARANTEZLER İMHA EDİLDİ (KESİN DÜZ HARF)
+                        hisse = str(h_ara[0]).strip() # 🛠️ SEÇİM TAMİRİ: Listenin ilk elemanı çekildi, tırnak ve parantezler kalıcı imha edildi!
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara).strip() # 🛠️ PARANTEZLER İMHA EDİLDİ (KESİN DÜZ HARF)
+                        hisse = str(h_ara[0]).strip() # 🛠️ SEÇİM TAMİRİ: Listenin ilk elemanı çekildi, tırnak ve parantezler kalıcı imha edildi!
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul if p_bul else t_deg
@@ -131,5 +127,5 @@ if st.session_state["ozel_takip_kutusu"]:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
         if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
 
-# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU
+# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Bağımsız HTML olarak sayfa tabanına gömüldü)
 st.write("---")
