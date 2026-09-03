@@ -203,7 +203,7 @@ if girilen_sifre == GIRIS_SIFRESI:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yazım Hatası Düzeltildi)
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Çakışan tırnak yapısı tamamen temizlendi)
     st.write("---")
     st.subheader("📩 Gelen Kullanıcı Mesajları")
     if os.path.exists(MESAJ_DOSYASI):
@@ -211,7 +211,6 @@ if girilen_sifre == GIRIS_SIFRESI:
             mesajlar = f.readlines()
         if mesajlar:
             for m in reversed(mesajlar[-15:]): 
-                # Tırnak hatasına sebep olan satır tamamen düzeltildi
                 st.markdown(f'<div class="mesaj-read-kutu">💬 {m.strip()}</div>', unsafe_allow_html=True)
             if st.button("🗑️ Tüm Mesajları Temizle"):
                 os.remove(MESAJ_DOSYASI)
