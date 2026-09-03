@@ -5,7 +5,7 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Neon Tasarım
+# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;}</style>', unsafe_allow_html=True)
@@ -28,14 +28,14 @@ with open(DURUM_DOSYASI, "r", encoding="utf-8") as f: mevcut_kilit = f.read().st
 # LOGO
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🔐 ERİŞİM GİRİŞİ
+# 🔐 GİRİŞ KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
 is_admin = girilen_sifre == YONETICI_SIFRESI
 erisim_izni = mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or is_admin
 
-# 🎛️ YÖNETİCİ BUTONLARI
+# 🎛️ YÖNETİCİ ODASI PANELİ
 if is_admin:
     st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
@@ -103,19 +103,19 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # 🛠️ PARANTEZLER SİLİNDİ, DÜZ YAZI YAPILDI
+                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TERCÜMAN EDİLEREK GERÇEK DÜZ YAZIYA ÇEVRİLDİ
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
+                            bta_puan = p_bul if p_bul else t_deg
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                             
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # 🛠️ PARANTEZLER SİLİNDİ, DÜZ YAZI YAPILDI
+                            hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TERCÜMAN EDİLEREK GERÇEK DÜZ YAZIYA ÇEVRİLDİ
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
+                            bta_puan = p_bul if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                             tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -138,9 +138,11 @@ if erisim_izni:
             tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-            if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
+            if st.button("🗑️ Havuzu Temizle", use_container_width=True):
+                st.session_state["ozel_takip_kutusu"] = {}
+                st.rerun()
 
-    # 📩 YÖNETİCİ MESAJ OKUMA ODASI
+    # 📬 GIZLI GELEN MESAJLAR PANELİ
     if is_admin and os.path.exists(MESAJ_DOSYASI):
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -152,5 +154,5 @@ if erisim_izni:
                 if st.button("🗑️ Tüm Mesajları Temizle"): os.remove(MESAJ_DOSYASI); st.rerun()
         except: pass
 
-# 🔒 2. DURUM: MUTLAK KORUMALI İLETİŞİM FORMU (Her şartta en altta basılır, asla silinemez)
+# 🔒 2. DURUM: MUTLAK KORUMALI İLETİŞİM FORMU (Her şartta ve iki modda da hatasız basılır)
 if not erisim_izni:
