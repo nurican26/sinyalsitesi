@@ -1,4 +1,4 @@
-import streamlit st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -86,12 +86,12 @@ def temiz_metin_al(val):
     if pd.isna(val): return ""
     return str(val).strip().upper()
 
-# 🌟 DİNAMİK EXCEL VERİ AYIKLAMA MOTORU (Makrolarınıza Göre Sıfırdan Yazıldı)
+# 🌟 MAKRO VERİ YAPINIZA UYGUN DİNAMİK TABLOLAMA MOTORU
 tablo_alsat = []
 tablo_al = []
 
 if df_kaynak is not None:
-    # Makronuzdaki gibi satır 3'ten (indeks 2) taramaya başlıyoruz
+    # Makronuzdaki gibi satır 3'ten taramaya başlıyoruz
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
@@ -99,15 +99,15 @@ if df_kaynak is not None:
                 wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) # W Sütunu (AL SİNYALİ)
                 t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  # T Sütunu (BTA PUAN)
                 
-                # 🟡 1. ADIM: AL SAT Sinyal Taraması (U Sütunu Boş Değilse)
+                # 🟡 1. ADIM: AL SAT Sinyal Taraması (U Sütununda Makro Verisi Varsa)
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
-                    # Hücre içindeki birleşik metinden sadece saf hisse kodunu ayıklar (Örn: "MARTI +5,19" -> "MARTI")
+                    # Hücreden sadece harf olan hisse kodunu ayırır (Örn: "MARTI +5,19" -> "MARTI")
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
                         hisse = hisse_ara[0]
                         canli_fiyat = internetten_canli_fiyat_bul(hisse)
                         
-                        # Hücredeki ham sayısal puanı (+5,19 gibi) temiz bir şekilde ayıklar
+                        # Hücredeki ham sayısal puanı (+5,19 gibi) ayıklar
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
@@ -117,7 +117,7 @@ if df_kaynak is not None:
                             "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
                         })
                 
-                # 🟢 2. ADIM: AL Sinyal Taraması (W Sütunu Boş Değilse)
+                # 🟢 2. ADIM: AL Sinyal Taraması (W Sütununda Makro Verisi Varsa)
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", "AL SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
@@ -157,6 +157,7 @@ st.markdown("#### 🌟 Özel Takip Havuzu 💰")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+        if hisse == "RAYSG": continue
         cfiy = internetten_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
             
@@ -182,7 +183,7 @@ if yildiz_secimi is not None:
     st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. 🎉")
     st.rerun()
 
-# 8. BTa Sohbet Odası Bölümü (Formsuz, Kalıcı ve Hatasız Yapı)
+# 8. BTa Sohbet Odası Bölümü
 st.write("---")
 st.subheader("💬 BTa Canlı Sohbet")
 for msg in st.session_state["chat_history"]:
