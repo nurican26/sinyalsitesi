@@ -38,7 +38,7 @@ elif os.path.exists("nurican.xls.xlsm"):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# ⚡ YENİ MİMARİ: DOĞRUDAN EXCEL H SÜTUNUNDAN (7. İNDEKS) FİYAT OKUYAN CANLI BORSA KÖŞESİ
+# ⚡ ESNEK ARAMA MOTORUNA SAHİP CANLI BORSA KÖŞESİ
 st.subheader("🎯 Canlı Takip")
 st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
 canli_borsa_listesi = []
@@ -50,6 +50,8 @@ if df_kaynak is not None:
                 rv = df_kaynak.iloc[i, 20]
                 if pd.isna(rv): continue
                 uv = str(rv).strip().upper()
+                
+                # U sütunundaki metnin içinde hisse kodumuz geçiyor mu diye bakıyoruz (İçerme mantığı)
                 h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                 if h_adi:
                     f_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if len(df_kaynak.columns) > 7 else "0"
@@ -61,7 +63,9 @@ if df_kaynak is not None:
         except: pass
 
 if canli_borsa_listesi: 
-    st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
+    # Mükerrer kayıtları engellemek için DataFrame'e çevirip benzersiz yapıyoruz
+    df_liste = pd.DataFrame(canli_borsa_listesi).drop_duplicates(subset=['Hisse Kodu'])
+    st.dataframe(df_liste, use_container_width=True, hide_index=True, height=250)
 else:
     st.info("Excel dosyası yüklendiğinde takip listesindeki hisselerin fiyatları burada listelenecektir.")
 
@@ -80,7 +84,6 @@ if al_sat_butonu and df_kaynak is not None:
                 rv = df_kaynak.iloc[i, 20]
                 if pd.isna(rv): continue
                 uv = str(rv).strip().upper()
-                if not uv or any(x in uv for x in ["NAN", "AL SAT SİNYALİ", ""]): continue
                 if "SONME" in uv or "ALKLC" in uv: continue
                 h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                 if h_adi:
@@ -100,7 +103,6 @@ if al_butonu and df_kaynak is not None:
                 rw = df_kaynak.iloc[i, 22]
                 if pd.isna(rw): continue
                 wv = str(rw).strip().upper()
-                if not wv or any(x in wv for x in ["NAN", "AL", ""]): continue
                 h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
                 if h_adi:
                     f_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if len(df_kaynak.columns) > 7 else "0"
@@ -118,7 +120,7 @@ st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     thavuz = []
     for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-        thavuz.append({"Hisse Kodu": hisse, "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL", "Kayıt Zamanı": bilgi["kayit_zamani"]})
+        thavuz.append({"Hisse Kodu": hisse, "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL", "Kayıt Zamanı": bilge_fiyat = bilgi["kayit_zamani"]})
     if thavuz:
         st.dataframe(pd.DataFrame(thavuz), use_container_width=True, hide_index=True)
         if st.button("🗑️ Takip Listesini Temizle", use_container_width=True):
