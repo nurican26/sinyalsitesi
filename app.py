@@ -199,7 +199,7 @@ with st.form("mesaj_formu", clear_on_submit=True):
 for msg in st.session_state["chat_history"]: 
     st.write(msg)
 
-# 8. Paneli Değerlendir Formu
+# 8. Paneli Değerlendir Formu (Hatalı Boşluk Girişleri Düzeltildi)
 st.divider()
 st.markdown("#### 🗳️ Paneli Değerlendir")
 with st.form("oylama_formu", clear_on_submit=True):
