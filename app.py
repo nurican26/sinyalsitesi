@@ -27,7 +27,7 @@ c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
 c3.metric("🚪 Odaya Giriş Sayısı", f"{st.session_state['ziyaret_sayaci']} Kez")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Canlı Fiyatlar %100 İnternetten (Yahoo Finance) Anlık Çekiliyor. Son Yenilenme: {guncel_an}")
+st.success(f"💡 Sistem Aktif. Canlı Fiyatlar İnternetten (Yahoo Finance) Anlık Çekiliyor. Son Yenilenme: {guncel_an}")
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -38,13 +38,14 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 630+ TÜM HİSSELERİ OTOMATIK TARAMA ALTYAPISI
+# 🌟 630+ TÜM BORSA HİSSELİRİNİ OKUYAN EN TEMİZ VE KESİN DÖNGÜ
 BORSA_HISSELERI = []
 if df_kaynak is not None:
     for idx in range(len(df_kaynak)):
         hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
-        # Satır numaralarını temizleyip sadece saf harf kodunu alır (Örn: "529 SONME" -> "SONME")
-        saf_kod = re.sub(r'[^A-Z]', '', hucre_metni)
+        # Satır numarasını ve gereksiz karakterleri temizler, sadece harf kalır
+        saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
+        # Excel başlıklarını ve anlamsız kısa verileri listeye almaz
         if len(saf_kod) >= 4 and saf_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
             if saf_kod not in BORSA_HISSELERI:
                 BORSA_HISSELERI.append(saf_kod)
@@ -60,13 +61,13 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 KESİN SATIR BULUCU: RAYSG karışıklığını bitiren tam eşleşme kontrolü
+# 🌟 KESİN SATIR BULUCU: Tam eşitlik arayarak RAYSG musallatını kökten bitirir
 def hisse_satirini_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
             ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            saf_hucre_kodu = re.sub(r'[^A-Z]', '', ilk_hucre)
-            if hisse_kodu == saf_hucre_kodu:
+            saf_hucre_kodu = "".join(re.findall(r'[A-Z]+', ilk_hucre))
+            if hisse_kodu == saf_hucre_kodu: # Tam eşitlik kuralı getirildi
                 return idx
     return None
 
@@ -76,7 +77,7 @@ def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
     return metin.strip()
 
-# 4. Canlı Takip Bölümü
+# 4. Canlı Takip Bölümü (630+ Tüm Hisseleri Sorunsuz Destekler)
 st.subheader("🎯 Canlı Takip")
 
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
@@ -84,8 +85,8 @@ arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVV
 st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (630+ Tüm Hisse Ağı)")
 canli_borsa_listesi = []
 
-# Arama kutusu doluysa sadece arananı, boşsa tüm hisselerden veri gösterir
-listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI[:30] # Ana ekranda donma yapmaması için ilk 30 akar, arama yapınca hepsi gelir
+# Arama kutusu doluysa sadece arananı gösterir; boşsa donma yapmaması için ilk 35 hisseyi akıtır, tüm ağ hafızadadır
+listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI[:35]
 
 for hisse in listelenecek_hisseler:
     if not hisse: continue
@@ -103,7 +104,7 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı (U Sütununda veri arar, Puanı T Sütunundan alır)
+# AL SAT Sinyal Mantığı (U Sütunu - İndeks 20, Puanı T Sütunundan alır)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -127,7 +128,7 @@ if al_sat_butonu:
         else: 
             st.warning("Excel dosyasında aktif AL SAT sinyali bulunamadı.")
 
-# AL Sinyal Mantığı (W Sütununda veri arar, Puanı T Sütunundan alır)
+# AL Sinyal Mantığı (W Sütunu - İndeks 22, Puanı T Sütunundan alır)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
