@@ -38,7 +38,6 @@ df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: 
-        # Excel'i formülleri atlayarak, sadece ham metin olarak okuyoruz
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except Exception as e:
         st.error(f"Excel dosyası okuma hatası: {e}")
@@ -54,15 +53,20 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# Metinden sadece ilk kelimeyi alan temizleyici (Örn: "KUVVA +2,80" -> "KUVVA")
-def ilk_kelimeyi_ayikla(metin):
-    ham_metin = str(metin).strip().upper()
-    parcalar = ham_metin.split()
-    if parcalar:
-        saf_kelime = "".join(re.findall(r'[A-Z]+', parcalar[0]))
-        if len(saf_kelime) >= 4 and saf_kelime not in ["NONE", "NAN", "AL_SAT", "PUAN", "BTA", "UCUZ"]:
-            return saf_kelime
-    return None
+# Sayısal Değer Denetleyicisi (VBA'daki IsNumeric fonksiyonunun dengi)
+def sayisal_mi(deger):
+    try:
+        float(str(deger).strip().replace(",", "."))
+        return True
+    except:
+        return False
+
+# Değeri float sayıya çevirici
+def sayiya_cevir(deger):
+    try:
+        return float(str(deger).strip().replace(",", "."))
+    except:
+        return 0.0
 
 # 5. BTA SİNYAL MERKEZİ
 st.subheader("📈 BTA SİNYAL MERKEZİ")
@@ -73,70 +77,75 @@ b2 = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 if b1: st.session_state["al_sat_goster"] = not st.session_state["al_sat_goster"]
 if b2: st.session_state["al_goster"] = not st.session_state["al_goster"]
 
-# 🟡 AL SAT Sinyal Mantığı (Sabit Sütunlar: U=20, T=19, S=18)
+# 🟡 AL SAT Sinyal Mantığı (Module2'deki kuralla çalışan motor)
 if st.session_state["al_sat_goster"]:
     if df_kaynak is not None:
         tablo_verisi = []
-        for idx in range(len(df_kaynak)):
-            # İlk 4 satır başlık veya çöp veridir, taramayı es geç
-            if idx < 4: continue
+        son_gecerli_hisse = "-"
+        
+        # Makronuzdaki gibi 3. satırdan (indeks 2) taramaya başlar
+        for idx in range(2, len(df_kaynak)):
+            # A sütunundaki (0) hisse adını güncelle veya hafızadakini koru
+            ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
+            saf_kod = "".join(re.findall(r'[A-Z]+', ilk_hucre))
+            if saf_kod and len(saf_kod) >= 4 and saf_kod not in ["NONE", "NAN", "AL_SAT", "PUAN", "BTA", "UCUZ", "ANAPAZAR", "YILDIZ"]:
+                son_gecerli_hisse = saf_kod
             
-            if len(df_kaynak.columns) > 20:
-                uv = str(df_kaynak.iloc[idx, 20]).strip().upper()
+            if len(df_kaynak.columns) > 19:
+                t_degeri = df_kaynak.iloc[idx, 19] # T Sütunu (BTA Puanı)
                 
-                # Hücre boş değilse, 0 veya 0,00 değilse aktif sinyaldir
-                if uv and uv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE", "AL_SAT SİNYALİ"]:
-                    hisse = ilk_kelimeyi_ayikla(uv)
-                    if not hisse: # Eğer U sütunundan çıkaramazsa A sütunundaki koda bak
-                        hisse = "".join(re.findall(r'[A-Z]+', str(df_kaynak.iloc[idx, 0]).strip().upper()))
-                    
-                    if hisse and hisse != "RAYSG" and len(hisse) >= 4:
+                # Şart: T Sütunu sayı olacak ve >= 0.01 olacak
+                if sayisal_mi(t_degeri) and sayiya_cevir(t_degeri) >= 0.01:
+                    hisse = son_gecerli_hisse
+                    if hisse and hisse != "RAYSG":
                         excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() # S Sütunu
-                        bta_puan = str(df_kaynak.iloc[idx, 19]).strip() # T Sütunu
                         canli_fiyat = internetten_canli_fiyat_bul(hisse)
+                        puan_float = sayiya_cevir(t_degeri)
                         
                         tablo_verisi.append({
                             "Hisse Kodu": hisse, 
-                            "BTA PUAN (T)": bta_puan,
+                            "BTA PUAN (T)": f"{puan_float:.2f}",
                             "Excel Anlık (S)": excel_anlik,
                             "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
-                            "Sinyal İçeriği (U)": uv
+                            "Sinyal Durumu": f"{hisse} +{puan_float:.2f}"
                         })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
 
 
-# 🟢 AL Sinyal Mantığı (Sabit Sütunlar: W=22, T=19, S=18)
+# 🟢 AL Sinyal Mantığı (Module34'deki kuralla çalışan yeni motor)
 if st.session_state["al_goster"]:
     if df_kaynak is not None:
         tablo_verisi_al = []
-        for idx in range(len(df_kaynak)):
-            # İlk 4 satır başlık veya çöp veridir, taramayı es geç
-            if idx < 4: continue
-            
-            if len(df_kaynak.columns) > 22:
-                wv = str(df_kaynak.iloc[idx, 22]).strip().upper()
+        son_gecerli_hisse_al = "-"
+        
+        for idx in range(2, len(df_kaynak)):
+            ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
+            saf_kod = "".join(re.findall(r'[A-Z]+', ilk_hucre))
+            if saf_kod and len(saf_kod) >= 4 and saf_kod not in ["NONE", "NAN", "AL_SAT", "PUAN", "BTA", "UCUZ", "ANAPAZAR", "YILDIZ"]:
+                son_gecerli_hisse_al = saf_kod
                 
-                # Hücre boş değilse, 0 veya 0,00 değilse aktif sinyaldir
-                if wv and wv not in ["", "0", "0.0", "0,00", "0.00", "NAN", "-", "NONE", "AL"]:
-                    hisse = ilk_kelimeyi_ayikla(wv)
-                    if not hisse: # Eğer W sütunundan çıkaramazsa A sütunundaki koda bak
-                        hisse = "".join(re.findall(r'[A-Z]+', str(df_kaynak.iloc[idx, 0]).strip().upper()))
-                    
-                    if hisse and hisse != "RAYSG" and len(hisse) >= 4:
+            if len(df_kaynak.columns) > 19:
+                r_degeri = df_kaynak.iloc[idx, 17] # R Sütunu
+                t_degeri = df_kaynak.iloc[idx, 19] # T Sütunu
+                
+                # 🌟 MAKRONUZDAKİ KESİN ŞART: R sütunu dolu/sayı olacak VE T sütunu >= 0.01 olacak
+                if sayisal_mi(r_degeri) and sayisal_mi(t_degeri) and sayiya_cevir(t_degeri) >= 0.01:
+                    hisse = son_gecerli_hisse_al
+                    if hisse and hisse != "RAYSG":
                         excel_anlik = str(df_kaynak.iloc[idx, 18]).strip() # S Sütunu
-                        bta_puan = str(df_kaynak.iloc[idx, 19]).strip() # T Sütunu
                         canli_fiyat = internetten_canli_fiyat_bul(hisse)
+                        puan_float = sayiya_cevir(t_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                         
                         tablo_verisi_al.append({
                             "Hisse Kodu": hisse, 
-                            "BTA PUAN (T)": bta_puan,
+                            "BTA PUAN (T)": f"{puan_float:.2f}",
                             "Excel Anlık (S)": excel_anlik,
                             "İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Veri Alınamadı",
-                            "Sinyal İçeriği (W)": wv
+                            "Sinyal Durumu": f"{hisse} [AL]"
                         })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
