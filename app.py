@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os, re
+import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
@@ -16,7 +17,7 @@ st.markdown("""
     .stDataFrame {width: 100% !important; border: 1px solid #4338ca !important; border-radius: 8px;}
     div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;}
     
-    /* Neon sinyal başlıkları */
+    /* Canlı sinyal başlıkları için özel neon kutular */
     .alsat-baslik {
         background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
@@ -72,12 +73,11 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel okuma hatası: {e}")
 
-# 📌 OPTİMİZE EDİLMİŞ HIZLI FİYAT MOTORU: Bisiklet süren simgenin kilitlenmesini kesin olarak engeller
+# 📌 OPTİMİZE EDİLMİŞ HIZLI FİYAT MOTORU (Sonsuz yükleme döngüsünü bitirir)
 def hızlı_canli_fiyat_bul(hisse_kodu):
-    # Eğer fiyat son 5 dakika içinde çekildiyse hafızadan getirir, interneti boşuna yormaz
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300:
+        if time.time() - saved_time < 300: # 5 dakika hafızada tutar
             return saved_price
             
     try:
@@ -103,9 +103,9 @@ if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
-                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20]) # U Sütunu (AL_SAT SİNYALİ)
-                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) # W Sütunu (AL SİNYALİ)
-                t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  # T Sütunu (BTA PUAN)
+                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20]) # U Sütunu
+                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22]) # W Sütunu
+                t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])  # T Sütunu
                 
                 # 🟡 1. ADIM: AL SAT Sinyal Taraması
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL_SAT SİNYALİ"]:
@@ -149,7 +149,7 @@ if tablo_alsat:
 else:
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-# 🟢 BTA SİNYAL MERKEZİ (İsim Tam İstediğiniz Gibi Kilitlendi)
+# 🟢 BTA SİNYAL MERKEZİ
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if tablo_al:
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
