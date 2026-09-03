@@ -51,7 +51,6 @@ if df_kaynak is not None:
                 if pd.isna(rv): continue
                 uv = str(rv).strip().upper()
                 
-                # U sütunundaki metnin içinde hisse kodumuz geçiyor mu diye bakıyoruz (İçerme mantığı)
                 h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                 if h_adi:
                     f_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if len(df_kaynak.columns) > 7 else "0"
@@ -63,7 +62,6 @@ if df_kaynak is not None:
         except: pass
 
 if canli_borsa_listesi: 
-    # Mükerrer kayıtları engellemek için DataFrame'e çevirip benzersiz yapıyoruz
     df_liste = pd.DataFrame(canli_borsa_listesi).drop_duplicates(subset=['Hisse Kodu'])
     st.dataframe(df_liste, use_container_width=True, hide_index=True, height=250)
 else:
@@ -116,15 +114,21 @@ if al_butonu and df_kaynak is not None:
 
 st.divider()
 
+# 🌟 SİNYAL HAVUZU (Hatalı satır tamamen düzeltildi)
 st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     thavuz = []
     for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-        thavuz.append({"Hisse Kodu": hisse, "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL", "Kayıt Zamanı": bilge_fiyat = bilgi["kayit_zamani"]})
+        thavuz.append({
+            "Hisse Kodu": hisse, 
+            "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL", 
+            "Kayıt Zamanı": bilgi["kayit_zamani"]
+        })
     if thavuz:
         st.dataframe(pd.DataFrame(thavuz), use_container_width=True, hide_index=True)
         if st.button("🗑️ Takip Listesini Temizle", use_container_width=True):
-            st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
+            st.session_state["ozel_takip_kutusu"] = {}
+            st.rerun()
 else: st.info("Henüz takibe alınan dinamik bir hisse bulunmuyor.")
 
 st.divider()
