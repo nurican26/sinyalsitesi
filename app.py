@@ -122,7 +122,7 @@ puan, toplam_oy_sayisi = puanlari_yukle()
 st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Ort. Puan:</b> {puan:.2f} | 🔥 <b>Toplam Oy:</b> {toplam_oy_sayisi} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="bta-alt-metrik">⭐ <b>Ort. Puan:</b> {puan:.2f} | 🔥 <b>Toplam Oy:</b> {topham_oy_sayisi} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
@@ -186,7 +186,7 @@ if df_kaynak is not None:
                     if hisse_ara:
                         hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
-                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
+                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
@@ -218,7 +218,7 @@ with sol_kolon:
     st.markdown("""
     <div class="spk-kutu-sol">
         <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
-        kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, 
+        kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföyным şirketleri, 
         mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi 
         çerçevesinde sunulmaktadır. Veriler en az 15 dakika gecikmelidir.
     </div>
@@ -230,7 +230,8 @@ with sag_kolon:
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
             cfiy = hızlı_canli_fiyat_bul(hisse)
-            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
+            if cfiy == 0.0: 
+                cfiy = bilge["kayit_fiyati"]
                 
             tk_list.append({
                 "Hisse Kodu 🗝️": hisse,
@@ -239,5 +240,5 @@ with sag_kolon:
             })
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-            # 🛠️ HATANIN DÜZELTİLDİĞİ YER: Alt satırların girintileri hizalandı
+            # TÜM BLOK SIFIRDAN 4'ER BOŞLUKLA HİZALANDI
             if st.button("🗑️ Havuzu Temizle", use_container_width=True):
