@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import datetime
@@ -38,24 +39,17 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası otomatik okunurken hata oluştu: {e}")
 
-# 🌟 Excel A Sütunundaki tüm hisseleri dinamik toplayan altyapı (630+ hisse)
+# 🌟 KESİN ÇÖZÜM: Excel A Sütunundaki tüm hisseleri dinamik toplayan altyapı (630+ hisse)
 BORSA_HISSELERI = []
 if df_kaynak is not None:
     for idx in range(len(df_kaynak)):
         hucre_metni = str(df_kaynak.iloc[idx, 0]).strip().upper()
         saf_kod = "".join(re.findall(r'[A-Z]+', hucre_metni))
         
-        # RAYSG hissesini tablolardan tamamen uzaklaştırır
-        if saf_kod == "RAYSG":
-            continue
-            
+        # Filtreleme kilidi kaldırıldı, tüm harfli borsa kodları listeye serbestçe alınır
         if len(saf_kod) >= 4 and saf_kod not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
             if saf_kod not in BORSA_HISSELERI:
                 BORSA_HISSELERI.append(saf_kod)
-
-# Hafızada kalmış eski RAYSG kayıtları temizlenir
-if "RAYSG" in st.session_state["ozel_takip_kutusu"]:
-    del st.session_state["ozel_takip_kutusu"]["RAYSG"]
 
 # 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ (Yahoo Finance)
 def internetten_canli_fiyat_bul(hisse_kodu):
@@ -74,7 +68,7 @@ def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
     return metin.strip()
 
-# 4. Canlı Takip Bölümü (630+ Tüm Hisse Ağı)
+# 4. Canlı Takip Bölümü (630+ Tüm Hisse Ağı Açıldı)
 st.subheader("🎯 Canlı Takip")
 
 arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVVA, DOCO):", "").strip().upper()
@@ -82,11 +76,11 @@ arama_kutusu = st.text_input("🔍 Takip Listesinde Hisse Ara (Örn: SONME, KUVV
 st.markdown("#### ⚡ Canlı Borsa Takip Köşesi (İnternet Canlı Verileri)")
 canli_borsa_listesi = []
 
-# Arama çubuğu boşsa ilk 35 hisseyi akıtır; arama yapılınca 630+ ağın tamamından bulur
+# Arama çubuğu boşsa donma yapmaması için ilk 35 hisseyi akıtır; arama yapılınca 630+ ağın tamamından bulur
 listelenecek_hisseler = [arama_kutusu] if arama_kutusu else BORSA_HISSELERI[:35]
 
 for hisse in listelenecek_hisseler:
-    if not hisse or hisse == "RAYSG": continue
+    if not hisse: continue
     ef = internetten_canli_fiyat_bul(hisse)
     if ef > 0: 
         canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🟢 İnternet Canlı"})
@@ -101,7 +95,7 @@ b1, b2 = st.columns(2)
 al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
 al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 
-# AL SAT Sinyal Mantığı (U Sütununda tetiklenir, Puanı T Sütunundan alır)
+# AL SAT Sinyal Mantığı (U Sütunu indeks 20, Puan T Sütunu indeks 19)
 if al_sat_butonu:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -114,7 +108,7 @@ if al_sat_butonu:
                         hucre_adi = str(df_kaynak.iloc[idx, 0]).strip().upper()
                         hisse = "".join(re.findall(r'[A-Z]+', hucre_adi))
                         
-                        if hisse and hisse != "RAYSG" and hisse in BORSA_HISSELERI:
+                        if hisse and hisse in BORSA_HISSELERI:
                             cfiy = internetten_canli_fiyat_bul(hisse)
                             raw_puan = df_kaynak.iloc[idx, 19] if len(df_kaynak.columns) > 19 else uv
                             puan_temiz = sinyal_metni_temizle(raw_puan, hisse)
@@ -132,7 +126,7 @@ if al_sat_butonu:
         else: 
             st.warning("Excel dosyasında aktif AL SAT sinyali bulunamadı.")
 
-# AL Sinyal Mantığı (W Sütununda tetiklenir, Puanı T Sütunundan alır)
+# AL Sinyal Mantığı (W Sütunu indeks 22, Puan T Sütunu indeks 19)
 if al_butonu:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -145,7 +139,7 @@ if al_butonu:
                         hucre_adi = str(df_kaynak.iloc[idx, 0]).strip().upper()
                         hisse = "".join(re.findall(r'[A-Z]+', hucre_adi))
                         
-                        if hisse and hisse != "RAYSG" and hisse in BORSA_HISSELERI:
+                        if hisse and hisse in BORSA_HISSELERI:
                             cfiy = internetten_canli_fiyat_bul(hisse)
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                             raw_puan = df_kaynak.iloc[idx, 19] if len(df_kaynak.columns) > 19 else wv
@@ -170,7 +164,6 @@ st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        if hisse == "RAYSG": continue
         cfiy = internetten_canli_fiyat_bul(hisse)
         if cfiy == 0.0: 
             cfiy = bilge["kayit_fiyati"]
@@ -203,13 +196,13 @@ with col_p2:
         st.success("Oyunuz başarıyla kaydedildi!")
         st.rerun()
 
-# 8. BTa Sohbet Odası Bölümü (Girinti hatası kesin olarak düzeltildi)
+# 8. BTa Sohbet Odası Bölümü
 st.divider()
 st.subheader("💬 BTa Sohbet")
 
 for msg in st.session_state["chat_history"]:
     with st.chat_message(msg["role"]):
-        st.write(msg["content"])  # Hata veren girinti alanı düzeltildi
+        st.write(msg["content"])
 
 user_input = st.chat_input("Mesajınızı buraya yazın...")
 if user_input:
