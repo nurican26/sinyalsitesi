@@ -7,8 +7,7 @@ import os, re
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
-# --- 🔁 OTOMATİK YENİLEME SİSTEMİ (Her 10 Saniyede Bir Sayfayı Yeniler) ---
-# Ekstra kütüphaneye ihtiyaç duymadan HTML metotla anlık otomatik yenileme tetiklenir
+# 🔁 OTOMATİK YENİLEME SİSTEMİ (10 Saniyede Bir Sayfayı Yeniler)
 st.markdown("<meta http-equiv='refresh' content='10'>", unsafe_allow_html=True)
 
 # 2. Hafıza (Session State) Kontrolleri
@@ -43,19 +42,26 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
+# 📌 GELİŞMİŞ SAYI TEMİZLEME: Excel sayı format bozukluklarını (138,00 -> 138.0) tam düzeltir
 def temiz_fiyat_al(val):
     if pd.isna(val):
         return 0.0
-    val_str = str(val).strip().replace(".", "").replace(",", ".")
+    val_str = str(val).strip()
+    # Eğer binlik ayracı nokta, kuruş ayracı virgül ise standarda çevirir
+    if "," in val_str and "." in val_str:
+        val_str = val_str.replace(".", "").replace(",", ".")
+    elif "," in val_str:
+        val_str = val_str.replace(",", ".")
+    
     sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", val_str)
     return float(sayilar[0]) if sayilar else 0.0
 
-# 🌟 KRİTİK DÜZELTME: Hisselerin fiyatlarını kaydırmadan tam satırından bulan fonksiyon
+# 🌟 NOKTA ATIŞI HİSSE ARAMA: Satır kaymalarını engelleyerek tam fiyata ulaşır
 def hisse_fiyati_bul(hisse_kodu):
     if df_kaynak is not None:
         for idx in range(len(df_kaynak)):
             val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
-            if hisse_kodu == val_hisse or hisse_kodu in val_hisse:
+            if hisse_kodu == val_hisse or val_hisse == hisse_kodu:
                 return temiz_fiyat_al(df_kaynak.iloc[idx, 7])
     return 0.0
 
@@ -94,11 +100,14 @@ if al_sat_butonu:
                     
                     h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
                     if h_adi:
-                        # Kaymayı önlemek için fiyat doğrudan ilgili hisse adıyla aranarak çekilir
                         cfiy = hisse_fiyati_bul(h_adi)
+                        
+                        # 🌟 TALEP: Butona basıldığı andaki ham formatı (+0,08 veya +8 gibi) doğrudan gösterir
+                        bta_puan_temiz = str(df_kaynak.iloc[i, 20]).strip()
+                        
                         tablo_verisi.append({
                             "Hisse Kodu": h_adi, 
-                            "BTA PUAN": uv,  # İsim Sinyal Metni'nden BTA PUAN'a dönüştürüldü
+                            "BTA PUAN": bta_puan_temiz, 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
                             "Durum Oranı": "🔄 Aktif Takip"
                         })
@@ -126,9 +135,11 @@ if al_butonu:
                     if h_adi:
                         cfiy = hisse_fiyati_bul(h_adi)
                         st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                        
+                        # 🌟 TALEP: Sönme al yazmasın, sadece temiz şekilde "AL" yazsın
                         tablo_verisi_al.append({
                             "Hisse Kodu": h_adi, 
-                            "BTA PUAN": wv,  # İsim Sinyal'den BTA PUAN'a dönüştürüldü
+                            "BTA PUAN": "AL", 
                             "Canlı Fiyat": f"{cfiy:.2f} TL", 
                             "Durum Oranı": "🔄 Havuzu Eklendi"
                         })
