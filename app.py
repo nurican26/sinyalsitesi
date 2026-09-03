@@ -12,7 +12,7 @@ st.markdown("""
     h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
     input {color: #000!important; background-color: #fff!important;}
     
-    /* Tablo ve hücre düzeni */
+    /* Mobil ve Masaüstü için tabloları rahatlatan ayar */
     .stDataFrame {width: 100% !important; border: 1px solid #4338ca !important; border-radius: 8px;}
     div.block-container {padding-top: 2rem; padding-bottom: 0.5rem;}
     
@@ -82,7 +82,6 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 HARF VE SAYI TEMİZLEME FONKSİYONLARI
 def temiz_metin_al(val):
     if pd.isna(val): return ""
     return str(val).strip().upper()
@@ -96,7 +95,6 @@ if df_kaynak is not None:
         try:
             ilk_hucre = temiz_metin_al(df_kaynak.iloc[idx, 0])
             
-            # Satır sınır koruması ile U (20), W (22) ve T (19) sütunlarını güvenle oku
             if len(df_kaynak.columns) > 22:
                 uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
                 wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
@@ -146,6 +144,7 @@ st.markdown("#### 🌟 Özel Takip Havuzu 💰")
 if st.session_state["ozel_takip_kutusu"]:
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+        if hisse == "RAYSG": continue
         cfiy = internetten_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
             
@@ -160,7 +159,7 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 7. ⭐ TOPLULUK PUANLAMA SİSTEMİ
+# 7. ⭐ TOPLULUK PUANLAMA SİSTEMİ (Hata veren time bağımlılığı kaldırıldı)
 st.write("---")
 st.subheader("⭐ Paneli Değerlendir")
 yildiz_secimi = st.feedback("stars") 
@@ -169,7 +168,6 @@ if yildiz_secimi is not None:
     st.session_state["topham_oy_sayisi"] += 1
     st.session_state["topham_yildiz_puani"] += verilen_puan
     st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. 🎉")
-    time.sleep(1)
     st.rerun()
 
 # 8. BTa Sohbet Odası Bölümü
