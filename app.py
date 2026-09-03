@@ -92,10 +92,15 @@ if df_kaynak is not None:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # 🛠️ YENİ MUTLAK PARANTEZSİZ OKUMA MOTORU
+                # 🛠️ GELİŞMİŞ VE KESİN PARANTEZSİZ-EK SÖZCÜKSÜZ HİSSE MOTORU
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     uv_temiz = "".join([c for c in uv if c.isalnum() or c == "."])
                     hisse_eslesme = "".join(re.findall(r'[A-Z]', uv_temiz))
+                    # 🔍 ISBTRAL gibi ek gelen AL-SAT kelimelerini ayıklayan filtre
+                    if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
+                    elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
+                    elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
+                    
                     if hisse_eslesme:
                         cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
                         tablo_alsat.append({"Hisse Kodu 📈": hisse_eslesme, "BTA Puan": t_deg if t_deg else "10", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -103,6 +108,11 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     wv_temiz = "".join([c for c in wv if c.isalnum() or c == "."])
                     hisse_eslesme = "".join(re.findall(r'[A-Z]', wv_temiz))
+                    # 🔍 ISBTRAL gibi ek gelen AL-SAT kelimelerini ayıklayan filtre
+                    if hisse_eslesme.endswith("ALSAT"): hisse_eslesme = hisse_eslesme[:-5]
+                    elif hisse_eslesme.endswith("AL"): hisse_eslesme = hisse_eslesme[:-2]
+                    elif hisse_eslesme.endswith("SAT"): hisse_eslesme = hisse_eslesme[:-3]
+                    
                     if hisse_eslesme:
                         cfiy = hızlı_canli_fiyat_bul(hisse_eslesme)
                         if hisse_eslesme not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
@@ -124,10 +134,3 @@ if st.session_state["ozel_takip_kutusu"]:
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         cfiy = hızlı_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-        tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
-
-# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Ezilmesi veya gizlenmesi imkansız bağımsız kırmızı kalın çerçeve)
-st.write("---")
