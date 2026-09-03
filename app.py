@@ -7,7 +7,9 @@ import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
-st.markdown("""
+
+# CSS Stil Yapısını Python Değişkeni Olarak Güvenle Tanımlıyoruz (Çakışmayı Önler)
+css_kodlari = """
 <style>
     .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} 
     h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
@@ -65,7 +67,8 @@ st.markdown("""
         color: #ffffff !important;
     }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(css_kodlari, unsafe_allow_html=True)
 
 # 🔑 SABİT PARAMETRELER
 GIRIS_SIFRESI = "bta2026"
@@ -192,39 +195,38 @@ if erisim_izni:
                 st.session_state["ozel_takip_kutusu"] = {}
                 st.rerun()
 
-    # ⭐ TOPLULUK PUANLAMA SİSTEMİ
-    st.write("---")
-    st.subheader("⭐ Paneli Değerlendir")
-    yildiz_secimi = st.feedback("stars") 
-    if yildiz_secimi is not None:
-        st.session_state["topham_oy_sayisi"] += 1
-        st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
-        st.success("Oyunuz kaydedildi!")
-        time.sleep(1)
-        st.rerun()
+# ⭐ TOPLULUK PUANLAMA SİSTEMİ
+st.write("---")
+st.subheader("⭐ Paneli Değerlendir")
+yildiz_secimi = st.feedback("stars") 
+if yildiz_secimi is not None:
+    st.session_state["topham_oy_sayisi"] += 1
+    st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
+    st.success("Oyunuz kaydedildi!")
+    time.sleep(1)
+    st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ
-    if panel_modu == "Site Şifreli / Kilitli":
-        st.write("---")
-        st.subheader("📩 Gelen Kullanıcı Mesajları")
-        if os.path.exists(MESAJ_DOSYASI):
-            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
-                mesajlar = f.readlines()
-            if mesajlar:
-                for m in reversed(mesajlar[-15:]): 
-                    st.text(f"💬 {m.strip()}")
-                st.write("")
-                if st.button("🗑️ Tüm Mesajları Temizle"):
-                    os.remove(MESAJ_DOSYASI)
-                    st.rerun()
-            else:
-                st.info("Henüz yeni mesaj bulunmuyor.")
+# 📬 GIZLI GELEN MESAJLAR PANELİ
+if panel_modu == "Site Şifreli / Kilitli" and erisim_izni:
+    st.write("---")
+    st.subheader("📩 Gelen Kullanıcı Mesajları")
+    if os.path.exists(MESAJ_DOSYASI):
+        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+            mesajlar = f.readlines()
+        if mesajlar:
+            for m in reversed(mesajlar[-15:]): 
+                st.text(f"💬 {m.strip()}")
+            st.write("")
+            if st.button("🗑️ Tüm Mesajları Temizle"):
+                os.remove(MESAJ_DOSYASI)
+                st.rerun()
         else:
             st.info("Henüz yeni mesaj bulunmuyor.")
+    else:
+        st.info("Henüz yeni mesaj bulunmuyor.")
 
-else:
-    # 🔒 MOD "KİLİTLİ" SEÇİLDİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK EKRAN
+# ŞİFRE GİRİLMEYİNCE GÖRÜNECEK KİLİTLİ EKRAN BLOKLARI
+if not erisim_izni and panel_modu == "Site Şifreli / Kilitli":
     st.markdown("""
     <div class="kilit-uyari">
         ⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>
-        Güncel listeyi ve analiz raporlarını görmek için lütfen sol menüden şifrenizi giriniz.<br><br>
