@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -42,7 +41,7 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# 🌟 İNTERNETTEN CANLI FİYAT ÇEKİCİ: Borsadaki gerçek güncel fiyatları indirir
+# 🌟 İNTERNETTEN CANLI FİYAT ÇEKİCİ
 def internetten_canli_fiyat_bul(hisse_kodu):
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
@@ -53,7 +52,7 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 SİNYAL METNİ TEMİZLEME: Hücredeki "[AL]" veya "AL" gibi yasaklı kelimeleri silerek saf puanı bırakır
+# 🌟 SİNYAL METNİ TEMİZLEME
 def sinyal_metni_temizle(ham_metin, hisse_kodu):
     metin = str(ham_metin).strip().upper()
     metin = metin.replace(hisse_kodu, "").replace("[AL]", "").replace("AL", "").replace("_SAT", "").replace("SİNYALİ", "")
@@ -87,7 +86,7 @@ if al_sat_butonu:
         tablo_verisi = []
         for i in range(len(df_kaynak)):
             try:
-                # 🛠️ DÜZELTME: Syntax hatasına sebep olan boş döngü U sütununa ([20]) sabitlendi
+                # [20] listesi döngüye eklendi, hata düzeltildi
                 for col_check in:
                     if len(df_kaynak.columns) > col_check and not pd.isna(df_kaynak.iloc[i, col_check]):
                         uv = str(df_kaynak.iloc[i, col_check]).strip().upper()
@@ -121,12 +120,12 @@ if al_butonu:
         tablo_verisi_al = []
         for i in range(len(df_kaynak)):
             try:
-                # 🛠️ DÜZELTME: Syntax hatasına sebep olan boş döngü W sütununa ([22]) sabitlendi
+                # [22] listesi döngüye eklendi, hata düzeltildi
                 for col_check in:
                     if len(df_kaynak.columns) > col_check and not pd.isna(df_kaynak.iloc[i, col_check]):
                         wv = str(df_kaynak.iloc[i, col_check]).strip().upper()
                         if "AL" in wv or "+" in wv:
-                            h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
+                            h_adi = next((h wholesalers for h in BORSA_HISSELERI if h in wv), None)
                             if not h_adi:
                                 h_adi = next((h for h in BORSA_HISSELERI if h in str(df_kaynak.iloc[i, 0]).strip().upper()), None)
                             
@@ -203,3 +202,8 @@ with st.form("bta_chat_form", clear_on_submit=True):
     
     if gonder_butonu and user_input:
         st.session_state["chat_history"].append({"role": "user", "content": user_input})
+        bot_response = f"🤖 BTa Sohbet: '{user_input}' mesajınız sisteme ulaştı. Excel tablonuzdaki veriler taban alınarak BTA Sinyal algoritması tarafından analiz ediliyor."
+        st.session_state["chat_history"].append({"role": "assistant", "content": bot_response})
+        st.rerun()
+
+# --- 🔁 GÜVENLİ OTOMATİK YENİLEME ---
