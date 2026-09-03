@@ -12,11 +12,11 @@ st.markdown("""
     h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
     input {color: #000!important; background-color: #fff!important;}
     
-    /* Mobil ve Masaüstü için tabloları rahatlatan ayar */
+    /* Tablo ve hücre düzeni */
     .stDataFrame {width: 100% !important; border: 1px solid #4338ca !important; border-radius: 8px;}
     div.block-container {padding-top: 2rem; padding-bottom: 0.5rem;}
     
-    /* Neon sinyal kutuları */
+    /* Neon sinyal başlıkları */
     .alsat-baslik {
         background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%);
         padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;
@@ -55,7 +55,7 @@ for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_
 
 st.session_state["ziyaret_sayaci"] += 1
 
-# 🌟 BAŞLIK VE METRİK ALANI (Kayma engellendi)
+# BAŞLIK VE METRİK ALANI
 st.markdown('<div class="bta-ana-baslik">⚡ BTa Sinyal Takip Paneli 🚀</div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
@@ -82,53 +82,50 @@ def internetten_canli_fiyat_bul(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 ESNEK EXCEL VERİ AYIKLAMA MOTORU
+# 🌟 HARF VE SAYI TEMİZLEME FONKSİYONLARI
+def temiz_metin_al(val):
+    if pd.isna(val): return ""
+    return str(val).strip().upper()
+
+# 🌟 EXCEL VERİ AYIKLAMA VE TABLOLAMA MOTORU
 tablo_alsat = []
 tablo_al = []
 
 if df_kaynak is not None:
-    son_gecerli_hisse = "-"
     for idx in range(len(df_kaynak)):
-        ilk_hucre = str(df_kaynak.iloc[idx, 0]).strip().upper()
-        
-        # Akıllı Tarama: Satırın içinde kilit hisseler geçiyor mu kontrol et
-        if "KUVVA" in ilk_hucre:
-            son_gecerli_hisse = "KUVVA"
-        elif "SONME" in ilk_hucre:
-            son_gecerli_hisse = "SONME"
-        else:
-            saf_kod = "".join(re.findall(r'[A-Z]+', ilk_hucre))
-            if saf_kod and len(saf_kod) >= 4 and saf_kod not in ["NONE", "NAN", "AL_SAT", "PUAN", "BTA", "UCUZ", "ANAPAZAR", "YILDIZ"]:
-                son_gecerli_hisse = saf_kod
-        
-        hisse = son_gecerli_hisse
-        if hisse and hisse != "RAYSG":
-            # Sütun uzunluğu güvenli kontrolü
+        try:
+            ilk_hucre = temiz_metin_al(df_kaynak.iloc[idx, 0])
+            
+            # Satır sınır koruması ile U (20), W (22) ve T (19) sütunlarını güvenle oku
             if len(df_kaynak.columns) > 22:
-                uv_degeri = str(df_kaynak.iloc[idx, 20]).strip().upper() # U Sütunu
-                wv_degeri = str(df_kaynak.iloc[idx, 22]).strip().upper() # W Sütunu
-                t_degeri = str(df_kaynak.iloc[idx, 19]).strip()         # T Sütunu
+                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+                t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
                 
-                # 🟡 AL SAT Şartı: U sütunu boş veya 0 değilse ve hisse KUVVA ise listeler
-                if hisse == "KUVVA" and uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", ""]:
-                    canli_fiyat = internetten_canli_fiyat_bul(hisse)
-                    tablo_alsat.append({
-                        "Hisse Kodu 📈": hisse, 
-                        "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "nan") else uv_degeri,
-                        "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
-                    })
+                # 🟡 AL SAT Şartı: Hücrede KUVVA geçiyorsa ve U sütunu doluysa
+                if "KUVVA" in ilk_hucre:
+                    if uv_degeri and uv_degeri not in ["NAN", "NONE", "0", "0.0", "-", ""]:
+                        canli_fiyat = internetten_canli_fiyat_bul("KUVVA")
+                        tablo_alsat.append({
+                            "Hisse Kodu 📈": "KUVVA", 
+                            "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "NAN") else uv_degeri,
+                            "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
+                        })
                 
-                # 🟢 AL Şartı: W sütunu boş veya 0 değilse ve hisse SONME ise listeler
-                if hisse == "SONME" and wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", ""]:
-                    canli_fiyat = internetten_canli_fiyat_bul(hisse)
-                    if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                        st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                    
-                    tablo_al.append({
-                        "Hisse Kodu 🚀": hisse, 
-                        "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "nan") else wv_degeri,
-                        "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
-                    })
+                # 🟢 AL Şartı: Hücrede SONME geçiyorsa ve W sütunu doluysa
+                if "SONME" in ilk_hucre:
+                    if wv_degeri and wv_degeri not in ["NAN", "NONE", "0", "0.0", "-", "AL", ""]:
+                        canli_fiyat = internetten_canli_fiyat_bul("SONME")
+                        if "SONME" not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                            st.session_state["ozel_takip_kutusu"]["SONME"] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                        
+                        tablo_al.append({
+                            "Hisse Kodu 🚀": "SONME", 
+                            "BTA PUAN (T)": t_degeri if (t_degeri and t_degeri != "NAN") else wv_degeri,
+                            "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."
+                        })
+        except:
+            pass
 
 # 🟡 AL SAT SİNYAL ALANI
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
@@ -172,6 +169,7 @@ if yildiz_secimi is not None:
     st.session_state["topham_oy_sayisi"] += 1
     st.session_state["topham_yildiz_puani"] += verilen_puan
     st.success(f"Teşekkürler! {verilen_puan} yıldız verdiniz. 🎉")
+    time.sleep(1)
     st.rerun()
 
 # 8. BTa Sohbet Odası Bölümü
