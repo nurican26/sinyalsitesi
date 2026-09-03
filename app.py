@@ -133,7 +133,7 @@ with col_btn1:
 with col_btn2:
     al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
     
-# 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ - SİZİN ORİJİNAL KODUNUZ)
+# 🟡 1. ADIM: SARI BUTON (U SÜTUNUNDAKİ AL SAT SİNYALLERİ)
 if al_sat_butonu and df_kaynak is not None:
     with st.spinner("Excel verileri işleniyor..."):
         tablo_verisi = []
@@ -185,7 +185,7 @@ if al_sat_butonu and df_kaynak is not None:
 elif al_sat_butonu and df_kaynak is None:
     st.warning("Lütfen önce geçerli bir Excel dosyası yükleyin.")
 
-# 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ - SİZİN ORİJİNAL KODUNUZ)
+# 🟢 2. ADIM: YEŞİL BUTON (W SÜTUNUNDAKİ NET AL SİNYALLERİ - HİZALAMA HATASI DÜZELTİLDİ)
 if al_butonu and df_kaynak is not None:
     with st.spinner("AL sinyalleri hesaplanıyor..."):
         tablo_verisi_al = []
@@ -222,6 +222,6 @@ if al_butonu and df_kaynak is not None:
                 pass
         if tablo_verisi_al:
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-            
-            # Takip kutusuna veri ekleme tetikleyicisi
-            for item in tablo_verisi_al:
+        else:
+            st.warning("Excel şablonunda aktif AL sinyali bulunamadı.")
+elif al_butonu and df_kaynak is None:
