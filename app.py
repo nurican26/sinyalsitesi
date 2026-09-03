@@ -26,23 +26,12 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🛠️ PANEL MODU SEÇİMİ (AÇ-KAPA ANAHTARI)
-st.sidebar.markdown("### ⚙️ Yönetici Ayarları")
-panel_modu = st.sidebar.selectbox("Panel Durumu Seçin:", ["Site Herkese Açık", "Site Şifreli / Kilitli"])
+# 🔐 TEK VE KALICI ŞİFRE GİRİŞ ALANI (Sıfırlanma ihtimali yok)
+st.sidebar.markdown("### 🔐 Erişim Girişi")
+girilen_sifre = st.sidebar.text_input("Giriş Şifresini Yazın:", type="password", placeholder="Şifre...")
 
-# İçerik gösterilme şartı kontrolü
-erisim_izni = False
-if panel_modu == "Site Herkese Açık":
-    erisim_izni = True
-else:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔐 Erişim Girişi")
-    girilen_sifre = st.sidebar.text_input("Giriş Şifresini Yazın:", type="password", placeholder="Şifre...")
-    if girilen_sifre == GIRIS_SIFRESI:
-        erisim_izni = True
-
-# 🟢 ERİŞİM İZNİ VARSA SİTE YÜKLENİR
-if erisim_izni:
+# Eğer doğru şifre girildiyse içerik yüklenir, girilmediyse kilitli kalır
+if girilen_sifre == GIRIS_SIFRESI:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
@@ -91,7 +80,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -100,7 +89,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara)
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -142,28 +131,35 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Girintiler milimetrik olarak kilitlendi)
-    if panel_modu == "Site Şifreli / Kilitli" and erisim_izni:
-        st.write("---")
-        st.subheader("📩 Gelen Kullanıcı Mesajları")
-        if os.path.exists(MESAJ_DOSYASI):
-            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
-                mesajlar = f.readlines()
-            if mesajlar:
-                for m in reversed(mesajlar[-15:]): 
-                    st.text(f"💬 {m.strip()}")
-                st.write("")
-                if st.button("🗑️ Tüm Mesajları Temizle"):
-                    os.remove(MESAJ_DOSYASI)
-                    st.rerun()
-            else:
-                st.info("Henüz yeni mesaj bulunmuyor.")
+    # 📬 GELEN MESAJLAR PANELİ (Sadece doğru şifreyi giren siz görebilirsiniz)
+    st.write("---")
+    st.subheader("📩 Gelen Kullanıcı Mesajları")
+    if os.path.exists(MESAJ_DOSYASI):
+        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+            mesajlar = f.readlines()
+        if mesajlar:
+            for m in reversed(mesajlar[-15:]): 
+                st.text(f"💬 {m.strip()}")
+            st.write("")
+            if st.button("🗑️ Tüm Mesajları Temizle"):
+                os.remove(MESAJ_DOSYASI)
+                st.rerun()
         else:
             st.info("Henüz yeni mesaj bulunmuyor.")
+    else:
+        st.info("Henüz yeni mesaj bulunmuyor.")
 
 else:
-    # 🔒 MOD "KİLİTLİ" SEÇİLDİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK EKRAN
+    # 🔒 ŞİFRE GİRİLMEYİNCE ZİYARETÇİLERİN GÖRECEĞİ KİLİTLİ EKRAN BLOKLARI
     st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sol menüden şifrenizi giriniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
     
     st.subheader("📬 Yatırımcı İletişim Formu")
     ziyaretci_isim = st.text_input("Rumuzunuz / İletişim Bilginiz (E-posta veya Tel):", value="Anonim")
+    ziyaretci_mesaj = st.text_area("Mesajınız:", placeholder="Şifre talep etmek veya not bırakmak için yazabilirsiniz...")
+    
+    if st.button("Mesajı İlet 🚀", use_container_width=True):
+        if ziyaretci_mesaj.strip():
+            zaman_damgasi = datetime.datetime.now().strftime("%d.%m %H:%M")
+            with open(MESAJ_DOSYASI, "a", encoding="utf-8") as f:
+                f.write(f"[{zaman_damgasi}] {ziyaretci_isim}: {ziyaretci_mesaj.strip()}\n")
+            st.success("Mesajınız yöneticiye başarıyla iletildi!")
