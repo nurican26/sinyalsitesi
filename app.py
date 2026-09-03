@@ -5,7 +5,7 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Neon Tasarım
+# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
@@ -13,11 +13,22 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 # 🔑 PARAMETRELER
 GIRIS_SIFRESI = "bta2026"
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
+DURUM_DOSYASI = "site_durumu.txt"
 
-# Hafıza Kontrolleri
+# 💾 Kalıcı Dosya Hafızasından Kilit Durumunu Okuma Motoru
+def kilit_durumu_oku():
+    if os.path.exists(DURUM_DOSYASI):
+        with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return "Açık"
+
+def kilit_durumu_yaz(durum):
+    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
+        f.write(durum)
+
+# Geçici hafıza kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
-if "kilit_durumu" not in st.session_state: st.session_state["kilit_durumu"] = "Açık"
 
 for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
     if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
@@ -27,27 +38,30 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
+# Mevcut kalıcı kilit durumunu yükle
+mevcut_kilit = kilit_durumu_oku()
+
 # 🔐 YÖNETİCİ GİZLİ PANELİ (Sol Menü)
 st.sidebar.markdown("### ⚙️ Yönetici Odası")
 yonetici_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Şifre yazın...")
 
-# Şifre doğruysa butonlar görünür
+# Şifre doğruysa kalıcı kilitleme butonları görünür
 if yonetici_sifre == GIRIS_SIFRESI:
-    st.sidebar.success(f"Yönetici Aktif. Durum: {st.session_state['kilit_durumu']}")
+    st.sidebar.success(f"Yönetici Aktif. Kalıcı Durum: {mevcut_kilit}")
     col_kilitle, col_ac = st.sidebar.columns(2)
     if col_kilitle.button("🔒 SİTEYİ KİLİTLE"):
-        st.session_state["kilit_durumu"] = "Kilitli"
+        kilit_durumu_yaz("Kilitli")
         st.rerun()
     if col_ac.button("🔓 HERKESE AÇ"):
-        st.session_state["kilit_durumu"] = "Açık"
+        kilit_durumu_yaz("Açık")
         st.rerun()
 
-# 🛠️ GİRİNTİ HATASINI BİTİREN YENİ BAĞIMSIZ ERİŞİM SİSTEMİ
+# 🛠️ ERİŞİM KONTROLÜ (Kalıcı hafızaya ve şifreye bakar)
 erisim_izni = False
-if st.session_state["kilit_durumu"] == "Açık":
+if mevcut_kilit == "Açık" or yonetici_sifre == GIRIS_SIFRESI:
     erisim_izni = True
 
-# 🟢 ERİŞİM İZNİ VARSA SİTE DETAYLARI YÜKLENİR
+# 🟢 İÇERİK GÖSTERME ALANI (Giriş İzni Varsa Açılır)
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -97,7 +111,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -106,7 +120,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0])
+                            hisse = str(hisse_ara[0]) # Liste parantezini tamamen metne kırdık
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -148,7 +162,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yönetici Odası)
     if yonetici_sifre == GIRIS_SIFRESI:
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -165,8 +179,3 @@ if erisim_izni:
             else:
                 st.info("Henüz yeni mesaj bulunmuyor.")
         else:
-            st.info("Henüz yeni mesaj bulunmuyor.")
-
-# 🔒 HATA VEREN 'ELSE' SİLİNDİ, YERİNE SİTE KİLİTLİYSE GÖRÜNECEK BAĞIMSIZ BLOK GELDİ
-if not erisim_izni:
-    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Geçici Olarak Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sistem yöneticisiyle iletişime geçiniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
