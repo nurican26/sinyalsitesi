@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os, re
 
-# 1. Sayfa Yapılandırması ve Tasarım (Mobil Uyumlu & Kısa Ekran)
+# 1. Sayfa Yapılandırması ve Tasarım (Mobil Uyumlu & Ultra Temiz)
 st.set_page_config(page_title="BTa Sinyal Paneli", page_icon="📈", layout="wide")
 st.markdown("""
 <style>
@@ -29,22 +29,37 @@ st.session_state["ziyaret_sayaci"] += 1
 
 st.title("⚡ BTa Sinyal Takip")
 
-# Kısa Metrik Alanı
 puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
 st.write(f"⭐ **Puan:** {puan:.2f} | 🚪 **Giriş:** {st.session_state['ziyaret_sayaci']}")
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.success(f"💡 Sistem Aktif. Hücre tarama algoritması güncellendi. {guncel_an}")
 
 # 3. Arka Planda Excel Okuma
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: 
-        # Veri kilitlenmelerini önlemek için formülleri değil ham metinleri okumaya zorluyoruz
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except Exception as e:
         st.error(f"Excel dosyası okuma hatası: {e}")
+
+# 🌟 AKILLI SÜTUN ENDEKSİ BULUCU (İndeks kaymalarını sıfırlayan motor)
+u_idx, w_idx, t_idx = None, None, None
+if df_kaynak is not None:
+    # Excel'in ilk 5 satırında başlık kelimelerini arıyoruz
+    for r_idx in range(min(5, len(df_kaynak))):
+        satir_degerleri = [str(val).strip().upper() for val in df_kaynak.iloc[r_idx]]
+        for c_idx, cell in enumerate(satir_degerleri):
+            if "AL_SAT" in cell or "AL SAT" in cell: u_idx = c_idx
+            if "AL" in cell and "AL_SAT" not in cell and "AL SAT" not in cell: w_idx = c_idx
+            if "BTA" in cell or "PUAN" in cell: t_idx = c_idx
+        if u_idx is not None or w_idx is not None:
+            break
+
+# Eğer akıllı bulucu başarısız olursa eski el yordamı indeksleri koru (Güvenlik önlemi)
+if u_idx == None: u_idx = 20
+if w_idx == None: w_idx = 22
+if t_idx == None: t_idx = 19
 
 # 📌 İNTERNETTEN CANLI FİYAT ÇEKİCİ
 def internetten_canli_fiyat_bul(hisse_kodu):
@@ -66,7 +81,7 @@ b2 = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
 if b1: st.session_state["al_sat_goster"] = not st.session_state["al_sat_goster"]
 if b2: st.session_state["al_goster"] = not st.session_state["al_goster"]
 
-# 🟡 AL SAT Sinyal Mantığı (U Sütunu - İndeks 20)
+# 🟡 AL SAT Sinyal Mantığı
 if st.session_state["al_sat_goster"]:
     if df_kaynak is not None:
         tablo_verisi = []
@@ -75,13 +90,12 @@ if st.session_state["al_sat_goster"]:
             hisse = "".join(re.findall(r'[A-Z]+', ilk_hucre))
             
             if hisse and hisse != "RAYSG" and len(hisse) >= 4 and hisse not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
-                if len(df_kaynak.columns) > 20:
-                    uv = str(df_kaynak.iloc[idx, 20]).strip().upper()
+                if len(df_kaynak.columns) > u_idx:
+                    uv = str(df_kaynak.iloc[idx, u_idx]).strip().upper()
                     
-                    # 🌟 KESİN ÇÖZÜM: Hücre boş değilse, 0 değilse veya içinde hisse kodu tetikleniyorsa listele
                     if uv and uv not in ["", "0", "0.0", "0,00", "NAN", "AL_SAT SİNYALİ", "-", "NONE"] or hisse in uv:
                         cfiy = internetten_canli_fiyat_bul(hisse)
-                        raw_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else uv
+                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else uv
                         if raw_puan in ["NAN", "0", "0.0"]: raw_puan = uv
                         
                         tablo_verisi.append({
@@ -92,10 +106,8 @@ if st.session_state["al_sat_goster"]:
                         })
         if tablo_verisi: 
             st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
-        else:
-            st.info("U sütununda (AL SAT) kriterlere uyan aktif veri okunamadı.")
 
-# 🟢 AL Sinyal Mantığı (W Sütunu - İndeks 22)
+# 🟢 AL Sinyal Mantığı
 if st.session_state["al_goster"]:
     if df_kaynak is not None:
         tablo_verisi_al = []
@@ -104,14 +116,13 @@ if st.session_state["al_goster"]:
             hisse = "".join(re.findall(r'[A-Z]+', ilk_hucre))
             
             if hisse and hisse != "RAYSG" and len(hisse) >= 4 and hisse not in ["ANLIK", "SIRALA", "LOTS", "PIYASA", "BTAPUAN", "UCUZ", "AL_SAT", "PAZAR"]:
-                if len(df_kaynak.columns) > 22:
-                    wv = str(df_kaynak.iloc[idx, 22]).strip().upper()
+                if len(df_kaynak.columns) > w_idx:
+                    wv = str(df_kaynak.iloc[idx, w_idx]).strip().upper()
                     
-                    # 🌟 KESİN ÇÖZÜM: Hücre içinde 'AL' kelimesi geçiyorsa veya direkt doluysa listele
                     if (wv and wv not in ["", "0", "0.0", "0,00", "NAN", "AL", "-", "NONE"]) or "AL" in wv or hisse in wv:
                         cfiy = internetten_canli_fiyat_bul(hisse)
                         st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        raw_puan = str(df_kaynak.iloc[idx, 19]).strip() if len(df_kaynak.columns) > 19 else wv
+                        raw_puan = str(df_kaynak.iloc[idx, t_idx]).strip() if len(df_kaynak.columns) > t_idx else wv
                         if raw_puan in ["NAN", "0", "0.0"]: raw_puan = wv
                         
                         tablo_verisi_al.append({
@@ -122,8 +133,6 @@ if st.session_state["al_goster"]:
                         })
         if tablo_verisi_al: 
             st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-        else:
-            st.info("W sütununda (AL) kriterlere uyan aktif veri okunamadı.")
 
 # 6. Sinyal Havuzu Bölümü
 st.markdown("#### 🌟 Sinyal Havuzu")
