@@ -13,6 +13,18 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 # 🔑 PARAMETRELER
 GIRIS_SIFRESI = "bta2026"
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
+DURUM_DOSYASI = "site_durumu.txt"
+
+# 💾 Kalıcı Dosya Hafızasından Kilit Durumunu Okuma Motoru
+def kilit_durumu_oku():
+    if os.path.exists(DURUM_DOSYASI):
+        with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return "Açık"
+
+def kilit_durumu_yaz(durum):
+    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
+        f.write(durum)
 
 # Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
@@ -26,12 +38,31 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
+# Mevcut kalıcı kilit durumunu yükle
+mevcut_kilit = kilit_durumu_oku()
+
 # 🔐 ORTADA DURAN EMNİYETLİ ŞİFRE KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini ve analiz raporlarını görmek için lütfen şifreyi giriniz:", type="password", placeholder="Buraya şifreyi yazıp Enter'a basın...")
 
-# 🚀 %100 BAĞIMSIZ DAĞITIM MOTORU (Girinti hatasını matematiksel olarak yok eder)
+# 🎛️ YÖNETİCİ AÇ-KAPA BUTONLARI (Sadece doğru şifre yazıldığında ortada belirir)
 if girilen_sifre == GIRIS_SIFRESI:
+    st.info(f"Yönetici Girişi Başarılı. Mevcut Durum: **Site {mevcut_kilit}**")
+    col_ac, col_kilitle = st.columns(2)
+    if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
+        kilit_durumu_yaz("Açık")
+        st.rerun()
+    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
+        kilit_durumu_yaz("Kilitli")
+        st.rerun()
+
+# 🛠️ ERİŞİM KONTROLÜ
+erisim_izni = False
+if mevcut_kilit == "Açık" or girilen_sifre == GIRIS_SIFRESI:
+    erisim_izni = True
+
+# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
+if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
@@ -80,7 +111,7 @@ if girilen_sifre == GIRIS_SIFRESI:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara)
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -89,7 +120,7 @@ if girilen_sifre == GIRIS_SIFRESI:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara)
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -130,7 +161,8 @@ if girilen_sifre == GIRIS_SIFRESI:
         time.sleep(1)
         st.rerun()
 
-    if os.path.exists(MESAJ_DOSYASI):
+    # 📬 GIZLI GELEN MESAJLAR PANELİ
+    if girilen_sifre == GIRIS_SIFRESI and os.path.exists(MESAJ_DOSYASI):
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
         with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
@@ -143,21 +175,5 @@ if girilen_sifre == GIRIS_SIFRESI:
                 os.remove(MESAJ_DOSYASI)
                 st.rerun()
 
-if girilen_sifre != GIRIS_SIFRESI:
-    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
-    
-    st.subheader("📬 Yatırımcı İletişim Formu")
-    ziyaretci_isim = st.text_input("Rumuzunuz / İletişim Bilginiz (E-posta veya Tel):", value="Anonim")
-    ziyaretci_mesaj = st.text_area("Mesajınız:", placeholder="Şifre talep etmek veya not bırakmak için yazabilirsiniz...")
-    
-    if st.button("Mesajı İlet 🚀", use_container_width=True):
-        if ziyaretci_mesaj.strip():
-            zaman_damgasi = datetime.datetime.now().strftime("%d.%m %H:%M")
-            with open(MESAJ_DOSYASI, "a", encoding="utf-8") as f:
-                f.write(f"[{zaman_damgasi}] {ziyaretci_isim}: {ziyaretci_mesaj.strip()}\n")
-            st.success("Mesajınız yöneticiye başarıyla iletildi!")
-            time.sleep(1)
-            st.rerun()
-
-# ⚖️ MUTLAK SABİT SPK UYARISI (En altta her şartta kaya gibi durur)
-st.markdown('<div class="spk-kutusu"><b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Veriler en az 15 dakika gecikmelidir.</div>', unsafe_allow_html=True)
+# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN
+if not erisim_izni:
