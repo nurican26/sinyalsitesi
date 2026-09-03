@@ -14,7 +14,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 GIRIS_SIFRESI = "bta2026"
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 
-# Hafıza Kontrolleri
+# Hafıza Kontrolleri (Kilit durumunu kalıcı hafızaya alıyoruz)
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 if "kilit_durumu" not in st.session_state: st.session_state["kilit_durumu"] = "Açık"
@@ -27,27 +27,27 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🛠️ YÖNETİCİ GİZLİ PANELİ (Sol Menü)
+# 🔐 SADECE YÖNETİCİ ŞİFRE GİRİŞ ALANI (Sol Menü)
 st.sidebar.markdown("### ⚙️ Yönetici Odası")
 yonetici_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Şifre yazın...")
 
-# Şifre doğruysa aç-kapa butonları görünür
+# Şifre doğruysa ekranın en üstünde Aç-Kapa butonları belirir
 if yonetici_sifre == GIRIS_SIFRESI:
-    st.sidebar.success("Yönetici Girişi Başarılı!")
-    col_kilitle, col_ac = st.sidebar.columns(2)
-    if col_kilitle.button("🔒 SİTEYİ KİLİTLE"):
+    st.info(f"Yönetici Modu Aktif. Mevcut Site Durumu: **Site {st.session_state['kilit_durumu']}**")
+    col_kilitle, col_ac = st.columns(2)
+    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
         st.session_state["kilit_durumu"] = "Kilitli"
         st.rerun()
-    if col_ac.button("🔓 HERKESE AÇ"):
+    if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
         st.session_state["kilit_durumu"] = "Açık"
         st.rerun()
 
-# Sitenin güncel kilit durumu kontrol ediliyor
+# Sitenin erişim izni kontrol ediliyor
 erisim_izni = False
-if st.session_state["kilit_durumu"] == "Açık":
+if st.session_state["kilit_durumu"] == "Açık" or yonetici_sifre == GIRIS_SIFRESI:
     erisim_izni = True
 
-# 🟢 EĞER ERİŞİM İZNİ VARSA (SİTE AÇIKSA) HİSSELER LİSTELENİR
+# 🟢 ERİŞİM İZNİ VARSA SİTE YÜKLENİR
 if erisim_izni:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
@@ -148,7 +148,7 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yalnızca yönetici şifre girdiğinde görünür)
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yalnızca siz şifre girdiğinizde görünür)
     if yonetici_sifre == GIRIS_SIFRESI:
         st.write("---")
         st.subheader("📩 Gelen Kullanıcı Mesajları")
@@ -168,6 +168,4 @@ if erisim_izni:
             st.info("Henüz yeni mesaj bulunmuyor.")
 
 else:
-    # 🔒 YÖNETİCİ KİLİTLEDİĞİNDE ZİYARETÇİLERİN GÖRECEĞİ EKRAN
-    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Geçici Olarak Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sistem yöneticisiyle iletişime geçiniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
-    
+    # 🔒 YÖNETİCİ KİLİTLİ SEÇTİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN
