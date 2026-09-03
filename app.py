@@ -92,19 +92,19 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = hisse_ara
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = hisse_ara
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                             tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
@@ -162,10 +162,9 @@ if panel_modu == "Site Şifreli / Kilitli" and erisim_izni:
     else:
         st.info("Henüz yeni mesaj bulunmuyor.")
 
-# ŞİFRE GİRİLMEYİNCE GÖRÜNECEK KİLİTLİ EKRAN BLOKLARI (Tekli tırnak formatına uyarlandı)
+# ŞİFRE GİRİLMEYİNCE GÖRÜNECEK KİLİTLİ EKRAN BLOKLARI
 if not erisim_izni and panel_modu == "Site Şifreli / Kilitli":
     st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen sol menüden şifrenizi giriniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki formdan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
     
     st.subheader("📬 Yatırımcı İletişim Formu")
     with st.form(key="iletisim_formu", clear_on_submit=True):
-        ziyaretci_isim = st.text_input("Rumuzunuz / İletişim Bilginiz (E-posta veya Tel):", value="Anonim")
