@@ -13,6 +13,18 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 # 🔑 PARAMETRELER
 GIRIS_SIFRESI = "bta2026"
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
+DURUM_DOSYASI = "site_durumu.txt"
+
+# 💾 Kalıcı Dosya Hafızasından Kilit Durumunu Okuma Motoru
+def kilit_durumu_oku():
+    if os.path.exists(DURUM_DOSYASI):
+        with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return "Açık"
+
+def kilit_durumu_yaz(durum):
+    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
+        f.write(durum)
 
 # Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
@@ -26,18 +38,31 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🔐 TEK VE SABİT GİRİŞ ALANI (Sol Menü)
-st.sidebar.markdown("### 🔐 Erişim Girişi")
-girilen_sifre = st.sidebar.text_input("Giriş Şifresini Yazın:", type="password", placeholder="Şifre...")
+# Mevcut kalıcı kilit durumunu yükle
+mevcut_kilit = kilit_durumu_oku()
 
-# Şifre doğru mu kontrolü
+# 🔐 YÖNETİCİ GİZLİ PANELİ (Sol Menü)
+st.sidebar.markdown("### ⚙️ Yönetici Odası")
+yonetici_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Şifre yazın...")
+
+# Şifre doğruysa kalıcı kilitleme butonları görünür
+if yonetici_sifre == GIRIS_SIFRESI:
+    st.sidebar.success(f"Yönetici Aktif. Kalıcı Durum: {mevcut_kilit}")
+    col_kilitle, col_ac = st.sidebar.columns(2)
+    if col_kilitle.button("🔒 SİTEYİ KİLİTLE"):
+        kilit_durumu_yaz("Kilitli")
+        st.rerun()
+    if col_ac.button("🔓 HERKESE AÇ"):
+        kilit_durumu_yaz("Açık")
+        st.rerun()
+
+# 🛠️ ERİŞİM KONTROLÜ
 erisim_izni = False
-if girilen_sifre == GIRIS_SIFRESI:
+if mevcut_kilit == "Açık":
     erisim_izni = True
 
-# 🚀 PARÇALANMA SİSTEMİ BAŞLADI
+# 🟢 1. DURUM: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER YÜKLENİR
 if erisim_izni:
-    # 🟢 DOĞRU ŞİFRE GİRİLDİĞİNDE AÇILACAK AKTİF PANEL
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
@@ -86,7 +111,7 @@ if erisim_izni:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara)
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -95,7 +120,7 @@ if erisim_izni:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara)
+                            hisse = str(hisse_ara[0])
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -137,34 +162,24 @@ if erisim_izni:
         time.sleep(1)
         st.rerun()
 
-    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yalnızca doğru şifreyi yazan yönetici okuyabilir)
-    st.write("---")
-    st.subheader("📩 Gelen Kullanıcı Mesajları")
-    if os.path.exists(MESAJ_DOSYASI):
-        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
-            mesajlar = f.readlines()
-        if mesajlar:
-            for m in reversed(mesajlar[-15:]): 
-                st.text(f"💬 {m.strip()}")
-            st.write("")
-            if st.button("🗑️ Tüm Mesajları Temizle"):
-                os.remove(MESAJ_DOSYASI)
-                st.rerun()
+    # 📬 GIZLI GELEN MESAJLAR PANELİ (Yönetici Odası)
+    if yonetici_sifre == GIRIS_SIFRESI:
+        st.write("---")
+        st.subheader("📩 Gelen Kullanıcı Mesajları")
+        if os.path.exists(MESAJ_DOSYASI):
+            with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+                mesajlar = f.readlines()
+            if mesajlar:
+                for m in reversed(mesajlar[-15:]): 
+                    st.text(f"💬 {m.strip()}")
+                st.write("")
+                if st.button("🗑️ Tüm Mesajları Temizle"):
+                    os.remove(MESAJ_DOSYASI)
+                    st.rerun()
+            else:
+                st.info("Henüz yeni mesaj bulunmuyor.")
         else:
             st.info("Henüz yeni mesaj bulunmuyor.")
-    else:
-        st.info("Henüz yeni mesaj bulunmuyor.")
 
+# 🔒 2. DURUM: SİTE KİLİTLİYSE KESİN OLARAK BU FORM ÇALIŞIR
 else:
-    # 🔒 ŞİFRE YAZILMADIĞINDA ZİYARETÇİLERİN GÖRECEĞİ MUTLAK SABİT KİLİTLİ EKRAN
-    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Gizlenmiştir.</b><br>Güncel listeyi ve analiz raporlarını görmek için lütfen şifrenizi giriniz.<br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
-    
-    st.subheader("📬 Yatırımcı İletişim Formu")
-    ziyaretci_isim = st.text_input("Rumuzunuz / İletişim Bilginiz (E-posta veya Tel):", value="Anonim")
-    ziyaretci_mesaj = st.text_area("Mesajınız:", placeholder="Şifre talep etmek veya not bırakmak için yazabilirsiniz...")
-    
-    if st.button("Mesajı İlet 🚀", use_container_width=True):
-        if ziyaretci_mesaj.strip():
-            zaman_damgasi = datetime.datetime.now().strftime("%d.%m %H:%M")
-            with open(MESAJ_DOSYASI, "a", encoding="utf-8") as f:
-                f.write(f"[{zaman_damgasi}] {ziyaretci_isim}: {ziyaretci_mesaj.strip()}\n")
