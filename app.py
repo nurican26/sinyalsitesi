@@ -2,151 +2,177 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os, re
+import os
+import re
 
+# Sayfa Tasarım Ayarları - EKRANI GENİŞLETİP YAN YANA DÜZENE GEÇİRİR
 st.set_page_config(page_title="Nurican Sinyal Paneli", page_icon="📈", layout="wide")
-st.markdown("<style>.stApp{background:rgba(15,23,42,0.95)!important;padding:2rem;} h1,h2,h3,h4,h5,h6,p,span,label{color:#fff!important;} input{color:#000!important;background-color:#fff!important;}</style>", unsafe_allow_html=True)
 
-for k in ["chat_history", "kisitli_liste"]:
-    if k not in st.session_state: st.session_state[k] = []
-if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
-for key in ["ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
-    if key not in st.session_state: st.session_state[key] = 0
+# ==========================================
+# 🎨 BORSA TEMALI ARKA PLAN VE CSS AYARLARI
+# ==========================================
+arka_plan_resmi_url = "https://unsplash.com"
 
-st.session_state["ziyaret_sayaci"] += 1
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background-image: url('{arka_plan_resmi_url}');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+    .block-container {{
+        background: rgba(15, 23, 42, 0.95) !important;
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 1rem;
+    }}
+    h1, h2, h3, h4, h5, h6, p, span, label {{
+        color: #ffffff !important;
+    }}
+    input {{
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+EXCEL_FILE_PATH = "nurican.xls.xlsm"
+
+# Hafıza Başlatmaları
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = []
+if "ozel_takip_kutusu" not in st.session_state:
+    st.session_state["ozel_takip_kutusu"] = {}
+if "kisitli_liste" not in st.session_state:
+    st.session_state["kisitli_liste"] = []
+if "oda_sayisi" not in st.session_state:
+    st.session_state["oda_sayisi"] = 1
+
+# Üst Bilgilendirme Şeridi
 st.title("⚡ Sinyal Takip Merkezi")
+guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+st.success(f"💡 Sistem Aktif. Son Panel Yenilenme Zamanı: {guncel_an}")
 
-puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-c1, c2 = st.columns(2)
-c1.metric("🔥 Toplam Panel Beğenisi (Oy)", f"{st.session_state['topham_oy_sayisi']} Kişi")
-c2.metric("⭐ Topluluk Puan Ortalaması", f"{puan:.2f} / 5.0")
+# SPK Uyarısı En Üstte Sabitlendi
+st.markdown("<div style='background-color: rgba(220, 38, 38, 0.15); border-left: 5px solid #dc2626; padding: 10px; border-radius: 5px; margin-bottom: 15px;'><p style='margin: 0; font-weight: bold; color: #f87171 !important;'>⚠️ SPK YASAL UYARI: Burada yer alan yatırım bilgi ve yorumları yatırım danışmanlığı kapsamında değildir. YATIRIM TAVSİYESİ KESİNLİKLE DEĞİLDİR.</p></div>", unsafe_allow_html=True)
 
-st.success(f"💡 Sistem Aktif. Son Yenilenme: {datetime.datetime.now().strftime('%d.%m.%Y - %H:%M:%S')}")
-st.markdown("<div style='background-color:rgba(220,38,38,0.15);border-left:5px solid #dc2626;padding:10px;border-radius:5px;margin-bottom:15px;'><p style='margin:0;font-weight:bold;color:#f87171!important;'>⚠️ SPK YASAL UYARI: Yatırım tavsiyesi değildir.</p></div>", unsafe_allow_html=True)
+# ==========================================
+# 📊 EKRANI İKİYE BÖLME (YAN YANA DÜZEN)
+# ==========================================
+sol_taraf, sag_taraf = st.columns([1.1, 0.9])
 
-st.markdown("### 📁 Güncel Excel Dosyası Yükleme")
-yuklenen_dosya = st.file_uploader("Excel dosyasını seçin (.xlsx, .xlsm)", type=["xlsx", "xlsm"])
-df_kaynak = None
-if yuklenen_dosya is not None:
-    try:
-        df_kaynak = pd.read_excel(yuklenen_dosya, sheet_name=0, header=None)
-        st.info("🔒 Excel dosyası güvenli bellek üzerinde işlendi.")
-    except Exception as e: st.error(f"Dosya okuma hatası: {e}")
-elif os.path.exists("nurican.xls.xlsm"):
-    try: df_kaynak = pd.read_excel("nurican.xls.xlsm", header=None)
-    except: pass
+with sol_taraf:
+    st.subheader("📈 Sinyal Üretim Merkezi")
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        al_sat_butonu = st.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
+    with col_btn2:
+        al_butonu = st.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
+        
+    # 🟡 AL SAT Sinyali Tetiklendiğinde
+    if al_sat_butonu:
+        with st.spinner("Excel verileri okunuyor..."):
+            if os.path.exists(EXCEL_FILE_PATH):
+                try:
+                    excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
+                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                    df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
+                    tablo_verisi = []
+                    for i in range(len(df)):
+                        hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
+                        excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
+                        bta_sinyal_al_sat = str(df.iloc[i, 20]).strip().upper() if df.shape[1] > 20 else ""
+                        if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]: continue
+                        hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                        if "+" in bta_sinyal_al_sat or "AL" in bta_sinyal_al_sat:
+                            sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
+                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
+                            hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+                            if not hisse_data.empty:
+                                canli_fiyat = hisse_data['Close'].iloc[-1]
+                                yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
+                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                                tablo_verisi.append({"Hisse Kodu": hisse_temiz, "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                    if tablo_verisi: st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
+                    else: st.warning("U sütununda aktif Al-Sat sinyali bulunamadı.")
+                except Exception as e: st.error(f"Hata: {e}")
+            else: st.error("Excel bulunamadı!")
 
-BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
+    # 🟢 AL Sinyali Tetiklendiğinde
+    if al_butonu:
+        with st.spinner("AL sinyalleri hesaplanıyor..."):
+            if os.path.exists(EXCEL_FILE_PATH):
+                try:
+                    excel_obj = pd.ExcelFile(EXCEL_FILE_PATH)
+                    sheet = "BTA" if "BTA" in excel_obj.sheet_names else excel_obj.sheet_names[0]
+                    df = pd.read_excel(EXCEL_FILE_PATH, sheet_name=sheet)
+                    tablo_verisi_al = []
+                    for i in range(len(df)):
+                        hisse_kodu_ham = str(df.iloc[i, 0]).strip().upper()
+                        excel_anlik_verisi = str(df.iloc[i, 7]).replace(",", ".").strip()
+                        w_sutun_verisi = str(df.iloc[i, 22]).strip().upper() if df.shape[1] > 22 else ""
+                        if not hisse_kodu_ham or hisse_kodu_ham in ["NAN", ""]: continue
+                        hisse_temiz = hisse_kodu_ham.replace("[AL]", "").replace("[SAT]", "").replace(" ", "")
+                        if "[AL]" in w_sutun_verisi or "AL" in w_sutun_verisi:
+                            sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", excel_anlik_verisi)
+                            yüklenen_fiy = float(sayilar[0]) if sayilar else 0.0
+                            ticker_kod = f"{hisse_temiz}.IS" if not hisse_temiz.endswith(".IS") else hisse_temiz
+                            hisse_data = yf.Ticker(ticker_kod).history(period="1d")
+                            if not hisse_data.empty:
+                                canli_fiyat = hisse_data['Close'].iloc[-1]
+                                yuzde_fark = ((canli_fiyat - yüklenen_fiy) / yüklenen_fiy) * 100 if yüklenen_fiy > 0 else 0.0
+                                durum_str = f"🟢 %{yuzde_fark:.2f} Kazandı" if canli_fiyat >= yüklenen_fiy else f"🔴 %{abs(yuzde_fark):.2f} İçeride"
+                                st.session_state["ozel_takip_kutusu"][hisse_temiz] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%H:%M")}
+                                tablo_verisi_al.append({"Hisse Kodu": hisse_temiz, "Sinyal": f"{hisse_temiz} [AL]", "Yüklenen Fiyat": f"{yüklenen_fiy:.2f} TL", "Canlı Fiyat": f"{canli_fiyat:.2f} TL", "Durum Oranı": durum_str})
+                    if tablo_verisi_al: st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
+                    else: st.warning("W sütununda aktif [AL] sinyali bulunamadı.")
+                except Exception as e: st.error(f"Hata: {e}")
 
-# ⚡ ESNEK ARAMA MOTORUNA SAHİP CANLI BORSA KÖŞESİ
-st.subheader("🎯 Canlı Takip")
-st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
-canli_borsa_listesi = []
+    # 📦 Farklı Kutu (Özel Takip) Tablosu
+    if st.session_state["ozel_takip_kutusu"]:
+        st.markdown("---")
+        st.subheader("📥 Özel Kayıt Kutusu")
+        kutu_tablo = []
+        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+            hisse_data = yf.Ticker(f"{hisse}.IS").history(period="1d")
+            if not hisse_data.empty:
+                guncel_canli = hisse_data['Close'].iloc[-1]
+                eski_fiyat = bilge["kayit_fiyati"]
+                yuzde_fark = ((guncel_canli - eski_fiyat) / eski_fiyat) * 100 if eski_fiyat > 0 else 0.0
+                durum_str = f"🟢 %{yuzde_fark:.2f}" if guncel_canli >= eski_fiyat else f"🔴 %{abs(yuzde_fark):.2f}"
+                kutu_tablo.append({"Hisse Kodu": hisse, "Kayıt Fiyatı": f"{eski_fiyat:.2f} TL", "Canlı Fiyat": f"{guncel_canli:.2f} TL", "Anlık K/Z Oranı": durum_str, "Zaman": bilge["kayit_zamani"]})
+        if kutu_tablo:
+            st.dataframe(pd.DataFrame(kutu_tablo), use_container_width=True, hide_index=True)
+            if st.button("🗑️ Kutuyu Sıfırla"):
+                st.session_state["ozel_takip_kutusu"] = {}
+                st.rerun()
 
-if df_kaynak is not None:
-    for i in range(2, len(df_kaynak)):
-        try:
-            if len(df_kaynak.columns) > 20:
-                rv = df_kaynak.iloc[i, 20]
-                if pd.isna(rv): continue
-                uv = str(rv).strip().upper()
-                
-                h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
-                if h_adi:
-                    f_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if len(df_kaynak.columns) > 7 else "0"
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", f_str)
-                    excel_fiyat = float(sayilar) if sayilar else 0.0
-                    
-                    if excel_fiyat > 0:
-                        canli_borsa_listesi.append({"Hisse Kodu": h_adi, "Excel Fiyatı": f"{excel_fiyat:.2f} TL", "Durum": "🔄 Aktif Listede"})
-        except: pass
-
-if canli_borsa_listesi: 
-    df_liste = pd.DataFrame(canli_borsa_listesi).drop_duplicates(subset=['Hisse Kodu'])
-    st.dataframe(df_liste, use_container_width=True, hide_index=True, height=250)
-else:
-    st.info("Excel dosyası yüklendiğinde takip listesindeki hisselerin fiyatları burada listelenecektir.")
-
-st.divider()
-
-st.subheader("📈 Sinyal Üretim Merkezi")
-b1, b2 = st.columns(2)
-al_sat_butonu = b1.button("🟡 AL SAT SİNYALİNİ GÖSTER", use_container_width=True)
-al_butonu = b2.button("🟢 AL SİNYALİNİ GÖSTER", use_container_width=True)
-
-if al_sat_butonu and df_kaynak is not None:
-    tablo_verisi = []
-    for i in range(2, len(df_kaynak)):
-        try:
-            if len(df_kaynak.columns) > 20:
-                rv = df_kaynak.iloc[i, 20]
-                if pd.isna(rv): continue
-                uv = str(rv).strip().upper()
-                if "SONME" in uv or "ALKLC" in uv: continue
-                h_adi = next((h for h in BORSA_HISSELERI if h in uv), None)
-                if h_adi:
-                    f_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if len(df_kaynak.columns) > 7 else "0"
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", f_str)
-                    yfiy = float(sayilar) if sayilar else 0.0
-                    tablo_verisi.append({"Hisse Kodu": h_adi, "Sinyal Metni": uv, "Excel Fiyatı": f"{yfiy:.2f} TL", "Durum Oranı": "🟡 İşleniyor"})
-        except: pass
-    if tablo_verisi: st.dataframe(pd.DataFrame(tablo_verisi), use_container_width=True, hide_index=True)
-    else: st.warning("Aktif AL SAT sinyali bulunamadı.")
-
-if al_butonu and df_kaynak is not None:
-    tablo_verisi_al = []
-    for i in range(2, len(df_kaynak)):
-        try:
-            if len(df_kaynak.columns) > 22:
-                rw = df_kaynak.iloc[i, 22]
-                if pd.isna(rw): continue
-                wv = str(rw).strip().upper()
-                h_adi = next((h for h in BORSA_HISSELERI if h in wv), None)
-                if h_adi:
-                    f_str = str(df_kaynak.iloc[i, 7]).replace(",", ".").strip() if len(df_kaynak.columns) > 7 else "0"
-                    sayilar = re.findall(r"[-+]?\d*\.\d+|\d+", f_str)
-                    cfiy = float(sayilar) if sayilar else 0.0
-                    st.session_state["ozel_takip_kutusu"][h_adi] = {"kayit_fiyati": cfiy, "kayit_zamani": datetime.datetime.now().strftime("%H:%M")}
-                    tablo_verisi_al.append({"Hisse Kodu": h_adi, "Sinyal": wv, "Excel Fiyatı": f"{cfiy:.2f} TL", "Durum Oranı": "🟢 Başladı"})
-        except: pass
-    if tablo_verisi_al: st.dataframe(pd.DataFrame(tablo_verisi_al), use_container_width=True, hide_index=True)
-    else: st.warning("Aktif AL sinyali bulunamadı.")
-
-st.divider()
-
-# 🌟 SİNYAL HAVUZU (Hatalı satır tamamen düzeltildi)
-st.markdown("#### 🌟 Sinyal Havuzuna Alınan Hisseler")
-if st.session_state["ozel_takip_kutusu"]:
-    thavuz = []
-    for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-        thavuz.append({
-            "Hisse Kodu": hisse, 
-            "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL", 
-            "Kayıt Zamanı": bilgi["kayit_zamani"]
-        })
-    if thavuz:
-        st.dataframe(pd.DataFrame(thavuz), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Takip Listesini Temizle", use_container_width=True):
-            st.session_state["ozel_takip_kutusu"] = {}
+with sag_taraf:
+    st.subheader("💬 BTA Sohbet Odası")
+    isat = st.text_input("Sohbet Takma Adınız:", value="BTA Sohbet")
+    
+    # Nurican veya nurican yazıldığında anında oda sayısını ve admin paneli butonlarını tam buraya çizer
+    if isat.strip().lower() in ["nurican", "nurican"]:
+        st.markdown(f"### 🚪 Oda Sayısı: {st.session_state['oda_sayisi']} | 👑 Yetkili Girişi")
+        engellenecek = st.text_input("Kısıtlanacak Kullanıcı Adı:")
+        if st.button("❌ Kullanıcıyı Kısıtla") and engellenecek.strip():
+            st.session_state["kisitli_liste"].append(engellenecek.strip())
+            st.success(f"⚠️ {engellenecek} kısıtlandı.")
+        if st.button("🗑️ Tüm Mesajları Temizle"):
+            st.session_state["chat_history"] = []
             st.rerun()
-else: st.info("Henüz takibe alınan dinamik bir hisse bulunmuyor.")
-
-st.divider()
-
-st.subheader("💬 Topluluk Sohbet Odası")
-with st.form("mesaj_formu", clear_on_submit=True):
-    msg_input = st.text_input("Mesajınızı yazın:", placeholder="Buraya yazın...")
-    if st.form_submit_button("Gönder", use_container_width=True) and msg_input:
-        st.session_state["chat_history"].insert(0, f"[{datetime.datetime.now().strftime('%H:%M')}] Kullanıcı: {msg_input}")
-        st.rerun()
-for msg in st.session_state["chat_history"]: st.write(msg)
-
-st.divider()
-
-st.markdown("#### 🗳️ Paneli Değerlendir")
-with st.form("oylama_formu", clear_on_submit=True):
-    puan_slider = st.slider("Panele Yıldız Verin (1-5):", 1, 5, 5, 1)
-    if st.form_submit_button("Beğen ve Gönder", use_container_width=True):
-        st.session_state["topham_oy_sayisi"] += 1
-        st.session_state["topham_yildiz_puani"] += puan_slider
-        st.success("Beğeniniz kaydedildi!"); st.rerun()
+            
+    mesaj = st.text_input("Mesajınızı yazın:")
+    if st.button("Mesajı Gönder 🚀") and mesaj.strip():
+        if isat.strip() in st.session_state["kisitli_liste"]:
+            st.error("🚫 Bu odada mesaj yazma yetkiniz kısıtlanmıştır!")
+        else:
+            st.session_state["chat_history"].append({"user": isat, "msg": mesaj, "time": datetime.datetime.now().strftime("%H:%M")})
