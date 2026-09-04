@@ -11,8 +11,10 @@ st.set_page_config(page_title="BTA Veri Analizi", page_icon="📈", layout="wide
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .gundem-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .kap-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #a855f7; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
-if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
-if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit_hafizasi"] = {}
+if "fiyat_hafizasi" not in st.session_state: 
+    st.session_state["fiyat_hafizasi"] = {}
+if "excel_kayit_hafizasi" not in st.session_state: 
+    st.session_state["excel_kayit_hafizasi"] = {}
 
 # LOGO
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
@@ -21,7 +23,8 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİ
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 60: return saved_price
+        if time.time() - saved_time < 60: 
+            return saved_price
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
         data = ticker.history(period="1d")
@@ -29,9 +32,10 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             fiyat = float(data['Close'].iloc[-1])
             st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
             return fiyat
-    except: pass
+    except: 
+        pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -45,7 +49,8 @@ def canli_altin_fiyatlarini_hesapla():
                 saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
                 ceyrek_fiyat = saf_gram * 1.635
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
-    except: pass
+    except: 
+        pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
 # Zaman Bilgisi ve Yenileme Butonu
@@ -135,9 +140,9 @@ if df_kaynak is not None:
                                 ham_r_degeri = df_kaynak.iloc[idx, 17]
                                 final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
                                 
-                                # SyntaxError riskini tamamen yok eden güvenli veri satırı yapısı
-                                veri_satiri = {}
-                                veri_satiri["Varlık Kodu"] = hisse
-                                veri_satiri["Matematiksel Puan"] = final_puan
-                                veri_satiri["Yüklenen Fiyat (Sabit)"] = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
-                                veri_satiri["Anlık Canlı Fiyat"] = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
+                                # Tamamen izole ve güvenli veri ekleme
+                                tablo_al.append({
+                                    "Varlık Kodu": hisse,
+                                    "Matematiksel Puan": final_puan,
+                                    "Yüklenen Fiyat (Sabit)": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
+                                    "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor...",
