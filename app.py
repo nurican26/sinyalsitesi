@@ -123,21 +123,13 @@ if df_kaynak is not None:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
                                 
-                                # 🛠️ GÜVENLİ ONDALIK DÖNÜŞTÜRÜCÜ (VİRGÜL VE SIFIR HATASI GİDERİLDİ)
-                                hücre_degeri = df_kaynak.iloc[idx, 17]
-                                final_puan = "0.00"
-                                
-                                if not pd.isna(hücre_degeri):
-                                    try:
-                                        # Değer zaten sayısal bir float ise doğrudan 2 basamaklı kaydet
-                                        final_puan = f"{float(hücre_degeri):.2f}"
-                                    except ValueError:
-                                        # Eğer metin olarak virgüllüyse noktaya çevirerek float yap
-                                        metin_deger = str(hücre_degeri).replace(',', '.').strip()
-                                        try:
-                                            final_puan = f"{float(metin_deger):.2f}"
-                                        except:
-                                            final_puan = str(hücre_degeri) # Diğer durumlarda ham metni bozma
+                                # 🛠️ %100 KESİN HÜCRE DEĞERİ AKTARICISI (SAYISAL HATALARI BYPASS EDER)
+                                ham_deger = df_kaynak.iloc[idx, 17]
+                                if pd.isna(ham_deger):
+                                    final_puan = "0.00"
+                                else:
+                                    # Excel'deki ham metni hiç bozmadan direkt string olarak alıp gösterir
+                                    final_puan = str(ham_deger).strip()
                                 
                                 tablo_al.append({
                                     "Varlık Kodu": hisse, 
@@ -155,3 +147,5 @@ else:
     st.write("⏳ Matematiksel veri tabanı taranıyor...")
 
 # Sorumluluk Reddi Beyanı
+st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
+
