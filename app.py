@@ -38,10 +38,10 @@ st.session_state["ziyaret_sayaci"] += 1
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 🔐 GİRİŞ KUTUSU (Ufacık yapıldı ve üstte tutuldu)
-st.markdown("<h6 style='margin-bottom: 2px; font-size: 0.9rem;'>🔐 Erişim</h6>", unsafe_allow_html=True)
+st.markdown("<h6 style='margin-bottom: 2px; font-size: 0.85rem;'>🔐 Erişim Paneli</h6>", unsafe_allow_html=True)
 girilen_sifre = st.text_input("", type="password", placeholder="Şifre...", label_visibility="collapsed")
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Girinti hatası vermemesi için düz satır yapıldı)
 is_admin = False
 if girilen_sifre == YONETICI_SIFRESI:
     is_admin = True
@@ -61,7 +61,7 @@ erisim_izni = False
 if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
     erisim_izni = True
 
-# 💥 CANLI FİYAT MOTORU
+# 💥 CANLI FİYAT MOTORU (String dönüşümüyle donma hatası tamamen tamir edildi)
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -130,8 +130,40 @@ if erisim_izni:
         st.markdown("#### 🌟 Özel Takip Havuzu 💰")
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-            tk_list.append({"Hisse": hisse, "Kayıt Fiyatı": bilge["kayit_fiyati"], "Zaman": bilge["kayit_zamani"]})
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+            cfiy = hızlı_canli_fiyat_bul(hisse)
+            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
+            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
+        if tk_list:
+            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+            if st.button("🗑️ Havuzu Temizle", use_container_width=True):
+                st.session_state["ozel_takip_kutusu"] = {}
+                st.rerun()
 
-else:
-    st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
+    st.write("---")
+    st.subheader("⭐ Paneli Değerlendir")
+    yildiz_secimi = st.feedback("stars") 
+    if yildiz_secimi is not None:
+        st.session_state["topham_oy_sayisi"] += 1
+        st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
+        st.success("Oyunuz kaydedildi!")
+        time.sleep(1)
+        st.rerun()
+
+# 📬 GIZLI GELEN MESAJLAR PANELİ (Yönetici Odası Bağımsız Blok)
+has_messages = False
+if is_admin and os.path.exists(MESAJ_DOSYASI):
+    has_messages = True
+
+if has_messages:
+    st.write("---")
+    st.subheader("📩 Gelen Kullanıcı Mesajları")
+    with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar = f.readlines()
+    if mesajlar:
+        for m in reversed(mesajlar[-15:]): st.text(f"💬 {m.strip()}")
+        st.write("")
+        if st.button("🗑️ Tüm Mesajları Temizle"):
+            os.remove(MESAJ_DOSYASI)
+            st.rerun()
+
+# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN
+if not erisim_izni:
