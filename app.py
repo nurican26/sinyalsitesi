@@ -1,9 +1,11 @@
-import streamlit as st
+import streamlit st
 import pandas as pd
 import datetime
 import yfinance as yf
 import os, re
 import time
+import urllib.request
+import xml.etree.ElementTree as ET
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
@@ -21,7 +23,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: return saved_price
+        if time.time() - saved_time < 60: return saved_price
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
         data = ticker.history(period="1d")
@@ -45,6 +47,23 @@ def canli_altin_fiyatlarini_hesapla():
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
     except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
+
+# 💥 SUNUCU ENGELİNE TAKILMAYAN CANLI RSS HABER ÇEKİCİ
+def canlı_haberleri_getir(url, varsayılan_metinler, adet=3):
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        with urllib.request.urlopen(req, timeout=4) as response:
+            xml_data = response.read()
+        root = ET.fromstring(xml_data)
+        haberler = []
+        for item in root.findall('.//item')[:adet]:
+            title = item.find('title')
+            if title is not None and title.text:
+                haberler.append(title.text.strip())
+        if haberler:
+            return haberler
+    except: pass
+    return varsayılan_metinler
 
 # 🟢 VERİLER VE TABLOLAR DOĞRUDAN YÜKLENİR
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
@@ -104,7 +123,7 @@ if tablo_al:
 else: 
     st.write("🔒 Aktif Al sinyali taranıyor...")
 
-# 👑 2. PANEL: CANLI HİSSE ARAMA MOTORU (BTA Sinyal Merkezi'nin hemen altına alındı)
+# 👑 2. PANEL: CANLI HİSSE ARAMA MOTORU
 st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
 arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
@@ -113,22 +132,23 @@ if arama_terimi_girdi:
     tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
     st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
 
-# 🛡️ 3. PANEL: DÖNEMSEL AL SAT SİNYALLERİ (Yüksekliği sınırlandırıldı, sayfayı uzatmaz)
+# 🛡️ 3. PANEL: DÖNEMSEL AL SAT SİNYALLERİ (Yarım kalan yer tam Python hiyerarşisinde kapatıldı)
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: 
-    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True, height=250) # height eklendi, içten kaydırmalı kısa tasarım!
+    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True, height=250)
 else: 
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 st.write("---")
 
-# 📰 SABİT VE GÜVENLİ BORSA MAKRO GÜNDEMİ
-st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
-st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
+# 💥 YEDEK KORUMALI HABER ALTYAPISI
+varsayılan_ekonomi = [
+    "Borsa İstanbul: Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.",
+    "Altın Piyasası: Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları işlem görüyor.",
+    "Halka Arz Gündemi: Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor."
+]
+varsayılan_tv = [
+    "Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.",
+    "Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.",
 
-# 📺 ULUSAL TV HABER AKIŞI
-st.markdown("#### 📺 Türkiye Gündemi - Son Dakika TV Haberleri")
-st.markdown('<div class="tv-kutusu">🔵 <b>TRT Haber:</b> Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.</div>', unsafe_allow_html=True)
+    
