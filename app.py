@@ -98,7 +98,7 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul if p_bul else t_deg
@@ -107,7 +107,7 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
                         bta_puan = p_bul if p_bul else t_deg
@@ -141,7 +141,7 @@ else:
 
 st.write("---")
 
-# 💥 CANLI HABERLER VERİ ÇEKİMİ (TRT Haber ve NTV Ekonomi Akışları Bağlandı)
+# 💥 CANLI HABERLER VERİ ÇEKİMİ
 varsayılan_ekonomi = [
     "Borsa İstanbul (BIST 100): Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.",
     "Altın Piyasası: Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları işlem görüyor.",
@@ -150,3 +150,6 @@ varsayılan_ekonomi = [
 varsayılan_tv = [
     "Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.",
     "Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.",
+    "Meteoroloji Genel Müdürlüğü, mevsim normalleri çerçevesinde yurt genelinde beklenen hava sıcaklığı raporlarını yayınladı."
+]
+
