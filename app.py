@@ -9,7 +9,21 @@ import time
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 25px; margin-bottom: 35px; width: 100%;} .bta-logo {font-family: "Brush Script MT", "Comic Sans MS", cursive, sans-serif !important; font-weight: bold; font-size: 5rem; padding: 10px 50px; background: transparent; background-image: linear-gradient(45deg, #ff007f, #ff00ff, #8b00ff, #0000ff, #00ffff, #00ff00, #ffff00, #ff7f00, #ff0000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(0, 255, 255, 0.4), 4px 4px 10px rgba(0, 0, 0, 0.8); display: inline-block; text-align: center; letter-spacing: 5px;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
-
+# 💥 CANLI FİYAT MOTORU
+def hızlı_canli_fiyat_bul(hisse_kodu):
+    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+        saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        if time.time() - saved_time < 300: return saved_price
+    try:
+        ticker = yf.Ticker(f"{hisse_kodu}.IS")
+        data = ticker.history(period="1d")
+        if not data.empty and not pd.isna(data['Close'].iloc[-1]):
+            fiyat = float(data['Close'].iloc[-1])
+            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+            return fiyat
+    except: pass
+    return 0.0
+    
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
 YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
@@ -40,7 +54,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 
 # 🔐 GİRİŞ KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
-girilen_sifre = st.text_input("BTA SİNYAL HİSSE TAKİP :", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
+girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
 # 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
 is_admin = False
@@ -81,6 +95,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
 
 # 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
+    # Sadece Giriş Sayısı Bırakıldı (Puan, Oy, Tarih/Saat tamamen temizlendi)
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
@@ -127,21 +142,21 @@ if erisim_izni:
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif AL sinyali taranıyor...")
+    else: st.write("🔒 Aktif BTA sinyali taranıyor...")
 
-    # 🌐 TÜM BİST HİSSELERİ VE SORGULAMA MOTORU (Mevcut Algoritmaya Entegre)
-    st.markdown('<div class="alsat-baslik">🔎 BİST TÜM HİSSELER CANLI SORGULAMA MOTORU</div>', unsafe_allow_html=True)
-    
-    # Kullanıcıdan dinamik hisse kodu girişi alma
-    arama_hisse = st.text_input("Canlı Fiyatını Görmek İstediğiniz Hisse Kodunu Girin (Örn: THYAO, EREGL, ASELS):", value="THYAO").strip().upper()
-    
-    if arama_hisse:
-        canli_fiyat = hızlı_canli_fiyat_bul(arama_hisse)
-        if canli_fiyat > 0:
-            tablo_arama = [{"Hisse Kodu 🔍": arama_hisse, "Durum": "Aktif / BIST", "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL"}]
-            st.dataframe(pd.DataFrame(tablo_arama), use_container_width=True, hide_index=True)
-        else:
-            st.error(f"❌ {arama_hisse} kodlu hisse verisi yfinance üzerinden alınamadı veya kod hatalı. Lütfen kontrol edin.")
+    if st.session_state["ozel_takip_kutusu"]:
+        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
+        tk_list = []
+        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
+            guncel_fiy = hızlı_canli_fiyat_bul(hisse)
+            kar_zarar = ((guncel_fiy - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100 if guncel_fiy > 0 else 0.0
+            tk_list.append({
+                "Hisse": hisse,
+                "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL",
+                "Güncel Fiyat": f"{guncel_fiy:.2f} TL" if guncel_fiy > 0 else "Yükleniyor...",
+                "Değişim (%)": f"{kar_zarar:+.2f}%" if guncel_fiy > 0 else "%0.00",
+                "Kayıt Zamanı": bilgi["kayit_zamani"]
+            })
+        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
 
-    # ⚠️ YASAL UYARI KUTUSU
-    st.markdown('<div class="spk-kutusu">⚠️ YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu sinyaller tamamen matematiksel formüllere dayalı olup, herhangi bir yatırım portföyü yönetimi veya yönlendirmesi içermez.</div>', unsafe_allow_html=True)
