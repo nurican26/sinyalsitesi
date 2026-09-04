@@ -81,9 +81,9 @@ with col_genel:
 
 # 📢 KRİTİK KAP GELİŞMELERİ
 st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
-st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> Milli Savunma Bakanlığı ile savunma sistemleri tedariki kapsamında 42 milyon dolar tutarında yeni bir yurt içi satış sözleşmesi imzaladığını duyurdu.</div>', unsafe_allow_html=True)
-st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Yurt dışı iştirakinin ABD merkezli dev bir enerji depolama projesinde ana yüklenici ortaklık niyet mektubu imzaladığını bildirdi.</div>', unsafe_allow_html=True)
-st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Gelecek dönem filo genişletme stratejileri doğrultusunda 4 adet yeni nesil geniş gövdeli uçağın finansal kiralama sürecinin tamamlandığını açıkladı.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> MSB ile savunma sistemleri tedariki kapsamında 42 milyon dolar tutarında sözleşme imzalandığını duyurdu.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Yurt dışı iştirakinin ABD merkezli enerji depolama projesinde niyet mektubu imzaladığını bildirdi.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Gelecek dönem filo genişletme stratejileri doğrultusunda 4 adet yeni geniş gövdeli uçak kiralandığını açıkladı.</div>', unsafe_allow_html=True)
 
 st.write("")
 
@@ -133,11 +133,11 @@ if df_kaynak is not None:
                                     st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
                                 yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
                                 ham_r_degeri = df_kaynak.iloc[idx, 17]
-                                if pd.isna(ham_r_degeri):
-                                    final_puan = "0.00"
-                                else:
-                                    final_puan = str(ham_r_degeri).strip()
-                                tablo_al.append({
-                                    "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": final_puan, 
-                                    "Yüklenen Fiyat (Sabit)": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
+                                final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
+                                
+                                # SyntaxError riskini tamamen yok eden güvenli veri satırı yapısı
+                                veri_satiri = {}
+                                veri_satiri["Varlık Kodu"] = hisse
+                                veri_satiri["Matematiksel Puan"] = final_puan
+                                veri_satiri["Yüklenen Fiyat (Sabit)"] = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
+                                veri_satiri["Anlık Canlı Fiyat"] = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
