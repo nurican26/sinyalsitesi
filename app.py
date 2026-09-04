@@ -122,3 +122,6 @@ else:
 
 st.write("---")
 
+# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Sayfanın en altında kusursuzca parlar)
+st.write("---")
+st.markdown('<div class="spk-kutusu"><b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Veriler borsa standartlarında en az 15 dakika gecikmelidir.</div>', unsafe_allow_html=True)
