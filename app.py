@@ -10,8 +10,9 @@ st.set_page_config(page_title="BTA Veri Analizi", page_icon="📈", layout="wide
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .gundem-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
 
-# Hafıza Sabitleme
+# Hafıza Sabitleme (Yüklenen İlk Fiyatların Sabit Kalmasını Sağlayan Güvenlik Havuzu)
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
+if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit_hafizasi"] = {}
 
 # LOGO
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
@@ -114,27 +115,30 @@ if df_kaynak is not None:
             if len(df_kaynak.columns) > 22:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 
-                # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
+                # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ (SADECE W SÜTUNUNDAN BESLENİR)
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
                         hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
-                                cfiy = hızlı_canli_fiyat_bul(hisse)
                                 
-                                # 🛠️ %100 KESİN HÜCRE DEĞERİ AKTARICISI (SAYISAL HATALARI BYPASS EDER)
-                                ham_deger = df_kaynak.iloc[idx, 17]
-                                if pd.isna(ham_deger):
-                                    final_puan = "0.00"
-                                else:
-                                    # Excel'deki ham metni hiç bozmadan direkt string olarak alıp gösterir
-                                    final_puan = str(ham_deger).strip()
+                                # 🛠️ FİYAT SABİTLEME: Excel yüklendiği andaki ilk fiyatı hafızaya kilitler, canlı fiyata ezdirmez
+                                if hisse not in st.session_state["excel_kayit_hafizasi"]:
+                                    ilk_fiyat = hızlı_canli_fiyat_bul(hisse)
+                                    if ilk_fiyat > 0:
+                                        st.session_state["excel_kayit_hafizasi"][hisse] = ilk_fiyat
+                                
+                                yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, 0.0)
+                                
+                                # 🛠️ PUNTA AYIKLAMA: Parantez içindeki ondalıklı puanı (0.04) tereyağından kıl çeker gibi okur
+                                puan_bul = re.findall(r'\((.*?)\)', wv)
+                                final_puan = puan_bul[0] if puan_bul else "0.00"
                                 
                                 tablo_al.append({
                                     "Varlık Kodu": hisse, 
                                     "Matematiksel Puan": final_puan, 
-                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
+                                    "Yüklenen Sabit Fiyat": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
                                     "Matris Durumu": "Pozitif Matris"
                                 })
         except: pass
@@ -147,5 +151,3 @@ else:
     st.write("⏳ Matematiksel veri tabanı taranıyor...")
 
 # Sorumluluk Reddi Beyanı
-st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
-
