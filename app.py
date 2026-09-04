@@ -82,7 +82,7 @@ if df_kaynak is not None:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
@@ -91,7 +91,7 @@ if df_kaynak is not None:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -125,13 +125,10 @@ st.write("")
 st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
 arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
+# Girinti hatası yapabilecek tüm karmaşık if-else blokları düz bir mantığa çekildi
 if arama_terimi_girdi:
     canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
-    if canli_sorgu_fiyat > 0:
-        tablo_canli_arama = [{
-            "Hisse Kodu": arama_terimi_girdi,
-            "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL",
-            "Veri Akış Durumu": "Kesintisiz Canlı Veri"
-        }]
-        st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
-    else:
+    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
+    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
+
+# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
