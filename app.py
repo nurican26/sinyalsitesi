@@ -14,10 +14,8 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
-
-# Google Fonts'tan el yazısı fontu (Sacramento) ve Tablo Yazı Boyutu Ayarları
-st.markdown("""
+# LOGO
+st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 💥 FİYAT VE ALTIN MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
@@ -61,15 +59,7 @@ c2.markdown(f'<div class="piyasa-kutusu">🪙 ÇEYREK ALTIN<br><span style="colo
 c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
 c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
 st.write("")
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
-st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
-arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
-# Girinti hatası yapabilecek tüm karmaşık if-else blokları düz bir mantığa çekildi
-if arama_terimi_girdi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
-    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
-    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
 # 🔍 ARKA PLANDA EXCEL VERİSİNİ OKUMA
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
@@ -106,6 +96,9 @@ if df_kaynak is not None:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
+st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
+arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
 # 🟢 BTA SİNYAL MERKEZİ EN ÜSTE LİSTELENİR
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
@@ -118,7 +111,15 @@ else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 st.write("---")
 
-# Sorumluluk Reddi Beyanı
-st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
+
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
+st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
+arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
+
+# Girinti hatası yapabilecek tüm karmaşık if-else blokları düz bir mantığa çekildi
+if arama_terimi_girdi:
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
+    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
+    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
 
 # ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
