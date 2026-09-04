@@ -12,7 +12,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"             # Kilitleyip açma (Yönetici) yetkisi
+YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -33,88 +33,69 @@ if "altin_hafizasi" not in st.session_state: st.session_state["altin_hafizasi"] 
 for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
-# Giriş sayısı artırımı
+# Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
 st.session_state["ziyaret_sayaci"] += 1
 
-# BTA LOGO ALANI
+# BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # ⚡ ARKA PLANDA KASMAYAN ALTIN FİYAT MOTORU
 def arka_plan_altin_guncelle():
     su_an = time.time()
-    # 5 dakikada bir (300 saniye) arka planda veriyi yeniler, kasma yapmaz
-    if su_an - st.session_state["altin_hafizasi"]["son_guncelleme"] > 300:
+    if su_an - st.session_state["altin_hafizasi"]["son_guncelleme"] > 300: # 5 dakikada bir günceller
         try:
-            # Ons Altın ve Dolar/TL kurları asenkron mantıkta çekilir
             gold_ticker = yf.Ticker("GC=F")
             usdtry_ticker = yf.Ticker("TRY=X")
-            
             gold_data = gold_ticker.history(period="1d")
             usdtry_data = usdtry_ticker.history(period="1d")
-            
             if not gold_data.empty and not usdtry_data.empty:
                 ons_fiyat = float(gold_data['Close'].iloc[-1])
                 usd_tl = float(usdtry_data['Close'].iloc[-1])
-                
-                # Matematiksel Altın Hesaplama Formülleri (TL Cinsinden)
                 gram_altin = (ons_fiyat / 31.1034768) * usd_tl
-                ceyrekyenisi = gram_altin * 1.63
-                yarimyenisi = gram_altin * 3.26
-                tamyenisi = gram_altin * 6.51
-                
-                # Hafızaya kaydet
                 st.session_state["altin_hafizasi"] = {
                     "Gram": round(gram_altin, 2),
-                    "Çeyrek": round(ceyrekyenisi, 2),
-                    "Yarım": round(yarimyenisi, 2),
-                    "Tam": round(tamyenisi, 2),
+                    "Çeyrek": round(gram_altin * 1.63, 2),
+                    "Yarım": round(gram_altin * 3.26, 2),
+                    "Tam": round(gram_altin * 6.51, 2),
                     "son_guncelleme": su_an
                 }
-        except:
-            pass
+        except: pass
 
-# Altın fiyatlarını arka planda hesapla
 arka_plan_altin_guncelle()
 
-# 🔐 ERİŞM KONTROLÜ & GİRİŞ PANELİ MANTIĞI
+# 🔐 ERİŞİM KONTROL MANTIĞI VE PANEL GİZLEME
 erisim_izni = False
-girilen_sifre = ""
+if "giris_durumu" not in st.session_state:
+    st.session_state["giris_durumu"] = False
 
-# Eğer site varsayılan olarak "Açık" ise şifre sormadan direkt izin ver
 if mevcut_kilit == "Açık":
     erisim_izni = True
 else:
-    # Eğer "Kilitli" ise veya henüz doğru şifre girilmediyse Giriş Panelini göster
-    if "giris_yapildi" not in st.session_state:
-        st.session_state["giris_yapildi"] = False
-
-    if not st.session_state["giris_yapildi"]:
+    if not st.session_state["giris_durumu"]:
         st.markdown("### 🔐 Erişim Paneli")
         girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
         
         if girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
-            st.session_state["giris_yapildi"] = True
-            st.session_state["aktif_sifre"] = girilen_sifre
+            st.session_state["giris_durumu"] = True
+            st.session_state["girilen_aktif_sifre"] = girilen_sifre
             st.rerun()
         elif girilen_sifre != "":
-            st.warning("⚠️ Geçersiz şifre girdiniz.")
+            st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
     else:
         erisim_izni = True
-        girilen_sifre = st.session_state.get("aktif_sifre", "")
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yalnızca şifre girilmemişken veya yönetici aktifken kilit kontrolü için)
-if girilen_sifre == YONETICI_SIFRESI and not st.session_state.get("giris_yapildi", False):
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yalnızca şifre girerken görünür, giriş yapılınca kaybolur)
+if not st.session_state["giris_durumu"] and 'girilen_sifre' in locals() and girilen_sifre == YONETICI_SIFRESI:
     st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
     if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
-        st.session_state["giris_yapildi"] = False
         st.rerun()
     if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
 
-# 💥 CANLI HİSSE FİYAT MOTORU
+# 💥 CANLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -129,9 +110,9 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🟢 1. BLOK: ERİŞİM İZNİ VARSA İÇERİĞİ GÖSTER (ERİŞİM PANELİ BURADA GİZLENMİŞTİR)
+# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
-    # 🌟 CANLI ALTIN FİYATLARI ŞERİDİ (Arka planda beslenen veriler)
+    # Canlı Altın Kartları Ekranın Başına Yerleşir
     altin_verisi = st.session_state["altin_hafizasi"]
     if altin_verisi["Gram"] > 0:
         st.markdown(f"""
@@ -143,6 +124,7 @@ if erisim_izni:
         </div>
         """, unsafe_allow_html=True)
 
+    # Sadece Giriş Sayısı Bırakıldı (Puan, Oy, Tarih/Saat tamamen temizlendi)
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
@@ -168,3 +150,11 @@ if erisim_izni:
                             hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
+                            bta_puan = p_bul[0] if p_bul else t_deg
+                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                            
+                    if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+                        h_ara = re.findall(r'[A-Z]+', wv)
+                        if h_ara:
+                            hisse = str(h_ara[0])
+                            cfiy = hızlı_canli_fiyat_bul(hisse)
