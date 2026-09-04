@@ -20,7 +20,7 @@ st.markdown('''
     .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 8px; font-size: 1.1rem;}
     .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 8px; font-size: 1.1rem;}
     .arama-baslik {background: linear-gradient(90deg, #2563eb 0%, #1e1b4b 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 15px; font-size: 1.1rem;}
-    .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 15px; margin-bottom: 20px;}
+    .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 20px; margin-bottom: 25px;}
     .bta-logo {color: #ffffff !important; font-family: "Dancing Script", cursive !important; font-weight: bold; font-size: 5.5rem; padding: 0px; letter-spacing: 12px; text-shadow: 0 0 10px #ff007f, 0 0 20px #ff00ff, 0 0 30px #00ffff, 0 0 40px #00ff00, 0 0 70px #ffff00, 0 0 80px #ff7f00, 0 0 100px #ff0000;}
     .gold-card {background: rgba(251, 191, 36, 0.08); border: 1px solid #fbbf24; border-radius: 12px; padding: 15px; text-align: center; box-shadow: 0 0 15px rgba(251, 191, 36, 0.15); margin-bottom: 15px;}
     div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}
@@ -50,10 +50,11 @@ def havuzu_temizle_aksiyon():
 
 def temiz_hisse_adi_bul(metin):
     if pd.isna(metin): return ""
+    # Metnin içindeki harfleri ayıklar, liste parantezlerinden kurtarır
     bulunan = re.findall(r'[A-Z]+', str(metin).upper().strip())
     if bulunan:
-        kod = bulunan[0]
-        return kod if len(kod) > 1 else "" # Tek harfli hatalı kodları eler
+        kod = str(bulunan[0])
+        return kod if len(kod) > 1 else "" # "A" gibi hatalı tek harfleri eler
     return ""
 
 # 🌟 1. LOGO ALANI
@@ -91,7 +92,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">🟡 ÇEYREK ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["ceyrek"])} TL</span></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;"> orange; font-weight:bold; font-size:1.1rem;">🟠 YARIM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["yarim"])} TL</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">🟠 YARIM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["yarim"])} TL</span></div>', unsafe_allow_html=True)
 with col3:
     st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">👑 TAM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["tam"])} TL</span></div>', unsafe_allow_html=True)
 
@@ -125,7 +126,6 @@ if os.path.exists(excel_yolu):
     try:
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         
-        # Ön Analiz: Excel'deki tüm hisseleri tespit et (Tek seferde fiyat indirmek için)
         ham_hisseler = set()
         satır_haritası = []
         
@@ -139,7 +139,6 @@ if os.path.exists(excel_yolu):
                 if wv: ham_hisseler.add(wv)
                 satır_haritası.append({"idx": idx, "uv": uv, "wv": wv, "puan": t_puan})
         
-        # ⚡ TOPLU YFINANCE FİYAT İNDİRME MOTORU (Sayfa Gecikmesini Önleyen Kısım)
         canlı_fiyatlar_sözlüğü = {}
         if ham_hisseler:
             ticker_listesi = [f"{h}.IS" for h in ham_hisseler]
@@ -156,12 +155,10 @@ if os.path.exists(excel_yolu):
                 except:
                     canlı_fiyatlar_sözlüğü[h] = 0.0
 
-        # Tabloları Oluşturma
         tablo_alsat = []
         tablo_al = []
 
         for satır in satır_haritası:
-            # Dönemsel Al Sat (UV)
             if satır["uv"] and str(df_kaynak.iloc[satır["idx"], 20]) not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                 cf = canlı_fiyatlar_sözlüğü.get(satır["uv"], 0.0)
                 tablo_alsat.append({
@@ -170,7 +167,6 @@ if os.path.exists(excel_yolu):
                     "💥 İnternet Canlı": f"{formatla_tl(cf)} TL" if cf > 0 else "Yükleniyor..."
                 })
             
-            # Sinyal Merkezi (WV)
             if satır["wv"] and str(df_kaynak.iloc[satır["idx"], 22]) not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                 cf = canlı_fiyatlar_sözlüğü.get(satır["wv"], 0.0)
                 if satır["wv"] not in st.session_state["ozel_takip_kutusu"] and cf > 0:
@@ -181,8 +177,12 @@ if os.path.exists(excel_yolu):
                     "💥 İnternet Canlı": f"{formatla_tl(cf)} TL" if cf > 0 else "Yükleniyor..."
                 })
 
-        # Ekran Çıktıları
         st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
         if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
         else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
+        st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+        if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+        else: st.write("🔒 Aktif BTA sinyali taranıyor...")
+
+    except Exception as e:
