@@ -38,31 +38,17 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🔐 GİRİŞ KUTUSU
-st.markdown("### 🔐 Erişim Paneli")
-girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
+# 🛠️ ERİŞİM KONTROL SORGUSU İÇİN ÖNCE ŞİFRE DEĞİŞKENİNİ TANIMLAYALIM (Görünmez Durumda)
+if "girilen_sifre_hafiza" not in st.session_state:
+    st.session_state["girilen_sifre_hafiza"] = ""
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
-is_admin = False
-if girilen_sifre == YONETICI_SIFRESI:
-    is_admin = True
-
-if is_admin:
-    st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
-    col_ac, col_kilitle = st.columns(2)
-    if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
-        st.rerun()
-    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
-        st.rerun()
+# Geçici olarak şifre eşleşmesini kontrol etmek için değişkeni başta boş atayalım, alt kısımdan veri alacak
+girilen_sifre = st.session_state["girilen_sifre_hafiza"]
 
 # 🛠️ ERİŞİM KONTROL MANTIĞI
 erisim_izni = False
 if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
     erisim_izni = True
-else:
-    st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
 
 # 💥 CANLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
@@ -81,7 +67,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
 
 # 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
-    # Sadece Giriş Sayısı Bırakıldı (Puan, Oy, Tarih/Saat tamamen temizlendi)
+    # Sadece Giriş Sayısı Bırakıldı
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
@@ -128,21 +114,33 @@ if erisim_izni:
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif BTA sinyali taranıyor...")
+    else: st.write("🔒 Aktif AL sinyali taranıyor...")
 
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-        tk_list = []
-        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-            guncel_fiy = hızlı_canli_fiyat_bul(hisse)
-            kar_zarar = ((guncel_fiy - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100 if guncel_fiy > 0 else 0.0
-            tk_list.append({
-                "Hisse": hisse,
-                "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL",
-                "Güncel Fiyat": f"{guncel_fiy:.2f} TL" if guncel_fiy > 0 else "Yükleniyor...",
-                "Değişim (%)": f"{kar_zarar:+.2f}%" if guncel_fiy > 0 else "%0.00",
-                "Kayıt Zamanı": bilgi["kayit_zamani"]
-            })
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+else:
+    st.warning("⚠️ Bu içeriği görebilmek için sayfa altındaki panelden geçerli bir erişim şifresi girmeniz gerekmektedir.")
 
-    st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu sinyaller tamamen matematiksel formüllere dayalı olup, herhangi bir yatırım portföyü yönetimi veya yönlendirmesi içermez.</div>', unsafe_allow_html=True)
+
+# 🔐 EN ALTA ALINAN VE KÜÇÜLTÜLEN ERİŞİM PANELİ
+st.write("---") # Üst kısımdan ayıran ince çizgi
+st.markdown("##### 🔐 Erişim Paneli") # Başlık ufatıldı (### yerine ##### yapıldı)
+girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...", key="girilen_sifre_alt")
+
+# Girilen şifreyi hafızaya alıp sayfayı tetikleme kontrolü
+if girilen_sifre != st.session_state["girilen_sifre_hafiza"]:
+    st.session_state["girilen_sifre_hafiza"] = girilen_sifre
+    st.rerun()
+
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yine alt kısma bağlı çalışır)
+is_admin = False
+if girilen_sifre == YONETICI_SIFRESI:
+    is_admin = True
+
+if is_admin:
+    st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
+    col_ac, col_kilitle = st.columns(2)
+    if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
+        st.rerun()
+    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
+        st.rerun()
