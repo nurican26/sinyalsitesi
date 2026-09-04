@@ -15,7 +15,7 @@ if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kut
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
 # LOGO
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
+st.markdown('<div class="BTA-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
 
 # 💥 CANLI VERİ MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
