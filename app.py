@@ -111,13 +111,13 @@ st.write("---")
 # 📰 SABİT VE GÜVENLİ BORSA MAKRO GÜNDEMİ
 st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
 st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın and iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları and SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
 
 # 📺 ULUSAL TV HABER AKIŞI
 st.markdown("#### 📺 Türkiye Gündemi - Son Dakika TV Haberleri")
-st.markdown('<div class="tv-kutusu">🔵 <b>TRT Haber:</b> Türkiye genelinde ulaştırma and altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak and tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.</div>', unsafe_allow_html=True)
+st.markdown('<div class="tv-kutusu">🔵 <b>TRT Haber:</b> Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.</div>', unsafe_allow_html=True)
 st.markdown('<div class="tv-kutusu">🔵 <b>NTV:</b> Meteoroloji Genel Müdürlüğü, mevsim normalleri çerçevesinde yurt genelinde beklenen yeni hava sıcaklığı raporlarını yayınladı.</div>', unsafe_allow_html=True)
 st.write("")
 
