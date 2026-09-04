@@ -144,5 +144,19 @@ if erisim_izni:
                 "Kayıt Zamanı": bilgi["kayit_zamani"]
             })
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+    # 🌐 TÜM BİST HİSSELERİ VE SORGULAMA MOTORU (Mevcut Algoritmaya Entegre)
+    st.markdown('<div class="alsat-baslik">🔎 BİST TÜM HİSSELER CANLI SORGULAMA MOTORU</div>', unsafe_allow_html=True)
+    
+    # Kullanıcıdan dinamik hisse kodu girişi alma
+    arama_hisse = st.text_input("Canlı Fiyatını Görmek İstediğiniz Hisse Kodunu Girin (Örn: THYAO, EREGL, ASELS):", value="THYAO").strip().upper()
+    
+    if arama_hisse:
+        canli_fiyat = hızlı_canli_fiyat_bul(arama_hisse)
+        if canli_fiyat > 0:
+            tablo_arama = [{"Hisse Kodu 🔍": arama_hisse, "Durum": "Aktif / BIST", "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL"}]
+            st.dataframe(pd.DataFrame(tablo_arama), use_container_width=True, hide_index=True)
+        else:
+            st.error(f"❌ {arama_hisse} kodlu hisse verisi yfinance üzerinden alınamadı veya kod hatalı. Lütfen kontrol edin.")
+            
 
     st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu sinyaller tamamen matematiksel formüllere dayalı olup, herhangi bir yatırım portföyü yönetimi veya yönlendirmesi içermez.</div>', unsafe_allow_html=True)
