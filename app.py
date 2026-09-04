@@ -106,34 +106,68 @@ if erisim_izni:
         tablo_alsat, tablo_al = [], []
         guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 
-        if df_kaynak is not None:
+               if df_kaynak is not None:
             for idx in range(2, len(df_kaynak)):
                 try:
+                    # R, T, U ve W sütunlarının hepsini kapsayacak şekilde kontrol (en az 23 sütun olmalı)
                     if len(df_kaynak.columns) > 22:
-                        uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                        wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                        t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
+                        # R Sütunu (İndeks 17) -> Merkez BTA Puanı
+                        r_ham = df_kaynak.iloc[idx, 17]
                         
+                        # Diğer kontrol sütunları
+                        uv_ham = df_kaynak.iloc[idx, 20] # U sütunu
+                        wv_ham = df_kaynak.iloc[idx, 22] # W sütunu
+                        
+                        uv = str(uv_ham).strip().upper() if not pd.isna(uv_ham) else ""
+                        wv = str(wv_ham).strip().upper() if not pd.isna(wv_ham) else ""
+                        
+                        # R sütunundaki ham puanı temizleyip standart sayı formatına getirme mantığı
+                        if not pd.isna(r_ham) and str(r_ham).strip() != "":
+                            metin_puan = str(r_ham).replace(",", ".").strip()
+                            sayilar = re.findall(r'[-+]?\d*\.\d+|\d+', metin_puan)
+                            if sayilar:
+                                sayi = float(sayilar[0])
+                                # Sayı 0 veya pozitifse başına '+' koy, negatifse normal yaz (virgülden sonra 2 basamak)
+                                if sayi >= 0:
+                                    bta_puan = f"+{sayi:.2f}".replace(".", ",")
+                                else:
+                                    bta_puan = f"{sayi:.2f}".replace(".", ",")
+                            else:
+                                bta_puan = "+0,00"
+                        else:
+                            bta_puan = "+0,00"
+
+                        # 1. TABLO: AL-SAT SİNYALLERİ (U sütununa göre kontrol)
                         if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                             h_ara = re.findall(r'[A-Z]+', uv)
                             if h_ara:
                                 hisse = str(h_ara[0])
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
-                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                                bta_puan = p_bul[0] if p_bul else t_deg
-                                tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                                 
+                                tablo_alsat.append({
+                                    "Hisse Kodu 📈": hisse, 
+                                    "BTA Puan": bta_puan, # Doğrudan R sütunundan gelen puan
+                                    "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."
+                                })
+                                
+                        # 2. TABLO: SADECE AL SİNYALLERİ (W sütununa göre kontrol)
                         if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                             h_ara = re.findall(r'[A-Z]+', wv)
                             if h_ara:
                                 hisse = str(h_ara[0])
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
-                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                                bta_puan = p_bul[0] if p_bul else t_deg
+                                
                                 if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                     st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                                tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-                except: pass
+                                
+                                tablo_al.append({
+                                    "Hisse Kodu 🚀": hisse, 
+                                    "BTA Puan": bta_puan, # Doğrudan R sütunundan gelen puan
+                                    "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."
+                                })
+                except Exception as e:
+                    pass
+
 
         # 🔍 ENTEGRE HİSSE ARAMA MOTORU (Tasarımı bozmadan eklendi)
         st.markdown('<div class="alsat-baslik" style="background: linear-gradient(90deg, #0080ff 0%, #1e1b4b 100%);">🔍 TÜM HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
