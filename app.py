@@ -111,7 +111,7 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Liste parantezlerini temizleyen kritik ayar
+                        hisse = str(hisse_ara[0])
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -120,7 +120,7 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Liste parantezlerini temizleyen kritik ayar
+                        hisse = str(hisse_ara[0])
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                         bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -150,14 +150,3 @@ if st.session_state["ozel_takip_kutusu"]:
         if st.button("🗑️ Havuzu Temizle", use_container_width=True):
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
-
-# ✉️ YÖNETİCİYE NOT BIRAKMA ALANI (Sorunsuz Aktif)
-MESAJ_DOSYASI = "gelen_mesajlar.txt"
-st.write("---")
-st.subheader("✉️ Yöneticiye Not Bırak")
-kullanici_mesaji = st.text_area("Mesajınızı veya geri bildiriminizi buraya yazabilirsiniz:", placeholder="Mesajınız...", key="not_birak_alani")
-if st.button("Gönder 📩"):
-    if kullanici_mesaji.strip():
-        try:
-            with open(MESAJ_DOSYASI, "a", encoding="utf-8") as f:
-                f.write(f"[{guncel_an}] - {kullanici_mesaji.strip()}\n")
