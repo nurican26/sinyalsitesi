@@ -102,6 +102,7 @@ if df_kaynak is not None:
                 wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 
                 if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
+                    # W sütunundaki (THYAO [AL] (0.04)) metninden ilk kelimeyi çeker
                     parcalar = wv_kontrol.split(' ')
                     if parcalar:
                         hisse = str(parcalar[0]).strip()
@@ -111,31 +112,34 @@ if df_kaynak is not None:
                                 anlik_canli = hızlı_canli_fiyat_bul(hisse)
                                 
                                 if anlik_canli > 0:
+                                    # FİYAT SABİTLEME
                                     if hisse not in st.session_state["excel_kayit_hafizasi"]:
                                         st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
                                     
                                     yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
+                                    
+                                    # Puanı doğrudan makronuzun W sütununa yazdığı parantezin içinden (0.04) cımbızla çeker!
                                     puan_bul = re.findall(r'\((.*?)\)', wv_kontrol)
                                     final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
                                     
-                                    # Sizin orijinal listeniz (Kendi eklemeleriniz için ucu açık bırakıldı)
+                                    # Sizin yarıda kesilen satırınızın orijinal ve güvenli hali:
                                     f_yuklenen = f"{yuklenen_fiyat:.2f} TL"
                                     tablo_al.append([hisse, f_yuklenen, final_puan])
-        except:
+        except Exception as e:
             pass
 
-# Sizin kodunuzun bittiği yerdeki Excel verilerini ekrana basan ana tablo yapısı
+# Sizin kodunuzun bittiği yere verileri listeleyen ana tablo yapısı
 if tablo_al:
     df_excel_tablo = pd.DataFrame(tablo_al, columns=["Hisse Kodu", "Fiyat", "Puan"])
     st.dataframe(df_excel_tablo, use_container_width=True, hide_index=True)
 
-# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK YENİLEME MOTORU (GÖRÜNMEZ TETİKLEYİCİ)
+# ⏱️ 60 SANİYEDE BİR SAYFAYI TARAYICIDAN OTOMATİK YENİLEYEN MOTOR (GÖRÜNMEZ SCRIPT)
 st.components.v1.html(
     """
     <script>
     setTimeout(function(){
         window.parent.location.reload();
-    }, 60000);
+    }, 60000); // 60 saniye dolunca sayfayı tetikler
     </script>
     """,
     height=0,
