@@ -65,14 +65,14 @@ else:
 
 # Üye Girişi Olduğunda Üst Bar Bilgilendirmesi
 if st.session_state["giris_yapildi"]:
-    col_profil, col_cikis = st.columns([9, 1])
+    col_profil, col_cikis = st.columns(2)
     col_profil.markdown(f'🟢 **Oturum Açık:** {st.session_state["kullanici_rolu"]} | 🚪 **Giriş Sayısı:** {st.session_state["ziyaret_sayaci"]}')
     if col_cikis.button("Çıkış Yap"):
         st.session_state["giris_yapildi"] = False
         st.session_state["kullanici_rolu"] = None
         st.rerun()
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yalnızca Yöneticiye görünür, şifre kutusu gizlendikten sonra da çalışır)
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yalnızca Yöneticiye görünür)
 if st.session_state["kullanici_rolu"] == "Yönetici":
     st.info(f"👑 **Yönetici Ayarları Paneli** | Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
@@ -118,7 +118,7 @@ def altin_fiyatlarini_getir():
             tam = gram * 6.42
             return gram, ceyrek, yarim, tam
     except: pass
-    return 3000.0, 4950.0, 9900.0, 19800.0 # Hata durumunda varsayılan yakın değerler
+    return 3000.0, 4950.0, 9900.0, 19800.0
 
 # 🟢 İÇERİK BLOKLARI (ERİŞİM İZNİ VARSA)
 if erisim_izni:
@@ -162,8 +162,10 @@ if erisim_izni:
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        except: pass
+        try: 
+            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        except: 
+            pass
 
     tablo_alsat, tablo_al = [], []
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
@@ -177,3 +179,5 @@ if erisim_izni:
                     t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                     
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                        h_ara = re.findall(r'[A-Z]+', uv)
+                        if h_ara:
