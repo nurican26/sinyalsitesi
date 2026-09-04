@@ -117,7 +117,7 @@ st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_all
 if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif BTA sinyali taranıyor...")
 
-# 🌟 ÖZEL TAKİP HAVUZU PANELİ
+# 🌟 ÖZEL TAKİP HAVUZU GELİŞTİRİLMİŞ PANELİ
 if st.session_state["ozel_takip_kutusu"]:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
     tk_list = []
