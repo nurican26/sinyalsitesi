@@ -12,10 +12,14 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 st.markdown('<style>@import url("https://googleapis.com"); .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .arama-baslik {background: linear-gradient(90deg, #2563eb 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 15px;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 20px; margin-bottom: 25px;} .bta-logo {color: #ffffff !important; font-family: "Dancing Script", "Brush Script MT", cursive !important; font-weight: bold; font-size: 5.5rem; padding: 0px; background: none !important; box-shadow: none !important; letter-spacing: 14px; text-shadow: 0 0 10px #ff007f, 0 0 20px #ff00ff, 0 0 30px #00ffff, 0 0 40px #00ff00, 0 0 70px #ffff00, 0 0 80px #ff7f00, 0 0 100px #ff0000;} .gold-card {background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 0 15px rgba(251, 191, 36, 0.2); margin-bottom: 15px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # Hafıza Kontrolleri
-if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
-if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
-if "altin_hafizasi" not in st.session_state: st.session_state["altin_hafizasi"] = {}
-if "ziyaret_sayaci" not in st.session_state: st.session_state["ziyaret_sayaci"] = 0
+if "ozel_takip_kutusu" not in st.session_state:
+    st.session_state["ozel_takip_kutusu"] = {}
+if "fiyat_hafizasi" not in st.session_state:
+    st.session_state["fiyat_hafizasi"] = {}
+if "altin_hafizasi" not in st.session_state:
+    st.session_state["altin_hafizasi"] = {}
+if "ziyaret_sayaci" not in st.session_state:
+    st.session_state["ziyaret_sayaci"] = 0
 
 if "ziyaret_edildi" not in st.session_state:
     st.session_state["ziyaret_sayaci"] += 1
@@ -147,8 +151,8 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Parantezleri tamamen uçuran kesin çözüm
-                        if len(hisse) > 1: # "A" gibi hatalı tek harfleri eler
+                        hisse = str(hisse_ara[0])  # Parantezler kesinlikle kalktı
+                        if len(hisse) > 1:         # "A" gibi hatalı tek harfleri eler
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -157,9 +161,10 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Parantezleri tamamen uçuran kesin çözüm
-                        if len(hisse) > 1: # "A" gibi hatalı tek harfleri eler
+                        hisse = str(hisse_ara[0])  # Parantezler kesinlikle kalktı
+                        if len(hisse) > 1:         # "A" gibi hatalı tek harfleri eler
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            
                             if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
