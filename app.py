@@ -12,13 +12,14 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # Hafıza Sabitleme
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
+if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit_hafizasi"] = {}
 
 # LOGO
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
 
 # 💥 CANLI VERİ MOTORLARI
-def hızlı_canli_fiyat_bul(hisse_kodu):
-    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+def hızlı_canli_fiyat_bul(hisse_kodu, zorunlu_guncelle=False):
+    if not zorunlu_guncelle and hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
         if time.time() - saved_time < 60: return saved_price
     try:
@@ -50,21 +51,27 @@ def canli_altin_fiyatlarini_hesapla():
 # Zaman Bilgisi ve Yenileme Butonu
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 col_refresh, col_time = st.columns(2)
+
+yenileme_tetiklendi = False
+
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
+        # Yenileme butonuna basıldığında Excel kilitleri de açılır
+        st.session_state["excel_kayit_hafizasi"] = {}
+        yenileme_tetiklendi = True
         st.rerun()
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px;">🕒 Son Veri Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
 
-# MATEMATİKSEL DEĞERLER PANELİ
+# MATEMATİKSEL DEĞERLER PANELİ (🛠️ DÜZELTME: "REF." yazıları silindi, Çeyrek ismi düzeltildi)
 st.markdown("#### 🟡 Referans Emtia Değerleri")
 p_gram, p_ceyrek, p_yarim, p_tam = canli_altin_fiyatlarini_hesapla()
 c1, c2, c3, c4 = st.columns(4)
-c1.markdown(f'<div class="piyasa-kutusu">🔱 REF. GRAM<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>', unsafe_allow_html=True)
-c2.markdown(f'<div class="piyasa-kutusu">🪙 REF. ÇEYREK<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>', unsafe_allow_html=True)
-c3.markdown(f'<div class="piyasa-kutusu">🥈 REF. YARIM<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
-c4.markdown(f'<div class="piyasa-kutusu">🥇 REF. TAM<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
+c1.markdown(f'<div class="piyasa-kutusu">🔱 GRAM<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>', unsafe_allow_html=True)
+c2.markdown(f'<div class="piyasa-kutusu">🪙 ÇEYREK ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>', unsafe_allow_html=True)
+c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
+c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
 st.write("")
 
 # 📌 İKİYE BÖLÜNMÜŞ HABER MERKEZİ
@@ -106,14 +113,15 @@ if df_kaynak is not None:
                         hisse = h_ara[0].strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
-                                cfiy = hızlı_canli_fiyat_bul(hisse)
+                                cfiy = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
                                 p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                                 bta_puan = p_bul[0] if p_bul else t_deg
+                                
+                                # 🛠️ DÜZELTME: Matris Durumu sütunu kaldırıldı
                                 tablo_alsat.append({
                                     "Varlık Kodu": hisse, 
                                     "Matematiksel Puan": bta_puan, 
-                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                                    "Matris Durumu": "Dengeli Akış"
+                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor..."
                                 })
                         
                 # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
@@ -123,31 +131,19 @@ if df_kaynak is not None:
                         hisse = h_ara[0].strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
-                                cfiy = hızlı_canli_fiyat_bul(hisse)
-                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                                bta_puan = p_bul[0] if p_bul else t_deg
-                                tablo_al.append({
-                                    "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": bta_puan, 
-                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                                    "Matris Durumu": "Pozitif Matris"
-                                })
-        except: pass
-
-# --- BAŞLIKLARLA EKRANA BASMA ---
-
-# 1. Dönemsel Varlık İstatistikleri
-st.markdown('<div class="istatistik-baslik">🟡 DÖNEMSEL VARLIK İSTATİSTİKLERİ</div>', unsafe_allow_html=True)
-if tablo_alsat: 
-    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else: 
-    st.write("⏳ Veri matrisi taranıyor veya arama kriterine uygun varlık bulunamadı...")
-
-# 2. BTA Matematiksel Veri Modellemesi
-st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
-if tablo_al: 
-    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: 
-    st.write("⏳ Matematiksel model taranıyor veya arama kriterine uygun varlık bulunamadı...")
-
-# Sorumluluk Reddi Beyanı
+                                
+                                # 1. Excel'den ilk okunan "Yüklenen Fiyat" hafızası (SABİT)
+                                if hisse not in st.session_state["excel_kayit_hafizasi"]:
+                                    ilk_fiyat = hızlı_canli_fiyat_bul(hisse)
+                                    if ilk_fiyat > 0:
+                                        st.session_state["excel_kayit_hafizasi"][hisse] = ilk_fiyat
+                                
+                                yuklenen_sabit_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, 0.0)
+                                
+                                # 2. Her yenilemede güncellenen kesintisiz "Anlık Canlı Fiyat"
+                                anlik_canli = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
+                                
+                                if anlik_canli > 0:
+                                    puan_bul = re.findall(r'\((.*?)\)', wv)
+                                    final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
+                                    
