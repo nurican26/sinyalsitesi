@@ -21,13 +21,18 @@ if "ziyaret_edildi" not in st.session_state:
     st.session_state["ziyaret_sayaci"] += 1
     st.session_state["ziyaret_edildi"] = True
 
+# Havuz Temizleme Fonksiyonu (Hızlı Buton Sorununu Çözer)
+def havuzu_temizle_aksiyon():
+    st.session_state["ozel_takip_kutusu"] = {}
+    st.rerun()
+
 # 🌟 ÜST ORTA EL YAZISI VE GÖKKUŞAĞI GÖLGELİ BTA LOGOSU
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; text-align: center; margin-bottom: 20px;">🚪 <b>Ziyaret:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-# 🪙 CANLI OTOMATİK ALTIN FİYAT MOTORU (Önbellekli ve Noktalı Format)
+# 🪙 CANLI OTOMATİK ALTIN FİYAT MOTORU (Önbellekli)
 def canlı_altın_fiyatları_hesapla():
     anlik_zaman = time.time()
     if "vakit" in st.session_state["altin_hafizasi"]:
@@ -46,7 +51,7 @@ def canlı_altın_fiyatları_hesapla():
             tam = ceyrek * 4
             
             fiyatlar = {"ceyrek": ceyrek, "yarim": yarim, "tam": tam}
-            st.session_state["altin_hafizasi"] = {"vakit": anlik_zaman, "fiyatlar": fiyatalar}
+            st.session_state["altin_hafizasi"] = {"vakit": anlik_zaman, "fiyatlar": fiyatlar}
             return fiyatlar
     except:
         pass
@@ -66,7 +71,39 @@ with col2:
 with col3:
     st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">👑 TAM ALTIN</span><br><span style="font-size:1.5rem; font-weight:bold; color:#fff;">{formatla_tl(altinlarlar["tam"])} TL</span></div>', unsafe_allow_html=True)
 
-# Excel Okuma
+# 🔍 1. SIRAYA ALINAN BIST TÜM HİSSE ARAMA MOTORU MODÜLÜ
+st.write("---")
+st.markdown('<div class="arama-baslik">🔍 BIST CANLI HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
+
+arama_kodu = st.text_input("Sorgulamak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS, EREGL):", "").strip().upper()
+
+if arama_kodu:
+    with st.spinner(f"{arama_kodu} verileri çekiliyor..."):
+        try:
+            hisse_bist = yf.Ticker(f"{arama_kodu}.IS")
+            bist_data = hisse_bist.history(period="5d")
+            
+            if not bist_data.empty:
+                anlik_fiyat = bist_data['Close'].iloc[-1]
+                en_yuksek = bist_data['High'].iloc[-1]
+                en_dusuk = bist_data['Low'].iloc[-1]
+                hacim = bist_data['Volume'].iloc[-1]
+                
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Anlık Fiyat 💰", f"{formatla_tl(anlik_fiyat)} TL")
+                c2.metric("Günün En Yükseği 📈", f"{formatla_tl(en_yuksek)} TL")
+                c3.metric("Günün En Düşüğü 📉", f"{formatla_tl(en_dusuk)} TL")
+                c4.metric("İşlem Hacmi 📊", "{:,.0f}".format(hacim).replace(",", "."))
+                
+                st.subheader(f"📈 {arama_kodu} Son 5 Günlük Fiyat Trendi")
+                st.line_chart(bist_data['Close'])
+            else:
+                st.error(f"⚠️ '{arama_kodu}' koduna ait canlı veri bulunamadı. Lütfen doğru BIST kodu girdiğinizden emin olun.")
+        except Exception as e:
+            st.error("Veri çekme hatası: Hisse bulunamadı veya sunucu yanıt vermiyor.")
+
+# Excel Okuma ve Sinyal Analiz Alanı
+st.write("---")
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
@@ -110,49 +147,20 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0])  # Parantezsiz saf metin alındı
-                        if len(hisse) > 1:         # "A" gibi hatalı tek harfleri eler
+                        hisse = str(hisse_ara[0]) # Parantezleri uçurur, temiz ismi alır
+                        if len(hisse) > 1:
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{formatla_tl(canli_fiyat)} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                 
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0])  # Parantezsiz saf metin alındı
-                        if len(hisse) > 1:         # "A" gibi hatalı tek harfleri eler
+                        hisse = str(hisse_ara[0]) # Parantezleri uçurur, temiz ismi alır
+                        if len(hisse) > 1:
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{formatla_tl(canli_fiyat)} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-        except:
-            pass
-
-st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
-st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif BTA sinyali taranıyor...")
-
-if st.session_state["ozel_takip_kutusu"]:
-    st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-    tk_list = []
-    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        cfiy = hızlı_canli_fiyat_bul(hisse)
-        if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-        tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{formatla_tl(bilge['kayit_fiyati'])} TL", "Anlık Güncel": f"{formatla_tl(cfiy)} TL"})
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-            st.session_state["ozel_takip_kutusu"] = {}
-            st.rerun()
-
-# 🔍 BIST TÜM HİSSE ARAMA MOTORU MODÜLÜ (Boşluk Hataları Tamamen Düzeltildi)
-st.write("---")
-st.markdown('<div class="arama-baslik">🔍 BIST CANLI HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
-
