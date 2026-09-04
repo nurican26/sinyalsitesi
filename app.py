@@ -97,14 +97,28 @@ if df_kaynak is not None:
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
 
-# 🟢 BTA SİNYAL MERKEZİ EN ÜSTE LİSTELENİR
+# 🟢 1. PANEL: BTA SİNYAL MERKEZİ EN ÜSTE LİSTELENİR
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif Al sinyali taranıyor...")
+if tablo_al: 
+    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+else: 
+    st.write("🔒 Aktif Al sinyali taranıyor...")
 
+# 👑 2. PANEL: CANLI HİSSE ARAMA MOTORU (BTA Sinyal Merkezi'nin hemen altına alındı)
+st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
+arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
+
+if arama_terimi_girdi:
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
+    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
+    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
+
+# 🛡️ 3. PANEL: DÖNEMSEL AL SAT SİNYALLERİ (Yüksekliği sınırlandırıldı, sayfayı uzatmaz)
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+if tablo_alsat: 
+    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True, height=250) # height eklendi, içten kaydırmalı kısa tasarım!
+else: 
+    st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 st.write("---")
 
@@ -118,17 +132,3 @@ st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dön
 st.markdown("#### 📺 Türkiye Gündemi - Son Dakika TV Haberleri")
 st.markdown('<div class="tv-kutusu">🔵 <b>TRT Haber:</b> Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.</div>', unsafe_allow_html=True)
 st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.</div>', unsafe_allow_html=True)
-st.markdown('<div class="tv-kutusu">🔵 <b>NTV:</b> Meteoroloji Genel Müdürlüğü, mevsim normalleri çerçevesinde yurt genelinde beklenen yeni hava sıcaklığı raporlarını yayınladı.</div>', unsafe_allow_html=True)
-st.write("")
-
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
-st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
-arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
-
-# Girinti hatası yapabilecek tüm karmaşık if-else blokları düz bir mantığa çekildi
-if arama_terimi_girdi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
-    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
-    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
-
-# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
