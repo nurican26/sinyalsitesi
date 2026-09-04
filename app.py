@@ -5,10 +5,10 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Profesyonel Terminal Tasarımı
+# 1. Sayfa Yapılandırması ve Sade Terminal Tasarımı
 st.set_page_config(page_title="BTA Veri Analizi", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #090d16 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.04); border: 1px solid #eab308; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);} .gundem-kutusu {background: #1e293b; border-left: 4px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);} .kap-kutusu {background: #1e293b; border-left: 4px solid #a855f7; padding: 14px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #090d16 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.04); border: 1px solid #eab308; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .gundem-kutusu {background: #1e293b; border-left: 4px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .kap-kutusu {background: #1e293b; border-left: 4px solid #a855f7; padding: 14px; border-radius: 8px; margin-bottom: 12px;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
@@ -46,11 +46,11 @@ def canli_altin_fiyatlarini_hesapla():
     except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
-# Üst Bilgi Paneli
+# Üst Zaman Bilgisi ve Yenileme Butonu
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 col_refresh, col_time = st.columns(2)
 with col_refresh:
-    if st.button("🔄 Verileri Yenile"):
+    if st.button("🔄 Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
         st.rerun()
 with col_time:
@@ -69,23 +69,6 @@ c4.markdown(f'<div class="piyasa-kutusu">🥇 REF. TAM<br><span style="color:#ea
 
 st.write("---")
 
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
-st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
-arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
-
-if arama_terimi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
-    if canli_sorgu_fiyat > 0:
-        tablo_canli_arama = [["Aranan Varlık", f"{canli_sorgu_fiyat:.2f} TL", "Kesintisiz Canlı Veri"]]
-        df_arama = pd.DataFrame(tablo_canli_arama, columns=["Aranan Varlık", "Anlık İnternet Canlı Fiyatı", "Veri Akış Durumu"])
-        st.dataframe(df_arama, use_container_width=True, hide_index=True)
-    else:
-        st.write("❌ Hisse kodu bulunamadı veya sunucu yanıt vermiyor. Lütfen kontrol edin (Örn: THYAO).")
-else:
-    st.write("🔎 Yukarıdaki kutuya bir BIST hisse kodu yazarak anlık fiyat sorgulaması yapabilirsiniz.")
-
-st.write("---")
-
 # EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
@@ -97,11 +80,12 @@ tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            # 🛠️ GÜNCELLEME: Tüm gereksiz kilitler temizlendi. A sütunundaki koda ve R sütunundaki puana doğrudan bakıyor.
+            # Sadece Excel'in ilk satırlarında kalan o TEK gizli hisseyi temizce okur
             hisse_ham = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else ""
+            wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
             
-            if hisse_ham and hisse_ham not in ["NAN", "NONE"] and len(hisse_ham) >= 3:
-                if arama_terimi == "" or arama_terimi in hisse_ham:
+            if wv_kontrol and wv_kontrol not in ["NAN", "NONE"] and hisse_ham and hisse_ham not in ["NAN", "NONE"]:
+                if 3 <= len(hisse_ham) <= 5:
                     anlik_canli = hızlı_canli_fiyat_bul(hisse_ham)
                     
                     if anlik_canli > 0:
@@ -111,17 +95,9 @@ if df_kaynak is not None:
                         
                         yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse_ham, anlik_canli)
                         
-                        # 🛠️ ONDALIK KORUMA MOTORU: Gelen değer float ise formatlı, metin ise olduğu gibi yansıtır
+                        # PUANI R SÜTUNUNDAN (17) BOZMADAN METİN OLARAK ALIR (0.04)
                         ham_r_degeri = df_kaynak.iloc[idx, 17]
-                        if pd.isna(ham_r_degeri):
-                            final_puan = "0.00"
-                        else:
-                            try:
-                                final_puan = f"{float(ham_r_degeri):.4f}" # 4 hane hassasiyet (0.0400 gibi görünmemesi için sonu korunur)
-                                if final_puan.endswith("00"):
-                                    final_puan = f"{float(ham_r_degeri):.2f}"
-                            except:
-                                final_puan = str(ham_r_degeri).strip()
+                        final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
                         
                         f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
                         f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
@@ -129,13 +105,13 @@ if df_kaynak is not None:
                         tablo_al.append([hisse_ham, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
         except: pass
 
-# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ EN ÜSTTE
+# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ (EN ÜSTTE VE SADE)
 st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
 if tablo_al:
     df_sonuc = pd.DataFrame(tablo_al, columns=["Varlık Kodu", "Matematiksel Puan", "Yüklenen Fiyat (Sabit)", "Anlık Canlı Fiyat", "Matris Durumu"])
     st.dataframe(df_sonuc, use_container_width=True, hide_index=True)
 else:
-    st.write("⏳ Matematiksel veri tabanı taranıyor veya Excel dosyasında eşleşen veri bulunamadı...")
+    st.write("⏳ Matematiksel veri tabanı taranıyor veya Excel dosyasında veri bulunamadı...")
 
 st.write("---")
 
@@ -143,8 +119,24 @@ st.write("---")
 col_eko, col_genel = st.columns(2)
 with col_eko:
     st.markdown("#### 📰 Türkiye Ekonomi Gündemi")
-    st.markdown('<div class="haber-kutusu">📊 <b>Ağustos Enflasyonu Açıklandı:</b> TÜİK yıllık tüketici enflasyonunu (TÜFE) piyasa öngörülerine paralel olarak %31,51 seviyesinde duyurdu.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="haber-kutusu">🏛️ <b>Merkez Bankası Likidite Hamlesi:</b> TCMB, piyasadaki fazla likiditeyi sterilize etmek amacıyla repo ihalelerine başladı.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="haber-kutusu">📊 <b>Ekonomi Yönetimi Dengelenme Sürecinde:</b> Makroekonomik istikrar adımları ve mali disiplin politikaları yakından takip ediliyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="haber-kutusu">🏛️ <b>Piyasa Likidite Kontrolleri:</b> Merkez Bankası finansal piyasalardaki sterilizasyon araçlarını etkin kullanmayı sürdürüyor.</div>', unsafe_allow_html=True)
 with col_genel:
     st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
-    st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunma Projeleri:</b> Savunma sanayiindeki yeni nesil teknoloji entegrasyonu takvimi planlandığı gibi ilerliyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">🚊 <b>Altyapı ve Lojistik Yatırımları:</b> Şehirlerarası hızlı tren hatları ve stratejik ulaşım projelerinde yeni fazlara geçildi.</div>', unsafe_allow_html=True)
+
+st.write("---")
+
+# 📢 MANUEL SEÇİLMİŞ TAM 3 KRİTİK KAP HABERİ
+st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
+st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> Yeni nesil radar sistemleri tedariki kapsamında imzalanan yurt içi sözleşme detayları kamuya açıklandı.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Enerji depolama tesisleri teşvik paketi kapsamındaki resmi onay süreçleri bültenle bildirildi.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Küresel filo genişletme operasyonları planlaması ve operasyonel rapor bülteni yayımlandı.</div>', unsafe_allow_html=True)
+
+# Sorumluluk Reddi Beyanı
+st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
+
+# Otomatik arka plan yenileme tetikleyici (60 saniye)
+time.sleep(60)
+st.rerun()
