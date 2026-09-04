@@ -10,29 +10,6 @@ st.set_page_config(page_title="BTA Veri Analizi", page_icon="📈", layout="wide
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #090d16 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.04); border: 1px solid #eab308; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .gundem-kutusu {background: #1e293b; border-left: 4px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .kap-kutusu {background: #1e293b; border-left: 4px solid #a855f7; padding: 14px; border-radius: 8px; margin-bottom: 12px;}</style>', unsafe_allow_html=True)
 
-# 🔄 ARKA PLANDA 60 SANİYEDE BİR OTOMATİK YENİLEME MOTORU (HTML/JS)
-st.components.v1.html(
-    """
-    <script>
-    window.parent.document.addEventListener('DOMContentLoaded', function() {
-        if (!window.parent.bta_interval_set) {
-            window.parent.bta_interval_set = true;
-            setInterval(function() {
-                const buttons = window.parent.document.querySelectorAll("button");
-                for (let i = 0; i < buttons.length; i++) {
-                    if (buttons[i].textContent.includes("Verileri Yenile")) {
-                        buttons[i].click();
-                        break;
-                    }
-                }
-            }, 60000); 
-        }
-    });
-    </script>
-    """,
-    height=0,
-)
-
 # Hafıza Sabitleme
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit_hafizasi"] = {}
@@ -41,8 +18,8 @@ if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
 
 # 💥 CANLI VERİ MOTORLARI
-def hızlı_canli_fiyat_bul(hisse_kodu, zorunlu_yenile=False):
-    if not zorunlu_yenile and hisse_kodu in st.session_state["fiyat_hafizasi"]:
+def hızlı_canli_fiyat_bul(hisse_kodu):
+    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
         if time.time() - saved_time < 60: return saved_price
     try:
@@ -72,16 +49,11 @@ def canli_altin_fiyatlarini_hesapla():
 # Üst Zaman Bilgisi ve Yenileme Butonu
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 col_refresh, col_time = st.columns(2)
-
-zorunlu_guncelle = False
-
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
-        st.session_state["excel_kayit_hafizasi"] = {}  # Excel kilidini aç
-        zorunlu_guncelle = True
+        st.session_state["excel_kayit_hafizasi"] = {} # Excel kilitlenen fiyat hafızası da temizleniyor
         st.rerun()
-
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px; text-align: right;">🕒 Son Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
 
@@ -103,7 +75,7 @@ st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER 
 arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
 if arama_terimi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi, zorunlu_yenile=zorunlu_guncelle)
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
     if canli_sorgu_fiyat > 0:
         tablo_canli_arama = [[arama_terimi, f"{canli_sorgu_fiyat:.2f} TL", "Kesintisiz Canlı Veri"]]
         df_arama = pd.DataFrame(tablo_canli_arama, columns=["Hisse Kodu", "Anlık İnternet Canlı Fiyatı", "Veri Akış Durumu"])
@@ -115,30 +87,7 @@ else:
 
 st.write("---")
 
-# 📰 CANLI HABER, GÜNDEM VE KAP AKIŞI PANELİ
-st.markdown('<div class="analiz-baslik">📰 CANLI HABER, GÜNDEM VE KAP AKIŞI</div>', unsafe_allow_html=True)
-col_hab, col_gnd, col_kap = st.columns(3)
-
-with col_hab:
-    st.markdown("### 🟢 Ekonomi Haberleri")
-    st.markdown('<div class="haber-kutusu">🔔 <b>BofA:</b> Türkiye için enflasyon tahminlerini revize etti. Sıkılaşma adımları korunuyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="haber-kutusu">🔔 <b>Küresel Piyasalar:</b> Fed faiz kararı öncesinde emtia grubunda hareketlilik arttı.</div>', unsafe_allow_html=True)
-
-with col_gnd:
-    st.markdown("### 🔵 Sektörel Gündem")
-    st.markdown('<div class="gundem-kutusu">📢 <b>Otomotiv Sektörü:</b> İhracat rakamlarında Avrupa pazarında toparlanma sinyalleri var.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">📢 <b>Enerji Yatırımları:</b> Yenilenebilir enerji tarafında yeni teşvik paketi bekleniyor.</div>', unsafe_allow_html=True)
-
-with col_kap:
-    st.markdown("### 🟣 Önemli KAP Bildirimleri")
-    st.markdown('<div class="kap-kutusu">📢 <b>THYAO:</b> Yeni uçak alım stratejilerine dair yönetim kurulu açıklaması yayınlandı.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="kap-kutusu">📢 <b>EREGL:</b> Yeni üretim tesisi modernizasyonu hakkında detaylı bilgi paylaşıldı.</div>', unsafe_allow_html=True)
-
-st.write("---")
-
-# 📊 EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
-st.markdown('<div class="analiz-baslik">📊 EXCEL VERİ TABANI VE ANLIK MATEMATİKSEL ANALİZ TABLOSU</div>', unsafe_allow_html=True)
-
+# EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
@@ -155,13 +104,39 @@ if df_kaynak is not None:
                 if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
                     parcalar = wv_kontrol.split(' ')
                     if parcalar:
-                        hisse = str(parcalar[0]).strip() # 🛠️ DÜZELTME: [0] indeksi geri eklendi
+                        hisse = str(parcalar[0]).strip()
                         
                         if len(hisse) >= 3 and hisse not in ["AL", "NONE", "NAN"]:
                             if arama_terimi == "" or arama_terimi in hisse:
-                                anlik_canli = hızlı_canli_fiyat_bul(hisse, zorunlu_yenile=zorunlu_guncelle)
+                                anlik_canli = hızlı_canli_fiyat_bul(hisse)
                                 
                                 if anlik_canli > 0:
-                                    if hisse not in st.session_state["excel_kayit_hafizasi"] or zorunlu_guncelle:
+                                    if hisse not in st.session_state["excel_kayit_hafizasi"]:
                                         st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
                                     
+                                    yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
+                                    puan_bul = re.findall(r'\((.*?)\)', wv_kontrol)
+                                    final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
+                                    
+                                    # Sizin orijinal listeniz (Kendi eklemeleriniz için ucu açık bırakıldı)
+                                    f_yuklenen = f"{yuklenen_fiyat:.2f} TL"
+                                    tablo_al.append([hisse, f_yuklenen, final_puan])
+        except:
+            pass
+
+# Sizin kodunuzun bittiği yerdeki Excel verilerini ekrana basan ana tablo yapısı
+if tablo_al:
+    df_excel_tablo = pd.DataFrame(tablo_al, columns=["Hisse Kodu", "Fiyat", "Puan"])
+    st.dataframe(df_excel_tablo, use_container_width=True, hide_index=True)
+
+# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK YENİLEME MOTORU (GÖRÜNMEZ TETİKLEYİCİ)
+st.components.v1.html(
+    """
+    <script>
+    setTimeout(function(){
+        window.parent.location.reload();
+    }, 60000);
+    </script>
+    """,
+    height=0,
+)
