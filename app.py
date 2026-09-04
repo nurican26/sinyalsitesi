@@ -39,7 +39,7 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🛡️ ERİŞİM KONTROL MANTIĞI & SİLİKLEŞEN / GİZLENEN ŞİFRE PANELİ
+# 🛡️ ERİŞİM KONTROL MANTIĞI & PANEL GİZLEME
 erisim_izni = False
 
 if mevcut_kilit == "Açık":
@@ -72,7 +72,7 @@ if st.session_state["giris_yapildi"]:
         st.session_state["kullanici_rolu"] = None
         st.rerun()
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yalnızca Yöneticiye görünür)
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
 if st.session_state["kullanici_rolu"] == "Yönetici":
     st.info(f"👑 **Yönetici Ayarları Paneli** | Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
@@ -110,13 +110,8 @@ def altin_fiyatlarini_getir():
         if not ons_data.empty and not usd_data.empty:
             ons = ons_data['Close'].iloc[-1]
             usd = usd_data['Close'].iloc[-1]
-            
-            # Hesaplama Parametreleri
             gram = (ons / 31.1034768) * usd
-            ceyrek = gram * 1.605
-            yarim = gram * 3.21
-            tam = gram * 6.42
-            return gram, ceyrek, yarim, tam
+            return gram, gram * 1.605, gram * 3.21, gram * 6.42
     except: pass
     return 3000.0, 4950.0, 9900.0, 19800.0
 
@@ -144,12 +139,10 @@ if erisim_izni:
         canli_ara_fiyat = hızlı_canli_fiyat_bul(arama_kodu)
         if canli_ara_fiyat > 0:
             st.success(f"📈 **{arama_kodu}** Anlık Hisse Fiyatı: **{tl_formatla(canli_ara_fiyat)}**")
-            
-            # TradingView Canlı Grafik Entegrasyonu
             st.markdown(f"#### 📊 {arama_kodu} Canlı Teknik Analiz Grafiği")
             tradingview_kod = f"""
             <div style="height:400px;">
-            <iframe src="https://tradingview.com{arama_kodu}&interval=D&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Europe%2FIstanbul&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=tr" style="width: 100%; height: 100%; border: none;"></iframe>
+            <iframe src="https://tradingview.com{arama_kodu}&interval=D&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Europe%2FIstanbul&locale=tr" style="width: 100%; height: 100%; border: none;"></iframe>
             </div>
             """
             st.components.v1.html(tradingview_kod, height=400)
@@ -173,11 +166,16 @@ if erisim_izni:
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
             try:
-                if len(df_kaynak.columns) <= 22:
-                    continue
-                
-                uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
-                
-                # UV Sinyal Kontrolü (Dönemsel Al Sat)
+                if len(df_kaynak.columns) > 22:
+                    uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
+                    wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                    t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
+                    
+                    # UV Sinyal Kontrolü (Dönemsel Al Sat)
+                    if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                        h_ara_uv = re.findall(r'[A-Z]+', uv)
+                        if h_ara_uv:
+                            hisse_uv = str(h_ara_uv[0])
+                            cfiy_uv = hızlı_canli_fiyat_bul(hisse_uv)
+                            p_bul_uv = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
+                            bta_puan_uv = p_bul_uv[0] if p_bul_uv else t_deg
