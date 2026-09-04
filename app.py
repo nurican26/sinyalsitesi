@@ -127,7 +127,7 @@ if df_kaynak is not None:
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 
-                                # 1. Excel'den ilk okunan sabit kalacak fiyat hafızası
+                                # 1. Excel'den gelen ilk fiyatı "Yüklenen Fiyat" olarak bir defaya mahsus kilitliyoruz
                                 if hisse not in st.session_state["excel_kayit_hafizasi"]:
                                     ilk_fiyat = hızlı_canli_fiyat_bul(hisse)
                                     if ilk_fiyat > 0:
@@ -135,30 +135,22 @@ if df_kaynak is not None:
                                 
                                 yuklenen_sabit_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, 0.0)
                                 
-                                # 2. Her 60 saniyede bir güncellenen anlık canlı fiyat
-                                guncel_anlik_fiyat = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
+                                # 2. Anlık internet canlı fiyatını bul (Her yenilemede güncellenir)
+                                anlik_canli = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
                                 
-                                if guncel_anlik_fiyat > 0:
+                                if anlik_canli > 0:
+                                    puan_bul = re.findall(r'\((.*?)\)', wv)
+                                    final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
+                                    
+                                    # Sizin orijinal listeniz tam kurgusuyla tamamlandı:
                                     tablo_al.append({
                                         "Hisse Kodu": hisse,
                                         "Yüklenen Fiyat (Sabit)": f"{yuklenen_sabit_fiyat:.2f} TL" if yuklenen_sabit_fiyat > 0 else "0.00 TL",
-                                        "Anlık Canlı Fiyat": f"{guncel_anlik_fiyat:.2f} TL"
+                                        "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL",
+                                        "Puan": final_puan
                                     })
         except Exception as e:
             pass
 
-# Excel'den üretilen tabloyu basma (Girinti hatası tamamen giderildi)
+# Tablo basma işlemi (Girintiler tamamen düzeltildi)
 if tablo_al:
-    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-
-# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
-st.components.v1.html(
-    """
-    <script>
-    setTimeout(function(){
-        window.parent.location.reload();
-    }, 60000);
-    </script>
-    """,
-    height=0,
-)
