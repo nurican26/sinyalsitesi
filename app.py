@@ -35,7 +35,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: 
         pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -140,9 +140,9 @@ if df_kaynak is not None:
                                 ham_r_degeri = df_kaynak.iloc[idx, 17]
                                 final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
                                 
-                                # Tamamen izole ve güvenli veri ekleme
-                                tablo_al.append({
-                                    "Varlık Kodu": hisse,
-                                    "Matematiksel Puan": final_puan,
-                                    "Yüklenen Fiyat (Sabit)": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
-                                    "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor...",
+                                # Hataları %100 önleyen liste tabanlı satır oluşturma yapısı
+                                f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
+                                f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
+                                
+                                yeni_satir_listesi = [hisse, final_puan, f_yuklenen, f_canli, "Pozitif Matris"]
+                                tablo_al.append(yeni_satir_listesi)
