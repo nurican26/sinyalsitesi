@@ -6,7 +6,7 @@ import os
 import re
 import time
 
-# 1. Sayfa Yapılandırması ve Tasarım
+# 1. Sayfa Yapılandırması ve Kurumsal Tasarım
 st.set_page_config(page_title="BTA Finans", page_icon="📈", layout="wide")
 
 st.markdown('''
@@ -62,32 +62,27 @@ def temiz_metin_al(val):
         return ""
     return str(val).strip().upper()
 
-# Hisseleri Asla Kaçırmayan Esnek Ayıklayıcı Fonksiyon
-def hücre_parçala(metin):
-    metin_str = temiz_metin_al(metin)
+# U ve W Sütunundaki Birleşik Yapıyı ("THYAO +2.50") Hatasız Çözen Akıllı Ayıklayıcı
+def hucreyi_cozumle(val):
+    metin_str = temiz_metin_al(val)
     if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
         return "", ""
     
-    # Hücre içindeki tüm harf bloklarını ara (Örn: THYAO)
+    # Hücre içindeki hisse kodunu bul (Örn: THYAO)
     hisse_bul = re.findall(r'[A-Z]+', metin_str)
-    if not hisse_bul:
-        return "", ""
+    hisse = "".join(hisse_bul) if hisse_bul else ""
     
-    hisse = "".join(hisse_bul)
-    # Temizlik filtreleri kelimeleri engellemesin diye kontrol
-    if hisse in ["NAN", "NONE", "AL", "SINYALI", "ALSAT"]:
+    # Filtrelere takılmayı engelleyen koruma
+    if hisse in ["NAN", "NONE", "AL", "SINYALI", "ALSAT"] or len(hisse) < 2:
         return "", ""
         
-    if len(hisse) < 2:
-        return "", ""
-        
-    # Hücre içindeki tüm sayı bloklarını ara (Örn: +2.50 veya 2,50)
+    # Hücre içindeki puanı bul (Metindeki +2.50 veya 2,50 değeri)
     puan_bul = re.findall(r'[-+]?\d*[.,]\d+|\d+', metin_str)
     puan = "".join(puan_bul) if puan_bul else ""
     
     return hisse, puan
 
-# Önbellekli Fiyat Motoru
+# Önbellekli Güvenli Fiyat Motoru (5 Dakika Koruyuculu)
 def hizli_fiyat_al(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         kayit_vakti, eski_fiyat = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -181,8 +176,9 @@ else:
         if len(df_kaynak.columns) > 22:
             u_hücre = df_kaynak.iloc[idx, 20]
             w_hücre = df_kaynak.iloc[idx, 22]
+            
+            # Sabit Maliyet Fiyatı (R Sütunu - Excel Giriş Fiyatı)
             excel_maliyet = df_kaynak.iloc[idx, 17]
-            bta_puan_r = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else "Mevcut"
             
             maliyet_fiyat = 0.0
             try:
@@ -192,7 +188,7 @@ else:
                 pass
                 
             # 🟡 Dönemsel Al Sat Sinyalleri (U Sütunu)
-            hisse_uv, puan_uv = hücre_parçala(u_hücre)
+            hisse_uv, puan_uv = hucreyi_cozumle(u_hücre)
             if hisse_uv:
                 fiyat_uv = hizli_fiyat_al(hisse_uv)
                 kar_zarar_uv = "Hesaplanamadı"
@@ -200,5 +196,6 @@ else:
                     oran = ((fiyat_uv - maliyet_fiyat) / maliyet_fiyat) * 100
                     kar_zarar_uv = formatla_yuzde(oran)
                 
-                # VBA'dan gelen U sütunundaki puanı öncelikli göster, yoksa T sütununu göster
-                gosterilecek_puan = f"+{puan_uv}" if puan_uv else bta_puan_r
+                tablo_alsat.append({
+                    "Hisse Kodu 📈": hisse_uv,
+                    "BTA Puan": f"+{puan_uv}" if puan_uv else "Mevcut",
