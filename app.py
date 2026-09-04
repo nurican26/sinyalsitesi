@@ -49,21 +49,21 @@ def canli_altin_fiyatlarini_hesapla():
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
 # 💥 SUNUCU ENGELİNE TAKILMAYAN CANLI RSS HABER ÇEKİCİ
-def canlı_haberleri_getir(url, varsayılan_metinler, adet=3):
+def canlı_haberleri_getir(url_adresi, varsayılanlar, adet=3):
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
-        with urllib.request.urlopen(req, timeout=4) as response:
-            xml_data = response.read()
-        root = ET.fromstring(xml_data)
-        haberler = []
-        for item in root.findall('.//item')[:adet]:
-            title = item.find('title')
-            if title is not None and title.text:
-                haberler.append(title.text.strip())
-        if haberler:
-            return haberler
+        istek = urllib.request.Request(url_adresi, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(istek, timeout=4) as snc:
+            veri = snc.read()
+        agac = ET.fromstring(veri)
+        liste = []
+        for eleman in agac.findall('.//item')[:adet]:
+            baslik_al = eleman.find('title')
+            if baslik_al is not None and baslik_al.text:
+                liste.append(baslik_al.text.strip())
+        if len(liste) > 0:
+            return liste
     except: pass
-    return varsayılan_metinler
+    return varsayılanlar
 
 # 🟢 VERİLER VE TABLOLAR DOĞRUDAN YÜKLENİR
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
@@ -141,7 +141,7 @@ else:
 
 st.write("---")
 
-# 💥 CANLI HABERLER VERİ ÇEKİMİ
+# 💥 SABİT METİNLER (Parantez hatası vermemesi için güvenli düz listelere çekildi)
 varsayılan_ekonomi = [
     "Borsa İstanbul: Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.",
     "Altın Piyasası: Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları işlem görüyor.",
