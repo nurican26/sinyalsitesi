@@ -40,7 +40,7 @@ def canli_altin_fiyatlarini_hesapla():
         if not ons_ticker.empty and not usd_ticker.empty:
             ons_fiyat = float(ons_ticker['Close'].iloc[-1])
             usd_fiyat = float(usd_ticker['Close'].iloc[-1])
-            if ons_fiyat > 500 towns_fiyat and usd_fiyat > 5:
+            if ons_fiyat > 500 and usd_fiyat > 5:
                 saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
                 ceyrek_fiyat = saf_gram * 1.635
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
@@ -123,24 +123,22 @@ if df_kaynak is not None:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
                                 
-                                # 🛠️ ONDALIK PUAN HATA DÜZELTME MOTORU
+                                # 🛠️ R SÜTUNU (17) ONDALIK PUAN HATA DÜZELTME MOTORU
                                 hücre_degeri = df_kaynak.iloc[idx, 17]
-                                final_puan = "0.00"
+                                final_puan = 0.00
                                 
                                 if not pd.isna(hücre_degeri):
                                     try:
-                                        # Eğer değer sayısal bir float ise doğrudan çevir
-                                        final_puan = f"{float(hücre_degeri):.2f}"
+                                        final_puan = float(hücre_degeri)
                                     except ValueError:
-                                        # Eğer metin olarak virgüllüyse noktaya çevirip kurtar
                                         metin_deger = str(hücre_degeri).replace(',', '.').strip()
                                         puan_ara = re.findall(r'[-+]?\d*\.\d+|\d+', metin_deger)
                                         if puan_ara:
-                                            final_puan = f"{float(puan_ara[0]):.2f}"
+                                            final_puan = float(puan_ara[0])
                                 
                                 tablo_al.append({
                                     "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": final_puan, 
+                                    "Matematiksel Puan": f"{final_puan:.2f}" if final_puan != 0.00 else "0.00", 
                                     "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
                                     "Matris Durumu": "Pozitif Matris"
                                 })
