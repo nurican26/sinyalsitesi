@@ -78,7 +78,7 @@ zorunlu_guncelle = False
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
-        st.session_state["excel_kayit_hafizasi"] = {}  # Excel hafızasını sıfırlıyoruz ki fiyatlar güncellensin
+        st.session_state["excel_kayit_hafizasi"] = {}  # Excel kilidini aç
         zorunlu_guncelle = True
         st.rerun()
 
@@ -115,7 +115,7 @@ else:
 
 st.write("---")
 
-# 📰 2. BÖLÜM: CANLI HABER, GÜNDEM VE KAP AKIŞI PANERLİ
+# 📰 CANLI HABER, GÜNDEM VE KAP AKIŞI PANELİ
 st.markdown('<div class="analiz-baslik">📰 CANLI HABER, GÜNDEM VE KAP AKIŞI</div>', unsafe_allow_html=True)
 col_hab, col_gnd, col_kap = st.columns(3)
 
@@ -136,7 +136,7 @@ with col_kap:
 
 st.write("---")
 
-# 📊 3. BÖLÜM: EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
+# 📊 EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
 st.markdown('<div class="analiz-baslik">📊 EXCEL VERİ TABANI VE ANLIK MATEMATİKSEL ANALİZ TABLOSU</div>', unsafe_allow_html=True)
 
 df_kaynak = None
@@ -155,7 +155,7 @@ if df_kaynak is not None:
                 if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
                     parcalar = wv_kontrol.split(' ')
                     if parcalar:
-                        hisse = str(parcalar[0]).strip()
+                        hisse = str(parcalar[0]).strip() # 🛠️ DÜZELTME: [0] indeksi geri eklendi
                         
                         if len(hisse) >= 3 and hisse not in ["AL", "NONE", "NAN"]:
                             if arama_terimi == "" or arama_terimi in hisse:
