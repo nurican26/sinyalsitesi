@@ -84,12 +84,12 @@ if df_kaynak is not None:
                 wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 
                 if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
-                    # 🛠️ GÜNCELLEME VE KESİN ÇÖZÜM: [0] indeksi eklendi, sadece saf kelimeyi (THYAO) alır
+                    # 🛠️ GÜVENLİ PARÇALAYICI: W sütunundaki (THYAO [AL] (0.04)) metnini boşluğa göre ayırıp ilk kelimeyi çeker
                     parcalar = wv_kontrol.split(' ')
-                    if parcalar:
+                    if parcalar and len(parcalar[0]) >= 3:
                         hisse = str(parcalar[0]).strip()
                         
-                        if len(hisse) >= 3 and hisse not in ["AL", "NONE", "NAN"]:
+                        if hisse not in ["AL", "NONE", "NAN"]:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 anlik_canli = hızlı_canli_fiyat_bul(hisse)
                                 
@@ -100,7 +100,7 @@ if df_kaynak is not None:
                                     
                                     yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
                                     
-                                    # PUANI R SÜTUNUNDAN (17) DOĞRUDAN OKU (0.04)
+                                    # PUANI R SÜTUNUNDAN (17) DOĞRUDAN OKU
                                     ham_r_degeri = df_kaynak.iloc[idx, 17]
                                     final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
                                     
