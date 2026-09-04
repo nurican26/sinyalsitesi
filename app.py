@@ -40,7 +40,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 
 # 🔐 GİRİŞ KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
-girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
+girilen_sifre = st.text_input("BTA SİNYAL HİSSE TAKİP :", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
 # 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
 is_admin = False
