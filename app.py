@@ -108,21 +108,24 @@ def canlı_altın_fiyatları_hesapla():
             ceyrek = gram_has * 1.75 * 0.916 * 1.03 
             yarim = ceyrek * 2
             tam = ceyrek * 4
-            fiyatlar = {"ceyrek": ceyrek, "yarim": yarim, "tam": tam}
+            fiyatlar = {"gram": gram_has, "ceyrek": ceyrek, "yarim": yarim, "tam": tam}
             st.session_state["altin_hafizasi"] = {"vakit": anlik_zaman, "fiyatlar": fiyatlar}
             return fiyatlar
     except:
         pass
-    return {"ceyrek": 0.0, "yarim": 0.0, "tam": 0.0}
+    return {"gram": 0.0, "ceyrek": 0.0, "yarim": 0.0, "tam": 0.0}
 
 altınlar = canlı_altın_fiyatları_hesapla()
 
-col1, col2, col3 = st.columns(3)
+# 4 Kolonlu Altın Kart Düzeni (Gram Altın Dahil)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">🟡 ÇEYREK ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["ceyrek"])} TL</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">✨ GRAM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["gram"])} TL</span></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">🟠 YARIM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["yarim"])} TL</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">🟡 ÇEYREK ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["ceyrek"])} TL</span></div>', unsafe_allow_html=True)
 with col3:
+    st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">🟠 YARIM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["yarim"])} TL</span></div>', unsafe_allow_html=True)
+with col4:
     st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">👑 TAM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["tam"])} TL</span></div>', unsafe_allow_html=True)
 
 # 🔍 BIST CANLI HİSSE ARAMA MOTORU
@@ -191,12 +194,3 @@ else:
     else: 
         st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: 
-        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Aktif BTA sinyali taranıyor...")
-
-# 🌟 ÖZEL TAKİP HAVUZU
-if st.session_state["ozel_takip_kutusu"]:
-    st.write("---")
