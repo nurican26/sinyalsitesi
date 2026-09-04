@@ -124,7 +124,7 @@ if df_kaynak is not None:
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = r_bul[0] if p_bul else t_deg
+                            bta_puan = p_bul[r] if p_bul else t_deg
                             tablo_al.append({
                                 "Varlık Kodu": hisse, 
                                 "Matematiksel Puan": bta_puan, 
