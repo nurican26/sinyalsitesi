@@ -31,7 +31,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             return fiyat
     except: pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -94,7 +94,7 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
@@ -105,7 +105,7 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
@@ -137,8 +137,9 @@ else:
 
 # 3. BTA Canlı Takip Paneli
 st.markdown('<div class="takip-baslik">🔵 BTA CANLI TAKİP PANELİ</div>', unsafe_allow_html=True)
+takip_listesi = []
+
 if st.session_state["ozel_takip_kutusu"]:
-    takip_listesi = []
     for hisse, veri in list(st.session_state["ozel_takip_kutusu"].items()):
         guncel_fiy = hızlı_canli_fiyat_bul(hisse)
         if guncel_fiy > 0:
@@ -151,4 +152,6 @@ if st.session_state["ozel_takip_kutusu"]:
                 "Anlık Kâr/Zarar": f"{degisim:+.2f}%",
                 "Havuz Giriş Zamanı": veri["kayit_zamani"]
             })
-    if takip_listesi:
+
+if takip_listesi:
+    st.dataframe(pd.DataFrame(takip_listesi), use_container_width=True, hide_index=True)
