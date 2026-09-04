@@ -3,13 +3,12 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import re  # 🔑 NameError Hatasını Çözen Kritik Kütüphane eklendi
+import re
 import time
 
-# 1. Sayfa Yapılandırması
+# 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTA Finans", page_icon="📈", layout="wide")
 
-# Gelişmiş Şık ve Akıcı CSS Tasarımı
 st.markdown('''
 <style>
     @import url('https://googleapis.com');
@@ -56,27 +55,22 @@ def temiz_metin_al(val):
     if pd.isna(val): return ""
     return str(val).strip().upper()
 
-# U ve W Sütunundaki "THYAO +2.50" gibi birleşik verileri hatasız çözen fonksiyon
+# Girinti hatası vermeyen bağımsız veri parçalayıcı fonksiyon
 def hücre_parçala(metin):
     metin_str = temiz_metin_al(metin)
     if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
         return "", ""
-    
-    # Hisse Kodunu bul (Örn: THYAO)
     hisse_bul = re.findall(r'[A-Z]+', metin_str)
-    hisse = hisse_bul[0] if hisse_bul else ""
-    
-    # Sahte veya tek harfli kalıntıları engeller
-    if len(hisse) < 2 or hisse in ["NAN", "NONE", "AL"]:
+    if not hisse_bul:
         return "", ""
-        
-    # Puanı bul (Metindeki sayısal değer: +2.50 veya 2.50)
+    hisse = "".join(hisse_bul)
+    if len(hisse) < 2:
+        return "", ""
     puan_bul = re.findall(r'[-+]?\d*[.,]\d+|\d+', metin_str)
-    puan = puan_bul[0] if puan_bul else ""
-    
+    puan = "".join(puan_bul) if puan_bul else ""
     return hisse, puan
 
-# Çökmeyi Engelleyen Kararlı Önbellekli Fiyat Motoru
+# Önbellekli Fiyat Motoru
 def hizli_fiyat_al(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         kayit_vakti, eski_fiyat = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -92,13 +86,13 @@ def hizli_fiyat_al(hisse_kodu):
         pass
     return 0.0
 
-# 🌟 1. LOGO ALANI
+# 🌟 LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; text-align: center; margin-bottom: 20px;">🚪 <b>Ziyaret:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-# 🪙 2. CANLI ALTIN MOTORU
+# 🪙 CANLI ALTIN MOTORU
 def canlı_altın_fiyatları_hesapla():
     anlik_zaman = time.time()
     if "vakit" in st.session_state["altin_hafizasi"]:
@@ -131,7 +125,7 @@ with col2:
 with col3:
     st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">👑 TAM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["tam"])} TL</span></div>', unsafe_allow_html=True)
 
-# 🔍 3. EN ÜSTE ALINAN BIST TÜM HİSSE ARAMA MOTORU
+# 🔍 BIST CANLI HİSSE ARAMA MOTORU
 st.write("---")
 st.markdown('<div class="arama-baslik">🔍 BIST CANLI HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
 arama_kodu = st.text_input("Sorgulamak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", "").strip().upper()
@@ -153,7 +147,7 @@ if arama_kodu:
         except:
             st.error("Bağlantı hatası oluştu.")
 
-# 📊 4. EXCEL OKUMA VE ANALİZ ALANI
+# 📊 EXCEL OKUMA VE ANALİZ ALANI
 st.write("---")
 excel_yolu = "nurican.xls.xlsm"
 
@@ -166,11 +160,10 @@ else:
     
     for idx in range(2, len(df_kaynak)):
         if len(df_kaynak.columns) > 22:
-            # Sütunları tara (U Sütunu: index 20, W Sütunu: index 22)
             u_hücre = df_kaynak.iloc[idx, 20]
             w_hücre = df_kaynak.iloc[idx, 22]
             
-            # 🟡 Dönemsel Al Sat Sinyalleri (U Sütunundan Ayrıştırma)
+            # Dönemsel Al Sat Sinyalleri (U Sütunu)
             hisse_uv, puan_uv = hücre_parçala(u_hücre)
             if hisse_uv:
                 fiyat_uv = hizli_fiyat_al(hisse_uv)
@@ -180,15 +173,12 @@ else:
                     "💥 İnternet Canlı": f"{formatla_tl(fiyat_uv)} TL" if fiyat_uv > 0 else "Yükleniyor..."
                 })
                 
-            # 🟢 BTA Sinyal Merkezi (W Sütunundan Ayrıştırma)
+            # BTA Sinyal Merkezi (W Sütunu)
             hisse_wv, puan_wv = hücre_parçala(w_hücre)
             if hisse_wv:
                 fiyat_wv = hizli_fiyat_al(hisse_wv)
-                
-                # Özel takip havuzuna kaydetme mantığı
                 if hisse_wv not in st.session_state["ozel_takip_kutusu"] and fiyat_wv > 0:
                     st.session_state["ozel_takip_kutusu"][hisse_wv] = {"kayit_fiyati": fiyat_wv}
-                    
                 tablo_al.append({
                     "Hisse Kodu 🚀": hisse_wv,
                     "BTA Puan": f"+{puan_wv}" if puan_wv else "Mevcut",
@@ -197,3 +187,16 @@ else:
 
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
     if tablo_alsat: 
+        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: 
+        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif BTA sinyali taranıyor...")
+
+# 🌟 ÖZEL TAKİP HAVUZU
+if st.session_state["ozel_takip_kutusu"]:
+    st.write("---")
