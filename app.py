@@ -62,10 +62,10 @@ with col_time:
 st.markdown("#### 🟡 Referans Emtia Değerleri")
 p_gram, p_ceyrek, p_yarim, p_tam = canli_altin_fiyatlarini_hesapla()
 c1, c2, c3, c4 = st.columns(4)
-c1.markdown(f'<div class="piyasa-kutusu">🔱 REF. GRAM<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>', unsafe_allow_html=True)
-c2.markdown(f'<div class="piyasa-kutusu">🪙 REF. ÇEYREK<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>', unsafe_allow_html=True)
-c3.markdown(f'<div class="piyasa-kutusu">🥈 REF. YARIM<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
-c4.markdown(f'<div class="piyasa-kutusu">🥇 REF. TAM<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
+c1.markdown(f'<div class="piyasa-kutusu">🔱 . GRAM<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>', unsafe_allow_html=True)
+c2.markdown(f'<div class="piyasa-kutusu">🪙 . ÇEYREK<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>', unsafe_allow_html=True)
+c3.markdown(f'<div class="piyasa-kutusu">🥈 . YARIM<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
+c4.markdown(f'<div class="piyasa-kutusu">🥇 . TAM<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
 st.write("")
 
 # 📰 MAKROEKONOMİK GÖSTERGELER
@@ -89,7 +89,7 @@ if df_kaynak is not None:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # 🟡 DÖNEMSEL İSTATİSTİKLER (Eski Dönemsel Al Sat)
+                # 🟡  İSTATİSTİKLER (Eski Dönemsel Al Sat)
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
@@ -121,7 +121,7 @@ if df_kaynak is not None:
 # --- YENİLENEN BAŞLIKLARLA EKRANA BASMA ---
 
 # 1. Eski Dönemsel Al Sat
-st.markdown('<div class="istatistik-baslik">🟡 DÖNEMSEL VARLIK İSTATİSTİKLERİ</div>', unsafe_allow_html=True)
+st.markdown('<div class="istatistik-baslik">🟡  İSTATİSTİKLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: 
     st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: 
