@@ -1,4 +1,4 @@
-import streamlit st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -132,7 +132,7 @@ if arama_terimi_girdi:
     tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
     st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
 
-# 🛡️ 3. PANEL: DÖNEMSEL AL SAT SİNYALLERİ (Yarım kalan yer tam Python hiyerarşisinde kapatıldı)
+# 🛡️ 3. PANEL: DÖNEMSEL AL SAT SİNYALLERİ
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: 
     st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True, height=250)
@@ -141,7 +141,7 @@ else:
 
 st.write("---")
 
-# 💥 YEDEK KORUMALI HABER ALTYAPISI
+# 💥 CANLI HABERLER VERİ ÇEKİMİ
 varsayılan_ekonomi = [
     "Borsa İstanbul: Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.",
     "Altın Piyasası: Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları işlem görüyor.",
@@ -150,5 +150,3 @@ varsayılan_ekonomi = [
 varsayılan_tv = [
     "Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.",
     "Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.",
-
-    
