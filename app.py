@@ -27,7 +27,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
         data = ticker.history(period="1d")
         if not data.empty and not pd.isna(data['Close'].iloc[-1]):
             fiyat = float(data['Close'].iloc[-1])
-            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), Pattern)
             return fiyat
     except: pass
     return st.session_state["fiyat_hafizasi"].get(hisse_kodu, 0.0)
@@ -121,11 +121,14 @@ if df_kaynak is not None:
             if len(df_kaynak.columns) > 22:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                    h_ara = re.findall(r'[A-Z]+', wv)
+                    # 🛠️ GÜNCELLEME: Sadece hücrenin ilk kelimesini (yani hisse adını) çeker, [AL] metnini eler
+                    h_ara = re.findall(r'^[A-Z]+', wv)
+                    if not h_ara:
+                        h_ara = re.findall(r'[A-Z]+', wv)
+                    
                     if h_ara:
-                        # 🛠️ KESİN ÇÖZÜM: Listenin ilk elemanı saf metin olarak dışarı çıkarıldı, kilit kırıldı!
                         hisse = str(h_ara[0]).strip()
-                        if len(hisse) >= 3:
+                        if len(hisse) >= 3 and hisse not in ["NONE", "NAN", "SINYAL", "AL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 anlik_canli = hızlı_canli_fiyat_bul(hisse)
                                 if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
@@ -138,7 +141,3 @@ if df_kaynak is not None:
                                 f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
                                 f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
                                 
-                                tablo_al.append([hisse, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
-        except: pass
-
-# 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
