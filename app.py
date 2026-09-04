@@ -57,14 +57,12 @@ yenileme_tetiklendi = False
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
-        # Yenileme butonuna basıldığında Excel kilitleri de açılır
-        st.session_state["excel_kayit_hafizasi"] = {}
         yenileme_tetiklendi = True
         st.rerun()
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px;">🕒 Son Veri Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
 
-# MATEMATİKSEL DEĞERLER PANELİ (🛠️ DÜZELTME: "REF." yazıları silindi, Çeyrek ismi düzeltildi)
+# MATEMATİKSEL DEĞERLER PANELİ (REF. yazıları kaldırıldı, Çeyrek Altın düzeltildi)
 st.markdown("#### 🟡 Referans Emtia Değerleri")
 p_gram, p_ceyrek, p_yarim, p_tam = canli_altin_fiyatlarini_hesapla()
 c1, c2, c3, c4 = st.columns(4)
@@ -116,8 +114,7 @@ if df_kaynak is not None:
                                 cfiy = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
                                 p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                                 bta_puan = p_bul[0] if p_bul else t_deg
-                                
-                                # 🛠️ DÜZELTME: Matris Durumu sütunu kaldırıldı
+                                # Sadece istediğiniz sütunlar listeleniyor (Matris Durumu silindi)
                                 tablo_alsat.append({
                                     "Varlık Kodu": hisse, 
                                     "Matematiksel Puan": bta_puan, 
@@ -131,8 +128,7 @@ if df_kaynak is not None:
                         hisse = h_ara[0].strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
-                                
-                                # 1. Excel'den ilk okunan "Yüklenen Fiyat" hafızası (SABİT)
+                                # 1. Excel'deki yüklenen ilk fiyat (Sabit kalır)
                                 if hisse not in st.session_state["excel_kayit_hafizasi"]:
                                     ilk_fiyat = hızlı_canli_fiyat_bul(hisse)
                                     if ilk_fiyat > 0:
@@ -140,10 +136,13 @@ if df_kaynak is not None:
                                 
                                 yuklenen_sabit_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, 0.0)
                                 
-                                # 2. Her yenilemede güncellenen kesintisiz "Anlık Canlı Fiyat"
+                                # 2. Sürekli yenilenecek canlı fiyat
                                 anlik_canli = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
                                 
                                 if anlik_canli > 0:
                                     puan_bul = re.findall(r'\((.*?)\)', wv)
                                     final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
                                     
+                                    # Görseldeki gibi sıralı ve temiz liste eklemesi
+                                    tablo_al.append({
+                                        "Hisse Kodu": hisse,
