@@ -142,7 +142,7 @@ arama_kodu = st.text_input("Sorgulamak istediğiniz hisse kodunu yazın (Örn: T
 if arama_kodu:
     with st.spinner(f"{arama_kodu} yükleniyor..."):
         try:
-            hisse_bist = yf.Ticker(f"{hisse_kodu}.IS")
+            hisse_bist = yf.Ticker(f"{arama_kodu}.IS")
             bist_data = hisse_bist.history(period="5d")
             if not bist_data.empty:
                 c1, c2, c3, c4 = st.columns(4)
@@ -166,22 +166,25 @@ else:
     df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     tablo_alsat = []
     tablo_al = []
+    
     for idx in range(2, len(df_kaynak)):
         if len(df_kaynak.columns) > 22:
             u_hücre = df_kaynak.iloc[idx, 20]
             w_hücre = df_kaynak.iloc[idx, 22]
             excel_maliyet = df_kaynak.iloc[idx, 17]
-            bta_puan_r = str(df_kaynak.iloc[idx, 17]).strip() if not pd.isna(df_kaynak.iloc[idx, 17]) else "Mevcut"
+            bta_puan_r = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else "Mevcut"
+            
             maliyet_fiyat = 0.0
             try:
-                if excel_maliyet and not pd.isna(excel_maliyet) and str(excel_maliyet).replace('.', '', 1).isdigit():
+                if excel_maliyet and not pd.isna(excel_maliyet):
                     maliyet_fiyat = float(excel_maliyet)
             except:
                 pass
+                
             hisse_uv, puan_uv = hücre_parçala(u_hücre)
             if hisse_uv:
                 fiyat_uv = hizli_fiyat_al(hisse_uv)
-                kar_zarar_uv = ""
+                kar_zarar_uv = "Hesaplanamadı"
                 if maliyet_fiyat > 0 and fiyat_uv > 0:
                     oran = ((fiyat_uv - maliyet_fiyat) / maliyet_fiyat) * 100
                     kar_zarar_uv = formatla_yuzde(oran)
@@ -190,7 +193,9 @@ else:
                     "BTA Puan": bta_puan_r,
                     "Maliyet Fiyat": formatla_tl(maliyet_fiyat) if maliyet_fiyat > 0 else "Belirtilmedi",
                     "💥 Canlı Fiyat": f"{formatla_tl(fiyat_uv)} TL" if fiyat_uv > 0 else "Yükleniyor...",
-                    "Kâr / Zarar 📊": kar_zarar_uv if kar_zarar_uv else "Hesaplanamadı"
+                    "Kâr / Zarar 📊": kar_zarar_uv
                 })
+                
             hisse_wv, puan_wv = hücre_parçala(w_hücre)
             if hisse_wv:
+                fiyat_wv = hizli_fiyat_al(hisse_wv)
