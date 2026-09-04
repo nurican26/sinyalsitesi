@@ -94,7 +94,7 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # Köşeli parantez temizlendi
+                        hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
@@ -105,13 +105,13 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # Köşeli parantez temizlendi
+                        hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
-                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv) # wv sütunundan puan çekildi
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
                             bta_puan = p_bul[0] if p_bul else t_deg
                             
-                            # 1. Sinyal merkezine ekle (Her zaman güncel canlı fiyatla görünür)
+                            # 1. Sinyal merkezine ekle
                             tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                             
                             # 2. Canlı takip havuzuna ilk yüklendiği fiyattan kaydet (Maliyeti sabitle)
@@ -128,14 +128,14 @@ if tablo_alsat:
 else: 
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-# 2. BTA Sinyal Merkezi (Artık Hisse Burada Kalıyor!)
+# 2. BTA Sinyal Merkezi
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if tablo_al: 
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else: 
     st.write("🔒 Aktif AL sinyali taranıyor...")
 
-# 3. BTA Canlı Takip Paneli (Burada da ilk yüklenen fiyatla kâr/zarar ölçüyor)
+# 3. BTA Canlı Takip Paneli
 st.markdown('<div class="takip-baslik">🔵 BTA CANLI TAKİP PANELİ</div>', unsafe_allow_html=True)
 if st.session_state["ozel_takip_kutusu"]:
     takip_listesi = []
@@ -147,3 +147,8 @@ if st.session_state["ozel_takip_kutusu"]:
             takip_listesi.append({
                 "Hisse": hisse,
                 "Havuz Maliyeti (Sabit)": f"{maliyet:.2f} TL",
+                "Anlık Güncel Fiyat": f"{guncel_fiy:.2f} TL",
+                "Anlık Kâr/Zarar": f"{degisim:+.2f}%",
+                "Havuz Giriş Zamanı": veri["kayit_zamani"]
+            })
+    if takip_listesi:
