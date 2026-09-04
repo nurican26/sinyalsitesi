@@ -12,7 +12,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
+YONETICI_SIFRESI = "3015"             # Kilitleyip açma (Yönetici) yetkisi
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -33,16 +33,16 @@ if "altin_hafizasi" not in st.session_state: st.session_state["altin_hafizasi"] 
 for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
-# Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
+# Giriş sayısı artırma
 st.session_state["ziyaret_sayaci"] += 1
 
-# BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
+# BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # ⚡ ARKA PLANDA KASMAYAN ALTIN FİYAT MOTORU
 def arka_plan_altin_guncelle():
     su_an = time.time()
-    if su_an - st.session_state["altin_hafizasi"]["son_guncelleme"] > 300: # 5 dakikada bir günceller
+    if su_an - st.session_state["altin_hafizasi"]["son_guncelleme"] > 300:
         try:
             gold_ticker = yf.Ticker("GC=F")
             usdtry_ticker = yf.Ticker("TRY=X")
@@ -59,47 +59,51 @@ def arka_plan_altin_guncelle():
                     "Tam": round(gram_altin * 6.51, 2),
                     "son_guncelleme": su_an
                 }
-        except: pass
+        except:
+            pass
 
 arka_plan_altin_guncelle()
 
-# 🔐 ERİŞİM KONTROL MANTIĞI VE PANEL GİZLEME
+# 🔐 ERİŞM KONTROLÜ & PANEL GİZLEME MANTIĞI
 erisim_izni = False
-if "giris_durumu" not in st.session_state:
-    st.session_state["giris_durumu"] = False
+if "giris_yapildi" not in st.session_state:
+    st.session_state["giris_yapildi"] = False
 
 if mevcut_kilit == "Açık":
     erisim_izni = True
 else:
-    if not st.session_state["giris_durumu"]:
+    if not st.session_state["giris_yapildi"]:
         st.markdown("### 🔐 Erişim Paneli")
         girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
         
         if girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
-            st.session_state["giris_durumu"] = True
-            st.session_state["girilen_aktif_sifre"] = girilen_sifre
+            st.session_state["giris_yapildi"] = True
+            st.session_state["aktif_sifre"] = girilen_sifre
             st.rerun()
         elif girilen_sifre != "":
-            st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
+            st.warning("⚠️ Geçersiz şifre girdiniz.")
     else:
         erisim_izni = True
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yalnızca şifre girerken görünür, giriş yapılınca kaybolur)
-if not st.session_state["giris_durumu"] and 'girilen_sifre' in locals() and girilen_sifre == YONETICI_SIFRESI:
-    st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
-    col_ac, col_kilitle = st.columns(2)
-    if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
-        st.rerun()
-    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
-        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
-        st.rerun()
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Sadece kilitliyken ve şifre aşamasındayken kontrol sağlar)
+if mevcut_kilit == "Kilitli" and not st.session_state["giris_yapildi"]:
+    if 'girilen_sifre' in locals() and girilen_sifre == YONETICI_SIFRESI:
+        st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
+        col_ac, col_kilitle = st.columns(2)
+        if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
+            with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
+            st.session_state["giris_yapildi"] = False
+            st.rerun()
+        if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
+            with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
+            st.rerun()
 
-# 💥 CANLI FİYAT MOTORU
+# 💥 CANLI HİSSE FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: return saved_price
+        if time.time() - saved_time < 300: 
+            return saved_price
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
         data = ticker.history(period="1d")
@@ -107,12 +111,12 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             fiyat = float(data['Close'].iloc[-1])
             st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
             return fiyat
-    except: pass
+    except: 
+        pass
     return 0.0
 
-# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
+# 🟢 1. BLOK: ERİŞİM İZNİ VARSA İÇERİĞİ GÖSTER (PANEL BURADA GİZLİDİR)
 if erisim_izni:
-    # Canlı Altın Kartları Ekranın Başına Yerleşir
     altin_verisi = st.session_state["altin_hafizasi"]
     if altin_verisi["Gram"] > 0:
         st.markdown(f"""
@@ -124,14 +128,15 @@ if erisim_izni:
         </div>
         """, unsafe_allow_html=True)
 
-    # Sadece Giriş Sayısı Bırakıldı (Puan, Oy, Tarih/Saat tamamen temizlendi)
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        except: pass
+        try: 
+            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        except: 
+            pass
 
     tablo_alsat, tablo_al = [], []
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
@@ -158,3 +163,5 @@ if erisim_izni:
                         if h_ara:
                             hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                            bta_puan = p_bul[0] if p_bul else t_deg
