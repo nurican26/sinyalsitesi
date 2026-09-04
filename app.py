@@ -115,25 +115,25 @@ if df_kaynak is not None:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-               # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
-if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-    h_ara = re.findall(r'[A-Z]+', wv)
-    if h_ara:
-        hisse = str(h_ara[0]).strip()
-        if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
-            cfiy = hızlı_canli_fiyat_bul(hisse)
-            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-            
-            # T harfi eklenmiş dinamik puan ataması (Başına ekler)
-            bta_puan = f"T {p_bul[0]}" if p_bul else f"T {t_deg}"
-            
-            tablo_al.append({
-                "Varlık Kodu": hisse, 
-                "BTA Puanı": bta_puan,  # Sütun adı ve veri formatı düzeltildi
-                "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-            "Matris Durumu": "Pozitif Matris"
-            
-            })
+         try:
+    # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
+    if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+        h_ara = re.findall(r'[A-Z]+', wv)
+        if h_ara:
+            hisse = str(h_ara[0]).strip()
+            if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
+                cfiy = hızlı_canli_fiyat_bul(hisse)
+                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                bta_puan = p_bul[0] if p_bul else t_deg
+                tablo_al.append({
+                    "Varlık Kodu": hisse, 
+                    "BTA Puanı": bta_puan, 
+                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
+                    "Matris Durumu": "Pozitif Matris"
+                })
+except Exception as e:
+    print(f"Hata oluştu: {e}")
+
                         
         except: pass
 
