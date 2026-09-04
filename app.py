@@ -111,8 +111,10 @@ st.write("")
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
-    try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-    except: pass
+    try:
+        df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+    except:
+        pass
 
 tablo_al = []
 if df_kaynak is not None:
@@ -120,27 +122,22 @@ if df_kaynak is not None:
         try:
             if len(df_kaynak.columns) > 22:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                
-                # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
                         hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
-                                
                                 anlik_canli = hızlı_canli_fiyat_bul(hisse)
-                                
-                                # FİYAT SABİTLEME
                                 if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
                                     st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
-                                
                                 yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
-                                
-                                # PUANI DOĞRUDAN R SÜTUNUNDAN GÜVENLE OKU
                                 ham_r_degeri = df_kaynak.iloc[idx, 17]
                                 if pd.isna(ham_r_degeri):
                                     final_puan = "0.00"
                                 else:
                                     final_puan = str(ham_r_degeri).strip()
-                                
+                                tablo_al.append({
+                                    "Varlık Kodu": hisse, 
+                                    "Matematiksel Puan": final_puan, 
+                                    "Yüklenen Fiyat (Sabit)": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
