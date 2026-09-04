@@ -80,7 +80,7 @@ with col_genel:
 
 st.write("")
 
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ (YENI)
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESI
 st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
 arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
@@ -115,15 +115,16 @@ if df_kaynak is not None:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ (AL sütunu stabil korundu)
+                # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = h_ara.strip()
+                        # 🛠️ HATA DÜZELTİLDİ: Liste doğrudan stringe çevrilmeden ilk elemanı çekildi
+                        hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             tablo_al.append({
                                 "Varlık Kodu": hisse, 
                                 "Matematiksel Puan": bta_puan, 
