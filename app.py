@@ -83,43 +83,43 @@ tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
+            # Excel'den H Sütunundaki (7. Dizin) fiyat verisini doğrudan çekme
+            h_sutunu_fiyati = df_kaynak.iloc[idx, 7] if len(df_kaynak.columns) > 7 else 0
+            try:
+                temiz_puan = float(str(h_sutunu_fiyati).replace(',', '.')) if pd.notna(h_sutunu_fiyati) else 0.0
+            except:
+                temiz_puan = 0.0
+
             if len(df_kaynak.columns) > 22:
                 uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TEMİZLENDİ
+                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TAM KESİN İMHA EDİLDİ
                         cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
-                        tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                        tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan Fiyatı": f"{temiz_puan:.2f} TL", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TEMİZLENDİ
+                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TAM KESİN İMHA EDİLDİ
                         cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv) # uv üzerinden puan kontrolü
-                        bta_puan = p_bul[0] if p_bul else t_deg
                         
-                        # Kâr / Zarar Hesaplama Mantığı (BTA Sinyal Merkezi için)
-                        try:
-                            temiz_puan = float(bta_puan.replace(',', '.')) if isinstance(bta_puan, str) else float(bta_puan)
-                            if temiz_puan > 0 and cfiy > 0:
-                                kz_oran = ((cfiy - temiz_puan) / temiz_puan) * 100
-                                kz_str = f"% {kz_oran:+.2f}"
-                            else: kz_str = "% 0.00"
-                        except: kz_str = "Hesaplanamıyor"
+                        # H Sütunundan gelen fiyata göre kâr/zarar hesaplama
+                        if temiz_puan > 0 and cfiy > 0:
+                            kz_oran = ((cfiy - temiz_puan) / temiz_puan) * 100
+                            kz_str = f"% {kz_oran:+.2f}"
+                        else: 
+                            kz_str = "% 0.00"
 
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         
                         tablo_al.append({
                             "Hisse Kodu 🚀": hisse, 
-                            "BTA Sinyal Fiyatı": f"{temiz_puan:.2f} TL" if 'temiz_puan' in locals() else bta_puan, 
+                            "BTA Sinyal Fiyatı": f"{temiz_puan:.2f} TL", 
                             "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
                             "Kâr / Zarar (%) 📈": kz_str
                         })
@@ -144,3 +144,11 @@ if st.session_state["ozel_takip_kutusu"]:
         maliyet = bilge['kayit_fiyati']
         if maliyet > 0:
             kar_zarar_yuzde = ((cfiy - maliyet) / maliyet) * 100
+            kar_zarar_str = f"% {kar_zarar_yuzde:+.2f}"
+        else:
+            kar_zarar_str = "% 0.00"
+            
+        tk_list.append({
+            "Hisse Kodu 🗝️": hisse, 
+            "Havuz Maliyeti": f"{maliyet:.2f} TL", 
+            "Anlık Güncel": f"{cfiy:.2f} TL",
