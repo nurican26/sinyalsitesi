@@ -83,7 +83,7 @@ tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            # Excel'den H Sütunundaki (7. İndeks) fiyat verisini doğrudan çekme
+            # Excel H sütunundan (7. indeks) maliyet fiyatını al
             h_sutunu_fiyati = df_kaynak.iloc[idx, 7] if len(df_kaynak.columns) > 7 else 0
             try:
                 temiz_puan = float(str(h_sutunu_fiyati).replace(',', '.')) if pd.notna(h_sutunu_fiyati) else 0.0
@@ -97,17 +97,16 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # Köşeli parantezi bozacak parantez kalıntısı elendi
+                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER KESİN OLARAK SİLİNDİ
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan Fiyatı": f"{temiz_puan:.2f} TL", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # Köşeli parantezi bozacak parantez kalıntısı elendi
+                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER KESİN OLARAK SİLİNDİ
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         
-                        # H Sütunundan gelen fiyata göre kâr/zarar hesaplama
                         if temiz_puan > 0 and cfiy > 0:
                             kz_oran = ((cfiy - temiz_puan) / temiz_puan) * 100
                             kz_str = f"% {kz_oran:+.2f}"
@@ -152,3 +151,6 @@ if st.session_state["ozel_takip_kutusu"]:
             "Hisse Kodu 🗝️": hisse, 
             "Havuz Maliyeti": f"{maliyet:.2f} TL", 
             "Anlık Güncel": f"{cfiy:.2f} TL",
+            "Kâr / Zarar (%)": kar_zarar_str,
+            "Eklenme Zamanı 📅": bilge.get("kayit_zamani", guncel_an)
+        })
