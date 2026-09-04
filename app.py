@@ -53,20 +53,19 @@ def temiz_hisse_adi_bul(metin):
     if pd.isna(metin): 
         return ""
     metin_str = str(metin).upper().strip()
-    # Sadece harflerden oluşan kelimeleri bulur, parantezleri ve kalıntıları temizler
     temiz_harfler = "".join([c for c in metin_str if c.isalpha()])
     if len(temiz_harfler) >= 3 and len(temiz_harfler) <= 6:
         if temiz_harfler not in ["NAN", "NONE", "AL_SAT", "SİNYALİ"]:
             return temiz_harfler
     return ""
 
-# 🌟 1. GÖKKUŞAĞI NEON LOGO ALANI
+# 🌟 1. LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; text-align: center; margin-bottom: 20px;">🚪 <b>Ziyaret:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-# 🪙 2. CANLI ALTIN MOTORU (Sistem Kilitlemeyen Bağımsız Blok)
+# 🪙 2. CANLI ALTIN MOTORU
 def canlı_altın_fiyatları_hesapla():
     anlik_zaman = time.time()
     if "vakit" in st.session_state["altin_hafizasi"]:
@@ -125,70 +124,78 @@ if arama_kodu:
 st.write("---")
 excel_yolu = "nurican.xls.xlsm"
 
-if os.path.exists(excel_yolu):
-    try:
-        df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        ham_hisseler = set()
-        satır_haritası = []
-        
-        for idx in range(2, len(df_kaynak)):
-            if len(df_kaynak.columns) > 22:
-                uv = temiz_hisse_adi_bul(df_kaynak.iloc[idx, 20])
-                wv = temiz_hisse_adi_bul(df_kaynak.iloc[idx, 22])
-                t_puan = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
-                
-                if uv: ham_hisseler.add(uv)
-                if wv: ham_hisseler.add(wv)
-                satır_haritası.append({"idx": idx, "uv": uv, "wv": wv, "puan": t_puan})
-        
-        canlı_fiyatlar_sözlüğü = {}
-        if ham_hisseler:
-            ticker_listesi = [f"{h}.IS" for h in ham_hisseler]
-            toplu_data = yf.download(ticker_listesi, period="1d", group_by="ticker", progress=False)
+if not os.path.exists(excel_yolu):
+    st.warning(f"'{excel_yolu}' dosyası sistemde bulunamadı.")
+else:
+    df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+    ham_hisseler = set()
+    satır_haritası = []
+    
+    for idx in range(2, len(df_kaynak)):
+        if len(df_kaynak.columns) > 22:
+            uv = temiz_hisse_adi_bul(df_kaynak.iloc[idx, 20])
+            wv = temiz_hisse_adi_bul(df_kaynak.iloc[idx, 22])
+            t_puan = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
             
-            for h in ham_hisseler:
-                try:
-                    if len(ticker_listesi) == 1:
-                        fiyat = toplu_data['Close'].iloc[-1]
-                    else:
-                        fiyat = toplu_data[f"{h}.IS"]['Close'].iloc[-1]
-                    if not pd.isna(fiyat):
-                        canlı_fiyatlar_sözlüğü[h] = float(fiyat)
-                except:
-                    canlı_fiyatlar_sözlüğü[h] = 0.0
+            if uv: ham_hisseler.add(uv)
+            if wv: ham_hisseler.add(wv)
+            satır_haritası.append({"idx": idx, "uv": uv, "wv": wv, "puan": t_puan})
+    
+    canlı_fiyatlar_sözlüğü = {}
+    if ham_hisseler:
+        ticker_listesi = [f"{h}.IS" for h in ham_hisseler]
+        toplu_data = yf.download(ticker_listesi, period="1d", group_by="ticker", progress=False)
+        
+        for h in ham_hisseler:
+            try:
+                if len(ticker_listesi) == 1:
+                    fiyat = toplu_data['Close'].iloc[-1]
+                else:
+                    fiyat = toplu_data[f"{h}.IS"]['Close'].iloc[-1]
+                if not pd.isna(fiyat):
+                    canlı_fiyatlar_sözlüğü[h] = float(fiyat)
+            except:
+                canlı_fiyatlar_sözlüğü[h] = 0.0
 
-        tablo_alsat = []
-        tablo_al = []
+    tablo_alsat = []
+    tablo_al = []
 
-        for satır in satır_haritası:
-            if satır["uv"]:
-                cf = canlı_fiyatlar_sözlüğü.get(satır["uv"], 0.0)
-                tablo_alsat.append({
-                    "Hisse Kodu 📈": satır["uv"],
-                    "BTA Puan": satır["puan"] if satır["puan"] else "Mevcut",
-                    "💥 İnternet Canlı": formatla_tl(cf)
-                })
-            
-            if satır["wv"]:
-                cf = canlı_fiyatlar_sözlüğü.get(satır["wv"], 0.0)
-                if satır["wv"] not in st.session_state["ozel_takip_kutusu"] and cf > 0:
-                    st.session_state["ozel_takip_kutusu"][satır["wv"]] = {"kayit_fiyati": cf}
-                tablo_al.append({
-                    "Hisse Kodu 🚀": satır["wv"],
-                    "BTA Puan": satır["puan"] if satır["puan"] else "Mevcut",
-                    "💥 İnternet Canlı": formatla_tl(cf)
-                })
+    for satır in satır_haritası:
+        if satır["uv"]:
+            cf = canlı_fiyatlar_sözlüğü.get(satır["uv"], 0.0)
+            tablo_alsat.append({
+                "Hisse Kodu 📈": satır["uv"],
+                "BTA Puan": satır["puan"] if satır["puan"] else "Mevcut",
+                "💥 İnternet Canlı": formatla_tl(cf)
+            })
+        
+        if satır["wv"]:
+            cf = canlı_fiyatlar_sözlüğü.get(satır["wv"], 0.0)
+            if satır["wv"] not in st.session_state["ozel_takip_kutusu"] and cf > 0:
+                st.session_state["ozel_takip_kutusu"][satır["wv"]] = {"kayit_fiyati": cf}
+            tablo_al.append({
+                "Hisse Kodu 🚀": satır["wv"],
+                "BTA Puan": satır["puan"] if satır["puan"] else "Mevcut",
+                "💥 İnternet Canlı": formatla_tl(cf)
+            })
 
-        st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-        if tablo_alsat: 
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else: 
-            st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat: 
+        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-        st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-        if tablo_al: 
-            st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-        else: 
-            st.write("🔒 Aktif BTA sinyali taranıyor...")
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: 
+        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif BTA sinyali taranıyor...")
 
-    except Exception as e:
+# 🌟 5. ÖZEL TAKİP HAVUZU
+if st.session_state["ozel_takip_kutusu"]:
+    st.write("---")
+    st.markdown("#### 🌟 Özel Takip Havuzu 💰")
+    tk_list = []
+    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+        tk_list.append({
+            "Hisse Kodu 🗝️": hisse,
