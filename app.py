@@ -12,7 +12,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta2026"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "adminBTA2026"     # Kilitleyip açma (Yönetici) yetkisi
+YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
