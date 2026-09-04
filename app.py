@@ -38,11 +38,10 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 🛠️ ERİŞİM KONTROL SORGUSU İÇİN ÖNCE ŞİFRE DEĞİŞKENİNİ TANIMLAYALIM (Görünmez Durumda)
+# 🛠️ ERİŞİM KONTROL SORGUSU İÇİN HAFIZA TANIMLAMASI
 if "girilen_sifre_hafiza" not in st.session_state:
     st.session_state["girilen_sifre_hafiza"] = ""
 
-# Geçici olarak şifre eşleşmesini kontrol etmek için değişkeni başta boş atayalım, alt kısımdan veri alacak
 girilen_sifre = st.session_state["girilen_sifre_hafiza"]
 
 # 🛠️ ERİŞİM KONTROL MANTIĞI
@@ -67,7 +66,6 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
 
 # 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
-    # Sadece Giriş Sayısı Bırakıldı
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
@@ -121,16 +119,15 @@ else:
 
 
 # 🔐 EN ALTA ALINAN VE KÜÇÜLTÜLEN ERİŞİM PANELİ
-st.write("---") # Üst kısımdan ayıran ince çizgi
-st.markdown("##### 🔐 Erişim Paneli") # Başlık ufatıldı (### yerine ##### yapıldı)
+st.write("---") 
+st.markdown("##### 🔐 Erişim Paneli") 
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...", key="girilen_sifre_alt")
 
-# Girilen şifreyi hafızaya alıp sayfayı tetikleme kontrolü
 if girilen_sifre != st.session_state["girilen_sifre_hafiza"]:
     st.session_state["girilen_sifre_hafiza"] = girilen_sifre
     st.rerun()
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Yine alt kısma bağlı çalışır)
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
 is_admin = False
 if girilen_sifre == YONETICI_SIFRESI:
     is_admin = True
