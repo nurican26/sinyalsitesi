@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os, re
+import os
 import time
 
-# Sayfa Yapılandırması
+# 1. Sayfa Yapılandırması
 st.set_page_config(page_title="BTA Finans", page_icon="📈", layout="wide")
 
 # Gelişmiş Şık ve Akıcı CSS Tasarımı
@@ -39,9 +39,10 @@ if "ziyaret_edildi" not in st.session_state:
     st.session_state["ziyaret_sayaci"] += 1
     st.session_state["ziyaret_edildi"] = True
 
-# Yardımcı Fonksiyonlar
+# Kararlı Yardımcı Fonksiyonlar
 def formatla_tl(deger):
-    if not deger or pd.isna(deger): return "0,00"
+    if not deger or pd.isna(deger) or deger == 0: 
+        return "Yükleniyor..."
     return "{:,.2f}".format(deger).replace(",", "X").replace(".", ",").replace("X", ".")
 
 def havuzu_temizle_aksiyon():
@@ -49,21 +50,23 @@ def havuzu_temizle_aksiyon():
     st.rerun()
 
 def temiz_hisse_adi_bul(metin):
-    if pd.isna(metin): return ""
-    # Metnin içindeki harfleri ayıklar, liste parantezlerinden kurtarır
-    bulunan = re.findall(r'[A-Z]+', str(metin).upper().strip())
-    if bulunan:
-        kod = str(bulunan[0])
-        return kod if len(kod) > 1 else "" # "A" gibi hatalı tek harfleri eler
+    if pd.isna(metin): 
+        return ""
+    metin_str = str(metin).upper().strip()
+    # Sadece harflerden oluşan kelimeleri bulur, parantezleri ve kalıntıları temizler
+    temiz_harfler = "".join([c for c in metin_str if c.isalpha()])
+    if len(temiz_harfler) >= 3 and len(temiz_harfler) <= 6:
+        if temiz_harfler not in ["NAN", "NONE", "AL_SAT", "SİNYALİ"]:
+            return temiz_harfler
     return ""
 
-# 🌟 1. LOGO ALANI
+# 🌟 1. GÖKKUŞAĞI NEON LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; text-align: center; margin-bottom: 20px;">🚪 <b>Ziyaret:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-# 🪙 2. CANLI ALTIN MOTORU
+# 🪙 2. CANLI ALTIN MOTORU (Sistem Kilitlemeyen Bağımsız Blok)
 def canlı_altın_fiyatları_hesapla():
     anlik_zaman = time.time()
     if "vakit" in st.session_state["altin_hafizasi"]:
@@ -118,14 +121,13 @@ if arama_kodu:
         except:
             st.error("Bağlantı hatası oluştu.")
 
-# 📊 4. EXCEL OKUMA VE OPTİMİZE TOPLU FİYAT ÇEKİMİ
+# 📊 4. EXCEL OKUMA VE IŞIK HIZINDA TOPLU FİYAT ÇEKİMİ
 st.write("---")
 excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        
         ham_hisseler = set()
         satır_haritası = []
         
@@ -159,30 +161,34 @@ if os.path.exists(excel_yolu):
         tablo_al = []
 
         for satır in satır_haritası:
-            if satır["uv"] and str(df_kaynak.iloc[satır["idx"], 20]) not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+            if satır["uv"]:
                 cf = canlı_fiyatlar_sözlüğü.get(satır["uv"], 0.0)
                 tablo_alsat.append({
                     "Hisse Kodu 📈": satır["uv"],
                     "BTA Puan": satır["puan"] if satır["puan"] else "Mevcut",
-                    "💥 İnternet Canlı": f"{formatla_tl(cf)} TL" if cf > 0 else "Yükleniyor..."
+                    "💥 İnternet Canlı": formatla_tl(cf)
                 })
             
-            if satır["wv"] and str(df_kaynak.iloc[satır["idx"], 22]) not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+            if satır["wv"]:
                 cf = canlı_fiyatlar_sözlüğü.get(satır["wv"], 0.0)
                 if satır["wv"] not in st.session_state["ozel_takip_kutusu"] and cf > 0:
                     st.session_state["ozel_takip_kutusu"][satır["wv"]] = {"kayit_fiyati": cf}
                 tablo_al.append({
                     "Hisse Kodu 🚀": satır["wv"],
                     "BTA Puan": satır["puan"] if satır["puan"] else "Mevcut",
-                    "💥 İnternet Canlı": f"{formatla_tl(cf)} TL" if cf > 0 else "Yükleniyor..."
+                    "💥 İnternet Canlı": formatla_tl(cf)
                 })
 
         st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-        if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+        if tablo_alsat: 
+            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+        else: 
+            st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
         st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-        if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-        else: st.write("🔒 Aktif BTA sinyali taranıyor...")
+        if tablo_al: 
+            st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+        else: 
+            st.write("🔒 Aktif BTA sinyali taranıyor...")
 
     except Exception as e:
