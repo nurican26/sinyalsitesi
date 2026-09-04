@@ -80,7 +80,7 @@ with col_genel:
 
 st.write("")
 
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESI
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
 st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
 arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
@@ -111,26 +111,33 @@ tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
+            # Excel'de en az 22 sütun var mı kontrolü (Güvenlik köprüsü)
             if len(df_kaynak.columns) > 22:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                
+                # 🛠️ GÜNCELLEME: Puan değeri artık 17. sütundan (R Sütunu) okunuyor
+                r_puan_ham = str(df_kaynak.iloc[idx, 17]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 17]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
                 # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        # 🛠️ HATA DÜZELTİLDİ: Liste doğrudan stringe çevrilmeden ilk elemanı çekildi
                         hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
-                            cfiy = hızlı_canli_fiyat_bul(hisse)
-                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
-                            tablo_al.append({
-                                "Varlık Kodu": hisse, 
-                                "Matematiksel Puan": bta_puan, 
-                                "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                                "Matris Durumu": "Pozitif Matris"
-                            })
+                            # Global arama filtresine uyuyor mu?
+                            if arama_terimi == "" or arama_terimi in hisse:
+                                cfiy = hızlı_canli_fiyat_bul(hisse)
+                                
+                                # Eğer R sütununda puan varsa onu al, yoksa T sütunundaki yedek değeri kullan
+                                bta_puan = r_puan_ham if r_puan_ham else t_deg
+                                
+                                tablo_al.append({
+                                    "Varlık Kodu": hisse, 
+                                    "Matematiksel Puan": bta_puan, 
+                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
+                                    "Matris Durumu": "Pozitif Matris"
+                                })
         except: pass
 
 # 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
@@ -141,8 +148,3 @@ else:
     st.write("⏳ Matematiksel veri tabanı taranıyor...")
 
 # Sorumluluk Reddi Beyanı
-st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
-
-# Otomatik arka plan yenileme tetikleyici (60 saniye)
-time.sleep(60)
-st.rerun()
