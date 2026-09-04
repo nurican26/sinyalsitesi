@@ -102,7 +102,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            # 🎯 KESİN DÜZELTME: Listenin ilk elemanını saf metin olarak alıyoruz ('ALARK')
+                            # ⭐ KÖKTEN ÇÖZÜM: Listenin ilk elemanını [0] ile alıp temiz string yapıyoruz
                             hisse = str(h_ara[0]).strip()
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
@@ -112,7 +112,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            # 🎯 KESİN DÜZELTME: Listenin ilk elemanını saf metin olarak alıyoruz ('ALARK')
+                            # ⭐ KÖKTEN ÇÖZÜM: Listenin ilk elemanını [0] ile alıp temiz string yapıyoruz
                             hisse = str(h_ara[0]).strip()
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
