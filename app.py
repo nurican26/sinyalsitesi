@@ -31,7 +31,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             return fiyat
     except: pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -94,24 +94,22 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        # 🛠️ DÜZ YAZI YAPMA: Listenin ilk elemanını alarak köşeli parantezleri yok ettik
                         hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 # 🟢 BTA SİNYAL MERKEZİ (AL)
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        # 🛠️ DÜZ YAZI YAPMA: Listenin ilk elemanını alarak köşeli parantezleri yok ettik
                         hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             
                             # 1. Sinyal merkezine ekle
                             tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -147,7 +145,10 @@ if st.session_state["ozel_takip_kutusu"]:
         if guncel_fiy > 0:
             maliyet = veri["kayit_fiyati"]
             degisim = ((guncel_fiy - maliyet) / maliyet) * 100
-            takip_listesi.append({
-                "Hisse": hisse,
-                "Havuz Maliyeti (Sabit)": f"{maliyet:.2f} TL",
-                "Anlık Güncel Fiyat": f"{guncel_fiy:.2f} TL",
+            
+            # SyntaxError riskini sıfırlayan güvenli düz veri satırı
+            yeni_satir = {}
+            yeni_satir["Hisse"] = hisse
+            yeni_satir["Havuz Maliyeti (Sabit)"] = f"{maliyet:.2f} TL"
+            yeni_satir["Anlık Güncel Fiyat"] = f"{guncel_fiy:.2f} TL"
+            yeni_satir["Anlık Kâr/Zarar"] = f"{degisim:+.2f}%"
