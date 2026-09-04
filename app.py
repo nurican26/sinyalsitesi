@@ -62,19 +62,29 @@ def temiz_metin_al(val):
         return ""
     return str(val).strip().upper()
 
-# Bağımsız veri parçalayıcı fonksiyon
+# Hisseleri Asla Kaçırmayan Esnek Ayıklayıcı Fonksiyon
 def hücre_parçala(metin):
     metin_str = temiz_metin_al(metin)
     if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
         return "", ""
+    
+    # Hücre içindeki tüm harf bloklarını ara (Örn: THYAO)
     hisse_bul = re.findall(r'[A-Z]+', metin_str)
     if not hisse_bul:
         return "", ""
+    
     hisse = "".join(hisse_bul)
+    # Temizlik filtreleri kelimeleri engellemesin diye kontrol
+    if hisse in ["NAN", "NONE", "AL", "SINYALI", "ALSAT"]:
+        return "", ""
+        
     if len(hisse) < 2:
         return "", ""
+        
+    # Hücre içindeki tüm sayı bloklarını ara (Örn: +2.50 veya 2,50)
     puan_bul = re.findall(r'[-+]?\d*[.,]\d+|\d+', metin_str)
     puan = "".join(puan_bul) if puan_bul else ""
+    
     return hisse, puan
 
 # Önbellekli Fiyat Motoru
@@ -181,6 +191,7 @@ else:
             except:
                 pass
                 
+            # 🟡 Dönemsel Al Sat Sinyalleri (U Sütunu)
             hisse_uv, puan_uv = hücre_parçala(u_hücre)
             if hisse_uv:
                 fiyat_uv = hizli_fiyat_al(hisse_uv)
@@ -188,14 +199,6 @@ else:
                 if maliyet_fiyat > 0 and fiyat_uv > 0:
                     oran = ((fiyat_uv - maliyet_fiyat) / maliyet_fiyat) * 100
                     kar_zarar_uv = formatla_yuzde(oran)
-                tablo_alsat.append({
-                    "Hisse Kodu 📈": hisse_uv,
-                    "BTA Puan": bta_puan_r,
-                    "Maliyet Fiyat": formatla_tl(maliyet_fiyat) if maliyet_fiyat > 0 else "Belirtilmedi",
-                    "💥 Canlı Fiyat": f"{formatla_tl(fiyat_uv)} TL" if fiyat_uv > 0 else "Yükleniyor...",
-                    "Kâr / Zarar 📊": kar_zarar_uv
-                })
                 
-            hisse_wv, puan_wv = hücre_parçala(w_hücre)
-            if hisse_wv:
-                fiyat_wv = hizli_fiyat_al(hisse_wv)
+                # VBA'dan gelen U sütunundaki puanı öncelikli göster, yoksa T sütununu göster
+                gosterilecek_puan = f"+{puan_uv}" if puan_uv else bta_puan_r
