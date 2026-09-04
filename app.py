@@ -50,7 +50,7 @@ def canli_altin_fiyatlarini_hesapla():
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 col_refresh, col_time = st.columns(2)
 with col_refresh:
-    if st.button("🔄 Yenile"):
+    if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
         st.rerun()
 with col_time:
@@ -76,8 +76,9 @@ arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu giri
 if arama_terimi:
     canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
     if canli_sorgu_fiyat > 0:
-        tablo_canli_arama = [["Aranan Varlık", f"{canli_sorgu_fiyat:.2f} TL", "Kesintisiz Canlı Veri"]]
-        df_arama = pd.DataFrame(tablo_canli_arama, columns=["Aranan Varlık", "Anlık İnternet Canlı Fiyatı", "Veri Akış Durumu"])
+        # 🛠️ DÜZELTME: "Aranan Varlık" başlığı "Hisse Kodu" olarak güncellendi!
+        tablo_canli_arama = [[arama_terimi, f"{canli_sorgu_fiyat:.2f} TL", "Kesintisiz Canlı Veri"]]
+        df_arama = pd.DataFrame(tablo_canli_arama, columns=["Hisse Kodu", "Anlık İnternet Canlı Fiyatı", "Veri Akış Durumu"])
         st.dataframe(df_arama, use_container_width=True, hide_index=True)
     else:
         st.write("❌ Hisse kodu bulunamadı veya sunucu yanıt vermiyor. Lütfen kontrol edin (Örn: THYAO).")
@@ -101,12 +102,12 @@ if df_kaynak is not None:
                 wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 
                 if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
-                    # 🛠️ KESİN ÇÖZÜM: Yazıyı boşluğa göre böler ve sadece en baştaki saf kelimeyi (THYAO) string olarak alır
+                    # W sütunundaki (THYAO [AL] (0.04)) metninden ilk kelimeyi çeker
                     parcalar = wv_kontrol.split(' ')
-                    if parcalar and len(parcalar[0]) >= 3:
+                    if parcalar:
                         hisse = str(parcalar[0]).strip()
                         
-                        if hisse not in ["AL", "NONE", "NAN"]:
+                        if len(hisse) >= 3 and hisse not in ["AL", "NONE", "NAN"]:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 anlik_canli = hızlı_canli_fiyat_bul(hisse)
                                 
@@ -117,9 +118,9 @@ if df_kaynak is not None:
                                     
                                     yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
                                     
-                                    # PUANI R SÜTUNUNDAN (17) HAM METİN OLARAK OKU (0.04)
-                                    ham_r_degeri = df_kaynak.iloc[idx, 17]
-                                    final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
+                                    # 🛠️ DÜZELTME: Puanı doğrudan makronuzun W sütununa yazdığı parantezin içinden (0.04) cımbızla çeker!
+                                    puan_bul = re.findall(r'\((.*?)\)', wv_kontrol)
+                                    final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
                                     
                                     f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
                                     f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
@@ -130,7 +131,7 @@ if df_kaynak is not None:
 # ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ EN ÜSTTE VE SABİT
 st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
 if tablo_al:
-    df_sonuc = pd.DataFrame(tablo_al, columns=["Varlık Kodu", "Matematiksel Puan", "Yüklenen Fiyat (Sabit)", "Anlık Canlı Fiyat", "Matris Durumu"])
+    df_sonuc = pd.DataFrame(tablo_al, columns=["Hisse Kodu", "Matematiksel Puan", "Yüklenen Fiyat (Sabit)", "Anlık Canlı Fiyat", "Matris Durumu"])
     st.dataframe(df_sonuc, use_container_width=True, hide_index=True)
 else:
     st.write("⏳ Matematiksel veri tabanı taranıyor veya Excel dosyasında veri bulunamadı...")
