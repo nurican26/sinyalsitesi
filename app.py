@@ -56,7 +56,7 @@ with col_refresh:
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px; text-align: right;">🕒 Son Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
 
-st.write("---") # ➡️ Görsel Ayraç Çizgisi
+st.write("---")
 
 # MATEMATİKSEL DEĞERLER PANELİ
 st.markdown("#### 🟡 Referans Emtia Değerleri")
@@ -67,7 +67,7 @@ c2.markdown(f'<div class="piyasa-kutusu">🪙 REF. ÇEYREK<br><span style="color
 c3.markdown(f'<div class="piyasa-kutusu">🥈 REF. YARIM<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
 c4.markdown(f'<div class="piyasa-kutusu">🥇 REF. TAM<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
 
-st.write("---") # ➡️ Görsel Ayraç Çizgisi
+st.write("---")
 
 # 📌 İKİYE BÖLÜNMÜŞ HABER MERKEZİ
 col_eko, col_genel = st.columns(2)
@@ -80,15 +80,15 @@ with col_genel:
     st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
     st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve metro hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
 
-st.write("---") # ➡️ Görsel Ayraç Çizgisi
+st.write("---")
 
-# 📢 MANUEL SEÇİLMİŞ 3 KRİTİK KAP HABERİ BÖLÜMÜ
+# 📢 KRİTİK KAP GELİŞMELERİ
 st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
 st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> MSB ile savunma sistemleri tedariki kapsamında 42 milyon dolar tutarında sözleşme imzalandığını duyurdu.</div>', unsafe_allow_html=True)
 st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Yurt dışı iştirakinin ABD merkezli enerji depolama projesinde niyet mektubu imzaladığını bildirdi.</div>', unsafe_allow_html=True)
 st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Gelecek dönem filo genişletme stratejileri doğrultusunda 4 adet yeni geniş gövdeli uçak kiralandığını açıkladı.</div>', unsafe_allow_html=True)
 
-st.write("---") # ➡️ Görsel Ayraç Çizgisi
+st.write("---")
 
 # 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
 st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
@@ -105,7 +105,7 @@ if arama_terimi:
 else:
     st.write("🔎 Yukarıdaki kutuya bir BIST hisse kodu yazarak anlık fiyat sorgulaması yapabilirsiniz.")
 
-st.write("---") # ➡️ Görsel Ayraç Çizgisi
+st.write("---")
 
 # EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
 df_kaynak = None
@@ -118,25 +118,27 @@ tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            # 🛠️ GÜVENLİK YUMUŞATILDI: Hisselerin görünmesini engelleyen sütun filtresi esnetildi
-            wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if idx < len(df_kaynak) else ""
-            if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                h_ara = re.findall(r'[A-Z]+', wv)
-                if h_ara:
-                    hisse = str(h_ara[0]).strip()
-                    if len(hisse) >= 3: # Kod uzunluğu filtresi genişletildi
-                        if arama_terimi == "" or arama_terimi in hisse:
-                            anlik_canli = hızlı_canli_fiyat_bul(hisse)
-                            if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
-                                st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
-                            yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
-                            
-                            ham_r_degeri = df_kaynak.iloc[idx, 17]
-                            final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
-                            
-                            f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
-                            f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
-                            
-                            tablo_al.append([hisse, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
+            if len(df_kaynak.columns) > 22:
+                wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+                    h_ara = re.findall(r'[A-Z]+', wv)
+                    if h_ara:
+                        # 🛠️ KESİN ÇÖZÜM: Listenin ilk elemanı saf metin olarak dışarı çıkarıldı, kilit kırıldı!
+                        hisse = str(h_ara[0]).strip()
+                        if len(hisse) >= 3:
+                            if arama_terimi == "" or arama_terimi in hisse:
+                                anlik_canli = hızlı_canli_fiyat_bul(hisse)
+                                if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
+                                    st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
+                                yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
+                                
+                                ham_r_degeri = df_kaynak.iloc[idx, 17]
+                                final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
+                                
+                                f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
+                                f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
+                                
+                                tablo_al.append([hisse, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
         except: pass
 
+# 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
