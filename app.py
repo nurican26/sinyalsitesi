@@ -18,10 +18,6 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 # Google Fonts'tan el yazısı fontu (Sacramento) ve Tablo Yazı Boyutu Ayarları
 st.markdown("""
-<link rel="preconnect" href="https://googleapis.com">
-<link rel="preconnect" href="https://gstatic.com" crossorigin>
-<link href="https://googleapis.com/css2?family=Sacramento&display=swap" rel="stylesheet">
-<style>
 
 # 💥 FİYAT VE ALTIN MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
