@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Profesyonel Terminal Tasarımı
 st.set_page_config(page_title="BTA Veri Analizi", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .gundem-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .gundem-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .kap-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #a855f7; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
@@ -31,7 +31,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             return fiyat
     except: pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -79,6 +79,12 @@ with col_genel:
     st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
     st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve yeni metro/tramvay hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
 
+# 📢 KRİTİK KAP GELİŞMELERİ (YENİ MODÜL - EN ÖNEMLİ 3 HABER)
+st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
+st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> Milli Savunma Bakanlığı ile savunma sistemleri tedariki kapsamında 42 milyon dolar tutarında yeni bir yurt içi satış sözleşmesi imzaladığını duyurdu.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Yurt dışı iştirakinin ABD merkezli dev bir enerji depolama projesinde ana yüklenici ortaklık niyet mektubu imzaladığını bildirdi.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Gelecek dönem filo genişletme stratejileri doğrultusunda 4 adet yeni nesil geniş gövdeli uçağın finansal kiralama sürecinin tamamlandığını açıkladı.</div>', unsafe_allow_html=True)
+
 st.write("")
 
 # 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
@@ -123,33 +129,18 @@ if df_kaynak is not None:
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 
-                                # Anlık internet canlı fiyatını bul
                                 anlik_canli = hızlı_canli_fiyat_bul(hisse)
                                 
-                                # 🛠️ FİYAT SABİTLEME: Excel yüklendiği andaki ilk fiyatı kaydeder
+                                # FİYAT SABİTLEME
                                 if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
                                     st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
                                 
                                 yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
                                 
-                                # 🛠️ PUAN TEMİZLEME: Parantez içindeki (0.04) değerini net string olarak ayıklar
-                                puan_bul = re.findall(r'\((.*?)\)', wv)
-                                final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
+                                # PUANI DOĞRUDAN R SÜTUNUNDAN OKU
+                                ham_r_degeri = df_kaynak.iloc[idx, 17]
+                                if pd.isna(ham_r_degeri):
+                                    final_puan = "0.00"
+                                else:
+                                    final_puan = str(ham_r_degeri).strip()
                                 
-                                tablo_al.append({
-                                    "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": final_puan, 
-                                    "Yüklenen Fiyat (Sabit)": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
-                                    "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor...",
-                                    "Matris Durumu": "Pozitif Matris"
-                                })
-        except: pass
-
-# 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
-st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
-if tablo_al: 
-    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: 
-    st.write("⏳ Matematiksel veri tabanı taranıyor...")
-
-# Sorumluluk Reddi Beyanı
