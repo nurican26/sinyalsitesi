@@ -1,3 +1,42 @@
+import streamlit as st
+import pandas as pd
+import datetime
+import yfinance as yf
+import os, re
+import time
+
+# 1. Sayfa Yapılandırması ve Neon Tasarım
+st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
+
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
+
+# 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
+ZIYARETCI_SIFRESI = "bta2026"         # Sadece hisseleri görme yetkisi
+YONETICI_SIFRESI = "adminBTA2026"     # Kilitleyip açma (Yönetici) yetkisi
+
+MESAJ_DOSYASI = "gelen_mesajlar.txt"
+DURUM_DOSYASI = "site_durumu.txt"
+
+# 💾 Kalıcı Kilit Durumunu Dosyadan Okuma
+if not os.path.exists(DURUM_DOSYASI):
+    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
+        f.write("Açık")
+
+with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
+    mevcut_kilit = f.read().strip()
+
+# Hafıza Kontrolleri
+if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
+if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
+
+for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
+    if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
+
+st.session_state["ziyaret_sayaci"] += 1
+
+# BTA LOGO ALANI
+st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
+
 # 🔐 GİRİŞ KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
@@ -126,6 +165,3 @@ if has_messages:
             os.remove(MESAJ_DOSYASI)
             st.rerun()
 
-# 🔒 2. BLOK: SİTE KİLİTLİYSE VE ŞİFRE YAZILMADIYSA GÖRÜNECEK KİLİTLİ EKRAN
-if not erisim_izni:
-    st.markdown('<div class="kilit-uyari">⚠️ <b>Hisseler ve Canlı Sinyaller Geçici Olarak Gizlenmiştir.</b><br><br>📬 <b>Hisseleri görmek için bizimle iletişime geçiniz.</b> Aşağıdaki alandan doğrudan yöneticiye mesaj bırakabilirsiniz.</div>', unsafe_allow_html=True)
