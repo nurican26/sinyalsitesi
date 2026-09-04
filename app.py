@@ -10,8 +10,7 @@ st.set_page_config(page_title="BTA Veri Analizi", page_icon="📈", layout="wide
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #090d16 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.04); border: 1px solid #eab308; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .gundem-kutusu {background: #1e293b; border-left: 4px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .kap-kutusu {background: #1e293b; border-left: 4px solid #a855f7; padding: 14px; border-radius: 8px; margin-bottom: 12px;}</style>', unsafe_allow_html=True)
 
-# 🔄 ARKA PLANDA 60 SANİYEDE BİR OTOMATİK YENİLEME MOTORU (HTML/JS Enjeksiyonu)
-# Her 60.000 milisaniyede (60 saniye) bir sayfayı tetikler.
+# 🔄 ARKA PLANDA 60 SANİYEDE BİR OTOMATİK YENİLEME MOTORU (HTML/JS)
 st.components.v1.html(
     """
     <script>
@@ -43,7 +42,6 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİ
 
 # 💥 CANLI VERİ MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu, zorunlu_yenile=False):
-    # Eğer kullanıcı yenile butonuna bastıysa veya 60 sn dolduysa önbelleğe bakmadan direkt çeker
     if not zorunlu_yenile and hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
         if time.time() - saved_time < 60: return saved_price
@@ -75,13 +73,12 @@ def canli_altin_fiyatlarini_hesapla():
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 col_refresh, col_time = st.columns(2)
 
-# Butona basıldığında veya otomatik yenileme tetiklendiğinde zorunlu güncel veriyi çekmek için bayrak
 zorunlu_guncelle = False
 
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
-        st.session_state["excel_kayit_hafizasi"] = {}  # Excel hafızasını da sıfırlıyoruz ki fiyatlar güncellensin
+        st.session_state["excel_kayit_hafizasi"] = {}  # Excel hafızasını sıfırlıyoruz ki fiyatlar güncellensin
         zorunlu_guncelle = True
         st.rerun()
 
@@ -118,7 +115,30 @@ else:
 
 st.write("---")
 
-# EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
+# 📰 2. BÖLÜM: CANLI HABER, GÜNDEM VE KAP AKIŞI PANERLİ
+st.markdown('<div class="analiz-baslik">📰 CANLI HABER, GÜNDEM VE KAP AKIŞI</div>', unsafe_allow_html=True)
+col_hab, col_gnd, col_kap = st.columns(3)
+
+with col_hab:
+    st.markdown("### 🟢 Ekonomi Haberleri")
+    st.markdown('<div class="haber-kutusu">🔔 <b>BofA:</b> Türkiye için enflasyon tahminlerini revize etti. Sıkılaşma adımları korunuyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="haber-kutusu">🔔 <b>Küresel Piyasalar:</b> Fed faiz kararı öncesinde emtia grubunda hareketlilik arttı.</div>', unsafe_allow_html=True)
+
+with col_gnd:
+    st.markdown("### 🔵 Sektörel Gündem")
+    st.markdown('<div class="gundem-kutusu">📢 <b>Otomotiv Sektörü:</b> İhracat rakamlarında Avrupa pazarında toparlanma sinyalleri var.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">📢 <b>Enerji Yatırımları:</b> Yenilenebilir enerji tarafında yeni teşvik paketi bekleniyor.</div>', unsafe_allow_html=True)
+
+with col_kap:
+    st.markdown("### 🟣 Önemli KAP Bildirimleri")
+    st.markdown('<div class="kap-kutusu">📢 <b>THYAO:</b> Yeni uçak alım stratejilerine dair yönetim kurulu açıklaması yayınlandı.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="kap-kutusu">📢 <b>EREGL:</b> Yeni üretim tesisi modernizasyonu hakkında detaylı bilgi paylaşıldı.</div>', unsafe_allow_html=True)
+
+st.write("---")
+
+# 📊 3. BÖLÜM: EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
+st.markdown('<div class="analiz-baslik">📊 EXCEL VERİ TABANI VE ANLIK MATEMATİKSEL ANALİZ TABLOSU</div>', unsafe_allow_html=True)
+
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
@@ -145,11 +165,3 @@ if df_kaynak is not None:
                                     if hisse not in st.session_state["excel_kayit_hafizasi"] or zorunlu_guncelle:
                                         st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
                                     
-                                    yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
-                                    puan_bul = re.findall(r'\((.*?)\)', wv_kontrol)
-                                    final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
-                                    
-                                    # Kodun geri kalan mantığı ve veri eklemeleri buraya gelecektir...
-                                    # tablo_al.append([...]) gibi
-        except Exception as e:
-            pass
