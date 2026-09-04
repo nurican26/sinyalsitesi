@@ -27,7 +27,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
         data = ticker.history(period="1d")
         if not data.empty and not pd.isna(data['Close'].iloc[-1]):
             fiyat = float(data['Close'].iloc[-1])
-            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), Pattern)
+            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
             return fiyat
     except: pass
     return st.session_state["fiyat_hafizasi"].get(hisse_kodu, 0.0)
@@ -69,27 +69,6 @@ c4.markdown(f'<div class="piyasa-kutusu">🥇 REF. TAM<br><span style="color:#ea
 
 st.write("---")
 
-# 📌 İKİYE BÖLÜNMÜŞ HABER MERKEZİ
-col_eko, col_genel = st.columns(2)
-with col_eko:
-    st.markdown("#### 📰 Türkiye Ekonomi Gündemi")
-    st.markdown('<div class="haber-kutusu">📊 <b>Ağustos Enflasyonu Açıklandı:</b> TÜİK yıllık tüketici enflasyonunu (TÜFE) piyasa öngörülerine paralel olarak %31,51 seviyesinde duyurdu.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="haber-kutusu">🏛️ <b>Merkez Bankası Likidite Hamlesi:</b> TCMB, piyasadaki fazla likiditeyi sterilize etmek amacıyla repo ihalelerine başladı.</div>', unsafe_allow_html=True)
-with col_genel:
-    st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
-    st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve metro hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
-
-st.write("---")
-
-# 📢 KRİTİK KAP GELİŞMELERİ
-st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
-st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> MSB ile savunma sistemleri tedariki kapsamında 42 milyon dolar tutarında sözleşme imzalandığını duyurdu.</div>', unsafe_allow_html=True)
-st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Yurt dışı iştirakinin ABD merkezli enerji depolama projesinde niyet mektubu imzaladığını bildirdi.</div>', unsafe_allow_html=True)
-st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Gelecek dönem filo genişletme stratejileri doğrultusunda 4 adet yeni geniş gövdeli uçak kiralandığını açıkladı.</div>', unsafe_allow_html=True)
-
-st.write("---")
-
 # 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
 st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
 arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
@@ -118,26 +97,52 @@ tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            if len(df_kaynak.columns) > 22:
-                wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                    # 🛠️ GÜNCELLEME: Sadece hücrenin ilk kelimesini (yani hisse adını) çeker, [AL] metnini eler
-                    h_ara = re.findall(r'^[A-Z]+', wv)
-                    if not h_ara:
-                        h_ara = re.findall(r'[A-Z]+', wv)
-                    
-                    if h_ara:
-                        hisse = str(h_ara[0]).strip()
-                        if len(hisse) >= 3 and hisse not in ["NONE", "NAN", "SINYAL", "AL"]:
-                            if arama_terimi == "" or arama_terimi in hisse:
-                                anlik_canli = hızlı_canli_fiyat_bul(hisse)
-                                if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
-                                    st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
-                                yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
-                                
-                                ham_r_degeri = df_kaynak.iloc[idx, 17]
-                                final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
-                                
-                                f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
-                                f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
-                                
+            # 🛠️ GÜVENLİK VE KESİN ÇÖZÜM: Kod parantez aramayı bıraktı, doğrudan A sütunundaki yalın hisse kodunu okuyor!
+            hisse_ham = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else ""
+            wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+            
+            # Eğer makro bu satıra veri yazdıysa (W boş değilse) ve geçerli bir hisse kodu varsa işleme al
+            if wv_kontrol and wv_kontrol not in ["NAN", "NONE"] and hisse_ham and hisse_ham not in ["NAN", "NONE"]:
+                if 3 <= len(hisse_ham) <= 6:
+                    if arama_terimi == "" or arama_terimi in hisse_ham:
+                        anlik_canli = hızlı_canli_fiyat_bul(hisse_ham)
+                        
+                        # FİYAT SABİTLEME
+                        if hisse_ham not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
+                            st.session_state["excel_kayit_hafizasi"][hisse_ham] = anlik_canli
+                        
+                        yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse_ham, anlik_canli)
+                        
+                        # PUANI R SÜTUNUNDAN AL
+                        ham_r_degeri = df_kaynak.iloc[idx, 17]
+                        final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
+                        
+                        f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
+                        f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
+                        
+                        tablo_al.append([hisse_ham, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
+        except: pass
+
+# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ ARTIK BAŞROLDE (YUKARI ALINDI)
+st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
+if tablo_al:
+    df_sonuc = pd.DataFrame(tablo_al, columns=["Varlık Kodu", "Matematiksel Puan", "Yüklenen Fiyat (Sabit)", "Anlık Canlı Fiyat", "Matris Durumu"])
+    st.dataframe(df_sonuc, use_container_width=True, hide_index=True)
+else:
+    st.write("⏳ Matematiksel veri tabanı taranıyor veya Excel dosyasında eşleşen veri bulunamadı...")
+
+st.write("---")
+
+# 📌 İKİYE BÖLÜNMÜŞ HABER MERKEZİ
+col_eko, col_genel = st.columns(2)
+with col_eko:
+    st.markdown("#### 📰 Türkiye Ekonomi Gündemi")
+    st.markdown('<div class="haber-kutusu">📊 <b>Ağustos Enflasyonu Açıklandı:</b> TÜİK yıllık tüketici enflasyonunu (TÜFE) piyasa öngörülerine paralel olarak %31,51 seviyesinde duyurdu.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="haber-kutusu">🏛️ <b>Merkez Bankası Likidite Hamlesi:</b> TCMB, piyasadaki fazla likiditeyi sterilize etmek amacıyla repo ihalelerine başladı.</div>', unsafe_allow_html=True)
+with col_genel:
+    st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
+    st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve metro hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
+
+# 📢 KRİTİK KAP GELİŞMELERİ
+st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
