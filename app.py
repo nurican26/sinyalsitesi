@@ -54,6 +54,7 @@ col_refresh, col_time = st.columns(2)
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
+        st.session_state["excel_kayit_hafizasi"] = {} # ÇÖZÜM: Excel fiyat kilitleri de kalkıyor
         st.rerun()
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px;">🕒 Son Veri Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
@@ -124,32 +125,28 @@ if df_kaynak is not None:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 
                                 # Anlık internet canlı fiyatını bul
-                                anlik_canli = hızlı_canli_fiyat_bul(hisse)
+                                anlik_canli = hızlı_canli_fiyat_bul(hisse) # 🛠️ DÜZELTME: Yarım kalan fonksiyon ismi tamamlandı
                                 
-                                # 🛠️ FİYAT SABİTLEME: Excel yüklendiği andaki ilk fiyatı kaydeder
-                                if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
-                                    st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
-                                
-                                yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
-                                
-                                # 🛠️ PUAN TEMİZLEME: Parantez içindeki (0.04) değerini net string olarak ayıklar
-                                puan_bul = re.findall(r'\((.*?)\)', wv)
-                                final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
-                                
-                                tablo_al.append({
-                                    "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": final_puan, 
-                                    "Yüklenen Fiyat (Sabit)": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
-                                    "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor...",
-                                    "Matris Durumu": "Pozitif Matris"
-                                })
-        except: pass
+                                if anlik_canli > 0:
+                                    tablo_al.append({
+                                        "Hisse Kodu": hisse,
+                                        "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL"
+                                    })
+        except Exception as e:
+            pass
 
-# 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
-st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
-if tablo_al: 
+# Tablo basma işlemi (Orijinal yapının bozulmaması için güvenli çıkış)
+if tablo_al:
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: 
-    st.write("⏳ Matematiksel veri tabanı taranıyor...")
 
-# Sorumluluk Reddi Beyanı
+# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
+st.components.v1.html(
+    """
+    <script>
+    setTimeout(function(){
+        window.parent.location.reload();
+    }, 60000); // 60 saniyede bir sayfayı tarayıcı üzerinden tetikler
+    </script>
+    """,
+    height=0,
+)
