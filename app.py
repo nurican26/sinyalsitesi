@@ -62,8 +62,6 @@ panel_alanı = st.container()
 
 # 🟢 1. BLOK: İÇERİK ALANI (Erişim İzni Varsa Tablolar Burada Görünür)
 with içerik_alanı:
-    # Geçici izin kontrolü (Kullanıcı girdisini panel alanından alacağız)
-    # Streamlit yukarıdan aşağı çalıştığı için form elemanını aşağıya koysak da session_state veya text_input değerini okuyabiliriz.
     pass 
 
 # 🔐 EN ALTA ALINAN ERİŞİM PANELİ VE MANTIĞI
@@ -137,6 +135,19 @@ if erisim_izni:
                                 tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                 except: pass
 
+        # 🔍 ENTEGRE HİSSE ARAMA MOTORU (Tasarımı bozmadan eklendi)
+        st.markdown('<div class="alsat-baslik" style="background: linear-gradient(90deg, #0080ff 0%, #1e1b4b 100%);">🔍 TÜM HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
+        arama_terimi = st.text_input("Sorgulamak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", placeholder="Hisse kodu giriniz...").strip().upper()
+        
+        if arama_terimi:
+            aranan_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
+            if aranan_fiyat > 0:
+                st.success(f"📈 **{arama_terimi}** Canlı Fiyatı: **{aranan_fiyat:.2f} TL**")
+            else:
+                st.error(f"❌ **{arama_terimi}** için canlı fiyat verisi alınamadı. Lütfen kodu kontrol edin.")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # SİNYAL LİSTELERİ
         st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
         if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
         else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
