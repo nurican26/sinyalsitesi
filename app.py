@@ -8,27 +8,24 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# Google Fonts'tan el yazısı (Dancing Script) yükleniyor ve CSS güncelleniyor
-st.markdown('<style>@import url("https://googleapis.com"); .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 20px; margin-bottom: 25px;} .bta-logo {color: #10b981 !important; font-family: "Dancing Script", "Brush Script MT", cursive !important; font-weight: bold; font-size: 5rem; padding: 0px; background: none !important; box-shadow: none !important; text-shadow: 0 0 10px rgba(16, 185, 129, 0.8), 0 0 30px rgba(16, 185, 129, 0.5), 0 0 50px rgba(16, 185, 129, 0.3); letter-spacing: 12px;} .gold-card {background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 0 15px rgba(251, 191, 36, 0.2); margin-bottom: 15px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
+# Google Fonts ve Gökkuşağı Gölgeli Gelişmiş CSS Stilleri
+st.markdown('<style>@import url("https://googleapis.com"); .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 20px; margin-bottom: 25px;} .bta-logo {color: #ffffff !important; font-family: "Dancing Script", "Brush Script MT", cursive !important; font-weight: bold; font-size: 5.5rem; padding: 0px; background: none !important; box-shadow: none !important; letter-spacing: 14px; text-shadow: 0 0 10px #ff007f, 0 0 20px #ff00ff, 0 0 30px #00ffff, 0 0 40px #00ff00, 0 0 70px #ffff00, 0 0 80px #ff7f00, 0 0 100px #ff0000; animation: pulse 3s infinite alternate;} .gold-card {background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 0 15px rgba(251, 191, 36, 0.2); margin-bottom: 15px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 if "altin_hafizasi" not in st.session_state: st.session_state["altin_hafizasi"] = {}
-
-for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
-    if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
+if "ziyaret_sayaci" not in st.session_state: st.session_state["ziyaret_sayaci"] = 0
 
 if "ziyaret_edildi" not in st.session_state:
     st.session_state["ziyaret_sayaci"] += 1
     st.session_state["ziyaret_edildi"] = True
 
-# 🌟 ÜST ORTA EL YAZISI VE NEON GÖLGELİ BTA LOGOSU (ÇERÇEVESİZ)
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">Bta</div></div>', unsafe_allow_html=True)
+# 🌟 ÜST ORTA EL YAZISI VE GÖKKUŞAĞI GÖLGELİ BTA LOGOSU (BÜYÜK HARFLERLE)
+st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; text-align: center; margin-bottom: 20px;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Ziyaret:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; text-align: center; margin-bottom: 20px;">🚪 <b>Ziyaret:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
 # 🪙 CANLI OTOMATİK ALTIN FİYAT MOTORU (Önbellekli)
 def canlı_altın_fiyatları_hesapla():
@@ -110,19 +107,19 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # PARANTEZLER TAMAMEN KALDIRILDI
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                 
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = hisse_ara[0] # PARANTEZLER TAMAMEN KALDIRILDI
+                        hisse = hisse_ara[0]
                         canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                         puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                         if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
@@ -150,17 +147,18 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# ⭐ TOPLULUK PUANLAMA SİSTEMİ
-st.write("---")
-st.subheader("⭐ Paneli Değerlendir")
-yildiz_secimi = st.feedback("stars") 
-if yildiz_secimi is not None:
-    st.session_state["topham_oy_sayisi"] += 1
-    st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
-    st.success("Oyunuz kaydedildi!")
-    time.sleep(1)
-    st.rerun()
-
 # ✉️ YÖNETİCİYE NOT BIRAKMA ALANI
+MESAJ_DOSYASI = "gelen_mesajlar.txt"
 st.write("---")
 st.subheader("✉️ Yöneticiye Not Bırak")
+kullanici_mesaji = st.text_area("Mesajınızı veya geri bildiriminizi buraya yazabilirsiniz:", placeholder="Mesajınız...")
+if st.button("Gönder 📩"):
+    if kullanici_mesaji.strip():
+        try:
+            with open(MESAJ_DOSYASI, "a", encoding="utf-8") as f:
+                f.write(f"[{guncel_an}] - {kullanici_mesaji.strip()}\n")
+            st.success("Mesajınız iletildi, teşekkür ederiz!")
+        except Exception as e:
+            st.error(f"Mesaj kaydedilemedi: {e}")
+    else:
+        st.warning("Lütfen boş bir mesaj göndermeyin.")
