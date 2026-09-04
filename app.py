@@ -31,7 +31,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             return fiyat
     except: pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -74,14 +74,14 @@ col_eko, col_genel = st.columns(2)
 with col_eko:
     st.markdown("#### 📰 Türkiye Ekonomi Gündemi")
     st.markdown('<div class="haber-kutusu">📊 <b>Ağustos Enflasyonu Açıklandı:</b> TÜİK yıllık tüketici enflasyonunu (TÜFE) piyasa öngörülerine paralel olarak %31,51 seviyesinde duyurdu.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="haber-kutusu">🏛️ <b>Merkez Bankası Likidite Hamlesi:</b> TCMB, piyasadaki fazla likiditeyi sterilize etmek amacıyla uzun bir aradan sonra repo ihalelerine yeniden başladı.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="haber-kutusu">🔮 <b>Yıl Sonu Beklentileri:</b> Ekonomistler, Merkez Bankası\'nın yıl sonu enflasyon tahminini %28\'e revize etmesinin ardından faiz patikasını yakından izliyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="haber-kutusu">🏛️ <b>Merkez Bankası Likidite Hamlesi:</b> TCMB, piyasadaki fazla likiditeyi sterilize etmek amacıyla repo ihalelerine başladı.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="haber-kutusu">🔮 <b>Yıl Sonu Beklentileri:</b> Ekonomistler, Merkez Bankası\'nın kararlarının ardından faiz patikasını yakından izliyor.</div>', unsafe_allow_html=True)
 
 with col_genel:
     st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
-    st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında İngiltere\'de terminoloji eğitimini tamamlayan Türk pilotların uçuş eğitimleri 7 Eylül\'de başlıyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">📝 <b>Meclis ve Sosyal Güvenlik:</b> Yaş şartı ve prim gün sayılarını içeren "Kademeli Emeklilik" düzenlemesine dair kulis hareketliliği vatandaşlar tarafından yakından takip ediliyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Samsun Çarşamba Uluslararası Havalimanı yeni terminal binası ve yeni metro/tramvay hatlarının temel atma törenleri gerçekleştirildi.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri 7 Eylül\'de başlıyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">📝 <b>Meclis ve Sosyal Güvenlik:</b> Yaş şartı ve prim gün sayılarını içeren "Kademeli Emeklilik" düzenlemesine dair kulis hareketliliği sürüyor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve yeni metro/tramvay hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
 
 st.write("")
 
@@ -104,22 +104,22 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             tablo_alsat.append({"Varlık Kodu 📈": hisse, "Matematiksel Puan": bta_puan, "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor..."})
                         
                 # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             
                             tablo_al.append({"Varlık Kodu 🚀": hisse, "Matematiksel Puan": bta_puan, "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor..."})
                             
@@ -141,3 +141,7 @@ st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMES�
 if tablo_al: 
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else: 
+    st.write("⏳ Matematiksel model taranıyor...")
+
+# 3. Anlık Veri İzleme ve Performans Modülü
+st.markdown('<div class="performans-baslik">🔵 ANLIK VERİ İZLEME VE PERFORMANS MODÜLÜ</div>', unsafe_allow_html=True)
