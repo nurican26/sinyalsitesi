@@ -12,7 +12,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta2026"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
+YONETICI_SIFRESI = "adminBTA2026"     # Kilitleyip açma (Yönetici) yetkisi
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -25,14 +25,16 @@ if not os.path.exists(DURUM_DOSYASI):
 with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
     mevcut_kilit = f.read().strip()
 
-# Hafıza Kontrolleri
+# Hafıza Kontrolleri (Ziyaret sayacının sürekli artmaması için "is_counted" kontrolü eklendi)
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani"]:
-    if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else []
+for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani", "is_counted"]:
+    if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else ([] if k == "kisitli_liste" else False)
 
-st.session_state["ziyaret_sayaci"] += 1
+if not st.session_state["is_counted"]:
+    st.session_state["ziyaret_sayaci"] += 1
+    st.session_state["is_counted"] = True
 
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
@@ -41,7 +43,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Girinti hatası vermemesi için düz satır yapıldı)
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
 is_admin = False
 if girilen_sifre == YONETICI_SIFRESI:
     is_admin = True
@@ -60,12 +62,15 @@ if is_admin:
 erisim_izni = False
 if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
     erisim_izni = True
+else:
+    st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
 
-# 💥 CANLI FİYAT MOTORU (String dönüşümüyle donma hatası tamamen tamir edildi)
+# 💥 CANLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: return saved_price
+        if time.time() - saved_time < 300:  # 5 Dakika Önbellek (Cache)
+            return saved_price
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
         data = ticker.history(period="1d")
@@ -85,8 +90,10 @@ if erisim_izni:
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        except: pass
+        try: 
+            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        except: 
+            st.error("Excel dosyası okunurken hata oluştu. Lütfen formatı kontrol edin.")
 
     tablo_alsat, tablo_al = [], []
     if df_kaynak is not None:
@@ -111,7 +118,7 @@ if erisim_izni:
                         if h_ara:
                             hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
-                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv) # uv yerine wv hatası düzeltildi
                             bta_puan = p_bul[0] if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
@@ -126,42 +133,21 @@ if erisim_izni:
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
     else: st.write("🔒 Aktif BTA sinyali taranıyor...")
 
+    # 🌟 ÖZEL TAKİP HAVUZU (Tamamlanan Kısım)
     if st.session_state["ozel_takip_kutusu"]:
         st.markdown("#### 🌟 Özel Takip Havuzu 💰")
         tk_list = []
-        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-            cfiy = hızlı_canli_fiyat_bul(hisse)
-            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-        if tk_list:
-            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-            if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-                st.session_state["ozel_takip_kutusu"] = {}
-                st.rerun()
+        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
+            guncel_fiy = hızlı_canli_fiyat_bul(hisse)
+            kar_zarar = ((guncel_fiy - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100 if guncel_fiy > 0 else 0.0
+            tk_list.append({
+                "Hisse": hisse,
+                "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL",
+                "Güncel Fiyat": f"{guncel_fiy:.2f} TL" if guncel_fiy > 0 else "Yükleniyor...",
+                "Değişim (%)": f"{kar_zarar:+.2f}%" if guncel_fiy > 0 else "%0.00",
+                "Kayıt Zamanı": bilgi["kayit_zamani"]
+            })
+        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
 
-    st.write("---")
-    st.subheader("⭐ Paneli Değerlendir")
-    yildiz_secimi = st.feedback("stars") 
-    if yildiz_secimi is not None:
-        st.session_state["topham_oy_sayisi"] += 1
-        st.session_state["topham_yildiz_puani"] += (yildiz_secimi + 1)
-        st.success("Oyunuz kaydedildi!")
-        time.sleep(1)
-        st.rerun()
-
-# 📬 GIZLI GELEN MESAJLAR PANELİ (Yönetici Odası Bağımsız Blok)
-has_messages = False
-if is_admin and os.path.exists(MESAJ_DOSYASI):
-    has_messages = True
-
-if has_messages:
-    st.write("---")
-    st.subheader("📩 Gelen Kullanıcı Mesajları")
-    with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f: mesajlar = f.readlines()
-    if mesajlar:
-        for m in reversed(mesajlar[-15:]): st.text(f"💬 {m.strip()}")
-        st.write("")
-        if st.button("🗑️ Tüm Mesajları Temizle"):
-            os.remove(MESAJ_DOSYASI)
-            st.rerun()
-
+    # 📈 SPK UYARI METNİ
+    st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu sinyaller tamamen matematiksel formüllere dayalı olup, herhangi bir yatırım portföyü yönetimi veya yönlendirmesi içermez.</div>', unsafe_allow_html=True)
