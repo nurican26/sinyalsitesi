@@ -97,25 +97,31 @@ tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            # 🛠️ GÜVENLİK VE KESİN ÇÖZÜM: Kod parantez aramayı bıraktı, doğrudan A sütunundaki yalın hisse kodunu okuyor!
+            # 🛠️ GÜNCELLEME: Tüm gereksiz kilitler temizlendi. A sütunundaki koda ve R sütunundaki puana doğrudan bakıyor.
             hisse_ham = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else ""
-            wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
             
-            # Eğer makro bu satıra veri yazdıysa (W boş değilse) ve geçerli bir hisse kodu varsa işleme al
-            if wv_kontrol and wv_kontrol not in ["NAN", "NONE"] and hisse_ham and hisse_ham not in ["NAN", "NONE"]:
-                if 3 <= len(hisse_ham) <= 6:
-                    if arama_terimi == "" or arama_terimi in hisse_ham:
-                        anlik_canli = hızlı_canli_fiyat_bul(hisse_ham)
-                        
+            if hisse_ham and hisse_ham not in ["NAN", "NONE"] and len(hisse_ham) >= 3:
+                if arama_terimi == "" or arama_terimi in hisse_ham:
+                    anlik_canli = hızlı_canli_fiyat_bul(hisse_ham)
+                    
+                    if anlik_canli > 0:
                         # FİYAT SABİTLEME
-                        if hisse_ham not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
+                        if hisse_ham not in st.session_state["excel_kayit_hafizasi"]:
                             st.session_state["excel_kayit_hafizasi"][hisse_ham] = anlik_canli
                         
                         yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse_ham, anlik_canli)
                         
-                        # PUANI R SÜTUNUNDAN AL
+                        # 🛠️ ONDALIK KORUMA MOTORU: Gelen değer float ise formatlı, metin ise olduğu gibi yansıtır
                         ham_r_degeri = df_kaynak.iloc[idx, 17]
-                        final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
+                        if pd.isna(ham_r_degeri):
+                            final_puan = "0.00"
+                        else:
+                            try:
+                                final_puan = f"{float(ham_r_degeri):.4f}" # 4 hane hassasiyet (0.0400 gibi görünmemesi için sonu korunur)
+                                if final_puan.endswith("00"):
+                                    final_puan = f"{float(ham_r_degeri):.2f}"
+                            except:
+                                final_puan = str(ham_r_degeri).strip()
                         
                         f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
                         f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
@@ -123,7 +129,7 @@ if df_kaynak is not None:
                         tablo_al.append([hisse_ham, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
         except: pass
 
-# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ ARTIK BAŞROLDE (YUKARI ALINDI)
+# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ EN ÜSTTE
 st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
 if tablo_al:
     df_sonuc = pd.DataFrame(tablo_al, columns=["Varlık Kodu", "Matematiksel Puan", "Yüklenen Fiyat (Sabit)", "Anlık Canlı Fiyat", "Matris Durumu"])
@@ -142,7 +148,3 @@ with col_eko:
 with col_genel:
     st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
     st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve metro hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
-
-# 📢 KRİTİK KAP GELİŞMELERİ
-st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
