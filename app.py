@@ -12,7 +12,6 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # Hafıza Sabitleme
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
-if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit_hafizasi"] = {}
 
 # LOGO
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
@@ -31,7 +30,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             return fiyat
     except: pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -81,75 +80,74 @@ with col_genel:
 
 st.write("")
 
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
-st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
-arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
+# 🎛️ GLOBAL ARAMA ÇUBUĞU GİRİŞİ
+st.markdown("#### 🔍 Akıllı Varlık Filtreleme")
+arama_terimi = st.text_input("Aramak istediğiniz varlık kodunu yazın (Örn: THYAO, ASELS)", "").strip().upper()
 
-if arama_terimi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
-    if canli_sorgu_fiyat > 0:
-        tablo_canli_arama = [{
-            "Aranan Varlık": arama_terimi,
-            "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL",
-            "Veri Akış Durumu": "Kesintisiz Canlı Veri"
-        }]
-        st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
-    else:
-        st.write("❌ Hisse kodu bulunamadı veya Yahoo Finance veri sunucusuna bağlanılamıyor. Lütfen kodu kontrol edin (Örn: THYAO).")
-else:
-    st.write("🔎 Yukarıdaki kutuya bir BIST hisse kodu yazarak anlık fiyat sorgulaması yapabilirsiniz.")
-
-st.write("")
-
-# EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except: pass
 
-tablo_al = []
+tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
+                uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
+                # 🟡 DÖNEMSEL İSTATİSTİKLER
+                if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                    h_ara = re.findall(r'[A-Z]+', uv)
+                    if h_ara:
+                        hisse = h_ara[0].strip()
+                        if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
+                            if arama_terimi == "" or arama_terimi in hisse:
+                                cfiy = hızlı_canli_fiyat_bul(hisse)
+                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
+                                bta_puan = p_bul[0] if p_bul else t_deg
+                                tablo_alsat.append({
+                                    "Varlık Kodu": hisse, 
+                                    "Matematiksel Puan": bta_puan, 
+                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
+                                    "Matris Durumu": "Dengeli Akış"
+                                })
+                        
                 # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = h_ara[0].strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
-                                
-                                # Anlık internet canlı fiyatını bul
-                                anlik_canli = hızlı_canli_fiyat_bul(hisse)
-                                
-                                # 🛠️ FİYAT SABİTLEME: Excel yüklendiği andaki ilk fiyatı kaydeder
-                                if hisse not in st.session_state["excel_kayit_hafizasi"] and anlik_canli > 0:
-                                    st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
-                                
-                                yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
-                                
-                                # 🛠️ PUAN TEMİZLEME: Parantez içindeki (0.04) değerini net string olarak ayıklar
-                                puan_bul = re.findall(r'\((.*?)\)', wv)
-                                final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
-                                
+                                cfiy = hızlı_canli_fiyat_bul(hisse)
+                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                                bta_puan = p_bul[0] if p_bul else t_deg
                                 tablo_al.append({
                                     "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": final_puan, 
-                                    "Yüklenen Fiyat (Sabit)": f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor...",
-                                    "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor...",
+                                    "Matematiksel Puan": bta_puan, 
+                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
                                     "Matris Durumu": "Pozitif Matris"
                                 })
         except: pass
 
-# 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
+# --- BAŞLIKLARLA EKRANA BASMA ---
+
+# 1. Dönemsel Varlık İstatistikleri
+st.markdown('<div class="istatistik-baslik">🟡 DÖNEMSEL VARLIK İSTATİSTİKLERİ</div>', unsafe_allow_html=True)
+if tablo_alsat: 
+    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+else: 
+    st.write("⏳ Veri matrisi taranıyor veya arama kriterine uygun varlık bulunamadı...")
+
+# 2. BTA Matematiksel Veri Modellemesi
 st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
 if tablo_al: 
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else: 
-    st.write("⏳ Matematiksel veri tabanı taranıyor...")
+    st.write("⏳ Matematiksel model taranıyor veya arama kriterine uygun varlık bulunamadı...")
 
 # Sorumluluk Reddi Beyanı
