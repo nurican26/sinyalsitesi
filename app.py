@@ -32,7 +32,6 @@ if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] 
 for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
-# Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
 st.session_state["ziyaret_sayaci"] += 1
 
 # BTA LOGO ALANI
@@ -113,20 +112,21 @@ if erisim_izni:
                         uv = str(uv_ham).strip().upper() if not pd.isna(uv_ham) else ""
                         wv = str(wv_ham).strip().upper() if not pd.isna(wv_ham) else ""
                         
-                        # R sütunundaki puanı formatlama mantığı
-                        if not pd.isna(r_ham) and str(r_ham).strip() != "":
-                            metin_puan = str(r_ham).replace(",", ".").strip()
-                            sayilar = re.findall(r'[-+]?\d*\.\d+|\d+', metin_puan)
-                            if sayilar:
-                                sayi = float(sayilar[0])
-                                if sayi >= 0:
+                        # Doğrudan sayısal dönüşüm (Güvenli formatlama mantığı)
+                        if pd.isna(r_ham) or str(r_ham).strip() == "":
+                            bta_puan = "0,00"
+                        else:
+                            try:
+                                # Virgüllü metin gelme ihtimaline karşı temizlik
+                                temiz_r = str(r_ham).replace(",", ".").strip()
+                                sayi = float(temiz_r)
+                                if sayi > 0:
                                     bta_puan = f"+{sayi:.2f}".replace(".", ",")
                                 else:
                                     bta_puan = f"{sayi:.2f}".replace(".", ",")
-                            else:
-                                bta_puan = "+0,00"
-                        else:
-                            bta_puan = "+0,00"
+                            except:
+                                # Eğer dönüştürülemez bir metin gelirse Excel'de ne yazıyorsa aynen bas
+                                bta_puan = str(r_ham).strip()
 
                         # 1. TABLO: AL-SAT SİNYALLERİ (U sütununa göre kontrol)
                         if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
