@@ -11,8 +11,8 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 st.markdown('<style>@import url("https://googleapis.com"); .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 15px; margin-bottom: 25px; gap: 15px;} .bta-logo {font-family: "Caveat", cursive !important; font-size: 4.5rem !important; color: #10b981 !important; text-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 40px #059669, 0 0 80px #059669; animation: glow 1.5s ease-in-out infinite alternate; text-align: center;} @keyframes glow { from { text-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 30px #059669; } to { text-shadow: 0 0 15px #34d399, 0 0 30px #10b981, 0 0 50px #10b981, 0 0 70px #059669; } } .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .altin-kart {background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%); border: 1px solid #eab308; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
-ZIYARETCI_SIFRESI = "bta26"         # Sadece hisseleri görme yetkisi (5 Karakter yapıldı)
-YONETICI_SIFRESI = "admin"         # Kilitleyip açma yetkisi (5 Karakter yapıldı)
+ZIYARETCI_SIFRESI = "bta26"         
+YONETICI_SIFRESI = "admin"         
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -36,7 +36,7 @@ if not st.session_state["is_counted"]:
     st.session_state["ziyaret_sayaci"] += 1
     st.session_state["is_counted"] = True
 
-# BTA LOGO ALANI (ORTALANMIŞ, EL YAZILI, CAVCAVLI IŞIKLI VE YANINDA LOGOLAR)
+# BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><span style="font-size: 3rem;">🔥</span><div class="bta-logo">BTA</div><span style="font-size: 3rem;">🚀</span></div>', unsafe_allow_html=True)
 
 # 🔐 ERİŞİM PANELİ (UFAK VE 5 KARAKTER SINIRLI)
@@ -108,7 +108,7 @@ with altin_col3:
 
 # 🔍 BORSA TÜM HİSSELER ARAMA MOTORU
 st.markdown("### 🔎 BIST Canlı Hisse Sorgulama")
-arama_col1, arama_col2 = st.columns([1, 3])
+arama_col1, arama_col2 = st.columns([1, 2])
 with arama_col1:
     hisse_girdi = st.text_input("Hisse Kodu Girin (Örn: THYAO, SASA):", value="THYAO").strip().upper()
 if hisse_girdi:
@@ -160,3 +160,5 @@ if erisim_izni:
                             hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                            bta_puan = p_bul[0] if p_bul else t_deg
+                            if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
