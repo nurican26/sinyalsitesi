@@ -16,21 +16,6 @@ YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
-
-# 💥 CANLI FİYAT MOTORU
-def hızlı_canli_fiyat_bul(hisse_kodu):
-    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: return saved_price
-    try:
-        ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        data = ticker.history(period="1d")
-        if not data.empty and not pd.isna(data['Close'].iloc[-1]):
-            fiyat = float(data['Close'].iloc[-1])
-            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
-            return fiyat
-    except: pass
-    return 0.0
     
 # 💾 Kalıcı Kilit Durumunu Dosyadan Okuma
 if not os.path.exists(DURUM_DOSYASI):
