@@ -173,11 +173,12 @@ if erisim_izni:
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
             try:
-                if len(df_kaynak.columns) > 22:
-                    uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                    wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                    t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
-                    
-                    if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        h_ara = re.findall(r'[A-Z]+', uv)
-                        if h_ara:
+                if len(df_kaynak.columns) <= 22:
+                    continue
+                
+                uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
+                wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
+                
+                # UV Sinyal Kontrolü
+                if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
