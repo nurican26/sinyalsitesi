@@ -52,7 +52,7 @@ col_refresh, col_time = st.columns(2)
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
-        st.session_state["excel_kayit_hafizasi"] = {} # Excel kilitlenen fiyat hafızası da temizleniyor
+        st.session_state["excel_kayit_hafizasi"] = {} # Yenile butonuna basınca Excel kilidi de kalkar
         st.rerun()
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px; text-align: right;">🕒 Son Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
@@ -77,6 +77,7 @@ arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu giri
 if arama_terimi:
     canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
     if canli_sorgu_fiyat > 0:
+        # 🛠️ DÜZELTME: "Aranan Varlık" başlığı "Hisse Kodu" olarak güncellendi!
         tablo_canli_arama = [[arama_terimi, f"{canli_sorgu_fiyat:.2f} TL", "Kesintisiz Canlı Veri"]]
         df_arama = pd.DataFrame(tablo_canli_arama, columns=["Hisse Kodu", "Anlık İnternet Canlı Fiyatı", "Veri Akış Durumu"])
         st.dataframe(df_arama, use_container_width=True, hide_index=True)
@@ -118,28 +119,28 @@ if df_kaynak is not None:
                                     
                                     yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
                                     
-                                    # Puanı doğrudan makronuzun W sütununa yazdığı parantezin içinden (0.04) cımbızla çeker!
+                                    # 🛠️ DÜZELTME: Puanı doğrudan makronuzun W sütununa yazdığı parantezin içinden (0.04) cımbızla çeker!
                                     puan_bul = re.findall(r'\((.*?)\)', wv_kontrol)
                                     final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
                                     
-                                    # Sizin yarıda kesilen satırınızın orijinal ve güvenli hali:
+                                    # Yarım kalan satırınızın orijinal yapıda kapatılmış hali:
                                     f_yuklenen = f"{yuklenen_fiyat:.2f} TL"
                                     tablo_al.append([hisse, f_yuklenen, final_puan])
         except Exception as e:
             pass
 
-# Sizin kodunuzun bittiği yere verileri listeleyen ana tablo yapısı
+# Sizin kodunuzun bittiği yerdeki Excel verilerini basan ana tablo
 if tablo_al:
     df_excel_tablo = pd.DataFrame(tablo_al, columns=["Hisse Kodu", "Fiyat", "Puan"])
     st.dataframe(df_excel_tablo, use_container_width=True, hide_index=True)
 
-# ⏱️ 60 SANİYEDE BİR SAYFAYI TARAYICIDAN OTOMATİK YENİLEYEN MOTOR (GÖRÜNMEZ SCRIPT)
+# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
 st.components.v1.html(
     """
     <script>
     setTimeout(function(){
         window.parent.location.reload();
-    }, 60000); // 60 saniye dolunca sayfayı tetikler
+    }, 60000); // Ekranı dokunmasanız da 60 saniyede bir tetikler
     </script>
     """,
     height=0,
