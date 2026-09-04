@@ -11,8 +11,8 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 25px; margin-bottom: 35px; width: 100%;} .bta-logo {font-family: "Brush Script MT", "Comic Sans MS", cursive, sans-serif !important; font-weight: bold; font-size: 5rem; padding: 10px 50px; background: transparent; background-image: linear-gradient(45deg, #ff007f, #ff00ff, #8b00ff, #0000ff, #00ffff, #00ff00, #ffff00, #ff7f00, #ff0000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(0, 255, 255, 0.4), 4px 4px 10px rgba(0, 0, 0, 0.8); display: inline-block; text-align: center; letter-spacing: 5px;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
-ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
+ZIYARETCI_SIFRESI = "bta3015"         
+YONETICI_SIFRESI = "3015"     
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -32,7 +32,6 @@ if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] 
 for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
-# Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
 st.session_state["ziyaret_sayaci"] += 1
 
 # BTA LOGO ALANI
@@ -57,7 +56,7 @@ if is_admin:
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
 
-# 🛡️ ERİŞİM KONTROL MANTIĞI (Hata veren değişken burada tanımlandı)
+# 🛠️ ERİŞİM KONTROL MANTIĞI
 erisim_izni = False
 if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
     erisim_izni = True
@@ -103,7 +102,8 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]).strip()  # Canlı fiyat için ilk eleman seçildi
+                            # 🎯 KESİN DÜZELTME: Listenin ilk elemanını saf metin olarak alıyoruz ('ALARK')
+                            hisse = str(h_ara[0]).strip()
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             bta_puan = p_bul[0] if p_bul else t_deg
@@ -112,7 +112,8 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0]).strip()  # Canlı fiyat için ilk eleman seçildi
+                            # 🎯 KESİN DÜZELTME: Listenin ilk elemanını saf metin olarak alıyoruz ('ALARK')
+                            hisse = str(h_ara[0]).strip()
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
                             bta_puan = p_bul[0] if p_bul else t_deg
