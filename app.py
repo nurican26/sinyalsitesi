@@ -70,6 +70,7 @@ def canli_altin_fiyatlarini_hesapla():
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
     except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
+    
 # 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Girinti hatası vermemesi için düz satır yapıldı)
 is_admin = False
 if girilen_sifre == YONETICI_SIFRESI:
