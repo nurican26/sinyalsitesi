@@ -6,18 +6,15 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 # Neon CSS Tasarımı
 st.markdown("""
     <style>
-    /* Karanlık arka plan ve neon yazı tipi */
     .stApp {
         background-color: #0b0c10;
         color: #c5c6c7;
     }
-    /* Neon Başlıklar */
     .neon-text {
         color: #66fcf1;
         text-shadow: 0 0 10px #66fcf1, 0 0 20px #66fcf1;
         font-weight: bold;
     }
-    /* Neon Butonlar */
     div.stButton > button {
         background-color: transparent;
         color: #45f3ff;
@@ -34,7 +31,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Oturum Durumu (Session State) Başlatma
+# Oturum Durumunu (Session State) Güvenli Başlatma
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
@@ -42,7 +39,6 @@ if "logged_in" not in st.session_state:
 st.markdown("<h1 class='neon-text'>BTA Bilgi Platformu</h1>", unsafe_allow_html=True)
 st.write("Bu alan **herkese açıktır**. Giriş yapmadan genel verileri görebilirsiniz.")
 
-# Örnek Herkese Açık İçerik
 col1, col2 = st.columns(2)
 with col1:
     st.metric(label="Aktif Kullanıcı", value="1,240", delta="+12%")
@@ -54,24 +50,26 @@ st.divider()
 # --- GİRİŞ KONTROLÜ VE ÖZEL ALAN ---
 if not st.session_state.logged_in:
     st.subheader("🔒 Üye Paneline Giriş Yapın")
-    username = st.text_input("Kullanıcı Adı")
-    password = st.text_input("Şifre", type="password")
     
-    if st.button("Giriş Yap"):
-        # Buraya kendi kullanıcı adı ve şifreni yazabilirsin
-        if username == "admin" and password == "bta123":
-            st.session_state.logged_in = True
-            st.success("Başarıyla giriş yapıldı!")
-            st.rerun()
-        else:
-            st.error("Hatalı kullanıcı adı veya şifre!")
+    # Form yapısı giriş verilerinin kaybolmasını engeller
+    with st.form(key="login_form"):
+        username = st.text_input("Kullanıcı Adı")
+        password = st.text_input("Şifre", type="password")
+        submit_button = st.form_submit_button(label="Giriş Yap")
+        
+        if submit_button:
+            if username == "admin" and password == "bta123":
+                st.session_state.logged_in = True
+                st.success("Başarıyla giriş yapıldı! Sayfa yükleniyor...")
+                st.rerun()
+            else:
+                st.error("Hatalı kullanıcı adı veya şifre!")
 
 else:
     # --- SADECE GİRİŞ YAPANLARIN GÖRECEĞİ ÖZEL ALAN ---
     st.markdown("<h2 class='neon-text'>🚀 BTA Özel Üye Paneli</h2>", unsafe_allow_html=True)
     st.write("Tebrikler! Giriş yaptınız ve şu an gizli / özel içerikleri görüyorsunuz.")
     
-    # Özel araçlar, grafikler veya tablolar buraya gelecek
     st.info("Bu mesajı sadece giriş yapan yetkili kişiler görebilir.")
     
     # Çıkış Butonu
