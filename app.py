@@ -15,7 +15,15 @@ if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kut
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
 # LOGO
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
+# Google Fonts'tan el yazısı fontu (Sacramento) ve Tablo Yazı Boyutu Ayarları
+st.markdown("""
+<link rel="preconnect" href="https://googleapis.com">
+<link rel="preconnect" href="https://gstatic.com" crossorigin>
+<link href="https://googleapis.com/css2?family=Sacramento&display=swap" rel="stylesheet">
+<style>
+    .stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} 
+    h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: 'Segoe UI', sans-serif;} 
+    input {color: #000!important; background-color: #fff!important;}
 
 # 💥 FİYAT VE ALTIN MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
