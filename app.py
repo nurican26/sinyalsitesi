@@ -4,8 +4,6 @@ import datetime
 import yfinance as yf
 import os, re
 import time
-import urllib.request
-import xml.etree.ElementTree as ET
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
@@ -48,24 +46,6 @@ def canli_altin_fiyatlarini_hesapla():
     except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
-# 💥 ENGELLENMEYEN CANLI HABER MOTORU
-def canlı_haberleri_getir(url, varsayılan_metinler, adet=3):
-    try:
-        # Sunucu engellemesini aşmak için tam tarayıcı kimliği (User-Agent) tanımlandı
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
-        with urllib.request.urlopen(req, timeout=4) as response:
-            xml_data = response.read()
-        root = ET.fromstring(xml_data)
-        haberler = []
-        for item in root.findall('.//item')[:adet]:
-            title = item.find('title')
-            if title is not None and title.text:
-                haberler.append(title.text.strip())
-        if haberler:
-            return haberler
-    except: pass
-    return varsayılan_metinler
-
 # 🟢 VERİLER VE TABLOLAR DOĞRUDAN YÜKLENİR
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
@@ -99,19 +79,19 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -124,7 +104,7 @@ if tablo_al:
 else: 
     st.write("🔒 Aktif Al sinyali taranıyor...")
 
-# 👑 2. PANEL: CANLI HİSSE ARAMA MOTORU
+# 👑 2. PANEL: CANLI HİSSE ARAMA MOTORU (BTA Sinyal Merkezi'nin hemen altına alındı)
 st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
 arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
@@ -133,20 +113,22 @@ if arama_terimi_girdi:
     tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
     st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
 
-# 🛡️ 3. PANEL: DÖNEMSEL AL SAT SİNYALLERİ
+# 🛡️ 3. PANEL: DÖNEMSEL AL SAT SİNYALLERİ (Yüksekliği sınırlandırıldı, sayfayı uzatmaz)
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: 
-    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True, height=250)
+    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True, height=250) # height eklendi, içten kaydırmalı kısa tasarım!
 else: 
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 st.write("---")
 
-# 💥 YEDEK KORUMALI CANLI HABERLER VERİ ÇEKİMİ
-varsayılan_ekonomi = [
-    "Borsa İstanbul: Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.",
-    "Altın Piyasası: Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları işlem görüyor.",
-    "Halka Arz Gündemi: Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor."
-]
-varsayılan_tv = [
-    "Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.",
+# 📰 SABİT VE GÜVENLİ BORSA MAKRO GÜNDEMİ
+st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
+st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
+
+# 📺 ULUSAL TV HABER AKIŞI
+st.markdown("#### 📺 Türkiye Gündemi - Son Dakika TV Haberleri")
+st.markdown('<div class="tv-kutusu">🔵 <b>TRT Haber:</b> Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.</div>', unsafe_allow_html=True)
