@@ -69,6 +69,23 @@ c4.markdown(f'<div class="piyasa-kutusu">🥇 REF. TAM<br><span style="color:#ea
 
 st.write("---")
 
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
+st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
+arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
+
+if arama_terimi:
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
+    if canli_sorgu_fiyat > 0:
+        tablo_canli_arama = [["Aranan Varlık", f"{canli_sorgu_fiyat:.2f} TL", "Kesintisiz Canlı Veri"]]
+        df_arama = pd.DataFrame(tablo_canli_arama, columns=["Aranan Varlık", "Anlık İnternet Canlı Fiyatı", "Veri Akış Durumu"])
+        st.dataframe(df_arama, use_container_width=True, hide_index=True)
+    else:
+        st.write("❌ Hisse kodu bulunamadı veya sunucu yanıt vermiyor. Lütfen kontrol edin (Örn: THYAO).")
+else:
+    st.write("🔎 Yukarıdaki kutuya bir BIST hisse kodu yazarak anlık fiyat sorgulaması yapabilirsiniz.")
+
+st.write("---")
+
 # EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
@@ -84,7 +101,7 @@ if df_kaynak is not None:
                 wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 
                 if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
-                    # 🛠️ GÜVENLİ PARÇALAYICI: W sütunundaki (THYAO [AL] (0.04)) metnini boşluğa göre ayırıp ilk kelimeyi çeker
+                    # 🛠️ KESİN ÇÖZÜM: Yazıyı boşluğa göre böler ve sadece en baştaki saf kelimeyi (THYAO) string olarak alır
                     parcalar = wv_kontrol.split(' ')
                     if parcalar and len(parcalar[0]) >= 3:
                         hisse = str(parcalar[0]).strip()
@@ -100,7 +117,7 @@ if df_kaynak is not None:
                                     
                                     yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
                                     
-                                    # PUANI R SÜTUNUNDAN (17) DOĞRUDAN OKU
+                                    # PUANI R SÜTUNUNDAN (17) HAM METİN OLARAK OKU (0.04)
                                     ham_r_degeri = df_kaynak.iloc[idx, 17]
                                     final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
                                     
@@ -129,14 +146,3 @@ with col_eko:
 with col_genel:
     st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
     st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunma Projeleri:</b> Savunma sanayiindeki yeni nesil teknoloji entegrasyonu takvimi planlandığı gibi ilerliyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">🚊 <b>Altyapı Belgesi ve Yatırımlar:</b> Ülke genelindeki stratejik ulaşım ağları ve lojistik projelerinde yeni fazlara geçildi.</div>', unsafe_allow_html=True)
-
-st.write("---")
-
-# 📢 MANUEL SEÇİLMİŞ TAM 3 KRİTİK KAP HABERİ
-st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
-st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> Yeni nesil radar sistemleri tedariki kapsamında imzalanan yurt içi sözleşme detayları kamuya açıklandı.</div>', unsafe_allow_html=True)
-st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Enerji depolama tesisleri teşvik paketi kapsamındaki resmi onay süreçleri bültenle bildirildi.</div>', unsafe_allow_html=True)
-st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Küresel filo genişletme operasyonları planlaması ve operasyonel rapor bülteni yayımlandı.</div>', unsafe_allow_html=True)
-
-# Sorumluluk Reddi Beyanı
