@@ -12,14 +12,13 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # Hafıza Sabitleme
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
-if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit_hafizasi"] = {}
 
 # LOGO
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
 
 # 💥 CANLI VERİ MOTORLARI
-def hızlı_canli_fiyat_bul(hisse_kodu, zorunlu_guncelle=False):
-    if not zorunlu_guncelle and hisse_kodu in st.session_state["fiyat_hafizasi"]:
+def hızlı_canli_fiyat_bul(hisse_kodu):
+    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
         if time.time() - saved_time < 60: return saved_price
     try:
@@ -31,7 +30,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu, zorunlu_guncelle=False):
             return fiyat
     except: pass
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
+        return st.session_state["fiyat_hafizasi"][hisse_kodu]
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -51,13 +50,9 @@ def canli_altin_fiyatlarini_hesapla():
 # Zaman Bilgisi ve Yenileme Butonu
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 col_refresh, col_time = st.columns(2)
-
-yenileme_tetiklendi = False
-
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
         st.session_state["fiyat_hafizasi"] = {}
-        yenileme_tetiklendi = True
         st.rerun()
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px;">🕒 Son Veri Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
@@ -90,7 +85,7 @@ st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER 
 arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
 if arama_terimi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi, zorunlu_guncelle=yenileme_tetiklendi)
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
     if canli_sorgu_fiyat > 0:
         tablo_canli_arama = [{
             "Aranan Varlık": arama_terimi,
@@ -126,31 +121,34 @@ if df_kaynak is not None:
                         hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
+                                cfiy = hızlı_canli_fiyat_bul(hisse)
                                 
-                                # 1. Excel'den gelen ilk fiyatı "Yüklenen Fiyat" olarak bir defaya mahsus kilitliyoruz
-                                if hisse not in st.session_state["excel_kayit_hafizasi"]:
-                                    ilk_fiyat = hızlı_canli_fiyat_bul(hisse)
-                                    if ilk_fiyat > 0:
-                                        st.session_state["excel_kayit_hafizasi"][hisse] = ilk_fiyat
+                                # 🛠️ R SÜTUNU (17) ONDALIK PUAN HATA DÜZELTME MOTORU
+                                hücre_degeri = df_kaynak.iloc[idx, 17]
+                                final_puan = 0.00
                                 
-                                yuklenen_sabit_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, 0.0)
+                                if not pd.isna(hücre_degeri):
+                                    try:
+                                        final_puan = float(hücre_degeri)
+                                    except ValueError:
+                                        metin_deger = str(hücre_degeri).replace(',', '.').strip()
+                                        puan_ara = re.findall(r'[-+]?\d*\.\d+|\d+', metin_deger)
+                                        if puan_ara:
+                                            final_puan = float(puan_ara[0])
                                 
-                                # 2. Anlık internet canlı fiyatını bul (Her yenilemede güncellenir)
-                                anlik_canli = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
-                                
-                                if anlik_canli > 0:
-                                    puan_bul = re.findall(r'\((.*?)\)', wv)
-                                    final_puan = str(puan_bul[0]).strip() if puan_bul else "0.04"
-                                    
-                                    # Sizin orijinal listeniz tam kurgusuyla tamamlandı:
-                                    tablo_al.append({
-                                        "Hisse Kodu": hisse,
-                                        "Yüklenen Fiyat (Sabit)": f"{yuklenen_sabit_fiyat:.2f} TL" if yuklenen_sabit_fiyat > 0 else "0.00 TL",
-                                        "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL",
-                                        "Puan": final_puan
-                                    })
-        except Exception as e:
-            pass
+                                tablo_al.append({
+                                    "Varlık Kodu": hisse, 
+                                    "Matematiksel Puan": f"{final_puan:.2f}" if final_puan != 0.00 else "0.00", 
+                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
+                                    "Matris Durumu": "Pozitif Matris"
+                                })
+        except: pass
 
-# Tablo basma işlemi (Girintiler tamamen düzeltildi)
-if tablo_al:
+# 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
+st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
+if tablo_al: 
+    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+else: 
+    st.write("⏳ Matematiksel veri tabanı taranıyor...")
+
+# Sorumluluk Reddi Beyanı
