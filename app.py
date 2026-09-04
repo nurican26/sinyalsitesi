@@ -147,8 +147,8 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Parantezleri kesin temizler
-                        if len(hisse) > 1: # "A" gibi 1 harfli sahte verileri engeller
+                        hisse = str(hisse_ara[0]) # Parantezleri tamamen uçuran kesin çözüm
+                        if len(hisse) > 1: # "A" gibi hatalı tek harfleri eler
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -157,8 +157,8 @@ if df_kaynak is not None:
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Parantezleri kesin temizler
-                        if len(hisse) > 1: # "A" gibi 1 harfli sahte verileri engeller
+                        hisse = str(hisse_ara[0]) # Parantezleri tamamen uçuran kesin çözüm
+                        if len(hisse) > 1: # "A" gibi hatalı tek harfleri eler
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
