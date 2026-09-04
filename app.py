@@ -5,10 +5,9 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Neon Tasarım
+# 1. Sayfa Yapılandırması ve Yenilenen Işıklı/Gölgeli Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Güncellemesi: Şifre alanları kaldırıldı, BTA yazısı el yazısı, ortalanmış ve parlak neon yapıldı
 st.markdown('''
 <style>
 .stApp {
@@ -56,41 +55,32 @@ div.block-container {
     color: #fca5a5 !important; 
     font-size: 0.8rem; 
     text-align: justify;
-} 
+}
 
-/* 🌟 YENİ ORTALANMIŞ, EL YAZISI VE IŞIKLI BTA LOGO ALANI */
+/* ORTALANMIŞ, EL YAZISI, PARLAK NEON IŞIKLI VE ALTI DERİN GÖLGELİ BTA */
 .bta-logo-konteyner {
     display: flex; 
     justify-content: center; 
     align-items: center; 
-    margin-top: 20px; 
+    margin-top: 25px; 
     margin-bottom: 35px;
     width: 100%;
+    background: transparent !important;
 } 
-.bta-logo-yazi {
+.bta-logo {
     font-family: "Brush Script MT", "Comic Sans MS", cursive, sans-serif !important; 
-    font-size: 4.5rem !important; 
     font-weight: bold !important; 
-    color: #ffffff !important;
-    text-align: center;
-    /* Parlak Işık ve Gölgelendirme Efekti (Neon) */
+    font-size: 5.5rem !important; 
+    color: #00f0ff !important; 
+    display: inline-block; 
+    text-align: center; 
+    letter-spacing: 3px;
+    position: relative;
     text-shadow: 
-        0 0 5px #fff,
-        0 0 10px #fff,
-        0 0 20px #10b981,
-        0 0 30px #10b981,
-        0 0 40px #10b981,
-        0 0 55px #10b981;
-    animation: bta-parlama 2s ease-in-out infinite alternate;
-}
-
-@keyframes bta-parlama {
-  from {
-    text-shadow: 0 0 10px #fff, 0 0 20px #10b981, 0 0 30px #10b981;
-  }
-  to {
-    text-shadow: 0 0 15px #fff, 0 0 25px #10b981, 0 0 40px #10b981, 0 0 55px #10b981;
-  }
+        0 0 10px #00f0ff,
+        0 0 20px #00f0ff,
+        0 0 30px #00f0ff,
+        4px 10px 12px rgba(0, 0, 0, 0.9);
 }
 
 div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
@@ -105,22 +95,20 @@ div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-for k in ["kisitli_liste", "ziyaret_sayaci", "topham_oy_sayisi", "topham_yildiz_puani", "is_counted"]:
-    if k not in st.session_state: st.session_state[k] = 0 if "sayaci" in k or "sayisi" in k or "puani" in k else ([] if k == "kisitli_liste" else False)
+for k in ["kisitli_liste", "ziyaret_sayaci"]:
+    if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
-if not st.session_state["is_counted"]:
-    st.session_state["ziyaret_sayaci"] += 1
-    st.session_state["is_counted"] = True
+# Giriş sayısı sayacı
+st.session_state["ziyaret_sayaci"] += 1
 
-# 🌟 YENİ ORTALANMIŞ VE PARLAK BTA BAŞLIĞI
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo-yazi">BTA</div></div>', unsafe_allow_html=True)
+# BTA LOGO ALANI
+st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 💥 CANLI FİYAT MOTORU
+# CANLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300:  # 5 Dakika Önbellek (Cache)
-            return saved_price
+        if time.time() - saved_time < 300: return saved_price
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
         data = ticker.history(period="1d")
@@ -131,10 +119,8 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🟢 ŞİFRESİZ DOĞRUDAN ERİŞİM (Eski şifre blokları tamamen kaldırıldı)
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
-st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px; text-align: center;">⭐ <b>Puan:</b> {puan:.2f} | 🔥 <b>Oy:</b> {st.session_state["topham_oy_sayisi"]} | 🚪 <b>Giriş:</b> {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
+# GİRİŞ SAYISI GÖSTERGESİ
+st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold; text-align: center;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
@@ -142,9 +128,11 @@ if os.path.exists(excel_yolu):
     try: 
         df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except: 
-        st.error("Excel dosyası okunurken hata oluştu. Lütfen formatı kontrol edin.")
+        pass
 
 tablo_alsat, tablo_al = [], []
+guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
@@ -172,12 +160,19 @@ if df_kaynak is not None:
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-        except: pass
+        except: 
+            pass
 
+# 🟡 TABLO 1: DÖNEMSEL AL SAT SİNYALLERİ
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: 
     st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: 
     st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-# Kodun kalan (Al sinyalleri tablosu, alt kısım ve grafik) bölümlerini bu yapının altına ekleyebilirsiniz.
+# 🟢 TABLO 2: BTA SİNYAL MERKEZİ
+st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+if tablo_al: 
+    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+else: 
+    st.write("🔒 Aktif AL sinyali taranıyor...")
