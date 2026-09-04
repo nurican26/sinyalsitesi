@@ -143,11 +143,15 @@ if erisim_izni:
                 "Değişim (%)": f"{kar_zarar:+.2f}%" if guncel_fiy > 0 else "%0.00",
                 "Kayıt Zamanı": bilgi["kayit_zamani"]
             })
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-    # 🌐 TÜM BİST HİSSELERİ VE SORGULAMA MOTORU (Mevcut Algoritmaya Entegre)
+
+       st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: 
+        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif AL sinyali taranıyor...")
+
+    # 🌐 TÜM BİST HİSSELERİ VE SORGULAMA MOTORU
     st.markdown('<div class="alsat-baslik">🔎 BİST TÜM HİSSELER CANLI SORGULAMA MOTORU</div>', unsafe_allow_html=True)
-    
-    # Kullanıcıdan dinamik hisse kodu girişi alma
     arama_hisse = st.text_input("Canlı Fiyatını Görmek İstediğiniz Hisse Kodunu Girin (Örn: THYAO, EREGL, ASELS):", value="THYAO").strip().upper()
     
     if arama_hisse:
@@ -157,6 +161,10 @@ if erisim_izni:
             st.dataframe(pd.DataFrame(tablo_arama), use_container_width=True, hide_index=True)
         else:
             st.error(f"❌ {arama_hisse} kodlu hisse verisi yfinance üzerinden alınamadı veya kod hatalı. Lütfen kontrol edin.")
+
+    # ⚠️ YASAL UYARI KUTUSU
+    st.markdown('<div class="spk-kutusu">⚠️ YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır.</div>', unsafe_allow_html=True)
+
             
 
     st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu sinyaller tamamen matematiksel formüllere dayalı olup, herhangi bir yatırım portföyü yönetimi veya yönlendirmesi içermez.</div>', unsafe_allow_html=True)
