@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import re  # 🔑 NameError Hatasını Çözen Kritik Kütüphane eklendi
 import time
 
 # 1. Sayfa Yapılandırması
@@ -55,21 +56,21 @@ def temiz_metin_al(val):
     if pd.isna(val): return ""
     return str(val).strip().upper()
 
-# Hücre içinden Hisse Kodu ve BTA Puanını Kusursuz Ayıran Fonksiyon
+# U ve W Sütunundaki "THYAO +2.50" gibi birleşik verileri hatasız çözen fonksiyon
 def hücre_parçala(metin):
     metin_str = temiz_metin_al(metin)
     if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
         return "", ""
     
-    # Hisse Kodunu bul (Metindeki ilk kelime genelde hisse kodudur: THYAO)
+    # Hisse Kodunu bul (Örn: THYAO)
     hisse_bul = re.findall(r'[A-Z]+', metin_str)
     hisse = hisse_bul[0] if hisse_bul else ""
     
-    # Kısıtlama: Sahte tek harfli (A gibi) kalıntıları eler
-    if len(hisse) < 2:
+    # Sahte veya tek harfli kalıntıları engeller
+    if len(hisse) < 2 or hisse in ["NAN", "NONE", "AL"]:
         return "", ""
         
-    # Puanı bul (Metindeki sayısal değer: +2.50 veya 2,50)
+    # Puanı bul (Metindeki sayısal değer: +2.50 veya 2.50)
     puan_bul = re.findall(r'[-+]?\d*[.,]\d+|\d+', metin_str)
     puan = puan_bul[0] if puan_bul else ""
     
@@ -196,4 +197,3 @@ else:
 
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
     if tablo_alsat: 
-        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
