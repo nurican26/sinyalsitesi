@@ -18,8 +18,9 @@ if "excel_kayit_hafizasi" not in st.session_state: st.session_state["excel_kayit
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA ANALİTİK</div></div>', unsafe_allow_html=True)
 
 # 💥 CANLI VERİ MOTORLARI
-def hızlı_canli_fiyat_bul(hisse_kodu):
-    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+def hızlı_canli_fiyat_bul(hisse_kodu, zorunlu_guncelle=False):
+    # Eğer zorunlu güncelleme aktifse veya hafızada yoksa ya da 60 saniye geçtiyse yeni veri çek
+    if not zorunlu_guncelle and hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
         if time.time() - saved_time < 60: return saved_price
     try:
@@ -51,10 +52,14 @@ def canli_altin_fiyatlarini_hesapla():
 # Zaman Bilgisi ve Yenileme Butonu
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 col_refresh, col_time = st.columns(2)
+
+# Butona basıldığında veya otomatik yenileme geldiğinde canlı fiyat kilitlerini kırmak için bayrak
+yenileme_tetiklendi = False
+
 with col_refresh:
     if st.button("🔄 Verileri Yenile"):
-        st.session_state["fiyat_hafizasi"] = {}
-        st.session_state["excel_kayit_hafizasi"] = {} # ÇÖZÜM: Excel fiyat kilitleri de kalkıyor
+        st.session_state["fiyat_hafizasi"] = {} # Canlı fiyat hafızasını temizle
+        yenileme_tetiklendi = True
         st.rerun()
 with col_time:
     st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; padding-top: 5px;">🕒 Son Veri Güncelleme: {guncel_an}</div>', unsafe_allow_html=True)
@@ -78,7 +83,7 @@ with col_eko:
 with col_genel:
     st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
     st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve yeni metro/tramvay hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım and Altyapı Yatırımları:</b> Havalimanları ve yeni metro/tramvay hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
 
 st.write("")
 
@@ -87,7 +92,7 @@ st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER 
 arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
 if arama_terimi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi, zorunlu_guncelle=yenileme_tetiklendi)
     if canli_sorgu_fiyat > 0:
         tablo_canli_arama = [{
             "Aranan Varlık": arama_terimi,
@@ -124,29 +129,26 @@ if df_kaynak is not None:
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 
-                                # Anlık internet canlı fiyatını bul
-                                anlik_canli = hızlı_canli_fiyat_bul(hisse) # 🛠️ DÜZELTME: Yarım kalan fonksiyon ismi tamamlandı
+                                # 1. Excel'den ilk kez yüklenen fiyat (SABİT kalacak hafıza)
+                                if hisse not in st.session_state["excel_kayit_hafizasi"]:
+                                    ilk_fiyat = hızlı_canli_fiyat_bul(hisse)
+                                    if ilk_fiyat > 0:
+                                        st.session_state["excel_kayit_hafizasi"][hisse] = ilk_fiyat
                                 
-                                if anlik_canli > 0:
+                                yuklenen_sabit_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, 0.0)
+                                
+                                # 2. Sürekli güncellenecek anlık canlı fiyat
+                                guncel_anlik_fiyat = hızlı_canli_fiyat_bul(hisse, zorunlu_guncelle=yenileme_tetiklendi)
+                                
+                                if guncel_anlik_fiyat > 0:
+                                    # Sizin görseldeki tablo yapısına göre veriler listeye ekleniyor
                                     tablo_al.append({
                                         "Hisse Kodu": hisse,
-                                        "Anlık Canlı Fiyat": f"{anlik_canli:.2f} TL"
+                                        "Yüklenen Fiyat (Sabit)": f"{yuklenen_sabit_fiyat:.2f} TL" if yuklenen_sabit_fiyat > 0 else "0.00 TL",
+                                        "Anlık Canlı Fiyat": f"{guncel_anlik_fiyat:.2f} TL"
                                     })
         except Exception as e:
             pass
 
-# Tablo basma işlemi (Orijinal yapının bozulmaması için güvenli çıkış)
+# Tablo basma işlemi (Orijinal listeyi bozmadan ekrana aktarma)
 if tablo_al:
-    st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-
-# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
-st.components.v1.html(
-    """
-    <script>
-    setTimeout(function(){
-        window.parent.location.reload();
-    }, 60000); // 60 saniyede bir sayfayı tarayıcı üzerinden tetikler
-    </script>
-    """,
-    height=0,
-)
