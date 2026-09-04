@@ -6,7 +6,7 @@ import os
 import re
 import time
 
-# 1. Sayfa Yapılandırması ve Kurumsal Tasarım
+# 1. Sayfa Yapılandırması ve Tasarım
 st.set_page_config(page_title="BTA Finans", page_icon="📈", layout="wide")
 
 st.markdown('''
@@ -62,27 +62,20 @@ def temiz_metin_al(val):
         return ""
     return str(val).strip().upper()
 
-# U ve W Sütunundaki Birleşik Yapıyı ("THYAO +2.50") Hatasız Çözen Akıllı Ayıklayıcı
+# U ve W Sütunundaki Birleşik Yapıyı ("THYAO +2.50") Çözen Bağımsız Fonksiyon
 def hucreyi_cozumle(val):
     metin_str = temiz_metin_al(val)
     if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
         return "", ""
-    
-    # Hücre içindeki hisse kodunu bul (Örn: THYAO)
     hisse_bul = re.findall(r'[A-Z]+', metin_str)
     hisse = "".join(hisse_bul) if hisse_bul else ""
-    
-    # Filtrelere takılmayı engelleyen koruma
     if hisse in ["NAN", "NONE", "AL", "SINYALI", "ALSAT"] or len(hisse) < 2:
         return "", ""
-        
-    # Hücre içindeki puanı bul (Metindeki +2.50 veya 2,50 değeri)
     puan_bul = re.findall(r'[-+]?\d*[.,]\d+|\d+', metin_str)
     puan = "".join(puan_bul) if puan_bul else ""
-    
     return hisse, puan
 
-# Önbellekli Güvenli Fiyat Motoru (5 Dakika Koruyuculu)
+# Önbellekli Güvenli Fiyat Motoru
 def hizli_fiyat_al(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         kayit_vakti, eski_fiyat = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -176,9 +169,8 @@ else:
         if len(df_kaynak.columns) > 22:
             u_hücre = df_kaynak.iloc[idx, 20]
             w_hücre = df_kaynak.iloc[idx, 22]
-            
-            # Sabit Maliyet Fiyatı (R Sütunu - Excel Giriş Fiyatı)
             excel_maliyet = df_kaynak.iloc[idx, 17]
+            bta_puan_r = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else "Mevcut"
             
             maliyet_fiyat = 0.0
             try:
@@ -196,6 +188,8 @@ else:
                     oran = ((fiyat_uv - maliyet_fiyat) / maliyet_fiyat) * 100
                     kar_zarar_uv = formatla_yuzde(oran)
                 
-                tablo_alsat.append({
+                # Sözlük yapısı tamamen bağımsız bir değişkene bağlanarak append kilitlenmesi önlendi
+                alsat_satiri = {
                     "Hisse Kodu 📈": hisse_uv,
-                    "BTA Puan": f"+{puan_uv}" if puan_uv else "Mevcut",
+                    "BTA Puan": f"+{puan_uv}" if puan_uv else bta_puan_r,
+                    "Maliyet Fiyat": formatla_tl(maliyet_fiyat) if maliyet_fiyat > 0 else "Belirtilmedi",
