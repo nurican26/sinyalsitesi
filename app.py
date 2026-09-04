@@ -6,7 +6,7 @@ import os
 import re
 import time
 
-# 1. Sayfa Yapılandırması ve Tasarım
+# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Tasarım
 st.set_page_config(page_title="BTA Finans", page_icon="📈", layout="wide")
 
 st.markdown('''
@@ -27,13 +27,11 @@ st.markdown('''
 </style>
 ''', unsafe_allow_html=True)
 
-# Hafıza Durum Yönetimi
+# Hafıza Yönetimi
 if "ozel_takip_kutusu" not in st.session_state:
     st.session_state["ozel_takip_kutusu"] = {}
 if "altin_hafizasi" not in st.session_state:
     st.session_state["altin_hafizasi"] = {}
-if "fiyat_hafizasi" not in st.session_state:
-    st.session_state["fiyat_hafizasi"] = {}
 if "ziyaret_sayaci" not in st.session_state:
     st.session_state["ziyaret_sayaci"] = 0
 
@@ -44,12 +42,12 @@ if "ziyaret_edildi" not in st.session_state:
 # Kararlı Yardımcı Fonksiyonlar
 def formatla_tl(deger):
     if not deger or pd.isna(deger) or deger == 0: 
-        return "Yükleniyor..."
+        return "0,00"
     return "{:,.2f}".format(deger).replace(",", "X").replace(".", ",").replace("X", ".")
 
 def formatla_yuzde(deger):
     if pd.isna(deger) or deger is None: 
-        return "%0.00"
+        return "0.00%"
     prefix = "+" if deger > 0 else ""
     return f"{prefix}{deger:.2f}%"
 
@@ -62,7 +60,6 @@ def temiz_metin_al(val):
         return ""
     return str(val).strip().upper()
 
-# U ve W Sütunundaki Birleşik Yapıyı ("THYAO +2.50") Çözen Bağımsız Fonksiyon
 def hucreyi_cozumle(val):
     metin_str = temiz_metin_al(val)
     if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
@@ -74,22 +71,6 @@ def hucreyi_cozumle(val):
     puan_bul = re.findall(r'[-+]?\d*[.,]\d+|\d+', metin_str)
     puan = "".join(puan_bul) if puan_bul else ""
     return hisse, puan
-
-# Önbellekli Güvenli Fiyat Motoru
-def hizli_fiyat_al(hisse_kodu):
-    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        kayit_vakti, eski_fiyat = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - kayit_vakti < 300: 
-            return eski_fiyat
-    try:
-        data = yf.Ticker(f"{hisse_kodu}.IS").history(period="1d")
-        if not data.empty and not pd.isna(data['Close'].iloc[-1]):
-            fiyat = float(data['Close'].iloc[-1])
-            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
-            return fiyat
-    except:
-        pass
-    return 0.0
 
 # 🌟 LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
@@ -154,7 +135,7 @@ if arama_kodu:
         except:
             st.error("Bağlantı hatası oluştu.")
 
-# 📊 EXCEL OKUMA VE ANALİZ ALANI
+# 📊 EXCEL OKUMA VE IŞIK HIZINDA VERİ ANALİZİ
 st.write("---")
 excel_yolu = "nurican.xls.xlsm"
 
@@ -164,32 +145,59 @@ else:
     df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     tablo_alsat = []
     tablo_al = []
-    
+    ham_hisseler = set()
+    satir_bilgileri = []
+
+    # 1. ADIM: Excel verilerini hızlıca hafızaya topla
     for idx in range(2, len(df_kaynak)):
         if len(df_kaynak.columns) > 22:
-            u_hücre = df_kaynak.iloc[idx, 20]
-            w_hücre = df_kaynak.iloc[idx, 22]
-            excel_maliyet = df_kaynak.iloc[idx, 17]
+            u_val = df_kaynak.iloc[idx, 20]
+            w_val = df_kaynak.iloc[idx, 22]
+            r_val = df_kaynak.iloc[idx, 17]
             bta_puan_r = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else "Mevcut"
             
-            maliyet_fiyat = 0.0
-            try:
-                if excel_maliyet and not pd.isna(excel_maliyet):
-                    maliyet_fiyat = float(excel_maliyet)
-            except:
-                pass
-                
-            # 🟡 Dönemsel Al Sat Sinyalleri (U Sütunu)
-            hisse_uv, puan_uv = hucreyi_cozumle(u_hücre)
-            if hisse_uv:
-                fiyat_uv = hizli_fiyat_al(hisse_uv)
-                kar_zarar_uv = "Hesaplanamadı"
-                if maliyet_fiyat > 0 and fiyat_uv > 0:
-                    oran = ((fiyat_uv - maliyet_fiyat) / maliyet_fiyat) * 100
-                    kar_zarar_uv = formatla_yuzde(oran)
-                
-                # Sözlük yapısı tamamen bağımsız bir değişkene bağlanarak append kilitlenmesi önlendi
-                alsat_satiri = {
-                    "Hisse Kodu 📈": hisse_uv,
-                    "BTA Puan": f"+{puan_uv}" if puan_uv else bta_puan_r,
-                    "Maliyet Fiyat": formatla_tl(maliyet_fiyat) if maliyet_fiyat > 0 else "Belirtilmedi",
+            hisse_uv, puan_uv = hucreyi_cozumle(u_val)
+            hisse_wv, puan_wv = hucreyi_cozumle(w_val)
+            
+            maliyet = 0.0
+            if r_val and not pd.isna(r_val):
+                try:
+                    maliyet = float(r_val)
+                except:
+                    pass
+                    
+            if hisse_uv: ham_hisseler.add(hisse_uv)
+            if hisse_wv: ham_hisseler.add(hisse_wv)
+            
+            satir_bilgileri.append({
+                "hisse_uv": hisse_uv, "puan_uv": puan_uv,
+                "hisse_wv": hisse_wv, "puan_wv": puan_wv,
+                "maliyet": maliyet, "bta_puan_r": bta_puan_r
+            })
+
+    # 2. ADIM: ⚡ SAYFANIN DONMASINI ENGELLEYEN TOPLU FİYAT İNDİRME MOTORU
+    canli_fiyatlar = {}
+    if ham_hisseler:
+        try:
+            ticker_strings = [f"{h}.IS" for h in ham_hisseler]
+            toplu_data = yf.download(ticker_strings, period="1d", group_by="ticker", progress=False)
+            for h in ham_hisseler:
+                try:
+                    if len(ticker_strings) == 1:
+                        son_fiyat = toplu_data['Close'].iloc[-1]
+                    else:
+                        son_fiyat = toplu_data[f"{h}.IS"]['Close'].iloc[-1]
+                    if not pd.isna(son_fiyat):
+                        canli_fiyatlar[h] = float(son_fiyat)
+                except:
+                    canli_fiyatlar[h] = 0.0
+        except:
+            pass
+
+    # 3. ADIM: Hafızadaki verilerle kâr/zarar tablolarını birleştir
+    for s in satir_bilgileri:
+        # Dönemsel Sinyaller
+        if s["hisse_uv"]:
+            cf = canli_fiyatlar.get(s["hisse_uv"], 0.0)
+            kz = "Hesaplanamadı"
+            if s["maliyet"] > 0 and cf > 0:
