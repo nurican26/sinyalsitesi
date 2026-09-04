@@ -39,8 +39,37 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 
 # 🔐 GİRİŞ KUTUSU
 st.markdown("### 🔐 Erişim Paneli")
-girilen_sifre = st.text_input("YÜKLENİYOR LÜTFEN BEKLEYİNİZ:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
+girilen_sifre = st.text_input("HİSSELERİ YÜKLENİYOR... BEKLEYİNİZ...", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
+# 💥 CANLI VERİ MOTORLARI
+def hızlı_canli_fiyat_bul(hisse_kodu):
+    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+        saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        if time.time() - saved_time < 60: return saved_price
+    try:
+        ticker = yf.Ticker(f"{hisse_kodu}.IS")
+        data = ticker.history(period="1d")
+        if not data.empty and not pd.isna(data['Close'].iloc[-1]):
+            fiyat = float(data['Close'].iloc[-1])
+            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+            return fiyat
+    except: pass
+    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+        return st.session_state["fiyat_hafizasi"][hisse_kodu][1]
+    return 0.0
 
+def canli_altin_fiyatlarini_hesapla():
+    try:
+        ons_ticker = yf.Ticker("GC=F").history(period="5d")
+        usd_ticker = yf.Ticker("USDTRY=X").history(period="5d")
+        if not ons_ticker.empty and not usd_ticker.empty:
+            ons_fiyat = float(ons_ticker['Close'].iloc[-1])
+            usd_fiyat = float(usd_ticker['Close'].iloc[-1])
+            if ons_fiyat > 500 and usd_fiyat > 5:
+                saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
+                ceyrek_fiyat = saf_gram * 1.635
+                return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
+    except: pass
+    return 3020.50, 4950.00, 9900.00, 19800.00 
 # 🎛️ BAĞIMSIZ YÖNETİCİ ODASI (Girinti hatası vermemesi için düz satır yapıldı)
 is_admin = False
 if girilen_sifre == YONETICI_SIFRESI:
