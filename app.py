@@ -12,7 +12,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
+YONETICI_SIFRESI = "3015"             # Kilitleyip açma (Yönetici) yetkisi
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -35,10 +35,9 @@ for k in ["kisitli_liste", "ziyaret_sayaci"]:
 # Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
 st.session_state["ziyaret_sayaci"] += 1
 
-# BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
+# BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# Şifre alanını önceden tanımlıyoruz ki akışta her iki durumda da erişebilelim
 girilen_sifre = ""
 
 # 💥 CANLI FİYAT MOTORU
@@ -56,13 +55,9 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🛠️ ERİŞİM KONTROLÜ İÇİN ÖN HAZIRLIK (Konteyner Yapısı)
+# 🛠️ ERİŞİM KONTROLÜ İÇİN ÖN HAZIRLIK
 içerik_alanı = st.container()
 panel_alanı = st.container()
-
-# 🟢 1. BLOK: İÇERİK ALANI (Erişim İzni Varsa Tablolar Burada Görünür)
-with içerik_alanı:
-    pass 
 
 # 🔐 EN ALTA ALINAN ERİŞİM PANELİ VE MANTIĞI
 with panel_alanı:
@@ -70,7 +65,6 @@ with panel_alanı:
     st.markdown("### 🔐 Erişim Paneli")
     girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...", key="giris_sifresi")
 
-    # 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
     is_admin = False
     if girilen_sifre == YONETICI_SIFRESI:
         is_admin = True
@@ -85,7 +79,6 @@ with panel_alanı:
             with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
             st.rerun()
 
-    # Erişim İzni Kontrolü
     erisim_izni = False
     if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
         erisim_izni = True
@@ -100,34 +93,32 @@ if erisim_izni:
         df_kaynak = None
         excel_yolu = "nurican.xls.xlsm"
         if os.path.exists(excel_yolu):
-            try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-            except: pass
+            try: 
+                df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+            except: 
+                pass
 
         tablo_alsat, tablo_al = [], []
         guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 
-               if df_kaynak is not None:
+        if df_kaynak is not None:
             for idx in range(2, len(df_kaynak)):
                 try:
-                    # R, T, U ve W sütunlarının hepsini kapsayacak şekilde kontrol (en az 23 sütun olmalı)
                     if len(df_kaynak.columns) > 22:
                         # R Sütunu (İndeks 17) -> Merkez BTA Puanı
                         r_ham = df_kaynak.iloc[idx, 17]
-                        
-                        # Diğer kontrol sütunları
-                        uv_ham = df_kaynak.iloc[idx, 20] # U sütunu
-                        wv_ham = df_kaynak.iloc[idx, 22] # W sütunu
+                        uv_ham = df_kaynak.iloc[idx, 20]
+                        wv_ham = df_kaynak.iloc[idx, 22]
                         
                         uv = str(uv_ham).strip().upper() if not pd.isna(uv_ham) else ""
                         wv = str(wv_ham).strip().upper() if not pd.isna(wv_ham) else ""
                         
-                        # R sütunundaki ham puanı temizleyip standart sayı formatına getirme mantığı
+                        # R sütunundaki puanı formatlama mantığı
                         if not pd.isna(r_ham) and str(r_ham).strip() != "":
                             metin_puan = str(r_ham).replace(",", ".").strip()
                             sayilar = re.findall(r'[-+]?\d*\.\d+|\d+', metin_puan)
                             if sayilar:
                                 sayi = float(sayilar[0])
-                                # Sayı 0 veya pozitifse başına '+' koy, negatifse normal yaz (virgülden sonra 2 basamak)
                                 if sayi >= 0:
                                     bta_puan = f"+{sayi:.2f}".replace(".", ",")
                                 else:
@@ -143,10 +134,9 @@ if erisim_izni:
                             if h_ara:
                                 hisse = str(h_ara[0])
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
-                                
                                 tablo_alsat.append({
                                     "Hisse Kodu 📈": hisse, 
-                                    "BTA Puan": bta_puan, # Doğrudan R sütunundan gelen puan
+                                    "BTA Puan": bta_puan, 
                                     "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."
                                 })
                                 
@@ -156,36 +146,29 @@ if erisim_izni:
                             if h_ara:
                                 hisse = str(h_ara[0])
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
-                                
                                 if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                     st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                                
                                 tablo_al.append({
                                     "Hisse Kodu 🚀": hisse, 
-                                    "BTA Puan": bta_puan, # Doğrudan R sütunundan gelen puan
+                                    "BTA Puan": bta_puan, 
                                     "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."
                                 })
                 except Exception as e:
                     pass
 
+        # 📊 TABLOLARI EKRANA BASMA
+        st.markdown('<div class="alsat-baslik">⚠️ AL-SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+        if tablo_alsat:
+            df_alsat = pd.DataFrame(tablo_alsat)
+            st.dataframe(df_alsat, use_container_width=True, hide_index=True)
+        else:
+            st.info("Aktif AL-SAT sinyali bulunamadı.")
 
-        # 🔍 ENTEGRE HİSSE ARAMA MOTORU (Tasarımı bozmadan eklendi)
-        st.markdown('<div class="alsat-baslik" style="background: linear-gradient(90deg, #0080ff 0%, #1e1b4b 100%);">🔍 TÜM HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
-        arama_terimi = st.text_input("Sorgulamak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", placeholder="Hisse kodu giriniz...").strip().upper()
-        
-        if arama_terimi:
-            aranan_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
-            if aranan_fiyat > 0:
-                st.success(f"📈 **{arama_terimi}** Canlı Fiyatı: **{aranan_fiyat:.2f} TL**")
-            else:
-                st.error(f"❌ **{arama_terimi}** için canlı fiyat verisi alınamadı. Lütfen kodu kontrol edin.")
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="al-baslik">🟢 SADECE AL SİNYALLERİ</div>', unsafe_allow_html=True)
+        if tablo_al:
+            df_al = pd.DataFrame(tablo_al)
+            st.dataframe(df_al, use_container_width=True, hide_index=True)
+        else:
+            st.info("Aktif AL sinyali bulunamadı.")
 
-        # SİNYAL LİSTELERİ
-        st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-        if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
-        st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-        if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-        else: st.write("🔒 Aktif AL sinyali taranıyor...")
+        # SPK YASAL UYARI METNİ
