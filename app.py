@@ -50,7 +50,7 @@ def canli_altin_fiyatlarini_hesapla():
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-# 🌐 TÜM BİST HİSSELERİ VE SORGULAMA MOTORU
+# 🌐  HİSSELERİ  SORGULA
 st.markdown('<div class="alsat-baslik">🔎 BİST TÜM HİSSELER CANLI SORGULAMA MOTORU</div>', unsafe_allow_html=True)
 arama_hisse = st.text_input("Canlı Fiyatını Görmek İstediğiniz Hisse Kodunu Girin (Örn: THYAO, EREGL, ASELS):", value="THYAO").strip().upper()
 
@@ -154,3 +154,14 @@ if st.session_state["ozel_takip_kutusu"]:
             "Kâr / Zarar (%)": kar_zarar_str,
             "Eklenme Zamanı 📅": bilge.get("kayit_zamani", guncel_an)
         })
+# SPK KUTUSU
+st.markdown("""
+<div class="spk-kutusu">
+    <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
+    kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy şirketleri, 
+    mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi 
+    çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların 
+    kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize 
+    uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+</div>
+""", unsafe_allow_html=True)
