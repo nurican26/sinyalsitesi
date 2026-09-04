@@ -81,7 +81,6 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
 
 # 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
-    # Sadece Giriş Sayısı Bırakıldı (Puan, Oy, Tarih/Saat tamamen temizlendi)
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
@@ -128,21 +127,21 @@ if erisim_izni:
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif BTA sinyali taranıyor...")
+    else: st.write("🔒 Aktif AL sinyali taranıyor...")
 
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-        tk_list = []
-        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-            guncel_fiy = hızlı_canli_fiyat_bul(hisse)
-            kar_zarar = ((guncel_fiy - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100 if guncel_fiy > 0 else 0.0
-            tk_list.append({
-                "Hisse": hisse,
-                "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL",
-                "Güncel Fiyat": f"{guncel_fiy:.2f} TL" if guncel_fiy > 0 else "Yükleniyor...",
-                "Değişim (%)": f"{kar_zarar:+.2f}%" if guncel_fiy > 0 else "%0.00",
-                "Kayıt Zamanı": bilgi["kayit_zamani"]
-            })
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
+    # 🌐 TÜM BİST HİSSELERİ VE SORGULAMA MOTORU (Mevcut Algoritmaya Entegre)
+    st.markdown('<div class="alsat-baslik">🔎 BİST TÜM HİSSELER CANLI SORGULAMA MOTORU</div>', unsafe_allow_html=True)
+    
+    # Kullanıcıdan dinamik hisse kodu girişi alma
+    arama_hisse = st.text_input("Canlı Fiyatını Görmek İstediğiniz Hisse Kodunu Girin (Örn: THYAO, EREGL, ASELS):", value="THYAO").strip().upper()
+    
+    if arama_hisse:
+        canli_fiyat = hızlı_canli_fiyat_bul(arama_hisse)
+        if canli_fiyat > 0:
+            tablo_arama = [{"Hisse Kodu 🔍": arama_hisse, "Durum": "Aktif / BIST", "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL"}]
+            st.dataframe(pd.DataFrame(tablo_arama), use_container_width=True, hide_index=True)
+        else:
+            st.error(f"❌ {arama_hisse} kodlu hisse verisi yfinance üzerinden alınamadı veya kod hatalı. Lütfen kontrol edin.")
 
-    st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu sinyaller tamamen matematiksel formüllere dayalı olup, herhangi bir yatırım portföyü yönetimi veya yönlendirmesi içermez.</div>', unsafe_allow_html=True)
+    # ⚠️ YASAL UYARI KUTUSU
+    st.markdown('<div class="spk-kutusu">⚠️ YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır.</div>', unsafe_allow_html=True)
