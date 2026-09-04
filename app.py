@@ -51,21 +51,35 @@ def havuzu_temizle_aksiyon():
     st.session_state["ozel_takip_kutusu"] = {}
     st.rerun()
 
-def temiz_hisse_adi_bul(metin):
-    if pd.isna(metin): 
-        return ""
-    metin_str = str(metin).upper().strip()
-    temiz_harfler = "".join([c for c in metin_str if c.isalpha()])
-    if len(temiz_harfler) >= 3 and len(temiz_harfler) <= 6:
-        if temiz_harfler not in ["NAN", "NONE", "AL_SAT", "SİNYALİ"]:
-            return temiz_harfler
-    return ""
+def temiz_metin_al(val):
+    if pd.isna(val): return ""
+    return str(val).strip().upper()
 
-# Çökmeyi Engelleyen Kararlı Tekli Fiyat Motoru
+# Hücre içinden Hisse Kodu ve BTA Puanını Kusursuz Ayıran Fonksiyon
+def hücre_parçala(metin):
+    metin_str = temiz_metin_al(metin)
+    if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
+        return "", ""
+    
+    # Hisse Kodunu bul (Metindeki ilk kelime genelde hisse kodudur: THYAO)
+    hisse_bul = re.findall(r'[A-Z]+', metin_str)
+    hisse = hisse_bul[0] if hisse_bul else ""
+    
+    # Kısıtlama: Sahte tek harfli (A gibi) kalıntıları eler
+    if len(hisse) < 2:
+        return "", ""
+        
+    # Puanı bul (Metindeki sayısal değer: +2.50 veya 2,50)
+    puan_bul = re.findall(r'[-+]?\d*[.,]\d+|\d+', metin_str)
+    puan = puan_bul[0] if puan_bul else ""
+    
+    return hisse, puan
+
+# Çökmeyi Engelleyen Kararlı Önbellekli Fiyat Motoru
 def hizli_fiyat_al(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         kayit_vakti, eski_fiyat = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - kayit_vakti < 300: # 5 Dakika Önbellek
+        if time.time() - kayit_vakti < 300: 
             return eski_fiyat
     try:
         data = yf.Ticker(f"{hisse_kodu}.IS").history(period="1d")
@@ -151,49 +165,35 @@ else:
     
     for idx in range(2, len(df_kaynak)):
         if len(df_kaynak.columns) > 22:
-            uv = temiz_hisse_adi_bul(df_kaynak.iloc[idx, 20])
-            wv = temiz_hisse_adi_bul(df_kaynak.iloc[idx, 22])
-            t_puan = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else "Mevcut"
+            # Sütunları tara (U Sütunu: index 20, W Sütunu: index 22)
+            u_hücre = df_kaynak.iloc[idx, 20]
+            w_hücre = df_kaynak.iloc[idx, 22]
             
-            if uv:
-                fiyat_uv = hizli_fiyat_al(uv)
+            # 🟡 Dönemsel Al Sat Sinyalleri (U Sütunundan Ayrıştırma)
+            hisse_uv, puan_uv = hücre_parçala(u_hücre)
+            if hisse_uv:
+                fiyat_uv = hizli_fiyat_al(hisse_uv)
                 tablo_alsat.append({
-                    "Hisse Kodu 📈": uv,
-                    "BTA Puan": t_puan,
+                    "Hisse Kodu 📈": hisse_uv,
+                    "BTA Puan": f"+{puan_uv}" if puan_uv else "Mevcut",
                     "💥 İnternet Canlı": f"{formatla_tl(fiyat_uv)} TL" if fiyat_uv > 0 else "Yükleniyor..."
                 })
                 
-            if wv:
-                fiyat_wv = hizli_fiyat_al(wv)
-                if wv not in st.session_state["ozel_takip_kutusu"] and fiyat_wv > 0:
-                    st.session_state["ozel_takip_kutusu"][wv] = {"kayit_fiyati": fiyat_wv}
+            # 🟢 BTA Sinyal Merkezi (W Sütunundan Ayrıştırma)
+            hisse_wv, puan_wv = hücre_parçala(w_hücre)
+            if hisse_wv:
+                fiyat_wv = hizli_fiyat_al(hisse_wv)
+                
+                # Özel takip havuzuna kaydetme mantığı
+                if hisse_wv not in st.session_state["ozel_takip_kutusu"] and fiyat_wv > 0:
+                    st.session_state["ozel_takip_kutusu"][hisse_wv] = {"kayit_fiyati": fiyat_wv}
+                    
                 tablo_al.append({
-                    "Hisse Kodu 🚀": wv,
-                    "BTA Puan": t_puan,
+                    "Hisse Kodu 🚀": hisse_wv,
+                    "BTA Puan": f"+{puan_wv}" if puan_wv else "Mevcut",
                     "💥 İnternet Canlı": f"{formatla_tl(fiyat_wv)} TL" if fiyat_wv > 0 else "Yükleniyor..."
                 })
 
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
     if tablo_alsat: 
         st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
-    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: 
-        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Aktif BTA sinyali taranıyor...")
-
-# 🌟 5. ÖZEL TAKİP HAVUZU
-if st.session_state["ozel_takip_kutusu"]:
-    st.write("---")
-    st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-    tk_list = []
-    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        tk_list.append({
-            "Hisse Kodu 🗝️": hisse,
-            "Havuz Maliyeti": f"{formatla_tl(bilge['kayit_fiyati'])} TL"
-        })
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
