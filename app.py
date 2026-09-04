@@ -60,11 +60,24 @@ c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM ALTIN<br><span style="color:
 c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
 st.write("")
 
-# 📰 SABİT VE GÜVENLİ BORSA MAKRO GÜNDEMİ
-st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
-st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ (Arama Motoru Eklendi)
+st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
+arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
+
+if arama_terimi:
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
+    if canli_sorgu_fiyat > 0:
+        tablo_canli_arama = [{
+            "Hisse Kodu": arama_terimi,
+            "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL",
+            "Veri Akış Durumu": "Kesintisiz Canlı Veri"
+        }]
+        st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
+    else:
+        st.write("❌ Hisse kodu bulunamadı veya Yahoo Finance veri sunucusuna bağlanılamıyor. Lütfen kodu kontrol edin (Örn: THYAO).")
+else:
+    st.write("🔎 Yukarıdaki kutuya bir BIST hisse kodu yazarak anlık fiyat sorgulaması yapabilirsiniz.")
+
 st.write("")
 
 df_kaynak = None
@@ -85,7 +98,7 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER İMHAA EDİLDİ (KESİN DÜZ HARF)
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul[0] if p_bul else t_deg
@@ -94,7 +107,7 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER İMHAA EDİLDİ (KESİN DÜZ HARF)
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul[0] if p_bul else t_deg
@@ -109,19 +122,16 @@ else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif BTA sinyali taranıyor...")
+else: st.write("🔒 Aktif Al sinyali taranıyor...")
 
-if st.session_state["ozel_takip_kutusu"]:
-    st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-    tk_list = []
-    for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-        cfiy = hızlı_canli_fiyat_bul(hisse)
-        if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-        tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True): st.session_state["ozel_takip_kutusu"] = {}; st.rerun()
-
-# ⚖️ MUTLAK SABİT YASAL UYARI KUTUSU (Sayfanın en altında kusursuzca parlar)
-st.write("---")
-st.markdown('<div class="spk-kutusu"><b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Veriler borsa standartlarında en az 15 dakika gecikmelidir.</div>', unsafe_allow_html=True)
+# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
+st.components.v1.html(
+    """
+    <script>
+    setTimeout(function(){
+        window.parent.location.reload();
+    }, 60000);
+    </script>
+    """,
+    height=0,
+)
