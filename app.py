@@ -80,7 +80,7 @@ with col_genel:
 
 st.write("")
 
-# 🎛️ GLOBAL ARAMA ÇUBUĞU GİRİŞİ (YENİ)
+# 🎛️ GLOBAL ARAMA ÇUBUĞU GİRİŞİ
 st.markdown("#### 🔍 Akıllı Varlık Filtreleme")
 arama_terimi = st.text_input("Aramak istediğiniz varlık kodunu yazın (Örn: THYAO, ASELS)", "").strip().upper()
 
@@ -108,13 +108,12 @@ if df_kaynak is not None:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
                                 p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                                bta_puan = float(p_bul[0].replace(',', '.')) if p_bul else 0.0
+                                bta_puan = p_bul[0] if p_bul else t_deg
                                 tablo_alsat.append({
-                                    "Logo 🏛️": "🏢",
-                                    "Varlık Kodu 📈": hisse, 
-                                    "Matematiksel Puan": bta_puan if bta_puan > 0 else t_deg, 
+                                    "Varlık Kodu": hisse, 
+                                    "Matematiksel Puan": bta_puan, 
                                     "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                                    "Matris Durumu 🎨": "🟡 Dengeli Akış"
+                                    "Matris Durumu": "Dengeli Akış"
                                 })
                         
                 # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
@@ -126,13 +125,12 @@ if df_kaynak is not None:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
                                 p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                                bta_puan = float(p_bul[0].replace(',', '.')) if p_bul else 0.0
+                                bta_puan = p_bul[0] if p_bul else t_deg
                                 tablo_al.append({
-                                    "Logo 🏛️": "💎",
-                                    "Varlık Kodu 🚀": hisse, 
-                                    "Matematiksel Puan": bta_puan if bta_puan > 0 else t_deg, 
+                                    "Varlık Kodu": hisse, 
+                                    "Matematiksel Puan": bta_puan, 
                                     "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                                    "Matris Durumu 🎨": "🟢 Pozitif Matris"
+                                    "Matris Durumu": "Pozitif Matris"
                                 })
         except: pass
 
