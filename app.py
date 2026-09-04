@@ -180,5 +180,4 @@ if erisim_izni:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # UV Sinyal Kontrolü
-                if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                # UV Sinyal Kontrolü (Dönemsel Al Sat)
