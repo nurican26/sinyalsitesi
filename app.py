@@ -91,7 +91,7 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ İMHAA EDİLDİ (DÜZ HARF)
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul if p_bul else t_deg
@@ -100,7 +100,7 @@ if df_kaynak is not None:
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZ İMHAA EDİLDİ (DÜZ HARF)
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                         bta_puan = p_bul if p_bul else t_deg
@@ -117,13 +117,29 @@ st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_all
 if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif BTA sinyali taranıyor...")
 
+# 🌟 ÖZEL TAKİP HAVUZU PANELİ
 if st.session_state["ozel_takip_kutusu"]:
     st.markdown("#### 🌟 Özel Takip Havuzu 💰")
     tk_list = []
     for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
         cfiy = hızlı_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-        tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
+        
+        # Kâr / Zarar Hesaplama Mantığı
+        maliyet = bilge['kayit_fiyati']
+        if maliyet > 0:
+            kar_zarar_yuzde = ((cfiy - maliyet) / maliyet) * 100
+            kar_zarar_str = f"% {kar_zarar_yuzde:+.2f}"
+        else:
+            kar_zarar_str = "% 0.00"
+            
+        tk_list.append({
+            "Hisse Kodu 🗝️": hisse, 
+            "Havuz Maliyeti": f"{maliyet:.2f} TL", 
+            "Anlık Güncel": f"{cfiy:.2f} TL",
+            "Kâr / Zarar (%)": kar_zarar_str,
+            "Eklenme Zamanı 📅": bilge.get("kayit_zamani", guncel_an)
+        })
     if tk_list:
         st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
         if st.button("🗑️ Havuzu Temizle", use_container_width=True):
@@ -131,4 +147,3 @@ if st.session_state["ozel_takip_kutusu"]:
             st.rerun()
 
 # ⚠️ YASAL UYARI KUTUSU
-st.markdown('<div class="spk-kutusu">⚠️ YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır.</div>', unsafe_allow_html=True)
