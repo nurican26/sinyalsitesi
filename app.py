@@ -47,6 +47,11 @@ def formatla_tl(deger):
         return "Yükleniyor..."
     return "{:,.2f}".format(deger).replace(",", "X").replace(".", ",").replace("X", ".")
 
+def formatla_yuzde(deger):
+    if pd.isna(deger) or deger is None: return "%0.00"
+    prefix = "+" if deger > 0 else ""
+    return f"{prefix}{deger:.2f}%"
+
 def havuzu_temizle_aksiyon():
     st.session_state["ozel_takip_kutusu"] = {}
     st.rerun()
@@ -55,7 +60,7 @@ def temiz_metin_al(val):
     if pd.isna(val): return ""
     return str(val).strip().upper()
 
-# Girinti hatası vermeyen bağımsız veri parçalayıcı fonksiyon
+# Bağımsız veri parçalayıcı fonksiyon
 def hücre_parçala(metin):
     metin_str = temiz_metin_al(metin)
     if not metin_str or metin_str in ["NAN", "NONE", "AL_SAT SİNYALİ", "SİNYALİ", "AL"]:
@@ -117,7 +122,6 @@ def canlı_altın_fiyatları_hesapla():
 
 altınlar = canlı_altın_fiyatları_hesapla()
 
-# 4 Kolonlu Altın Kart Düzeni (Gram Altın Dahil)
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown(f'<div class="gold-card"><span style="color:#fbbf24; font-weight:bold; font-size:1.1rem;">✨ GRAM ALTIN</span><br><span style="font-size:1.6rem; font-weight:bold; color:#fff;">{formatla_tl(altınlar["gram"])} TL</span></div>', unsafe_allow_html=True)
@@ -166,31 +170,28 @@ else:
             u_hücre = df_kaynak.iloc[idx, 20]
             w_hücre = df_kaynak.iloc[idx, 22]
             
+            # Sabit Maliyet Fiyatı (R Sütunu - 17. indeks) ve BTA Puanı
+            excel_maliyet = df_kaynak.iloc[idx, 17]
+            bta_puan_r = str(df_kaynak.iloc[idx, 17]).strip() if not pd.isna(df_kaynak.iloc[idx, 17]) else "Mevcut"
+            
+            maliyet_fiyat = 0.0
+            try:
+                if excel_maliyet and not pd.isna(excel_maliyet) and str(excel_maliyet).replace('.', '', 1).isdigit():
+                    maliyet_fiyat = float(excel_maliyet)
+            except:
+                pass
+
             # Dönemsel Al Sat Sinyalleri (U Sütunu)
             hisse_uv, puan_uv = hücre_parçala(u_hücre)
             if hisse_uv:
                 fiyat_uv = hizli_fiyat_al(hisse_uv)
+                kar_zarar_uv = ""
+                if maliyet_fiyat > 0 and fiyat_uv > 0:
+                    oran = ((fiyat_uv - maliyet_fiyat) / maliyet_fiyat) * 100
+                    kar_zarar_uv = formatla_yuzde(oran)
+                
                 tablo_alsat.append({
                     "Hisse Kodu 📈": hisse_uv,
-                    "BTA Puan": f"+{puan_uv}" if puan_uv else "Mevcut",
-                    "💥 İnternet Canlı": f"{formatla_tl(fiyat_uv)} TL" if fiyat_uv > 0 else "Yükleniyor..."
-                })
-                
-            # BTA Sinyal Merkezi (W Sütunu)
-            hisse_wv, puan_wv = hücre_parçala(w_hücre)
-            if hisse_wv:
-                fiyat_wv = hizli_fiyat_al(hisse_wv)
-                if hisse_wv not in st.session_state["ozel_takip_kutusu"] and fiyat_wv > 0:
-                    st.session_state["ozel_takip_kutusu"][hisse_wv] = {"kayit_fiyati": fiyat_wv}
-                tablo_al.append({
-                    "Hisse Kodu 🚀": hisse_wv,
-                    "BTA Puan": f"+{puan_wv}" if puan_wv else "Mevcut",
-                    "💥 İnternet Canlı": f"{formatla_tl(fiyat_wv)} TL" if fiyat_wv > 0 else "Yükleniyor..."
-                })
-
-    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat: 
-        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
+                    "BTA Puan": bta_puan_r,
+                    "Maliyet Fiyat": formatla_tl(maliyet_fiyat) if maliyet_fiyat > 0 else "Belirtilmedi",
+                    "💥 Canlı Fiyat": f"{formatla_tl(fiyat_uv)} TL" if fiyat_uv > 0 else "Yükleniyor...",
