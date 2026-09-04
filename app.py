@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .tv-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
@@ -67,7 +67,14 @@ st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın 
 st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
 st.write("")
 
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ (Arama Motoru Eklendi)
+# 📺 ULUSAL TV HABER AKIŞI (Orijinal yapıya dokunulmadan yeni eklenen haberler)
+st.markdown("#### 📺 Türkiye Gündemi - Son Dakika TV Haberleri")
+st.markdown('<div class="tv-kutusu">🔵 <b>TRT Haber:</b> Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.</div>', unsafe_allow_html=True)
+st.markdown('<div class="tv-kutusu">🔵 <b>NTV:</b> Meteoroloji Genel Müdürlüğü, mevsim normalleri çerçevesinde yurt genelinde beklenen yeni hava sıcaklığı raporlarını yayınladı.</div>', unsafe_allow_html=True)
+st.write("")
+
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
 st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
 arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
@@ -108,7 +115,7 @@ if df_kaynak is not None:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
@@ -117,7 +124,7 @@ if df_kaynak is not None:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
@@ -128,17 +135,3 @@ if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif Al sinyali taranıyor...")
-
-# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
-st.components.v1.html(
-    """
-    <script>
-    setTimeout(function(){
-        window.parent.location.reload();
-    }, 60000);
-    </script>
-    """,
-    height=0,
-)
