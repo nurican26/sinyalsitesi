@@ -79,10 +79,10 @@ with col_genel:
     st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunmada Kritik Aşama:</b> Eurofighter Typhoon savaş uçakları tedariki kapsamında pilotların uçuş eğitimleri başlıyor.</div>', unsafe_allow_html=True)
     st.markdown('<div class="gundem-kutusu">🚊 <b>Ulaşım ve Altyapı Yatırımları:</b> Havalimanları ve yeni metro/tramvay hatlarının genişletilmesine yönelik bölge yatırımları hız kazandı.</div>', unsafe_allow_html=True)
 
-# 📢 KRİTİK KAP GELİŞMELERİ (YENİ MODÜL - EN ÖNEMLİ 3 HABER)
+# 📢 KRİTİK KAP GELİŞMELERİ
 st.markdown("#### 🔮 Kritik KAP Gelişmeleri")
 st.markdown('<div class="kap-kutusu">💼 <b>ASELSAN (ASELS):</b> Milli Savunma Bakanlığı ile savunma sistemleri tedariki kapsamında 42 milyon dolar tutarında yeni bir yurt içi satış sözleşmesi imzaladığını duyurdu.</div>', unsafe_allow_html=True)
-st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Yurt dışı iştirakinin ABD merkezli dev bir enerji depolama projesinde ana yüklenici ortaklık niyet mektubu imzaladığını bildirdi.</div>', unsafe_allow_html=True)
+st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Yurt dışı iştirakinin ABD merkezli dev bir energy depolama projesinde ana yüklenici ortaklık niyet mektubu imzaladığını bildirdi.</div>', unsafe_allow_html=True)
 st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Gelecek dönem filo genişletme stratejileri doğrultusunda 4 adet yeni nesil geniş gövdeli uçağın finansal kiralama sürecinin tamamlandığını açıkladı.</div>', unsafe_allow_html=True)
 
 st.write("")
@@ -137,7 +137,7 @@ if df_kaynak is not None:
                                 
                                 yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
                                 
-                                # PUANI DOĞRUDAN R SÜTUNUNDAN OKU
+                                # PUANI DOĞRUDAN R SÜTUNUNDAN GÜVENLE OKU
                                 ham_r_degeri = df_kaynak.iloc[idx, 17]
                                 if pd.isna(ham_r_degeri):
                                     final_puan = "0.00"
