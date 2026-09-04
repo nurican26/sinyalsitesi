@@ -38,8 +38,31 @@ st.session_state["ziyaret_sayaci"] += 1
 # BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# Şifre alanını önceden tanımlıyoruz ki akışta her iki durumda da erişebilelim
-girilen_sifre = ""
+# 🔐 GİRİŞ KUTUSU
+st.markdown("### 🔐 Erişim Paneli")
+girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
+
+# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
+is_admin = False
+if girilen_sifre == YONETICI_SIFRESI:
+    is_admin = True
+
+if is_admin:
+    st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
+    col_ac, col_kilitle = st.columns(2)
+    if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
+        st.rerun()
+    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
+        with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
+        st.rerun()
+
+# 🛠️ ERİŞİM KONTROL MANTIĞI
+erisim_izni = False
+if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
+    erisim_izni = True
+else:
+    st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
 
 # 💥 CANLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
@@ -56,91 +79,70 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🛠️ ERİŞİM KONTROLÜ İÇİN ÖN HAZIRLIK (Konteyner Yapısı)
-içerik_alanı = st.container()
-panel_alanı = st.container()
-
-# 🟢 1. BLOK: İÇERİK ALANI (Erişim İzni Varsa Tablolar Burada Görünür)
-with içerik_alanı:
-    # Geçici izin kontrolü (Kullanıcı girdisini panel alanından alacağız)
-    # Streamlit yukarıdan aşağı çalıştığı için form elemanını aşağıya koysak da session_state veya text_input değerini okuyabiliriz.
-    pass 
-
-# 🔐 EN ALTA ALINAN ERİŞİM PANELİ VE MANTIĞI
-with panel_alanı:
-    st.markdown("---")
-    st.markdown("### 🔐 Erişim Paneli")
-    girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...", key="giris_sifresi")
-
-    # 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
-    is_admin = False
-    if girilen_sifre == YONETICI_SIFRESI:
-        is_admin = True
-
-    if is_admin:
-        st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
-        col_ac, col_kilitle = st.columns(2)
-        if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
-            with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
-            st.rerun()
-        if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
-            with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
-            st.rerun()
-
-    # Erişim İzni Kontrolü
-    erisim_izni = False
-    if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
-        erisim_izni = True
-    else:
-        st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
-
-# İÇERİĞİ YUKARIDAKİ KONTEYNERA YAZDIRMA
+# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
-    with içerik_alanı:
-        st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
+    # Sadece Giriş Sayısı Bırakıldı (Puan, Oy, Tarih/Saat tamamen temizlendi)
+    st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
-        df_kaynak = None
-        excel_yolu = "nurican.xls.xlsm"
-        if os.path.exists(excel_yolu):
-            try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+    df_kaynak = None
+    excel_yolu = "nurican.xls.xlsm"
+    if os.path.exists(excel_yolu):
+        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        except: pass
+
+    tablo_alsat, tablo_al = [], []
+    guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+
+    if df_kaynak is not None:
+        for idx in range(2, len(df_kaynak)):
+            try:
+                if len(df_kaynak.columns) > 22:
+                    uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
+                    wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                    t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
+                    
+                    if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                        h_ara = re.findall(r'[A-Z]+', uv)
+                        if h_ara:
+                            hisse = str(h_ara[0])
+                            cfiy = hızlı_canli_fiyat_bul(hisse)
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
+                            bta_puan = p_bul[0] if p_bul else t_deg
+                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                            
+                    if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+                        h_ara = re.findall(r'[A-Z]+', wv)
+                        if h_ara:
+                            hisse = str(h_ara[0])
+                            cfiy = hızlı_canli_fiyat_bul(hisse)
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                            bta_puan = p_bul[0] if p_bul else t_deg
+                            if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
             except: pass
 
-        tablo_alsat, tablo_al = [], []
-        guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
-        if df_kaynak is not None:
-            for idx in range(2, len(df_kaynak)):
-                try:
-                    if len(df_kaynak.columns) > 22:
-                        uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                        wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                        t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
-                        
-                        if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                            h_ara = re.findall(r'[A-Z]+', uv)
-                            if h_ara:
-                                hisse = str(h_ara[0])
-                                cfiy = hızlı_canli_fiyat_bul(hisse)
-                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                                bta_puan = p_bul[0] if p_bul else t_deg
-                                tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-                                
-                        if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                            h_ara = re.findall(r'[A-Z]+', wv)
-                            if h_ara:
-                                hisse = str(h_ara[0])
-                                cfiy = hızlı_canli_fiyat_bul(hisse)
-                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                                bta_puan = p_bul[0] if p_bul else t_deg
-                                if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                                    st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                                tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-                except: pass
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif BTA sinyali taranıyor...")
 
-        st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-        if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+    if st.session_state["ozel_takip_kutusu"]:
+        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
+        tk_list = []
+        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
+            guncel_fiy = hızlı_canli_fiyat_bul(hisse)
+            kar_zarar = ((guncel_fiy - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100 if guncel_fiy > 0 else 0.0
+            tk_list.append({
+                "Hisse": hisse,
+                "Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL",
+                "Güncel Fiyat": f"{guncel_fiy:.2f} TL" if guncel_fiy > 0 else "Yükleniyor...",
+                "Değişim (%)": f"{kar_zarar:+.2f}%" if guncel_fiy > 0 else "%0.00",
+                "Kayıt Zamanı": bilgi["kayit_zamani"]
+            })
+        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
 
-        st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-        if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-        else: st.write("🔒 Aktif AL sinyali taranıyor...")
+    st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Bu sinyaller tamamen matematiksel formüllere dayalı olup, herhangi bir yatırım portföyü yönetimi veya yönlendirmesi içermez.</div>', unsafe_allow_html=True)
