@@ -123,22 +123,25 @@ if df_kaynak is not None:
                             if arama_terimi == "" or arama_terimi in hisse:
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
                                 
-                                # 🛠️ R SÜTUNU (17) ONDALIK PUAN HATA DÜZELTME MOTORU
+                                # 🛠️ GÜVENLİ ONDALIK DÖNÜŞTÜRÜCÜ (VİRGÜL VE SIFIR HATASI GİDERİLDİ)
                                 hücre_degeri = df_kaynak.iloc[idx, 17]
-                                final_puan = 0.00
+                                final_puan = "0.00"
                                 
                                 if not pd.isna(hücre_degeri):
                                     try:
-                                        final_puan = float(hücre_degeri)
+                                        # Değer zaten sayısal bir float ise doğrudan 2 basamaklı kaydet
+                                        final_puan = f"{float(hücre_degeri):.2f}"
                                     except ValueError:
+                                        # Eğer metin olarak virgüllüyse noktaya çevirerek float yap
                                         metin_deger = str(hücre_degeri).replace(',', '.').strip()
-                                        puan_ara = re.findall(r'[-+]?\d*\.\d+|\d+', metin_deger)
-                                        if puan_ara:
-                                            final_puan = float(puan_ara[0])
+                                        try:
+                                            final_puan = f"{float(metin_deger):.2f}"
+                                        except:
+                                            final_puan = str(hücre_degeri) # Diğer durumlarda ham metni bozma
                                 
                                 tablo_al.append({
                                     "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": f"{final_puan:.2f}" if final_puan != 0.00 else "0.00", 
+                                    "Matematiksel Puan": final_puan, 
                                     "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
                                     "Matris Durumu": "Pozitif Matris"
                                 })
