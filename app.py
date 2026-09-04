@@ -21,7 +21,7 @@ if "ziyaret_edildi" not in st.session_state:
     st.session_state["ziyaret_sayaci"] += 1
     st.session_state["ziyaret_edildi"] = True
 
-# Havuz Temizleme Fonksiyonu (Hızlı Buton Sorununu Çözer)
+# Havuz Temizleme Fonksiyonu
 def havuzu_temizle_aksiyon():
     st.session_state["ozel_takip_kutusu"] = {}
     st.rerun()
@@ -147,20 +147,19 @@ if df_kaynak is not None:
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Parantezleri uçurur, temiz ismi alır
-                        if len(hisse) > 1:
+                        hisse = str(hisse_ara[0]) # Parantezleri kesin temizler
+                        if len(hisse) > 1: # "A" gibi 1 harfli sahte verileri engeller
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{formatla_tl(canli_fiyat)} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                 
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                     if hisse_ara:
-                        hisse = str(hisse_ara[0]) # Parantezleri uçurur, temiz ismi alır
-                        if len(hisse) > 1:
+                        hisse = str(hisse_ara[0]) # Parantezleri kesin temizler
+                        if len(hisse) > 1: # "A" gibi 1 harfli sahte verileri engeller
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
