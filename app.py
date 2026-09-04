@@ -48,11 +48,12 @@ def canli_altin_fiyatlarini_hesapla():
     except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
-# 💥 İNTERNETTEN CANLI HABER ÇEKME FONKSİYONU
+# 💥 ENGELLENMEYEN CANLI HABER MOTORU
 def canlı_haberleri_getir(url, varsayılan_metinler, adet=3):
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
+        # Sunucu engellemesini aşmak için tam tarayıcı kimliği (User-Agent) tanımlandı
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+        with urllib.request.urlopen(req, timeout=4) as response:
             xml_data = response.read()
         root = ET.fromstring(xml_data)
         haberler = []
@@ -141,15 +142,11 @@ else:
 
 st.write("---")
 
-# 💥 CANLI HABERLER VERİ ÇEKİMİ
+# 💥 YEDEK KORUMALI CANLI HABERLER VERİ ÇEKİMİ
 varsayılan_ekonomi = [
-    "Borsa İstanbul (BIST 100): Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.",
+    "Borsa İstanbul: Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.",
     "Altın Piyasası: Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları işlem görüyor.",
     "Halka Arz Gündemi: Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor."
 ]
 varsayılan_tv = [
     "Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.",
-    "Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.",
-    "Meteoroloji Genel Müdürlüğü, mevsim normalleri çerçevesinde yurt genelinde beklenen hava sıcaklığı raporlarını yayınladı."
-]
-
