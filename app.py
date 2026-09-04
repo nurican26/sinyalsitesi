@@ -116,6 +116,7 @@ else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 st.write("---")
 
-
+# Sorumluluk Reddi Beyanı
+st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
 
 # ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
