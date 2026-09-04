@@ -46,7 +46,7 @@ def canlı_altın_fiyatları_hesapla():
             tam = ceyrek * 4
             
             fiyatlar = {"ceyrek": ceyrek, "yarim": yarim, "tam": tam}
-            st.session_state["altin_hafizasi"] = {"vakit": anlik_zaman, "fiyatlar": fiyatlar}
+            st.session_state["altin_hafizasi"] = {"vakit": anlik_zaman, "fiyatlar": fiyatalar}
             return fiyatlar
     except:
         pass
@@ -109,23 +109,25 @@ if df_kaynak is not None:
                 
                 if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
-                    if hisse_ara and len(hisse_ara[0]) > 1: # "A" gibi 1 harfli sahte verileri engeller
-                        hisse = str(hisse_ara[0])
-                        canli_fiyat = hızlı_canli_fiyat_bul(hisse)
-                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                        tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{formatla_tl(canli_fiyat)} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                    if hisse_ara:
+                        hisse = str(hisse_ara[0])  # Parantezsiz saf metin alındı
+                        if len(hisse) > 1:         # "A" gibi hatalı tek harfleri eler
+                            canli_fiyat = hızlı_canli_fiyat_bul(hisse)
+                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{formatla_tl(canli_fiyat)} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                 
                 if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
-                    if hisse_ara and len(hisse_ara[0]) > 1: # "A" gibi 1 harfli sahte verileri engeller
-                        hisse = str(hisse_ara[0])
-                        canli_fiyat = hızlı_canli_fiyat_bul(hisse)
-                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                        if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
-                        tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{formatla_tl(canli_fiyat)} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                    if hisse_ara:
+                        hisse = str(hisse_ara[0])  # Parantezsiz saf metin alındı
+                        if len(hisse) > 1:         # "A" gibi hatalı tek harfleri eler
+                            canli_fiyat = hızlı_canli_fiyat_bul(hisse)
+                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": guncel_an}
+                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{formatla_tl(canli_fiyat)} TL" if canli_fiyat > 0 else "Yükleniyor..."})
         except:
             pass
 
@@ -150,12 +152,7 @@ if st.session_state["ozel_takip_kutusu"]:
             st.session_state["ozel_takip_kutusu"] = {}
             st.rerun()
 
-# 🔍 BIST TÜM HİSSE ARAMA MOTORU MODÜLÜ
+# 🔍 BIST TÜM HİSSE ARAMA MOTORU MODÜLÜ (Boşluk Hataları Tamamen Düzeltildi)
 st.write("---")
 st.markdown('<div class="arama-baslik">🔍 BIST CANLI HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
 
-arama_kodu = st.text_input("Sorgulamak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS, EREGL):", "").strip().upper()
-
-if arama_kodu:
-    with st.spinner(f"{arama_kodu} verileri çekiliyor..."):
-        try:
