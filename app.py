@@ -80,32 +80,38 @@ tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            # Sadece Excel'in ilk satırlarında kalan o TEK gizli hisseyi temizce okur
-            hisse_ham = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else ""
-            wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-            
-            if wv_kontrol and wv_kontrol not in ["NAN", "NONE"] and hisse_ham and hisse_ham not in ["NAN", "NONE"]:
-                if 3 <= len(hisse_ham) <= 5:
-                    anlik_canli = hızlı_canli_fiyat_bul(hisse_ham)
-                    
-                    if anlik_canli > 0:
-                        # FİYAT SABİTLEME
-                        if hisse_ham not in st.session_state["excel_kayit_hafizasi"]:
-                            st.session_state["excel_kayit_hafizasi"][hisse_ham] = anlik_canli
+            if len(df_kaynak.columns) > 22:
+                # 🛠️ DÜZELTME: Doğrudan makronun yazdığı W sütununa (22) bakıyoruz
+                wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                
+                if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
+                    # W sütunundaki metinden (Örn: THYAO [AL] (0.04)) sadece baştaki gerçek hisse kodunu ayıklar
+                    h_ara = re.findall(r'^[A-Z0-9]+', wv_kontrol)
+                    if h_ara:
+                        hisse = str(h_ara[0]).strip()
                         
-                        yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse_ham, anlik_canli)
-                        
-                        # PUANI R SÜTUNUNDAN (17) BOZMADAN METİN OLARAK ALIR (0.04)
-                        ham_r_degeri = df_kaynak.iloc[idx, 17]
-                        final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
-                        
-                        f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
-                        f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
-                        
-                        tablo_al.append([hisse_ham, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
+                        if 3 <= len(hisse) <= 5 and hisse not in ["AL", "NONE", "NAN"]:
+                            if arama_terimi == "" or arama_terimi in hisse:
+                                anlik_canli = hızlı_canli_fiyat_bul(hisse)
+                                
+                                if anlik_canli > 0:
+                                    # FİYAT SABİTLEME
+                                    if hisse not in st.session_state["excel_kayit_hafizasi"]:
+                                        st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
+                                    
+                                    yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
+                                    
+                                    # PUANI R SÜTUNUNDAN (17) HAM METİN OLARAK ÇEKER
+                                    ham_r_degeri = df_kaynak.iloc[idx, 17]
+                                    final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
+                                    
+                                    f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
+                                    f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
+                                    
+                                    tablo_al.append([hisse, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
         except: pass
 
-# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ (EN ÜSTTE VE SADE)
+# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ EN ÜSTTE
 st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
 if tablo_al:
     df_sonuc = pd.DataFrame(tablo_al, columns=["Varlık Kodu", "Matematiksel Puan", "Yüklenen Fiyat (Sabit)", "Anlık Canlı Fiyat", "Matris Durumu"])
@@ -135,8 +141,3 @@ st.markdown('<div class="kap-kutusu">🔋 <b>KONTROLMATİK (KONTR):</b> Enerji d
 st.markdown('<div class="kap-kutusu">📊 <b>TÜRK HAVA YOLLARI (THYAO):</b> Küresel filo genişletme operasyonları planlaması ve operasyonel rapor bülteni yayımlandı.</div>', unsafe_allow_html=True)
 
 # Sorumluluk Reddi Beyanı
-st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
-
-# Otomatik arka plan yenileme tetikleyici (60 saniye)
-time.sleep(60)
-st.rerun()
