@@ -91,22 +91,38 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TEMİZLENDİ
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER TEMİZLENDİ
                         cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv) # uv üzerinden puan kontrolü
+                        bta_puan = p_bul[0] if p_bul else t_deg
+                        
+                        # Kâr / Zarar Hesaplama Mantığı (BTA Sinyal Merkezi için)
+                        try:
+                            temiz_puan = float(bta_puan.replace(',', '.')) if isinstance(bta_puan, str) else float(bta_puan)
+                            if temiz_puan > 0 and cfiy > 0:
+                                kz_oran = ((cfiy - temiz_puan) / temiz_puan) * 100
+                                kz_str = f"% {kz_oran:+.2f}"
+                            else: kz_str = "% 0.00"
+                        except: kz_str = "Hesaplanamıyor"
+
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                        
+                        tablo_al.append({
+                            "Hisse Kodu 🚀": hisse, 
+                            "BTA Sinyal Fiyatı": f"{temiz_puan:.2f} TL" if 'temiz_puan' in locals() else bta_puan, 
+                            "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
+                            "Kâr / Zarar (%) 📈": kz_str
+                        })
         except: pass
 
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
@@ -125,25 +141,6 @@ if st.session_state["ozel_takip_kutusu"]:
         cfiy = hızlı_canli_fiyat_bul(hisse)
         if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
         
-        # Kâr / Zarar Hesaplama Mantığı
         maliyet = bilge['kayit_fiyati']
         if maliyet > 0:
             kar_zarar_yuzde = ((cfiy - maliyet) / maliyet) * 100
-            kar_zarar_str = f"% {kar_zarar_yuzde:+.2f}"
-        else:
-            kar_zarar_str = "% 0.00"
-            
-        tk_list.append({
-            "Hisse Kodu 🗝️": hisse, 
-            "Havuz Maliyeti": f"{maliyet:.2f} TL", 
-            "Anlık Güncel": f"{cfiy:.2f} TL",
-            "Kâr / Zarar (%)": kar_zarar_str,
-            "Eklenme Zamanı 📅": bilge.get("kayit_zamani", guncel_an)
-        })
-    if tk_list:
-        st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-        if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-            st.session_state["ozel_takip_kutusu"] = {}
-            st.rerun()
-
-# ⚠️ YASAL UYARI KUTUSU
