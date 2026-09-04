@@ -50,7 +50,7 @@ def canli_altin_fiyatlarini_hesapla():
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-# 🌐  HİSSELERİ  SORGULA
+# 🌐 TÜM BİST HİSSELERİ VE SORGULAMA MOTORU
 st.markdown('<div class="alsat-baslik">🔎 BİST TÜM HİSSELER CANLI SORGULAMA MOTORU</div>', unsafe_allow_html=True)
 arama_hisse = st.text_input("Canlı Fiyatını Görmek İstediğiniz Hisse Kodunu Girin (Örn: THYAO, EREGL, ASELS):", value="THYAO").strip().upper()
 
@@ -83,12 +83,15 @@ tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            # Excel H sütunundan (7. indeks) maliyet fiyatını al
-            h_sutunu_fiyati = df_kaynak.iloc[idx, 7] if len(df_kaynak.columns) > 7 else 0
-            try:
-                temiz_puan = float(str(h_sutunu_fiyati).replace(',', '.')) if pd.notna(h_sutunu_fiyati) else 0.0
-            except:
+            # 🛠️ GÜVENLİ FİYAT KONTROLÜ: Hücre boşsa veya geçersizse direkt 0.00 yap
+            h_sutunu_fiyati = df_kaynak.iloc[idx, 7] if len(df_kaynak.columns) > 7 else None
+            if pd.isna(h_sutunu_fiyati) or str(h_sutunu_fiyati).strip() == "" or str(h_sutunu_fiyati).strip().upper() in ["NAN", "NONE"]:
                 temiz_puan = 0.0
+            else:
+                try:
+                    temiz_puan = float(str(h_sutunu_fiyati).replace(',', '.'))
+                except:
+                    temiz_puan = 0.0
 
             if len(df_kaynak.columns) > 22:
                 uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
@@ -97,28 +100,33 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER KESİN OLARAK SİLİNDİ
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
-                        tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan Fiyatı": f"{temiz_puan:.2f} TL", "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                        
+                        fiyat_gosterim = f"{temiz_puan:.2f} TL" if temiz_puan > 0 else "Fiyat Yok"
+                        tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan Fiyatı": fiyat_gosterim, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip() # 🛠️ PARANTEZLER KESİN OLARAK SİLİNDİ
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         
+                        # Eğer Excel'de fiyat varsa kar/zarar hesapla, yoksa doğrudan belirt
                         if temiz_puan > 0 and cfiy > 0:
                             kz_oran = ((cfiy - temiz_puan) / temiz_puan) * 100
                             kz_str = f"% {kz_oran:+.2f}"
+                            fiyat_gosterim = f"{temiz_puan:.2f} TL"
                         else: 
-                            kz_str = "% 0.00"
+                            kz_str = "Hesaplanamaz"
+                            fiyat_gosterim = "Fiyat Yok"
 
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         
                         tablo_al.append({
                             "Hisse Kodu 🚀": hisse, 
-                            "BTA Sinyal Fiyatı": f"{temiz_puan:.2f} TL", 
+                            "BTA Sinyal Fiyatı": fiyat_gosterim, 
                             "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
                             "Kâr / Zarar (%) 📈": kz_str
                         })
@@ -142,26 +150,3 @@ if st.session_state["ozel_takip_kutusu"]:
         
         maliyet = bilge['kayit_fiyati']
         if maliyet > 0:
-            kar_zarar_yuzde = ((cfiy - maliyet) / maliyet) * 100
-            kar_zarar_str = f"% {kar_zarar_yuzde:+.2f}"
-        else:
-            kar_zarar_str = "% 0.00"
-            
-        tk_list.append({
-            "Hisse Kodu 🗝️": hisse, 
-            "Havuz Maliyeti": f"{maliyet:.2f} TL", 
-            "Anlık Güncel": f"{cfiy:.2f} TL",
-            "Kâr / Zarar (%)": kar_zarar_str,
-            "Eklenme Zamanı 📅": bilge.get("kayit_zamani", guncel_an)
-        })
-# SPK KUTUSU
-st.markdown("""
-<div class="spk-kutusu">
-  <b>⚖️ YASAL UYARI (SPK):</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı 
-    kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy şirketleri, 
-    mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi 
-    çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların 
-    kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize 
-    uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
-</div>
-""", unsafe_allow_html=True)
