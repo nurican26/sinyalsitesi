@@ -131,7 +131,8 @@ if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                 "Varlık Kodu": hisse, 
                 "BTA Puanı": bta_puan,  # Sütun adı ve veri formatı düzeltildi
                 "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                "Matris Durumu": "Pozitif Matris"
+            "Matris Durumu": "Pozitif Matris"
+            
             })
                         
         except: pass
