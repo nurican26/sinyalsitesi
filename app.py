@@ -80,74 +80,68 @@ with col_genel:
 
 st.write("")
 
-# 🎛️ GLOBAL ARAMA ÇUBUĞU GİRİŞİ
-st.markdown("#### 🔍 Akıllı Varlık Filtreleme")
-arama_terimi = st.text_input("Aramak istediğiniz varlık kodunu yazın (Örn: THYAO, ASELS)", "").strip().upper()
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ (YENI)
+st.markdown('<div class="istatistik-baslik">🟡 BORSA İSTANBUL TÜM HİSSELER - İNTERNETTEN CANLI VERİ MOTORU</div>', unsafe_allow_html=True)
+arama_terimi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
+if arama_terimi:
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi)
+    if canli_sorgu_fiyat > 0:
+        tablo_canli_arama = [{
+            "Aranan Varlık": arama_terimi,
+            "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL",
+            "Veri Akış Durumu": "Kesintisiz Canlı Veri"
+        }]
+        st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
+    else:
+        st.write("❌ Hisse kodu bulunamadı veya Yahoo Finance veri sunucusuna bağlanılamıyor. Lütfen kodu kontrol edin (Örn: THYAO).")
+else:
+    st.write("🔎 Yukarıdaki kutuya bir BIST hisse kodu yazarak anlık fiyat sorgulaması yapabilirsiniz.")
+
+st.write("")
+
+# EXCEL VERİ TABANI OKUMA VE MATEMATİKSEL MODELLEME
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except: pass
 
-tablo_alsat, tablo_al = [], []
+tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
-                uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
-                # 🟡 DÖNEMSEL İSTATİSTİKLER
-                if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                    h_ara = re.findall(r'[A-Z]+', uv)
-                    if h_ara:
-                        hisse = h_ara[0].strip()
-                        if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
-                            if arama_terimi == "" or arama_terimi in hisse:
-                                cfiy = hızlı_canli_fiyat_bul(hisse)
-                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                                bta_puan = p_bul[0] if p_bul else t_deg
-                                tablo_alsat.append({
-                                    "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": bta_puan, 
-                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                                    "Matris Durumu": "Dengeli Akış"
-                                })
-                        
-                # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
+                # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ (AL sütunu stabil korundu)
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = h_ara[0].strip()
+                        hisse = h_ara.strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
-                            if arama_terimi == "" or arama_terimi in hisse:
-                                cfiy = hızlı_canli_fiyat_bul(hisse)
-                                p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                                bta_puan = p_bul[0] if p_bul else t_deg
-                                tablo_al.append({
-                                    "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": bta_puan, 
-                                    "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
-                                    "Matris Durumu": "Pozitif Matris"
-                                })
+                            cfiy = hızlı_canli_fiyat_bul(hisse)
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                            bta_puan = p_bul if p_bul else t_deg
+                            tablo_al.append({
+                                "Varlık Kodu": hisse, 
+                                "Matematiksel Puan": bta_puan, 
+                                "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
+                                "Matris Durumu": "Pozitif Matris"
+                            })
         except: pass
 
-# --- BAŞLIKLARLA EKRANA BASMA ---
-
-# 1. Dönemsel Varlık İstatistikleri
-st.markdown('<div class="istatistik-baslik">🟡 DÖNEMSEL VARLIK İSTATİSTİKLERİ</div>', unsafe_allow_html=True)
-if tablo_alsat: 
-    st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else: 
-    st.write("⏳ Veri matrisi taranıyor veya arama kriterine uygun varlık bulunamadı...")
-
-# 2. BTA Matematiksel Veri Modellemesi
+# 2. BTA Matematiksel Veri Modellemesi Ekrana Basma
 st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
 if tablo_al: 
     st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else: 
-    st.write("⏳ Matematiksel model taranıyor veya arama kriterine uygun varlık bulunamadı...")
+    st.write("⏳ Matematiksel veri tabanı taranıyor...")
 
 # Sorumluluk Reddi Beyanı
+st.markdown('<div style="font-size: 0.85rem; color: #94a3b8; text-align: justify; margin-top: 40px; padding: 10px; border-top: 1px solid #334155;"><b>Sorumluluk Reddi Beyanı:</b> Bu platformda sunulan tüm veriler, listeler ve hesaplamalar tamamen matematiksel algoritmalara ve geçmiş istatistiki verilere dayalı bir veri simülasyonudur. Burada yer alan hiçbir ifade, başlık, tablo veya puanlama 6362 sayılı Sermaye Piyasası Kanunu kapsamında bir yatırım danışmanlığı, alım-satım tavsiyesi veya finansal sinyal teşkil etmez. Kullanıcıların veri modellerine dayalı alacağı kararlar tamamen kendi sorumluluğundadır.</div>', unsafe_allow_html=True)
+
+# Otomatik arka plan yenileme tetikleyici (60 saniye)
+time.sleep(60)
+st.rerun()
