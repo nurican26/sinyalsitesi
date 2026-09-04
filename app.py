@@ -5,10 +5,10 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Sade Terminal Tasarımı
+# 1. Sayfa Yapılandırması ve Profesyonel Terminal Tasarımı
 st.set_page_config(page_title="BTA Veri Analizi", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #090d16 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.04); border: 1px solid #eab308; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .gundem-kutusu {background: #1e293b; border-left: 4px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .kap-kutusu {background: #1e293b; border-left: 4px solid #a855f7; padding: 14px; border-radius: 8px; margin-bottom: 12px;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #090d16 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .istatistik-baslik {background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .analiz-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 15px;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.04); border: 1px solid #eab308; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: #1e293b; border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .gundem-kutusu {background: #1e293b; border-left: 4px solid #3b82f6; padding: 14px; border-radius: 8px; margin-bottom: 12px;} .kap-kutusu {background: #1e293b; border-left: 4px solid #a855f7; padding: 14px; border-radius: 8px; margin-bottom: 12px;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
@@ -81,37 +81,34 @@ if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
-                # 🛠️ DÜZELTME: Doğrudan makronun yazdığı W sütununa (22) bakıyoruz
                 wv_kontrol = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 
                 if wv_kontrol and wv_kontrol not in ["NAN", "NONE", "SİNYALİ", "AL"]:
-                    # W sütunundaki metinden (Örn: THYAO [AL] (0.04)) sadece baştaki gerçek hisse kodunu ayıklar
-                    h_ara = re.findall(r'^[A-Z0-9]+', wv_kontrol)
-                    if h_ara:
-                        hisse = str(h_ara[0]).strip()
-                        
-                        if 3 <= len(hisse) <= 5 and hisse not in ["AL", "NONE", "NAN"]:
-                            if arama_terimi == "" or arama_terimi in hisse:
-                                anlik_canli = hızlı_canli_fiyat_bul(hisse)
+                    # 🛠️ KESİN ÇÖZÜM: Regex bitti. Hücreyi boşluğa göre böler ve ilk kelimeyi saf hisse kodu (THYAO) olarak alır.
+                    hisse = wv_kontrol.split(' ')[0].strip()
+                    
+                    if len(hisse) >= 3 and hisse not in ["AL", "NONE", "NAN"]:
+                        if arama_terimi == "" or arama_terimi in hisse:
+                            anlik_canli = hızlı_canli_fiyat_bul(hisse)
+                            
+                            if anlik_canli > 0:
+                                # FİYAT SABİTLEME
+                                if hisse not in st.session_state["excel_kayit_hafizasi"]:
+                                    st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
                                 
-                                if anlik_canli > 0:
-                                    # FİYAT SABİTLEME
-                                    if hisse not in st.session_state["excel_kayit_hafizasi"]:
-                                        st.session_state["excel_kayit_hafizasi"][hisse] = anlik_canli
-                                    
-                                    yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
-                                    
-                                    # PUANI R SÜTUNUNDAN (17) HAM METİN OLARAK ÇEKER
-                                    ham_r_degeri = df_kaynak.iloc[idx, 17]
-                                    final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
-                                    
-                                    f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
-                                    f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
-                                    
-                                    tablo_al.append([hisse, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
+                                yuklenen_fiyat = st.session_state["excel_kayit_hafizasi"].get(hisse, anlik_canli)
+                                
+                                # PUANI R SÜTUNUNDAN (17) HAM METİN OLARAK OKU (0.04)
+                                ham_r_degeri = df_kaynak.iloc[idx, 17]
+                                final_puan = "0.00" if pd.isna(ham_r_degeri) else str(ham_r_degeri).strip()
+                                
+                                f_yuklenen = f"{yuklenen_fiyat:.2f} TL" if yuklenen_fiyat > 0 else "Hesaplanıyor..."
+                                f_canli = f"{anlik_canli:.2f} TL" if anlik_canli > 0 else "Yükleniyor..."
+                                
+                                tablo_al.append([hisse, final_puan, f_yuklenen, f_canli, "Pozitif Matris"])
         except: pass
 
-# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ EN ÜSTTE
+# ⭐ BTA MATEMATİKSEL VERİ MODELLEMESİ EN ÜSTTE VE SABİT
 st.markdown('<div class="analiz-baslik">🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ</div>', unsafe_allow_html=True)
 if tablo_al:
     df_sonuc = pd.DataFrame(tablo_al, columns=["Varlık Kodu", "Matematiksel Puan", "Yüklenen Fiyat (Sabit)", "Anlık Canlı Fiyat", "Matris Durumu"])
@@ -130,7 +127,7 @@ with col_eko:
 with col_genel:
     st.markdown("#### 🌐 Türkiye Genel Gündem Başlıkları")
     st.markdown('<div class="gundem-kutusu">✈️ <b>Milli Savunma Projeleri:</b> Savunma sanayiindeki yeni nesil teknoloji entegrasyonu takvimi planlandığı gibi ilerliyor.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="gundem-kutusu">🚊 <b>Altyapı ve Lojistik Yatırımları:</b> Şehirlerarası hızlı tren hatları ve stratejik ulaşım projelerinde yeni fazlara geçildi.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gundem-kutusu">🚊 <b>Altyapı Belgesi ve Yatırımlar:</b> Ülke genelindeki stratejik ulaşım ağları ve lojistik projelerinde yeni fazlara geçildi.</div>', unsafe_allow_html=True)
 
 st.write("---")
 
