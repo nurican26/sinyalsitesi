@@ -56,32 +56,15 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🌟 OTOMATİK CANLI ALTIN HESAPLAYICI (YER KAPLAMAYAN MOBİL TASARIM)
-def altin_fiyatlarini_getir():
-    try:
-        gold_ticker = yf.Ticker("GAU=X")
-        data = gold_ticker.history(period="1d")
-        if not data.empty:
-            gram_fiyat = float(data['Close'].iloc[-1])
-        else:
-            ons = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
-            dolar = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
-            gram_fiyat = (ons / 31.1034768) * dolar
-        
-        if gram_fiyat > 0:
-            return {
-                "Gram": gram_fiyat,
-                "Çeyrek": gram_fiyat * 1.635 * 1.02,
-                "Yarım": gram_fiyat * 3.27 * 1.02,
-                "Tam": gram_fiyat * 6.54 * 1.02
-            }
-    except:
-        return {"Gram": 6907.0, "Çeyrek": 11254.0, "Yarım": 22480.0, "Tam": 44526.0}
-    return {"Gram": 0, "Çeyrek": 0, "Yarım": 0, "Tam": 0}
-
 # 🛠️ ERİŞİM KONTROLÜ İÇİN ÖN HAZIRLIK (Konteyner Yapısı)
 içerik_alanı = st.container()
 panel_alanı = st.container()
+
+# 🟢 1. BLOK: İÇERİK ALANI (Erişim İzni Varsa Tablolar Burada Görünür)
+with içerik_alanı:
+    # Geçici izin kontrolü (Kullanıcı girdisini panel alanından alacağız)
+    # Streamlit yukarıdan aşağı çalıştığı için form elemanını aşağıya koysak da session_state veya text_input değerini okuyabiliriz.
+    pass 
 
 # 🔐 EN ALTA ALINAN ERİŞİM PANELİ VE MANTIĞI
 with panel_alanı:
@@ -115,17 +98,6 @@ with panel_alanı:
 if erisim_izni:
     with içerik_alanı:
         st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
-
-        # 🚀 MOBİL UYUMLU KOMPAKT ALTIN PANELİ
-        altin_fiyatlari = altin_fiyatlarini_getir()
-        if altin_fiyatlari["Gram"] > 0:
-            st.markdown('<div class="al-baslik" style="background: linear-gradient(90deg, #d4af37 0%, #1e1b4b 100%); padding: 5px; font-size:0.9rem;">🪙 CANLI ALTIN PİYASASI (TL)</div>', unsafe_allow_html=True)
-            g_col1, g_col2, g_col3, g_col4 = st.columns(4)
-            g_col1.metric("Gram Altın", f"{altin_fiyatlari['Gram']:,.2f} TL")
-            g_col2.metric("Çeyrek Altın", f"{altin_fiyatlari['Çeyrek']:,.2f} TL")
-            g_col3.metric("Yarım Altın", f"{altin_fiyatlari['Yarım']:,.2f} TL")
-            g_col4.metric("Tam Altın", f"{altin_fiyatlari['Tam']:,.2f} TL")
-            st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
 
         df_kaynak = None
         excel_yolu = "nurican.xls.xlsm"
@@ -165,4 +137,10 @@ if erisim_izni:
                                 tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                 except: pass
 
-        # 🔍 ENTEGRE HİSSE ARAMA MOTORU
+        st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+        if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+        else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+
+        st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+        if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+        else: st.write("🔒 Aktif AL sinyali taranıyor...")
