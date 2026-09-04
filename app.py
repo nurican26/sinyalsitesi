@@ -61,10 +61,10 @@ with col_time:
 st.markdown("#### 🟡 Referans Emtia Değerleri")
 p_gram, p_ceyrek, p_yarim, p_tam = canli_altin_fiyatlarini_hesapla()
 c1, c2, c3, c4 = st.columns(4)
-c1.markdown(f'<div class="piyasa-kutusu">🔱 REF. GRAM<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>', unsafe_allow_html=True)
-c2.markdown(f'<div class="piyasa-kutusu">🪙 REF. ÇEYREK<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>', unsafe_allow_html=True)
-c3.markdown(f'<div class="piyasa-kutusu">🥈 REF. YARIM<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
-c4.markdown(f'<div class="piyasa-kutusu">🥇 REF. TAM<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
+c1.markdown(f'<div class="piyasa-kutusu">🔱 GRAM<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>', unsafe_allow_html=True)
+c2.markdown(f'<div class="piyasa-kutusu">🪙  ÇEYREK<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>', unsafe_allow_html=True)
+c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
+c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
 st.write("")
 
 # 📌 İKİYE BÖLÜNMÜŞ HABER MERKEZİ
@@ -124,7 +124,7 @@ if df_kaynak is not None:
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
+                            bta_puan = r_bul[0] if p_bul else t_deg
                             tablo_al.append({
                                 "Varlık Kodu": hisse, 
                                 "Matematiksel Puan": bta_puan, 
