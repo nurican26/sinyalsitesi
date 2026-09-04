@@ -60,14 +60,12 @@ c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM ALTIN<br><span style="color:
 c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
 st.write("")
 
-# 🔍 ARKA PLANDA EXCEL VERİSİNİ OKUMA (Önce verileri topluyoruz ki üste basabilelim)
+# 🔍 ARKA PLANDA EXCEL VERİSİNİ OKUMA
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
     try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
     except: pass
-
-arama_terimi = "" # İlk başta boş tanımlıyoruz ki döngü hata vermesin
 
 tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
@@ -84,7 +82,7 @@ if df_kaynak is not None:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
@@ -92,14 +90,14 @@ if df_kaynak is not None:
                     if h_ara:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv) # 🛠️ DÜZELTME: uv yerine wv yapıldı, hisseler geri geldi!
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                        bta_puan = p_bul if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
         except: pass
 
-# 👑 TALEP: BTA SİNYAL MERKEZİ EN ÜSTE ALINDI
+# 👑 BTA SİNYAL MERKEZİ EN ÜSTE ALINDI
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
 if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif Al sinyali taranıyor...")
@@ -114,7 +112,7 @@ st.write("---")
 st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
 st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
 st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
+st.markdown('<div class="haber-kutusu">... 公司 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
 
 # 📺 ULUSAL TV HABER AKIŞI
 st.markdown("#### 📺 Türkiye Gündemi - Son Dakika TV Haberleri")
@@ -123,7 +121,7 @@ st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanl�
 st.markdown('<div class="tv-kutusu">🔵 <b>NTV:</b> Meteoroloji Genel Müdürlüğü, mevsim normalleri çerçevesinde yurt genelinde beklenen yeni hava sıcaklığı raporlarını yayınladı.</div>', unsafe_allow_html=True)
 st.write("")
 
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ (Arama çubuğu alta alındı)
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
 st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
 arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
@@ -133,3 +131,7 @@ if arama_terimi_girdi:
         tablo_canli_arama = [{
             "Hisse Kodu": arama_terimi_girdi,
             "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL",
+            "Veri Akış Durumu": "Kesintisiz Canlı Veri"
+        }]
+        st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
+    else:
