@@ -38,37 +38,7 @@ if os.path.exists(excel_yolu):
 
 BORSA_HISSELERI = ["RAYSG", "SONME", "ZEDUR", "DOCO", "LYDYE", "MRSHL", "CMBTN", "UFUK", "GUNDG", "MAALT", "VERUS", "ALCAR", "AYCES", "ALKLC", "KAPLM", "INGRM", "FORTE", "PKENT", "DUNYH"]
 
-# 4. Canlı Takip Bölümü
-st.subheader("🎯 Canlı Takip")
-st.markdown("#### ⚡ Tüm Hisseler Canlı Borsa Takip Köşesi")
-canli_borsa_listesi = []
 
-for hisse in BORSA_HISSELERI:
-    try:
-        h_data = yf.Ticker(f"{hisse}.IS").history(period="2d")
-        if len(h_data) >= 2 and not pd.isna(h_data['Close'].iloc[-1]):
-            gf = h_data['Close'].iloc[-1]
-            ok = h_data['Close'].iloc[-2]
-            fark = ((gf - ok) / ok) * 100
-            canli_borsa_listesi.append({
-                "Hisse Kodu": hisse, 
-                "Anlık Fiyat": f"{gf:.2f} TL", 
-                "Günlük Değişim": f"🟢 %+{fark:.2f}" if fark >= 0 else f"🔴 %{fark:.2f}"
-            })
-        else:
-            ef = 0.0
-            if df_kaynak is not None:
-                for idx in range(len(df_kaynak)):
-                    val_hisse = str(df_kaynak.iloc[idx, 0]).strip().upper()
-                    if hisse in val_hisse:
-                        raw_fiyat = str(df_kaynak.iloc[idx, 7]).replace(",", ".").strip()
-                        sayi = re.findall(r"[-+]?\d*\.\d+|\d+", raw_fiyat)
-                        ef = float(sayi[0]) if sayi else 0.0
-                        break
-            if ef > 0: 
-                canli_borsa_listesi.append({"Hisse Kodu": hisse, "Anlık Fiyat": f"{ef:.2f} TL", "Günlük Değişim": "🔄 Sabit"})
-    except: 
-        pass
 
 if canli_borsa_listesi: 
     st.dataframe(pd.DataFrame(canli_borsa_listesi), use_container_width=True, hide_index=True, height=250)
