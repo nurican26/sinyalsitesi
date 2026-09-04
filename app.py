@@ -40,7 +40,7 @@ def canli_altin_fiyatlarini_hesapla():
         if not ons_ticker.empty and not usd_ticker.empty:
             ons_fiyat = float(ons_ticker['Close'].iloc[-1])
             usd_fiyat = float(usd_ticker['Close'].iloc[-1])
-            if ons_fiyat > 500 and usd_fiyat > 5:
+            if ons_fiyat > 500 towns_fiyat and usd_fiyat > 5:
                 saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
                 ceyrek_fiyat = saf_gram * 1.635
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
@@ -111,13 +111,8 @@ tablo_al = []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
-            # Excel'de en az 22 sütun var mı kontrolü (Güvenlik köprüsü)
             if len(df_kaynak.columns) > 22:
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                
-                # 🛠️ GÜNCELLEME: Puan değeri artık 17. sütundan (R Sütunu) okunuyor
-                r_puan_ham = str(df_kaynak.iloc[idx, 17]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 17]) else ""
-                t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
                 # 🟢 BTA MATEMATİKSEL VERİ MODELLEMESİ
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
@@ -125,16 +120,27 @@ if df_kaynak is not None:
                     if h_ara:
                         hisse = str(h_ara[0]).strip()
                         if 4 <= len(hisse) <= 5 and hisse not in ["NONE", "NAN", "SINYAL"]:
-                            # Global arama filtresine uyuyor mu?
                             if arama_terimi == "" or arama_terimi in hisse:
                                 cfiy = hızlı_canli_fiyat_bul(hisse)
                                 
-                                # Eğer R sütununda puan varsa onu al, yoksa T sütunundaki yedek değeri kullan
-                                bta_puan = r_puan_ham if r_puan_ham else t_deg
+                                # 🛠️ ONDALIK PUAN HATA DÜZELTME MOTORU
+                                hücre_degeri = df_kaynak.iloc[idx, 17]
+                                final_puan = "0.00"
+                                
+                                if not pd.isna(hücre_degeri):
+                                    try:
+                                        # Eğer değer sayısal bir float ise doğrudan çevir
+                                        final_puan = f"{float(hücre_degeri):.2f}"
+                                    except ValueError:
+                                        # Eğer metin olarak virgüllüyse noktaya çevirip kurtar
+                                        metin_deger = str(hücre_degeri).replace(',', '.').strip()
+                                        puan_ara = re.findall(r'[-+]?\d*\.\d+|\d+', metin_deger)
+                                        if puan_ara:
+                                            final_puan = f"{float(puan_ara[0]):.2f}"
                                 
                                 tablo_al.append({
                                     "Varlık Kodu": hisse, 
-                                    "Matematiksel Puan": bta_puan, 
+                                    "Matematiksel Puan": final_puan, 
                                     "Anlık Fiyat": f"{cfiy:.2f} TL" if cfiy > 0 else "Hesaplanıyor...",
                                     "Matris Durumu": "Pozitif Matris"
                                 })
