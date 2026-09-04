@@ -121,7 +121,7 @@ if df_kaynak is not None:
 # --- YENİLENEN BAŞLIKLARLA EKRANA BASMA ---
 
 # 1. Eski Dönemsel Al Sat
-st.markdown('<div class="istatistik-baslik">🟡  İSTATİSTİKLERİ</div>', unsafe_allow_html=True)
+st.markdown('<div class="istatistik-baslik">🟡  İSTATİSTİKLER</div>', unsafe_allow_html=True)
 if tablo_alsat: 
     st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: 
