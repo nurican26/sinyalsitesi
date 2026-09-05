@@ -184,7 +184,6 @@ st.markdown("""
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
 
-# Hafıza Kontrolleri
 if "oda_kilitli_mi" not in st.session_state:
     st.session_state["oda_kilitli_mi"] = False
 
@@ -215,7 +214,7 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # 2. Canlı Altın Fiyatları (Garantili Sabit Blok)
+    # Canlı Altın Fiyatları (Garantili Sabit Blok)
     gram_str, ceyrek_str, yarim_str, tam_str = "3.245,20", "5.310,00", "10.620,00", "21.240,00"
 
     st.markdown(f"""
@@ -243,38 +242,42 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
+    # KUSURSUZ VE İNDEKS KİLİTLİ YENİ TABLO MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
-        df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
-        df = df.iloc[2:].copy()
-        df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
+        # Excel'i ham veri olarak oku (İndekslere doğrudan erişmek için)
+        raw_df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
+        df_clean = raw_df.iloc[2:].copy()
         
-        df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
-        df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
-        df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
+        # Kesin Sütun Haritalaması (Görselinizdeki gerçek dizilime göre kilitlendi)
+        hisse_kodlari = df_clean[0].astype(str).str.strip().unique().tolist()
+        istek_kodlari = [f"{str(k)}.IS" for k in hisse_kodlari if pd.notna(k) and str(k) != "" and str(k) != "nan"]
         
-        df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
-        df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
+        # Borsa Fiyatlarını Tek İstekte Çek
+        try:
+            canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
+            if len(istek_kodlari) == 1:
+                fiyat_sozluk = {istek_kodlari[0].replace(".IS", ""): canli_data.iloc[-1]}
+            else:
+                fiyat_sozluk = {col.replace(".IS", ""): canli_data[col].iloc[-1] for col in canli_data.columns}
+        except:
+            fiyat_sozluk = {}
+            
+        bta_listesi = []
+        alsat_listesi = []
         
-        # Sayısal Değerleri Temizle
-        df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
-        df["BTA_Canli"] = df["BTA Alımı Sayisal"]
-        df["AlSat_Canli"] = df["BTA Alımı Sayisal"]
-        
-        # Kar/Zarar Hesaplama
-        df["Kar / Zarar"] = "%0.00"
-        
-        # Formatlama
-        df["BTA Alım Fiyatı"] = df["BTA Alımı Sayisal"].apply(lambda x: f"{x:,.2f} TL" if x > 0 else "0.00 TL")
-        df["Anlık Canlı Fiyat"] = df["BTA Alım Fiyatı"]
-
-        # TABLO 1: BTA Model Hisseleri
-        st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
-        bta_filtrlenmis = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "nan")]
-        if not bta_filtrlenmis.empty:
-            st.dataframe(bta_filtrlenmis[["BTA Hisse", "BTA Puanı", "BTA Alım Fiyatı", "Anlık Canlı Fiyat", "Kar / Zarar"]], use_container_width=True, hide_index=True)
-        else:
-            st.info("Şu anda aktif BTA modeli hissesi bulunmuyor.")
-
+        # Verileri İndeks Numaralarına Göre Kusursuzca Ayır
+        for idx, row in df_clean.iterrows():
+            hk = str(row[0]).strip() if pd.notna(row[0]) else ""
+            if hk == "" or hk == "nan" or hk == "None":
+                continue
+                
+            bta_alimi_ham = str(row[1]).replace(",", ".") if pd.notna(row[1]) else "0"
+            try:
+                bta_alimi = float(bta_alimi_ham)
+            except:
+                bta_alimi = 0.0
+                
+            al_sat_skoru = str(row[2]).strip() if pd.notna(row[2]) else "0"
+            al_sat_durum = str(row[3]).strip() if pd.notna(row[3]) else "0"
