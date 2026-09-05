@@ -158,13 +158,10 @@ with sol_kolon:
                     al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"      # E Sütunu
                     bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G Sütunu
                     
-                    # Canlı piyasa verisi çekme (Ok işaretleri için)
                     try:
                         ticker = yf.Ticker(f"{hisse_kodu}.IS")
                         hisse_data = ticker.history(period="1d")
                         canli_fiyat = hisse_data['Close'].iloc[-1]
-                        
-                        # Anlık durum ok işaretleri
                         onceki_kapanis = ticker.info.get('previousClose', canli_fiyat)
                         if canli_fiyat > onceki_kapanis:
                             canli_durum_oku = "▲ Yükselişte"
@@ -176,23 +173,21 @@ with sol_kolon:
                         canli_fiyat = bta_alimi
                         canli_durum_oku = "● Spot Canlı"
                     
-                    # 1. Filtre: G Sütununda hisse adı varsa BTA Listesine ekle (Sıralama: BTA Hisse başa alındı)
+                    satir_veri = {
+                        "BTA Hisse": bta_hisse_sutun,
+                        "BTA Puanı (Skor)": al_sat_skoru,
+                        "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
+                        "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
+                        "Al Sat": al_sat,
+                        "Al Sat Skoru": al_sat_skoru,
+                        "Piyasa Yönü": canli_durum_oku
+                    }
+                    
                     if bta_hisse_sutun != "0" and bta_hisse_sutun != "":
-                        bta_listesi.append({
-                            "BTA Hisse": bta_hisse_sutun,
-                            "BTA Puanı (Skor)": al_sat_skoru, # D sütunundaki puan
-                            "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
-                            "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL"
-                        })
+                        bta_listesi.append(satir_veri)
                         
-                    # 2. Filtre: E Sütununda hisse adı varsa Al Sat Listesine ekle (Sıralama: Al Sat başa alındı)
                     if al_sat != "0" and al_sat != "":
-                        alsat_listesi.append({
-                            "Al Sat": al_sat,
-                            "Al Sat Skoru": al_sat_skoru,
-                            "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
-                            "Piyasa Yönü": canli_durum_oku # Kar/zarar yerine canlı ok işaretleri geldi
-                        })
+                        alsat_listesi.append(satir_veri)
             
             # 1. GÖRSEL TABLO: BTA HİSSELERİ
             st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
@@ -232,3 +227,12 @@ with sag_kolon:
                     st.success(f"**📈 {arama_input} - Canlı Spot Verisi Başarıyla Çekildi**")
                     st.metric(label="Anlık Hisse Fiyatı", value=f"{son_fiyat:,.2f} TL", delta=f"{degisim:+.2f}%")
                 else:
+                    st.error("Hisse kodu bulunamadı. Lütfen geçerli bir kod girin (Örn: EREGL).")
+            except:
+                st.error("Veri çekme hatası.")
+
+# 3. YASAL UYARI METNİ
+st.markdown("""
+<div class="yasal-uyari-kutusu">
+    <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
+    Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri
