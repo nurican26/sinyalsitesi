@@ -5,7 +5,7 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
+# 1. Sayfa Yapılandırması
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 # CSS Tasarımı - Sağdan Sola Yavaşça Akan El Yazılı Gökkuşağı Neon BTA Logosu
@@ -63,7 +63,6 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
-    /* Yavaşça Kayan Logo Konteyneri */
     .bta-logo-konteyner {
         width: 100%;
         overflow: hidden; 
@@ -74,7 +73,6 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.02);
         border-radius: 8px;
     } 
-    /* EL YAZILI, BİTİŞİK VE SAĞDAN SOLA YAVAŞÇA KAYAN GÖKKUŞAĞI BTA YAZISI */
     .bta-logo {
         display: inline-block;
         font-family: 'Alex Brush', cursive !important; 
@@ -159,8 +157,6 @@ if admin_sifre == YONETICI_SIFRESI:
         if st.sidebar.button("🔒 Odayı Herkese Kilitle", use_container_width=True, key="oda_kilit_btn_bta"):
             st.session_state["oda_kilitli_mi"] = True
             st.rerun()
-else:
-    if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
 
 # --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
@@ -191,8 +187,6 @@ else:
             df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except Exception as e:
             st.error(f"Excel okuma hatası: {e}")
-    else:
-        st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
@@ -214,7 +208,6 @@ else:
         if pd.isna(val): return ""
         return str(val).strip().upper()
 
-    # 🎯 %100 SAF HİSSE KODU AYIRICI GÜVENLİ MOTOR
     def saf_hisse_kodu_bul(metin):
         kelimeler = re.findall(r'[A-Z]+', str(metin))
         for kelime in kelimeler:
@@ -233,7 +226,6 @@ else:
                     wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
                     t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
                     
-                    # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         temiz_hisse = saf_hisse_kodu_bul(uv_degeri)
                         if temiz_hisse:
@@ -242,5 +234,9 @@ else:
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             tablo_alsat.append({"Hisse Kodu 📈": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
-                    # 🟢 BTA SİNYAL MERKEZİ ANALİZİ
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+                        temiz_hisse = saf_hisse_kodu_bul(wv_degeri)
+                        if temiz_hisse:
+                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
+                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else wv_degeri)
