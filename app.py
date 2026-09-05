@@ -129,12 +129,14 @@ with sekme_arama:
 
 with sekme_altin:
     st.markdown("### 🪙 Canlı Altın ve Değerli Maden Takibi")
-    try:
-        ons_altin = yf.Ticker("GC=F")
-        ons_veri = ons_altin.history(period="1d")
-        usdtry = yf.Ticker("USDTRY=X")
-        usd_veri = usdtry.history(period="1d")
+    
+    ons_altin = yf.Ticker("GC=F")
+    ons_veri = ons_altin.history(period="1d")
+    usdtry = yf.Ticker("USDTRY=X")
+    usd_veri = usdtry.history(period="1d")
+    
+    if len(ons_veri) > 0 and len(usd_veri) > 0:
+        son_ons = ons_veri['Close'].iloc[-1]
+        son_usd = usd_veri['Close'].iloc[-1]
+        gram_altin_hesap = (son_ons / 31.1034768) * son_usd
         
-        if not ons_veri.empty and not usd_veri.empty:
-            son_ons = ons_veri['Close'].iloc[-1]
-            son_usd = usd_veri['Close'].iloc[-1]
