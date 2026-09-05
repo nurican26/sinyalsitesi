@@ -74,7 +74,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 🛠️ SOL YAN MENÜ: ODA YÖNETİM MERKEZİ & EK PANEL SEÇİMİ
+# 🛠️ SOL YAN MENÜ: ODA YÖNETİM MERKEZİ
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
 admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
 
@@ -89,42 +89,46 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
     st.stop()
 
-# 🎯 PANEL SEÇİCİ RADYO MENÜ
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Ek Gösterge Paneli")
-secilen_panel = st.sidebar.radio("Görüntülemek istediğiniz aracı seçin:", ["🔎 Tüm BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
+# =========================================================================
+# GÜVENLİ ETKİLEŞİM SEKMELERİ (WITH BLOKLARI KALDIRILDI - %100 SABİT YAPI)
+# =========================================================================
+sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 TÜM BIST ARAMA MOTORU", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
 
 # 🎯 TÜM AKTİF BIST HİSSE LİSTESİ HAFIZASI
 bist_all = [
     "A1CAP", "ACSEL", "ADEL", "ADESE", "AGHOL", "AGROT", "AHGAZ", "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGGY", "ALKA", "ALKIM", "ALTNY", "ALVES", "ANELE", "ANGEN", "ANHYT", "ANSGR", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", "ASCEG", "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BAKAB", "BALAT", "BANVT", "BARMA", "BASCM", "BASGZ", "BATIS", "BAYRK", "BEGYO", "BERA", "BEYAZ", "BFREN", "BIENY", "BIGCH", "BIMAS", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BMSCH", "BMSTR", "BOBET", "BORLE", "BORSK", "BOSSA", "BRISA", "BRKVY", "BRMEN", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CEOEM", "CIMSA", "CLEBI", "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CUSAN", "CVKMD", "CWENE", "DAGHL", "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DIRIT", "DITAS", "DMSAS", "DNISI", "DOAS", "DOCO", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGEPO", "EGGUB", "EGPRO", "EGSER", "EKGYO", "EKIZ", "EKLOS", "EKOS", "ELITE", "EMKEL", "ENERY", "ENJSA", "ENKAI", "EPLAS", "ERBOS", "EREGL", "ERSU", "ESCAR", "ESCOM", "ESEN", "ETILR", "EUPWR", "EUREK", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FRIGO", "FROTO", "FZLGY", "GARAN", "GENTS", "GEREL", "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GMTTR", "GNEV", "GOLTS", "GOODY", "GOZDE", "GRNYO", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HATEK", "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", "ICKU", "IDGYO", "IEYHO", "IHAAS", "IHEVA", "IHGZT", "IHLAL", "IHLAS", "IHMAD", "IKND", "IMAGE", "INGRM", "INTEM", "INVEST", "ISATR", "ISBTR", "ISCTR", "ISDMR", "ISFIN", "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISYAT", "ITTFH", "IZENR", "IZFAS", "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", "KBTX", "KBUTY", "KCAER", "KCHOL", "KENT", "KERVN", "KERVT", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRGY", "KLSYN", "KLSYS", "KMELE", "KMPUR", "KNFRT", "KOBIL", "KONFG", "KONTR", "KONYA", "KORDS", "KOZAA", "KOZAL", "KPLN", "KPTL", "KRALS", "KRTEK", "KRVGD", "KSTUR", "KTLEV", "KTSKR", "KUTPO", "KUVVA", "KVAZ", "LIDER", "LIDFA", "LINK", "LMKDC", "LOGO", "LRSHO", "LUKSK", "MAALT", "MACKO", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARKA", "MARTI", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MEPET", "MERCN", "MERIT", "MERKO", "METUR", "METRO", "MGROS", "MIPAZ", "MIATK", "MMCAS", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MRGYO", "MRSHL", "MSGYO", "MTRKS", "MTRYO", "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NUGYO", "NUHCM", "OBAMS", "ODAS", "ODINE", "ONCSM", "ORCA", "ORGE", "ORMA", "OSMEN", "OSTIM", "OTKAR", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZATD", "OZGYO", "OZKGY", "OZSUB", "OZUCP", "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATRK", "PCILT", "PEGYO", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", "PGSUS", "PINSU", "PKENT", "PKART", "PLTUR", "PNLSN", "PNSUT", "POLHO", "POLTK", "PRKAB", "PRKME", "PRMA", "PRZMA", "PSDTC", "PSGYO", "QNBFB", "QNBFL", "QUAGR", "RALYH", "RAYSG", "REEDR", "RNPOL", "RODRG", "ROYAL", "RYSAS", "RYGYO", "SAFKR", "SAHOL", "SAMAT", "SANEL", "SANFM", "SANKO", "SARKY", "SASA", "SAYAS", "SDTTR", "SEKFA", "SEKO", "SELEC", "SELVA", "SEYKM", "SILVR", "SIMART", "SINKO", "SNGYO", "SNTRA", "SOKMD", "SONME", "SRVGY", "SUWEN", "TABGD", "TAFEX", "TARKM", "TATEN", "TATGD", "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TEZOL", "TGSAS", "THYAO", "TLMAN", "TMPOL", "TMSN", "TNZTP", "TOASO", "TORUN", "TSKB", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", "TURGG", "TURSG", "UFUK", "ULAS", "ULFA", "ULKER", "ULUSE", "UNLU", "USAK", "VAKFN", "VAKKO", "VAKMY", "VALF", "VANET", "VBTYZ", "VERTU", "VESTL", "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBCLK", "YEOTK", "YGGYO", "YGYO", "YKBNK", "YLTEK", "YONGA", "YOTK", "YUNSA", "YYLGD", "ZEDUR", "ZRGYO"
 ]
 
-# --- 🚀 DOĞRUSAL PANEL GÖVDELERİ (SIFIR RISK MIMARISI) ---
-if secilen_panel == "🔎 Tüm BIST Arama Motoru":
-    st.markdown("### 🔎 Canlı BIST Tüm Hisse Arama Motoru")
-    arama_girdisi = st.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", "").strip().upper()
-    if arama_girdisi in bist_all:
-        h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
-        if not h_data.empty:
-            st.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
-            # Her türlü formatta doğrudan son kapanış verisini alıyoruz
-            st.metric(label="Dünkü Kapanış Fiyatı (TL)", value=f"{float(h_data.iloc[-1].iloc[0]):,.2f} TL")
-    elif arama_girdisi:
-        benzerler = [h for h in bist_all if arama_girdisi in h]
-        if benzerler: st.info(f"Aradığınız koda benzer {len(benzerler)} hisse bulundu: " + ", ".join(benzerler))
+# 1. SEKME İÇERİĞİ: ARAMA MOTORU
+arama_girdisi = sekme_arama.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", "").strip().upper()
+if arama_girdisi in bist_all:
+    h_data = yf.ticker.Ticker(f"{arama_girdisi}.IS").fast_info
+    if "last_price" in h_data:
+        sekme_arama.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
+        sekme_arama.metric(label="Anlık Canlı Fiyat (TL)", value=f"{h_data['last_price']:,.2f} TL")
+    else:
+        sekme_arama.error("Fiyat sunucudan çekilemedi.")
+elif arama_girdisi:
+    benzerler = [h for h in bist_all if arama_girdisi in h]
+    if benzerler: sekme_arama.info(f"Benzerler: " + ", ".join(benzerler))
 
-if secilen_panel == "🪙 Canlı Altın Takibi":
-    st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
-    altin_turleri = ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"]
-    altin_fiyatlari = ["2.950.45", "4.810.00", "9.620.00", "19.240.00"] # İnternet kesilse bile çalışacak taban fiyat
-    
-    # Döngüsüz, Sözlüksüz, Doğrudan ve Güvenli Veri Çekimi
-    altin_download = yf.download("GC=F", period="1d", progress=False)
-    dolar_download = yf.download("TRY=X", period="1d", progress=False)
-    
-    if not altin_download.empty and not dolar_download.empty:
-        ons_deger = float(altin_download.iloc[-1].iloc[0])
-        usd_deger = float(dolar_download.iloc[-1].iloc[0])
-        if ons_deger > 0 and usd_deger > 0:
-            g_altin = (ons_deger / 31.1034768) * usd_deger
-            altin_fiyatlari = [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
+# 2. SEKME İÇERİĞİ: GÜVENLİ CANLI ALTIN
+altin_turleri = ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"]
+altin_fiyatlari = ["3.020.50", "4.935.00", "9.870.00", "19.740.00"] # Çökme önleyici taban fiyat
+try:
+    ons_price = yf.ticker.Ticker("GC=F").fast_info['last_price']
+    usd_price = yf.ticker.Ticker("TRY=X").fast_info['last_price']
+    if ons_price > 0 and usd_price > 0:
+        g_altin = (ons_price / 31.1034768) * usd_price
+        altin_fiyatlari = [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
+except:
+    pass
+df_altin_temiz = pd.DataFrame()
+df_altin_temiz["Altın Türü 🪙"] = altin_turleri
+df_altin_temiz["Fiyat (TL) 💰"] = altin_fiyatlari
+sekme_altin.table(df_altin_temiz)
+
+# 3. SEKME İÇERİĞİ: SOHBET ALANI
+sohbet_isim = sekme_sohbet.text_input("Kullanıcı Adınız:", value="Yatırımcı")
+sohbet_mesaj = sekme_sohbet.text_input("Mesaj içeriği:", placeholder="Not ekleyin...")
+if sekme_sohbet.button("✉️ Mesajı İlet") and sohbet_mesaj.strip():
