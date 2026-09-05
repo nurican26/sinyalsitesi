@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Sağdan Sola Yavaşça Akan Gökkuşağı Neon BTA Logosu ve Ekonomi Kartları
+# CSS Tasarımı - Sağdan Sola Yavaşça Akan El Yazılı Gökkuşağı Neon BTA Logosu
 st.markdown("""
 <style>
     @import url('https://googleapis.com');
@@ -63,28 +63,6 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
-    /* Canlı Ekonomi Kart Tasarımları */
-    .ekonomi-box {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(0, 242, 254, 0.2);
-        border-radius: 10px;
-        padding: 12px;
-        text-align: center;
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
-        margin-bottom: 15px;
-    }
-    .ekonomi-baslik-kart {
-        color: #00f2fe !important;
-        font-weight: bold;
-        font-size: 0.9rem;
-        margin-bottom: 5px;
-        letter-spacing: 1px;
-    }
-    .ekonomi-fiyat-kart {
-        color: #ffffff !important;
-        font-size: 1.35rem;
-        font-weight: bold;
-    }
     /* Yavaşça Kayan Logo Konteyneri */
     .bta-logo-konteyner {
         width: 100%;
@@ -96,6 +74,7 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.02);
         border-radius: 8px;
     } 
+    /* EL YAZILI, BİTİŞİK VE SAĞDAN SOLA YAVAŞÇA KAYAN GÖKKUŞAĞI BTA YAZISI */
     .bta-logo {
         display: inline-block;
         font-family: 'Alex Brush', cursive !important; 
@@ -119,6 +98,19 @@ st.markdown("""
         font-weight: bold !important; 
         color: #ffffff !important;
     } 
+    div.stButton > button {
+        background-color: transparent; 
+        color: #45f3ff; 
+        border: 2px solid #45f3ff; 
+        box-shadow: 0 0 10px #45f3ff; 
+        border-radius: 8px; 
+        transition: 0.3s;
+    } 
+    div.stButton > button:hover {
+        background-color: #45f3ff; 
+        color: #111; 
+        box-shadow: 0 0 20px #45f3ff;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -159,22 +151,6 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # --- 📊 CANLI EKONOMİ PANELİ ---
-    try:
-        bist_veri = yf.Ticker("XU100.IS").history(period="1d")['Close'].iloc[-1]
-        usd_veri = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
-        eur_veri = yf.Ticker("EURTRY=X").history(period="1d")['Close'].iloc[-1]
-        ons_gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
-        gram_altin_veri = (ons_gold / 31.1034768) * usd_veri
-        
-        col_b, col_u, col_e, col_a = st.columns(4)
-        with col_b: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">📈 BIST 100</div><div class="ekonomi-fiyat-kart">{bist_veri:,.2f}</div></div>', unsafe_allow_html=True)
-        with col_u: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">💵 DOLAR / TL</div><div class="ekonomi-fiyat-kart">{usd_veri:.4f} TL</div></div>', unsafe_allow_html=True)
-        with col_e: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">💶 EURO / TL</div><div class="ekonomi-fiyat-kart">{eur_veri:.4f} TL</div></div>', unsafe_allow_html=True)
-        with col_a: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">🟡 GRAM ALTIN</div><div class="ekonomi-fiyat-kart">{gram_altin_veri:.2f} TL</div></div>', unsafe_allow_html=True)
-    except:
-        pass
-
     # Excel Okuma
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
@@ -189,15 +165,17 @@ else:
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu: return 0.0
-        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        # Hücre içi temizlik adımı: yfinance'e gitmeden önce metni arındırır
+        temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "").strip()
+        if temiz_kod in st.session_state["fiyat_hafizasi"]:
+            saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
             if time.time() - saved_time < 300: return saved_price
         try:
-            ticker = yf.Ticker(f"{hisse_kodu}.IS")
+            ticker = yf.Ticker(f"{temiz_kod}.IS")
             data = ticker.history(period="1d")
             if not data.empty and not pd.isna(data['Close'].iloc[-1]):
                 fiyat = float(data['Close'].iloc[-1])
-                st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+                st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
                 return fiyat
         except: pass
         return 0.0
@@ -209,27 +187,43 @@ else:
     tablo_alsat = []
     tablo_al = []
 
-    # 🚀 YENİ ARINDIRILMIŞ DÜZ VERİ MOTORU (ASLA ÇÖKMEZ VEYA HATA VERMEZ)
-    if df_kaynak is not None and len(df_kaynak.columns) > 22:
+    # ORİJİNAL ÇALIŞAN GARANTİ VERİ DÖNGÜSÜ
+    if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
-            uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-            wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
-            t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
-            
-            # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
-            if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
-                if hisse_ara:
-                    # Hücredeki listeyi doğrudan alıp tablodaki parantezleri güvenle temizler
-                    ham_kod = str(hisse_ara).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "").strip()
-                    canli_fiyat = hızlı_canli_fiyat_bul(ham_kod)
-                    puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                    bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                    tablo_alsat.append({"Hisse Kodu 📈": ham_kod, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-            
-            # 🟢 BTA SİNYAL MERKEZİ ANALİZİ
-            if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
-                if hisse_ara:
-                    # Hücredeki listeyi doğrudan alıp tablodaki parantezleri ve AL/SAT yazı fazlalıklarını temizler
-                    ham_kod = str(hisse_ara).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(",AL", "").replace(",SAT", "").replace(" ", "").strip()
+            try:
+                if len(df_kaynak.columns) > 22:
+                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+                    t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
+                    
+                    if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                        hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
+                        if hisse_ara:
+                            hisse = str(hisse_ara).strip()
+                            # Tabloda gösterim esnasında parantezleri kalıcı uçurur
+                            gosterim_ismi = hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "")
+                            canli_fiyat = hızlı_canli_fiyat_bul(gosterim_ismi)
+                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            tablo_alsat.append({"Hisse Kodu 📈": gosterim_ismi, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                    
+                    if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+                        hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
+                        if hisse_ara:
+                            hisse = str(hisse_ara).strip()
+                            gosterim_ismi = hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(",AL", "").replace(",SAT", "").replace(" ", "")
+                            canli_fiyat = hızlı_canli_fiyat_bul(gosterim_ismi)
+                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            if gosterim_ismi not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                                st.session_state["ozel_takip_kutusu"][gosterim_ismi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
+                            tablo_al.append({"Hisse Kodu 🚀": gosterim_ismi, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+            except:
+                pass
+
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif sinyal taranıyor...")
+
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
