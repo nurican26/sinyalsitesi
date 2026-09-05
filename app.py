@@ -19,108 +19,78 @@ if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kut
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
 
-# 🌟 YENİ NESİL LOGO: ÇERÇEVE ETRAFINDA DÖNEN YILDIZLAR VE HAFİF KAYAN/SALLANAN KÜÇÜK ÇERÇEVE
+# 🌟 SADECE BTA - KENDİ EKSENİNDE DÖNEN PARLAK YILDIZLI NEON LOGO
 st.markdown("""
 <style>
 @keyframes neon-isik {
     0% { 
-        box-shadow: 0 0 12px #ff007f, inset 0 0 12px #ff007f; 
+        text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 40px #00f0ff; 
+        box-shadow: 0 0 15px #ff007f, inset 0 0 15px #ff007f; 
         border-color: #ff007f; 
     }
     50% { 
-        box-shadow: 0 0 20px #00f0ff, inset 0 0 20px #00f0ff; 
+        text-shadow: 0 0 20px #00f0ff, 0 0 40px #7000ff, 0 0 60px #ff007f; 
+        box-shadow: 0 0 25px #00f0ff, inset 0 0 25px #00f0ff; 
         border-color: #00f0ff; 
     }
     100% { 
-        box-shadow: 0 0 12px #ff007f, inset 0 0 12px #ff007f; 
+        text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 40px #00f0ff; 
+        box-shadow: 0 0 15px #ff007f, inset 0 0 15px #ff007f; 
         border-color: #ff007f; 
     }
 }
-/* Çerçevenin kendi ekseninde hafifçe dalgalanarak kayması (Sallanma efekti) */
-@keyframes cerceve-kayma {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    25% { transform: translate(4px, -4px) rotate(1deg); }
-    50% { transform: translate(-2px, 4px) rotate(-1deg); }
-    75% { transform: translate(-4px, -2px) rotate(0.5deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
-}
-/* Yıldızların çerçevenin tam etrafında yuvarlak çizerek dönmesi */
-@keyframes yildiz-yolculuk {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+@keyframes yildiz-donme {
+    0% { transform: rotate(0deg) scale(1); opacity: 0.8; }
+    50% { transform: rotate(180deg) scale(1.15); opacity: 1; }
+    100% { transform: rotate(360deg) scale(1); opacity: 0.8; }
 }
 .logo-merkezleyici {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin: 35px 0;
-    height: 170px;
-}
-.logo-ust-konteyner {
-    position: relative;
-    width: 140px;
-    height: 140px;
-    animation: cerceve-kayma 5s infinite ease-in-out;
+    margin: 25px 0;
 }
 .bta-neon-yuvarlak-logo {
     background: transparent !important;
-    border: 3.5px solid #ff007f !important;
+    border: 4px solid #ff007f !important;
     border-radius: 50% !important;
-    width: 100% !important;
-    height: 100% !important;
+    width: 190px !important;
+    height: 190px !important;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     animation: neon-isik 2.5s infinite alternate;
+    position: relative;
     box-sizing: border-box;
-    position: absolute;
-    top: 0;
-    left: 0;
+}
+.logo-yildizlar {
+    font-size: 1.2rem !important;
+    color: #ffaa00 !important;
+    animation: yildiz-donme 4s infinite linear; /* Yıldızların 360 derece kesintisiz dönmesini sağlar */
+    display: inline-block;
+    letter-spacing: 5px;
+    margin: 4px 0;
 }
 .logo-yazi {
-    font-size: 2.8rem !important;
+    font-size: 3.5rem !important;
     font-weight: bold !important;
     font-family: 'Caveat', cursive, sans-serif !important;
     background: linear-gradient(45deg, #ff007f, #ffaa00, #00f0ff);
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
-    text-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+    line-height: 1 !important;
     margin: 0 !important;
     padding: 0 !important;
+    z-index: 2;
 }
-/* Yıldızların çerçeve dışındaki dönüş yörüngesi */
-.yildiz-yorungesi {
-    position: absolute;
-    top: -15px;
-    left: -15px;
-    width: 170px;
-    height: 170px;
-    animation: yildiz-yolculuk 6s infinite linear;
-    pointer-events: none;
-}
-.tek-yildiz {
-    position: absolute;
-    font-size: 1.4rem !important;
-    color: #ffaa00 !important;
-    text-shadow: 0 0 8px #ffaa00, 0 0 15px #ff007f;
-}
-.y1 { top: 0; left: 50%; transform: translateX(-50%); }
-.y2 { bottom: 0; left: 50%; transform: translateX(-50%); }
-.y3 { top: 50%; left: 0; transform: translateY(-50%); }
-.y4 { top: 50%; right: 0; transform: translateY(-50%); }
 </style>
 <div class="logo-merkezleyici">
-    <div class="logo-ust-konteyner">
-        <div class="yildiz-yorungesi">
-            <div class="tek-yildiz y1">✦</div>
-            <div class="tek-yildiz y2">✦</div>
-            <div class="tek-yildiz y3">✦</div>
-            <div class="tek-yildiz y4">✦</div>
-        </div>
-        <div class="bta-neon-yuvarlak-logo">
-            <div class="logo-yazi">BTA</div>
-        </div>
+    <div class="bta-neon-yuvarlak-logo">
+        <div class="logo-yildizlar">✦ ✦ ✦</div>
+        <div class="logo-yazi">BTA</div>
+        <div class="logo-yildizlar">✦ ✦ ✦</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -138,8 +108,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             fiyat = float(data['Close'].iloc[-1])
             st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
             return fiyat
-    except:
-        pass
+    except: pass
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -153,8 +122,7 @@ def canli_altin_fiyatlarini_hesapla():
                 saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
                 ceyrek_fiyat = saf_gram * 1.635
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
-    except:
-        pass
+    except: pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
 # 🟢 VERİLER VE TABLOLAR DOĞRUDAN YÜKLENİR
@@ -175,10 +143,8 @@ st.write("")
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
-    try: 
-        df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-    except: 
-        pass
+    try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+    except: pass
 
 tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
@@ -192,17 +158,34 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                        tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+        except: pass
+
+# 🟢 BTA SİNYAL MERKEZİ EN ÜSTE LİSTELENİR
+st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+else: st.write("🔒 Aktif Al sinyali taranıyor...")
+
+st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+
+st.write("---")
+
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
+st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
