@@ -208,9 +208,17 @@ def canli_fiyatlari_toplu_getir(kod_listesi):
     try:
         istek_kodlari = [f"{str(k).strip()}.IS" for k in kod_listesi if pd.notna(k) and str(k).strip() != ""]
         data = yf.download(tickers=istek_kodlari, period="1d", progress=False)
+        
+        fiyat_haritasi = {}
         if len(istek_kodlari) == 1:
-            return {kod_listesi[0]: data["Close"].iloc[-1]}
-        return {kod.replace(".IS", ""): data["Close"][kod].iloc[-1] for kod in istek_kodlari if kod in data["Close"]}
+            temiz_kod = istek_kodlari[0].replace(".IS", "")
+            fiyat_haritasi[temiz_kod] = data["Close"].iloc[-1]
+        else:
+            for kod in istek_kodlari:
+                temiz_kod = kod.replace(".IS", "")
+                if kod in data["Close"]:
+                    fiyat_haritasi[temiz_kod] = data["Close"][kod].iloc[-1]
+        return fiyat_haritasi
     except:
         return {}
 
@@ -220,41 +228,32 @@ if os.path.exists(excel_yolu):
         df = pd.read_excel(excel_yolu, sheet_name="WEB", skiprows=2, header=None)
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Boş satırları ve metinsel hataları temizle
-        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"].astype(str).str.strip() != "")]
+        # Kod sütunlarındaki boşlukları temizle
+        df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
+        df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
+        df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
         
-        # Canlı Fiyatları Tek İstekte Çek
+        # None ve NaN değerleri tablolarda temiz dursun diye boş stringe veya sıfıra çevir
+        df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
+        df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
+        
+        # Canlı Fiyatları Doğru Hisse Eşleşmesiyle Çek (Kayma Engellendi)
         benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
         fiyat_haritasi = canli_fiyatlari_toplu_getir(benzersiz_kodlar)
         
-        # DataFrame'e Canlı Fiyatları Enjekte Et
-        df["Anlık Canlı Fiyat"] = df["Hisse Kodu"].map(fiyat_haritasi).fillna(df["BTA Alımı"])
+        # BTA Tablosu için Fiyatları Tanımla (BTA Hisse adına göre eşleşir)
+        df["BTA_Canli"] = df["BTA Hisse"].map(fiyat_haritasi).fillna(df["BTA Alımı"])
+        # Al Sat Tablosu için Fiyatları Tanımla (Al Sat adına göre eşleşir)
+        df["AlSat_Canli"] = df["Al Sat"].map(fiyat_haritasi).fillna(df["BTA Alımı"])
         
-        # Fiyatları TL olarak biçimlendir
-        df["BTA Alım Fiyatı"] = df["BTA Alımı"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').isdigit() else "0.00 TL")
-        df["Anlık Canlı Fiyat"] = df["Anlık Canlı Fiyat"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').isdigit() else "0.00 TL")
+        # Fiyat biçimlendirmeleri
+        df["BTA Alım Fiyatı"] = df["BTA Alımı"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').replace(',','').isdigit() else "0.00 TL")
+        df["BTA Canlı Fiyat"] = df["BTA_Canli"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').replace(',','').isdigit() else "0.00 TL")
+        df["AlSat Canlı Fiyat"] = df["AlSat_Canli"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').replace(',','').isdigit() else "0.00 TL")
 
         # TABLO 1: BTA Model Hisseleri (F Sütunu Dolu Olanlar)
         st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
-        bta_filtrlenmis = df[df["BTA Hisse"].notna() & (df["BTA Hisse"].astype(str).str.strip() != "0") & (df["BTA Hisse"].astype(str).str.strip() != "")]
+        bta_filtrlenmis = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "nan")]
         if not bta_filtrlenmis.empty:
-            st.dataframe(bta_filtrlenmis[["BTA Hisse", "BTA Puanı", "BTA Alım Fiyatı", "Anlık Canlı Fiyat"]], use_container_width=True, hide_index=True)
+            st.dataframe(bta_filtrlenmis[["BTA Hisse", "BTA Puanı", "BTA Alım Fiyatı", "BTA Canlı Fiyat"]].rename(columns={"BTA Canlı Fiyat": "Anlık Canlı Fiyat"}), use_container_width=True, hide_index=True)
         else:
-            st.info("Şu anda aktif BTA modeli hissesi bulunmuyor.")
-
-        # TABLO 2: Al Sat Sinyal Hisseleri (D Sütunu Dolu Olanlar)
-        st.markdown('<div class="alt-baslik-alsat">🚦 Al Sat Sinyal Hisseleri</div>', unsafe_allow_html=True)
-        alsat_filtrlenmis = df[df["Al Sat"].notna() & (df["Al Sat"].astype(str).str.strip() != "0") & (df["Al Sat"].astype(str).str.strip() != "")]
-        if not alsat_filtrlenmis.empty:
-            st.dataframe(alsat_filtrlenmis[["Al Sat", "Al Sat Skoru", "Anlık Canlı Fiyat"]], use_container_width=True, hide_index=True)
-        else:
-            st.info("Şu anda aktif Al Sat sinyali veren hisse bulunmuyor.")
-            
-    except Exception as e:
-        st.error(f"Excel Filtreleme Hatası: {e}")
-else:
-    st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
-
-# 4. GENEL HİSSE ARAMA MOTORU
-st.markdown("---")
-st.markdown('<div class="alt-baslik-bta">🔍 Genel Hisse Arama Motoru</div>', unsafe_allow_html=True)
