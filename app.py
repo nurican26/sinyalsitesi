@@ -10,6 +10,11 @@ st.set_page_config(page_title="BTA Finans Üssü", page_icon="📈", layout="wid
 
 st.markdown("""
 <style>
+    @keyframes neonPulse {
+        0% { text-shadow: 0 0 10px #00f2fe, 0 0 20px #00f2fe, 0 0 30px #00f2fe; box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); }
+        50% { text-shadow: 0 0 20px #4facfe, 0 0 40px #4facfe, 0 0 60px #4facfe; box-shadow: 0 0 30px rgba(79, 172, 254, 0.8); }
+        100% { text-shadow: 0 0 10px #00f2fe, 0 0 20px #00f2fe, 0 0 30px #00f2fe; box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); }
+    }
     .stApp {
         background: linear-gradient(135deg, #090a0f 0%, #12131c 100%)!important; 
         padding: 0.5rem;
@@ -75,16 +80,18 @@ st.markdown("""
         margin-top: 10px; 
         margin-bottom: 15px;
     } 
+    /* Işıklı ve Parlayan Yeni BTA Logosu */
     .bta-logo {
-        background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); 
-        color: white !important; 
+        background: transparent; 
+        color: #00f2fe !important; 
         font-family: 'Segoe UI', sans-serif !important; 
         font-weight: 900; 
-        font-size: 2.5rem; 
-        padding: 6px 35px; 
-        border-radius: 16px; 
-        box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
-        letter-spacing: 2px;
+        font-size: 3rem; 
+        padding: 4px 30px; 
+        border-radius: 14px; 
+        border: 3px solid #00f2fe;
+        animation: neonPulse 2s infinite ease-in-out;
+        letter-spacing: 4px;
     } 
     .kilit-uyari {
         background: rgba(255, 75, 75, 0.1); 
@@ -245,10 +252,3 @@ else:
             try:
                 if len(df_kaynak.columns) > 22:
                     uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
-                    t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
-                    
-                    if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
-                        if hisse_ara:
-                            hisse = str(hisse_ara[0])
