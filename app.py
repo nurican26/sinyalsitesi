@@ -170,10 +170,11 @@ else:
 def canli_altin_fiyatlari():
     try:
         ons_ticker = yf.Ticker("GC=F")
-        usd_ticker = yf.Ticker("TRY=X")
+        usd_kur_data = yf.download("TRY=X", period="1d", progress=False)
+        ons_data = ons_ticker.history(period="1d")
         
-        ons_fiyat = ons_ticker.history(period="1d")['Close'].iloc[-1]
-        usd_kur = usd_ticker.history(period="1d")['Close'].iloc[-1]
+        ons_fiyat = float(ons_data['Close'].iloc[-1])
+        usd_kur = float(usd_kur_data['Close'].iloc[-1])
         
         gram_altin = (ons_fiyat / 31.1034768) * usd_kur
         
@@ -242,7 +243,7 @@ else:
     else:
         st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
-    # Fiyat Motoru
+    # --- SIFIR HATA RİSKLİ YENİ FİYAT MOTORU ---
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu:
             return 0.0
@@ -251,7 +252,5 @@ else:
             if time.time() - saved_time < 300:
                 return saved_price
         try:
-            ticker = yf.Ticker(f"{hisse_kodu}.IS")
-            data = ticker.history(period="1d")
-            if not data.empty and not pd.isna(data['Close'].iloc[-1]):
-                fiyat = float(data['Close'].iloc[-1])
+            hisse_data = yf.download(f"{hisse_kodu}.IS", period="1d", progress=False)
+            if not hisse_data.empty:
