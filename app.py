@@ -64,7 +64,7 @@ st.markdown("""
     /* Yavaşça Kayan Logo Konteyneri */
     .bta-logo-konteyner {
         width: 100%;
-        overflow: hidden; /* Dışarı taşan yazıyı gizler */
+        overflow: hidden; 
         white-space: nowrap;
         margin-top: 10px; 
         margin-bottom: 25px;
@@ -79,8 +79,8 @@ st.markdown("""
         font-weight: 900 !important; 
         font-size: 5rem; 
         letter-spacing: 6px; 
-        padding-left: 100%; /* Başlangıç pozisyonu */
-        animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; /* Yavaş kayma ve renk değişimi */
+        padding-left: 100%; 
+        animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; 
     } 
     .kilit-uyari {
         background: rgba(255, 255, 255, 0.05); 
@@ -193,7 +193,7 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            # Listeden sadece kodu alarak parantezleri ve tırnakları kesin olarak yok eder
+                            # Listenin ilk elemanını çekerek parantezleri ve tırnakları uçuran temizleme formülü
                             hisse = str(hisse_ara[0]).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
@@ -203,7 +203,7 @@ else:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            # Listeden sadece kodu alarak parantezleri ve tırnakları kesin olarak yok eder
+                            # Listenin ilk elemanını çekerek parantezleri ve tırnakları kesin olarak yok eder
                             hisse = str(hisse_ara[0]).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
@@ -215,12 +215,16 @@ else:
                 pass
 
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
+    if tablo_alsat: 
+        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif sinyal taranıyor...")
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: rgb.write("🔒 Aktif sinyal taranıyor...")
+    if tablo_al: 
+        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif sinyal taranıyor...")
 
     if st.session_state["ozel_takip_kutusu"]:
         st.markdown("#### 🌟 Özel Takip Havuzu 💰")
