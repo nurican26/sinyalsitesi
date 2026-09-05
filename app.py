@@ -233,46 +233,48 @@ alsat_listesi = []
 if not os.path.exists(excel_yolu):
     st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
 else:
-    try:
-        raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
-        df_hisseler = raw_df.iloc[2:].copy()
-        
-        tum_kodlar = []
-        for idx, row in df_hisseler.iterrows():
-            hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
-            if hisse_kodu and hisse_kodu != "None" and hisse_kodu != "" and hisse_kodu not in tum_kodlar:
-                tum_kodlar.append(hisse_kodu)
-        
-        canli_fiyatlar = toplu_fiyat_cek(tum_kodlar)
-        
-        for idx, row in df_hisseler.iterrows():
-            hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
-            if hisse_kodu == "" or hisse_kodu == "None":
-                continue
-                
-            bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) and str(row[1]).strip() != "" else 0
-            al_sat_skoru = str(row[2]).strip() if pd.notna(row[2]) else "0"  # C SÜTUNU -> AL SAT SKORU
-            al_sat = str(row[3]).strip() if pd.notna(row[3]) else "0"        # D SÜTUNU -> AL SAT
-            bta_puani = str(row[4]).strip() if pd.notna(row[4]) else "0"     # E SÜTUNU -> BTA PUANI
-            bta_hisse_sutun = str(row[5]).strip() if pd.notna(row[5]) else "0" # F SÜTUNU -> BTA HISSE
+    raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
+    df_hisseler = raw_df.iloc[2:].copy()
+    
+    tum_kodlar = []
+    for idx, row in df_hisseler.iterrows():
+        hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
+        if hisse_kodu and hisse_kodu != "None" and hisse_kodu != "" and hisse_kodu not in tum_kodlar:
+            tum_kodlar.append(hisse_kodu)
+    
+    canli_fiyatlar = toplu_fiyat_cek(tum_kodlar)
+    
+    for idx, row in df_hisseler.iterrows():
+        hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
+        if hisse_kodu == "" or hisse_kodu == "None":
+            continue
             
-            canli_fiyat = canli_fiyatlar.get(hisse_kodu, bta_alimi)
-            if canli_fiyat == 0: 
-                canli_fiyat = bta_alimi
+        bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) and str(row[1]).strip() != "" else 0
+        al_sat_skoru = str(row[2]).strip() if pd.notna(row[2]) else "0"  # C SÜTUNU -> AL SAT SKORU
+        al_sat = str(row[3]).strip() if pd.notna(row[3]) else "0"        # D SÜTUNU -> AL SAT
+        bta_puani = str(row[4]).strip() if pd.notna(row[4]) else "0"     # E SÜTUNU -> BTA PUANI
+        bta_hisse_sutun = str(row[5]).strip() if pd.notna(row[5]) else "0" # F SÜTUNU -> BTA HISSE
+        
+        canli_fiyat = canli_fiyatlar.get(hisse_kodu, bta_alimi)
+        if canli_fiyat == 0: 
+            canli_fiyat = bta_alimi
+        
+        satir_veri = {
+            "Hisse Kodu": hisse_kodu,
+            "BTA Hisse": bta_hisse_sutun,
+            "BTA Puanı": bta_puani,
+            "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
+            "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
+            "Al Sat": al_sat,
+            "Al Sat Skoru": al_sat_skoru
+        }
+        
+        if bta_hisse_sutun != "0" and bta_hisse_sutun != "" and bta_hisse_sutun != "nan":
+            bta_listesi.append(satir_veri)
             
-            satir_veri = {
-                "Hisse Kodu": hisse_kodu,
-                "BTA Hisse": bta_hisse_sutun,
-                "BTA Puanı": bta_puani,
-                "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
-                "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
-                "Al Sat": al_sat,
-                "Al Sat Skoru": al_sat_skoru
-            }
-            
-            if bta_hisse_sutun != "0" and bta_hisse_sutun != "" and bta_hisse_sutun != "nan":
-                bta_listesi.append(satir_veri)
-                
-            if al_sat != "0" and al_sat != "" and al_sat != "nan":
-                alsat_listesi.append(satir_veri)
-    except Exception as e:
+        if al_sat != "0" and al_sat != "" and al_sat != "nan":
+            alsat_listesi.append(satir_veri)
+
+# Tabloları Ekrana Basma
+st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
+if len(bta_listesi) > 0:
