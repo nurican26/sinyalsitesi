@@ -91,7 +91,7 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
 
 # 🎯 PANEL SEÇİCİ RADYO MENÜ
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📱 Ek Gönsgerge Paneli")
+st.sidebar.markdown("### 📱 Ek Gösterge Paneli")
 secilen_panel = st.sidebar.radio("Görüntülemek istediğiniz aracı seçin:", ["🔎 Tüm BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
 
 # 🎯 TÜM AKTİF BIST HİSSE LİSTESİ HAFIZASI
@@ -104,11 +104,25 @@ if secilen_panel == "🔎 Tüm BIST Arama Motoru":
     st.markdown("### 🔎 Canlı BIST Tüm Hisse Arama Motoru")
     arama_girdisi = st.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", "").strip().upper()
     if arama_girdisi in bist_all:
-        h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
-        if not h_data.empty:
-            df_flat_h = h_data.xs('Close', axis=1, drop_level=True) if isinstance(h_data.columns, pd.MultiIndex) else h_data['Close']
-            st.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
-            st.metric(label="Anlık Canlı Fiyat (TL)", value=f"{float(df_flat_h.dropna().iloc[-1]):,.2f} TL")
+        try:
+            h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
+            if not h_data.empty:
+                # %100 ÇÖKMEYEN YENİ NESİL DATA PARSER METODU
+                last_row = h_data.tail(1)
+                c_price = 0.0
+                for col in h_data.columns:
+                    if "Close" in str(col):
+                        c_price = float(last_row[col].values[0])
+                        break
+                if c_price > 0:
+                    st.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
+                    st.metric(label="Anlık Canlı Fiyat (TL)", value=f"{c_price:,.2f} TL")
+                else:
+                    st.warning("Hisse verisi alındı fakat fiyat sütunu ayrıştırılamadı.")
+            else:
+                st.error("Yahoo Finance bu kod için veri döndüremedi.")
+        except Exception as e:
+            st.error("Fiyat çekilirken sistemsel bir gecikme yaşandı.")
     elif arama_girdisi:
         benzerler = [h for h in bist_all if arama_girdisi in h]
         if benzerler:
@@ -120,9 +134,3 @@ if secilen_panel == "🪙 Canlı Altın Takibi":
     st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
     altin_turleri = ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"]
     altin_fiyatlari = ["0.00", "0.00", "0.00", "0.00"]
-    altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
-    if not altin_download.empty:
-        df_flat = altin_download.xs('Close', axis=1, drop_level=True) if isinstance(altin_download.columns, pd.MultiIndex) else altin_download['Close']
-        ons_v = float(df_flat["GC=F"].dropna().iloc[-1])
-        usd_v = float(df_flat["TRY=X"].dropna().iloc[-1])
-        g_altin = (ons_v / 31.1034768) * usd_v
