@@ -258,7 +258,7 @@ else:
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # 🎯 KESİN FİLTRE: "BTA Hisse" (F sütunu) hücresi boşsa, nan, 0 veya None ise satırı kökten sil!
+        # 🎯 KESİN FİLTRE: "BTA Hisse" (F sütunu) hücresi boşsa veya geçersizse o satırı kökten yok et!
         df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
         
         # Eğer bu filtreden sonra hala veri kaldıysa işlemleri yürüt
@@ -273,5 +273,5 @@ else:
             try:
                 canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
                 if len(istek_kodlari) == 1:
-                    fiyat_sozluk = {istek_kodlari.replace(".IS", ""): canli_data.iloc[-1]}
+                    fiyat_sozluk = {istek_kodlari[0].replace(".IS", ""): canli_data.iloc[-1]}
                 else:
