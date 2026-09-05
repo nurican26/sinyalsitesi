@@ -4,249 +4,210 @@ import datetime
 import yfinance as yf
 import os
 
-# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
-st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
+# 1. SAYFA AYARLARI VE TELEFON UYUMLU NEON TASARIM
+st.set_page_config(page_title="BTA Piyasalar", page_icon="📈", layout="wide")
 
-# Şık Neon CSS Tasarımı
 st.markdown("""
 <style>
     @import url('https://googleapis.com');
-
     @keyframes rainbowNeon {
-        0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
-        25% { color: #00f2fe !important; text-shadow: 0 0 15px #00f2fe, 0 0 30px #00f2fe; }
-        50% { color: #10b981 !important; text-shadow: 0 0 15px #10b981, 0 0 30px #10b981; }
-        75% { color: #a855f7 !important; text-shadow: 0 0 15px #a855f7, 0 0 30px #a855f7; }
-        100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
+        0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f; }
+        50% { color: #00f2fe !important; text-shadow: 0 0 15px #00f2fe; }
+        100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f; }
     }
-
     @keyframes marquee {
         0% { transform: translateX(100%); }
         100% { transform: translateX(-100%); }
     }
-
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
-        padding: 0.5rem;
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important; 
     } 
-    h1,h2,h3,h4,h5,h6,p,span,label {
-        color: #fff!important; 
+    h1, h2, h3, p, span, label {
+        color: #fff !important; 
         font-family: "Segoe UI", sans-serif;
     } 
     input {
-        color: #000!important; 
-        background-color: #fff!important;
-    } 
-    .stDataFrame {
-        width: 100% !important; 
-        border: 1px solid #10b981 !important; 
-        border-radius: 8px;
-    } 
-    div.block-container {
-        padding-top: 1rem; 
-        padding-bottom: 0.5rem;
-    } 
+        color: #000 !important; 
+        background-color: #fff !important;
+    }
     .alsat-baslik {
         background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
-        padding: 8px; 
-        border-radius: 5px; 
-        font-weight: bold; 
-        margin-bottom: 5px;
+        padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 10px;
     } 
     .al-baslik {
         background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
-        padding: 8px; 
-        border-radius: 5px; 
-        font-weight: bold; 
-        margin-bottom: 5px;
+        padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 10px;
     } 
     .bta-logo-konteyner {
-        width: 100%;
-        overflow: hidden; 
-        white-space: nowrap;
-        margin-top: 10px; 
-        margin-bottom: 25px;
-        padding: 10px 0;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 8px;
+        width: 100%; overflow: hidden; white-space: nowrap;
+        margin: 15px 0; padding: 10px 0; background: rgba(255, 255, 255, 0.02); border-radius: 8px;
     } 
     .bta-logo {
-        display: inline-block;
-        font-family: 'Alex Brush', cursive !important; 
-        font-style: italic !important;
-        font-weight: normal !important; 
-        font-size: 6rem; 
-        letter-spacing: 0px; 
-        padding-left: 100%; 
-        animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; 
+        display: inline-block; font-family: 'Segoe UI', sans-serif; font-style: italic;
+        font-weight: bold; font-size: 4rem; padding-left: 100%; 
+        animation: marquee 20s infinite linear, rainbowNeon 6s infinite linear; 
     } 
-    .kilit-uyari {
-        background: rgba(255, 255, 255, 0.05); 
-        border-left: 4px solid #ca8a04; 
-        padding: 15px; 
-        border-radius: 6px; 
-        margin-bottom: 20px; 
-        font-size: 1.1rem;
-    } 
-    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
-        font-size: 1.25rem !important; 
-        font-weight: bold !important; 
-        color: #ffffff !important;
-    } 
-    div.stButton > button {
-        background-color: transparent; 
-        color: #45f3ff; 
-        border: 2px solid #45f3ff; 
-        box-shadow: 0 0 10px #45f3ff; 
-        border-radius: 8px; 
-        transition: 0.3s;
-    } 
-    div.stButton > button:hover {
-        background-color: #45f3ff; 
-        color: #111; 
-        box-shadow: 0 0 20px #45f3ff;
-    }
     .spk-kutusu {
-        background-color: rgba(239, 68, 68, 0.1);
-        border: 1px solid #ef4444;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
+        background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444;
+        padding: 15px; border-radius: 8px; margin-bottom: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 🔑 PARAMETRELER
+# 🔑 SABİT PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
 
-# Önbellek Bellek Yapıları
+# Hafıza Kontrolleri
 if "oda_kilitli_mi" not in st.session_state:
     st.session_state["oda_kilitli_mi"] = False
 if "sohbet_gecmisi" not in st.session_state:
     st.session_state["sohbet_gecmisi"] = []
 
-# Logo Alanı
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
+# GÖKKUŞAĞI BTA LOGOSU
+st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA TRADING</div></div>', unsafe_allow_html=True)
 
-# --- ⚠️ SPK YASAL UYARI BÖLÜMÜ ---
+# --- SPK YASAL UYARI MADDESİ ---
 st.markdown("""
 <div class="spk-kutusu">
     <h4 style="color:#ef4444 !important; margin-top:0;">⚠️ SPK YASAL UYARI</h4>
     <p style="font-size:0.9rem; color:#cbd5e1 !important; margin-bottom:0;">
         Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-        Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri 
-        dikkate alınarak kişiye özel sunulmaktadır. Burada yer alan bilgilere dayanılarak yatırım kararı 
-        verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.
+        Burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.
     </p>
 </div>
 """, unsafe_allow_html=True)
 
-# 🛠️ SOL YAN MENÜ: YÖNETİCİ PANELİ
+# 🛠️ YÖNETİCİ PANELİ (SOL MENÜ)
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
-admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Şifre girin...")
+admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
 
 if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
-    if st.session_state["oda_kilitli_mi"]:
-        st.sidebar.error("🔴 Şu an: ODA KİLİTLİ")
-        if st.sidebar.button("🔓 Odayı Herkese Aç", use_container_width=True):
-            st.session_state["oda_kilitli_mi"] = False
-            st.rerun()
-    else:
-        st.sidebar.success("🟢 Şu an: HERKESE AÇIK")
-        if st.sidebar.button("🔒 Odayı Herkese Kilitle", use_container_width=True):
-            st.session_state["oda_kilitli_mi"] = True
-            st.rerun()
-else:
-    if admin_sifre:
-        st.sidebar.error("Hatalı Yönetici Şifresi!")
+    durum_metni = "🔴 ODA KİLİTLİ" if st.session_state["oda_kilitli_mi"] else "🟢 HERKESE AÇIK"
+    st.sidebar.markdown(f"Mevcut Durum: **{durum_metni}**")
+    if st.sidebar.button("🔄 Durumu Değiştir (Kilitle/Aç)", use_container_width=True):
+        st.session_state["oda_kilitli_mi"] = not st.session_state["oda_kilitli_mi"]
+        st.rerun()
 
-# --- CANLI ALTIN HESAPLAMA MOTORU ---
-def canli_altin_fiyatlari_al():
-    try:
-        altin_veri = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)['Close']
-        ons_fiyat = float(altin_veri["GC=F"].dropna().iloc[-1])
-        usd_kur = float(altin_veri["TRY=X"].dropna().iloc[-1])
-        gram_altin = (ons_fiyat / 31.1034768) * usd_kur
-        
-        return pd.DataFrame({
-            "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın (1.75g)", "Yarım Altın (3.50g)", "Tam Altın (7.01g)"],
-            "Güncel Fiyat (TL) 💰": [
-                f"{round(gram_altin, 2):,}".replace(",", "."),
-                f"{round(gram_altin * 1.75, 2):,}".replace(",", "."),
-                f"{round(gram_altin * 3.50, 2):,}".replace(",", "."),
-                f"{round(gram_altin * 7.01, 2):,}".replace(",", ".")
-            ]
-        })
-    except:
-        return pd.DataFrame({"Durum": ["Altın fiyatları geçici olarak yüklenemedi."]})
-
-# ODA KİLİT KONTROLÜ
+# --- 🏢 ERİŞİM KONTROLÜ VE İÇERİK AKTARIMI ---
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
-    st.markdown('<div class="kilit-uyari">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
+    st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Analiz robotları güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
 else:
     if st.session_state["oda_kilitli_mi"]:
-        st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için içeriyi görüyorsunuz.")
+        st.warning("⚠️ Oda kilitli fakat Yönetici olduğunuz için görüntülüyorsunuz.")
 
-    # =========================================================================
-    # TAB PANEL SİSTEMİ (ARAMA, ALTIN VE SOHBET)
-    # =========================================================================
+    # ETKİLEŞİM PANELİ SEKMELERİ
     sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
     
     with sekme_arama:
-        st.markdown("### 🔎 BIST Hisse Arama")
-        arama_kelimesi = st.text_input("Aratmak istediğiniz hisse kodunu girin (Örn: THYAO):", "").strip().upper()
+        st.markdown("### 🔎 BIST Hisse Arama Filtresi")
+        arama_kelimesi = st.text_input("Filtrelemek istediğiniz hisse kodunu yazın (Örn: THYAO):", "").strip().upper()
         
     with sekme_altin:
-        st.markdown("### 🪙 Canlı Döviz ve Altın Piyasası")
-        if st.button("🔄 Fiyatları Güncelle"):
-            st.toast("Fiyatlar yenileniyor...", icon="🪙")
-        st.table(canli_altin_fiyatlari_al())
+        st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
+        if st.button("🔄 Altın Fiyatlarını Güncelle"):
+            st.toast("Altın fiyatları yenileniyor...", icon="🪙")
+            
+        # Altın Hesaplama (Hata vermeyen güvenli doğrusal akış)
+        altin_df_data = pd.DataFrame({"Durum": ["Veri çekilemedi"]})
+        altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
+        if not altin_download.empty:
+            ons_v = float(altin_download['Close']['GC=F'].dropna().iloc[-1])
+            usd_v = float(altin_download['Close']['TRY=X'].dropna().iloc[-1])
+            g_altin = (ons_v / 31.1034768) * usd_v
+            altin_df_data = pd.DataFrame({
+                "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"],
+                "Fiyat (TL) 💰": [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
+            })
+        st.table(altin_df_data)
         
     with sekme_sohbet:
         st.markdown("### 💬 Bilgi Paylaşım & Analiz Notları")
-        sohbet_isim = st.text_input("Adınız:", value="Yatırımcı")
-        sohbet_mesaj = st.text_input("Mesajınız:", placeholder="Analiz notunuzu buraya yazın...")
-        if st.button("✉️ Gönder") and sohbet_mesaj.strip():
-            zaman = datetime.datetime.now().strftime("%H:%M:%S")
-            st.session_state["sohbet_gecmisi"].insert(0, f"[{zaman}] **{sohbet_isim}**: {sohbet_mesaj}")
-            st.toast("Mesaj iletildi!", icon="💬")
+        s_isim = st.text_input("Kullanıcı Adınız:", value="Yatırımcı")
+        s_mesaj = st.text_input("Mesaj içeriği:", placeholder="Notunuzu buraya ekleyin...")
+        if st.button("✉️ Mesajı İlet") and s_mesaj.strip():
+            saat = datetime.datetime.now().strftime("%H:%M:%S")
+            st.session_state["sohbet_gecmisi"].insert(0, f"[{saat}] **{s_isim}**: {s_mesaj}")
+            st.toast("Not kaydedildi!", icon="💬")
         
-        if st.session_state["sohbet_gecmisi"]:
-            st.markdown("---")
-            for msg in st.session_state["sohbet_gecmisi"][:10]:
-                st.markdown(msg)
+        for msg in st.session_state["sohbet_gecmisi"][:8]:
+            st.markdown(msg)
 
     st.markdown("---")
 
     # =========================================================================
-    # YENİ NESİL TOPLU VERİ İŞLEME MOTORU (SIFIR HATA VE YÜKSEK HIZ)
+    # YENİ NESİL EXCEL İŞLEME VE TOPLU FİYAT MOTORU (BLOKSUZ VE SÜRATLİ)
     # =========================================================================
-    excel_yolu = "nurican.xls.xlsm"
+    excel_adi = "nurican.xls.xlsm"
     
-    if os.path.exists(excel_yolu):
-        try:
-            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-            
-            raw_rows = []
-            toplu_kodlar = []
-            
-            # 1. Excel Satırlarını tara ve benzersiz hisse listesini hafızaya topla
-            for idx in range(2, len(df_kaynak)):
-                if len(df_kaynak.columns) > 22:
-                    uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                    wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                    t_puan = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else "0.0"
+    if os.path.exists(excel_adi):
+        df_excel = pd.read_excel(excel_adi, header=None, engine="openpyxl")
+        
+        excel_listesi = []
+        toplu_tickers = []
+        
+        # Sütun uzunluğunu kontrol ederek ham veriyi belleğe taşıma
+        if len(df_excel.columns) > 22:
+            for satir_idx in range(2, len(df_excel)):
+                u_cell = str(df_excel.iloc[satir_idx, 20]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 20]) else ""
+                w_cell = str(df_excel.iloc[satir_idx, 22]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 22]) else ""
+                t_cell = str(df_excel.iloc[satir_idx, 19]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 19]) else "0.0"
+                
+                if u_cell and u_cell not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                    toplu_tickers.append(f"{u_cell}.IS")
+                if w_cell and w_cell not in ["NAN", "NONE", "W_SÜTUNU"]:
+                    toplu_tickers.append(f"{w_cell}.IS")
                     
-                    raw_rows.append({"uv": uv, "wv": wv, "t_puan": t_puan})
-                    if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]: 
-                        toplu_kodlar.append(f"{uv}.IS")
-                    if wv and wv not in ["NAN", "NONE", "W_SÜTUNU"]: 
-                        toplu_kodlar.append(f"{wv}.IS")
+                excel_listesi.append({"u": u_cell, "w": w_cell, "puan": t_cell})
+
+        # Benzersiz hisselerin fiyatlarını internetten tek hamlede topluca indir
+        toplu_tickers = list(set(toplu_tickers))
+        fiyat_sozlugu = {}
+        
+        if toplu_tickers:
+            download_data = yf.download(toplu_tickers, period="1d", progress=False)
+            if not download_data.empty and 'Close' in download_data.columns:
+                close_df = download_data['Close']
+                for t_kod in toplu_tickers:
+                    s_kod = t_kod.replace(".IS", "")
+                    if isinstance(close_df, pd.DataFrame) and t_kod in close_df.columns:
+                        valid_series = close_df[t_kod].dropna()
+                        fiyat_sozlugu[s_kod] = float(valid_series.iloc[-1]) if not valid_series.empty else 0.0
+                    elif isinstance(close_df, pd.Series):
+                        fiyat_sozlugu[s_kod] = float(close_df.dropna().iloc[-1]) if not close_df.dropna().empty else 0.0
+
+        # Filtreleme ve Tablo Ayrıştırma Adımları
+        t_alsat_list = []
+        t_al_list = []
+        
+        for veri in excel_listesi:
+            # U Sütunu Filtresi
+            if veri["u"] and veri["u"] not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                if arama_kelimesi == "" or arama_kelimesi in veri["u"]:
+                    t_alsat_list.append({
+                        "Hisse Kodu 📈": veri["u"],
+                        "BTA Puan": veri["puan"],
+                        "💥 Canlı Fiyat": fiyat_sozlugu.get(veri["u"], 0.0)
+                    })
             
-            # 2. Tüm internet fiyatlarını tek bir saniyede tek parça indir
-            toplu_kodlar = list(set(toplu_kodlar))
-            fiyat_sozlugu = {}
-            
-            if toplu_kodlar:
-                try:
+            # W Sütunu Filtresi
+            if veri["w"] and veri["w"] not in ["NAN", "NONE", "W_SÜTUNU"]:
+                if arama_kelimesi == "" or arama_kelimesi in veri["w"]:
+                    t_al_list.append({
+                        "Hisse Kodu 📈": veri["w"],
+                        "💥 Canlı Fiyat": fiyat_sozlugu.get(veri["w"], 0.0)
+                    })
+
+        # EKRANA YAN YANA TABLOLARI ÇIKARTMA
+        c1, c2 = st.columns(2)
+        
+        with c1:
+            st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL/SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+            if t_alsat_list:
+                st.dataframe(pd.DataFrame(t_alsat_list), use_container_width=True)
+            else:
+                st.info("Kriterlere uygun veri bulunamadı.")
+                
+        with c2:
+            st.markdown('<div class="al-baslik">🟢 SADECE AL SİNYALLERİ (W)</div>', unsafe_allow_html=True)
+            if t_al_list:
