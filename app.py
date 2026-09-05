@@ -36,7 +36,6 @@ st.markdown("""
         padding-top: 1rem; 
         padding-bottom: 0.5rem;
     } 
-    /* Geliştirilmiş Neon Başlıklar */
     .alsat-baslik {
         background: linear-gradient(90deg, #ff007f 0%, #12131c 100%); 
         padding: 12px; 
@@ -61,7 +60,6 @@ st.markdown("""
         font-size: 1.2rem;
         letter-spacing: 1px;
     } 
-    /* SPK Uyarısı */
     .spk-kutusu {
         background-color: rgba(255, 75, 75, 0.05); 
         border: 1px dashed #ff4b4b; 
@@ -80,7 +78,6 @@ st.markdown("""
         margin-top: 10px; 
         margin-bottom: 15px;
     } 
-    /* Işıklı ve Parlayan Yeni BTA Logosu */
     .bta-logo {
         background: transparent; 
         color: #00f2fe !important; 
@@ -103,7 +100,6 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 0 15px rgba(255, 75, 75, 0.2);
     } 
-    /* Canlı Piyasalar Kart Tasarımı */
     .piyasa-kart {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -247,8 +243,11 @@ else:
     tablo_al = []
     hisse_kodlari_listesi = []
 
+    # GÜVENLİ VE HATASIZ VERİ TARAMA MOTORU
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
-            try:
-                if len(df_kaynak.columns) > 22:
-                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+            if len(df_kaynak.columns) <= 22:
+                continue
+                
+            uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+            wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
