@@ -218,9 +218,10 @@ else:
             df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except Exception as e:
             st.error(f"Excel okuma hatası: {e}")
+    else:
+        st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     def hızlı_canli_fiyat_bul(hisse_kodu):
-        if not hisse_kodu: return 0.0
         if hisse_kodu in st.session_state["fiyat_hafizasi"]:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
             if time.time() - saved_time < 300: return saved_price
@@ -234,17 +235,18 @@ else:
         except: pass
         return 0.0
 
+    def temiz_metin_al(val):
+        if pd.isna(val): return ""
+        return str(val).strip().upper()
+
     tablo_alsat = []
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # 🛑 YENİ ARKA PLAN VERİ MOTORU (HİÇBİR HATA VERMESİ MÜMKÜN DEĞİL)
-    if df_kaynak is not None and len(df_kaynak.columns) > 22:
-        for idx, row in df_kaynak.iterrows():
-            if idx < 2: continue
-            
-            # Kolon verilerini güvenli string yapma
-            uv = str(row[20]).strip().upper() if not pd.isna(row[20]) else ""
-            wv = str(row[22]).strip().upper() if not pd.isna(row[22]) else ""
-            t_deg = str(row[19]).strip().upper() if not pd.isna(row[19]) else ""
-            
+    # ORİJİNAL KOD BLOKLARINA DÖNÜŞ (PARANTEZLERİ TABLODA TEMİZLER)
+    if df_kaynak is not None:
+        for idx in range(2, len(df_kaynak)):
+            try:
+                if len(df_kaynak.columns) > 22:
+                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
