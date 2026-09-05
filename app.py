@@ -103,9 +103,14 @@ arama_girdisi = sekme_arama.text_input("Bulmak istediğiniz hisse kodunu yazın 
 if arama_girdisi in bist_all:
     h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
     if not h_data.empty:
-        df_flat_h = h_data.xs('Close', axis=1, drop_level=True) if isinstance(h_data.columns, pd.MultiIndex) else h_data['Close']
-        sekme_arama.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
-        sekme_arama.metric(label="Anlık Canlı Fiyat (TL)", value=f"{float(df_flat_h.dropna().iloc[-1]):,.2f} TL")
+        # Hatanın Çözümü: Tüm boyut ve kolon yapıları için en güvenli okuma biçimi kuruldu.
+        try:
+            raw_val = h_data.values[-1]
+            c_price = float(raw_val[0])
+            sekme_arama.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
+            sekme_arama.metric(label="Anlık Canlı Fiyat (TL)", value=f"{c_price:,.2f} TL")
+        except:
+            sekme_arama.error("Fiyat okunamadı.")
 elif arama_girdisi:
     benzerler = [h for h in bist_all if arama_girdisi in h]
     if benzerler:
@@ -128,4 +133,3 @@ if not altin_download.empty:
 sekme_altin.table(altin_df_data)
 
 # 3. SEKME: SOHBET ALANI GÖVDESİ
-sohbet_isim = sekme_sohbet.text_input("Kullanıcı Adınız:", value="Yatırımcı")
