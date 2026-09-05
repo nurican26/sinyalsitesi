@@ -56,15 +56,28 @@ st.markdown("""
 
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
+KILIT_DOSYASI = "oda_durumu.txt"
 
-if "oda_kilitli_mi" not in st.session_state:
-    st.session_state["oda_kilitli_mi"] = False
 if "sohbet_gecmisi" not in st.session_state:
     st.session_state["sohbet_gecmisi"] = []
 
-# 🔑 KİLİT BUTONU İÇİN GÜVENLİ CALLBACK FONKSİYONU
+# 🌐 KÜRESEL KİLİT KONTROLÜ (TÜM KULLANICILAR İÇİN ORTAK DOSYA OKUMA)
+def oda_kilitli_mi_kontrol_et():
+    if os.path.exists(KILIT_DOSYASI):
+        with open(KILIT_DOSYASI, "r") as f:
+            durum = f.read().strip()
+            return durum == "kilitli"
+    return False
+
+# 🌐 KÜRESEL KİLİT DURUMUNU DEĞİŞTİRME FONKSİYONU
 def kilit_durumunu_degistir():
-    st.session_state["oda_kilitli_mi"] = not st.session_state["oda_kilitli_mi"]
+    su_an_kilitli = oda_kilitli_mi_kontrol_et()
+    yeni_durum = "acik" if su_an_kilitli else "kilitli"
+    with open(KILIT_DOSYASI, "w") as f:
+        f.write(yeni_durum)
+
+# MEVCUT DURUMU AL
+oda_su an_kilitli = oda_kilitli_mi_kontrol_et()
 
 # LOGO VE SPK UYARISI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA TRADING</div></div>', unsafe_allow_html=True)
@@ -82,7 +95,7 @@ st.markdown("""
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
 admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
 
-if st.session_state["oda_kilitli_mi"]:
+if oda_su an_kilitli:
     st.sidebar.warning("🔒 Oda Şu An Kilitli")
 else:
     st.sidebar.info("🔓 Oda Şu An Herkese Açık")
@@ -91,8 +104,8 @@ if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
     st.sidebar.button("Odadaki Kilidi Değiştir", on_click=kilit_durumunu_degistir, use_container_width=True)
 
-# KİLİT KONTROLÜ
-if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
+# KİLİT KONTROLÜ (Ziyaretçiler yönetici değilse ve oda kilitliyse bloke et)
+if oda_su an_kilitli and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -101,7 +114,7 @@ sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 TÜM BIST ARAMA MOTORU",
 
 # 🎯 TÜM AKTİF BIST HİSSE LİSTESİ HAFIZASI
 bist_all = [
-    "A1CAP", "ACSEL", "ADEL", "ADESE", "AGHOL", "AGROT", "AHGAZ", "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGGY", "ALKA", "ALKIM", "ALTNY", "ALVES", "ANELE", "ANGEN", "ANHYT", "ANSGR", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", "ASCEG", "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BAKAB", "BALAT", "BANVT", "BARMA", "BASCM", "BASGZ", "BATIS", "BAYRK", "BEGYO", "BERA", "BEYAZ", "BFREN", "BIENY", "BIGCH", "BIMAS", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BMSCH", "BMSTR", "BOBET", "BORLE", "BORSK", "BOSSA", "BRISA", "BRKVY", "BRMEN", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CEOEM", "CIMSA", "CLEBI", "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CUSAN", "CVKMD", "CWENE", "DAGHL", "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DIRIT", "DITAS", "DMSAS", "DNISI", "DOAS", "DOCO", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGEPO", "EGGUB", "EGPRO", "EGSER", "EKGYO", "EKIZ", "EKLOS", "EKOS", "ELITE", "EMKEL", "ENERY", "ENJSA", "ENKAI", "EPLAS", "ERBOS", "EREGL", "ERSU", "ESCAR", "ESCOM", "ESEN", "ETILR", "EUPWR", "EUREK", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FRIGO", "FROTO", "FZLGY", "GARAN", "GENTS", "GEREL", "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GMTTR", "GNEV", "GOLTS", "GOODY", "GOZDE", "GRNYO", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HATEK", "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", "ICKU", "IDGYO", "IEYHO", "IHAAS", "IHEVA", "IHGZT", "IHLAL", "IHLAS", "IHMAD", "IKND", "IMAGE", "INGRM", "INTEM", "INVEST", "ISATR", "ISBTR", "ISCTR", "ISDMR", "ISFIN", "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISYAT", "ITTFH", "IZENR", "IZFAS", "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", "KBTX", "KBUTY", "KCAER", "KCHOL", "KENT", "KERVN", "KERVT", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRGY", "KLSYN", "KLSYS", "KMELE", "KMPUR", "KNFRT", "KOBIL", "KONFG", "KONTR", "KONYA", "KORDS", "KOZAA", "KOZAL", "KPLN", "KPTL", "KRALS", "KRTEK", "KRVGD", "KSTUR", "KTLEV", "KTSKR", "KUTPO", "KUVVA", "KVAZ", "LIDER", "LIDFA", "LINK", "LMKDC", "LOGO", "LRSHO", "LUKSK", "MAALT", "MACKO", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARKA", "MARTI", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MEPET", "MERCN", "MERIT", "MERKO", "METUR", "METRO", "MGROS", "MIPAZ", "MIATK", "MMCAS", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MRGYO", "MRSHL", "MSGYO", "MTRKS", "MTRYO", "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NUGYO", "NUHCM", "OBAMS", "ODAS", "ODINE", "ONCSM", "ORCA", "ORGE", "ORMA", "OSMEN", "OSTIM", "OTKAR", "OYAKC", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZATD", "OZGYO", "OZKGY", "OZSUB", "OZUCP", "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATRK", "PCILT", "PEGYO", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", "PGSUS", "PINSU", "PKENT", "PKART", "PLTUR", "PNLSN", "PNSUT", "POLHO", "POLTK", "PRKAB", "PRKME", "PRMA", "PRZMA", "PSDTC", "PSGYO", "QNBFB", "QNBFL", "QUAGR", "RALYH", "RAYSG", "REEDR", "RNPOL", "RODRG", "ROYAL", "RYSAS", "RYGYO", "SAFKR", "SAHOL", "SAMAT", "SANEL", "SANFM", "SANKO", "SARKY", "SASA", "SAYAS", "SDTTR", "SEKFA", "SEKO", "SELEC", "SELVA", "SEYKM", "SILVR", "SIMART", "SINKO", "SNGYO", "SNTRA", "SOKMD", "SONME", "SRVGY", "SUWEN", "TABGD", "TAFEX", "TARKM", "TATEN", "TATGD", "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TEZOL", "TGSAS", "THYAO", "TLMAN", "TMPOL", "TMSN", "TNZTP", "TOASO", "TORUN", "TSKB", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", "TURGG", "TURSG", "UFUK", "ULAS", "ULFA", "ULKER", "ULUSE", "UNLU", "USAK", "VAKFN", "VAKKO", "VAKMY", "VALF", "VANET", "VBTYZ", "VERTU", "VESTL", "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBCLK", "YEOTK", "YGGYO", "YGYO", "YKBNK", "YLTEK", "YONGA", "YOTK", "YUNSA", "YYLGD", "ZEDUR", "ZRGYO"
+    "A1CAP", "ACSEL", "ADEL", "ADESE", "AGHOL", "AGROT", "AHGAZ", "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGGY", "ALKA", "ALKIM", "ALTNY", "ALVES", "ANELE", "ANGEN", "ANHYT", "ANSGR", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", "ASCEG", "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BAKAB", "BALAT", "BANVT", "BARMA", "BASCM", "BASGZ", "BATIS", "BAYRK", "BEGYO", "BERA", "BEYAZ", "BFREN", "BIENY", "BIGCH", "BIMAS", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BMSCH", "BMSTR", "BOBET", "BORLE", "BORSK", "BOSSA", "BRISA", "BRKVY", "BRMEN", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CEOEM", "CIMSA", "CLEBI", "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CUSAN", "CVKMD", "CWENE", "DAGHL", "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DIRIT", "DITAS", "DMSAS", "DNISI", "DOAS", "DOCO", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGEPO", "EGGUB", "EGPRO", "EGSER", "EKGYO", "EKIZ", "EKLOS", "EKOS", "ELITE", "EMKEL", "ENERY", "ENJSA", "ENKAI", "EPLAS", "ERBOS", "EREGL", "ERSU", "ESCAR", "ESCOM", "ESEN", "ETILR", "EUPWR", "EUREK", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FRIGO", "FROTO", "FZLGY", "GARAN", "GENTS", "GEREL", "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GMTTR", "GNEV", "GOLTS", "GOODY", "GOZDE", "GRNYO", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HATEK", "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", "ICKU", "IDGYO", "IEYHO", "IHAAS", "IHEVA", "IHGZT", "IHLAL", "IHLAS", "IHMAD", "IKND", "IMAGE", "INGRM", "INTEM", "INVEST", "ISATR", "ISBTR", "ISCTR", "ISDMR", "ISFIN", "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISYAT", "ITTFH", "IZENR", "IZFAS", "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", "KBTX", "KBUTY", "KCAER", "KCHOL", "KENT", "KERVN", "KERVT", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRGY", "KLSYN", "KLSYS", "KMELE", "KMPUR", "KNFRT", "KOBIL", "KONFG", "KONTR", "KONYA", "KORDS", "KOZAA", "KOZAL", "KPLN", "KPTL", "KRALS", "KRTEK", "KRVGD", "KSTUR", "KTLEV", "KTSKR", "KUTPO", "KUVVA", "KVAZ", "LIDER", "LIDFA", "LINK", "LMKDC", "LOGO", "LRSHO", "LUKSK", "MAALT", "MACKO", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARKA", "MARTI", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MEPET", "MERCN", "MERIT", "MERKO", "METUR", "METRO", "MGROS", "MIPAZ", "MIATK", "MMCAS", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MRGYO", "MRSHL", "MSGYO", "MTRKS", "MTRYO", "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NUGYO", "NUHCM", "OBAMS", "ODAS", "ODINE", "ONCSM", "ORCA", "ORGE", "ORMA", "OSMEN", "OSTIM", "OTKAR", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZATD", "OZGYO", "OZKGY", "OZSUB", "OZUCP", "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATRK", "PCILT", "PEGYO", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", "PGSUS", "PINSU", "PKENT", "PKART", "PLTUR", "PNLSN", "PNSUT", "POLHO", "POLTK", "PRKAB", "PRKME", "PRMA", "PRZMA", "PSDTC", "PSGYO", "QNBFB", "QNBFL", "QUAGR", "RALYH", "RAYSG", "REEDR", "RNPOL", "RODRG", "ROYAL", "RYSAS", "RYGYO", "SAFKR", "SAHOL", "SAMAT", "SANEL", "SANFM", "SANKO", "SARKY", "SASA", "SAYAS", "SDTTR", "SEKFA", "SEKO", "SELEC", "SELVA", "SEYKM", "SILVR", "SIMART", "SINKO", "SNGYO", "SNTRA", "SOKMD", "SONME", "SRVGY", "SUWEN", "TABGD", "TAFEX", "TARKM", "TATEN", "TATGD", "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TEZOL", "TGSAS", "THYAO", "TLMAN", "TMPOL", "TMSN", "TNZTP", "TOASO", "TORUN", "TSKB", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", "TURGG", "TURSG", "UFUK", "ULAS", "ULFA", "ULKER", "ULUSE", "UNLU", "USAK", "VAKFN", "VAKKO", "VAKMY", "VALF", "VANET", "VBTYZ", "VERTU", "VESTL", "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBCLK", "YEOTK", "YGGYO", "YGYO", "YKBNK", "YLTEK", "YONGA", "YOTK", "YUNSA", "YYLGD", "ZEDUR", "ZRGYO"
 ]
 
 with sekme_arama:
@@ -130,13 +143,3 @@ with sekme_arama:
                 else:
                     st.warning("Seçilen hisse için veri bulunamadı. Piyasa kapalı veya veri henüz yansımamış olabilir.")
             except Exception as e:
-                st.error(f"Veri çekilirken bir hata oluştu: {e}")
-        else:
-            st.error("Girdiğiniz kod BIST listesinde bulunamadı. Lütfen kontrol edin.")
-
-with sekme_altin:
-    st.markdown("### 🪙 Canlı Altın ve Değerli Maden Takibi")
-    
-    ons_altin = yf.Ticker("GC=F")
-    ons_veri = ons_altin.history(period="1d")
-    usdtry = yf.Ticker("USDTRY=X")
