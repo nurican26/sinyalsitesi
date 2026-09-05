@@ -9,57 +9,90 @@ import time
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 # CSS stilleri ve Göz Alıcı Kayan Yazı Animasyonu
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .tv-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .tv-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
 
-# Google Fonts'tan El Yazısı (Caveat ve Great Vibes) fontunu çekiyoruz
+# Google Fonts'tan El Yazısı Fontunu Çekiyoruz
 st.markdown('<link href="https://googleapis.com" rel="stylesheet">', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# 🌟 BTA BORSA TEMEL ANALİZ - EL YAZILI, YUVALAK BOŞ ÇERÇEVELİ, SEFAG IŞIKLI NEON KAYAN YAZI
+
+# 🌟 SADECE BTA - PARILDAYAN NEON YILDIZLI YUVARLAK LOGO ÇERÇEVESİ
 st.markdown("""
 <style>
-@keyframes neon-parlama {
-    0% { text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #00f0ff; box-shadow: inset 0 0 15px #ff007f, 0 0 15px #ff007f; border-color: #ff007f; }
-    50% { text-shadow: 0 0 15px #00f0ff, 0 0 30px #7000ff, 0 0 45px #ff007f; box-shadow: inset 0 0 20px #00f0ff, 0 0 20px #00f0ff; border-color: #00f0ff; }
-    100% { text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #00f0ff; box-shadow: inset 0 0 15px #ff007f, 0 0 15px #ff007f; border-color: #ff007f; }
+@keyframes neon-isik {
+    0% { 
+        text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 40px #00f0ff; 
+        box-shadow: 0 0 15px #ff007f, inset 0 0 15px #ff007f; 
+        border-color: #ff007f; 
+    }
+    50% { 
+        text-shadow: 0 0 20px #00f0ff, 0 0 40px #7000ff, 0 0 60px #ff007f; 
+        box-shadow: 0 0 25px #00f0ff, inset 0 0 25px #00f0ff; 
+        border-color: #00f0ff; 
+    }
+    100% { 
+        text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 40px #00f0ff; 
+        box-shadow: 0 0 15px #ff007f, inset 0 0 15px #ff007f; 
+        border-color: #ff007f; 
+    }
 }
-.sefag-kayan-yazi-konteyner {
-    background: transparent !important;
-    background-color: transparent !important;
-    border: 3px solid #ff007f !important; /* Boş çerçeve çizgisi */
-    border-radius: 50px !important;       /* Yuvarlak / Oval tasarım */
-    padding: 10px 20px !important;
-    margin: 15px 0;
-    overflow: hidden;
+@keyframes yildiz-parla {
+    0% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.7; }
+}
+.logo-merkezleyici {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     width: 100%;
-    box-sizing: border-box;
-    animation: neon-parlama 2s infinite alternate; /* Çerçevenin de parlamasını sağlar */
+    margin: 25px 0;
 }
-.sefag-text {
-    font-size: 2.8rem !important; 
+.bta-neon-yuvarlak-logo {
+    background: transparent !important;
+    border: 4px solid #ff007f !important;
+    border-radius: 50% !important; /* Kusursuz Yuvarlak Logo */
+    width: 180px !important;
+    height: 180px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    animation: neon-isik 2.5s infinite alternate;
+    position: relative;
+    box-sizing: border-box;
+}
+.logo-yildizlar {
+    font-size: 1.1rem !important;
+    color: #ffaa00 !important;
+    animation: yildiz-parla 1s infinite ease-in-out;
+    letter-spacing: 3px;
+    margin: 2px 0;
+}
+.logo-yazi {
+    font-size: 3.2rem !important;
     font-weight: bold !important;
-    font-family: 'Caveat', cursive, sans-serif !important; /* El yazısı tipi */
-    background: linear-gradient(90deg, #ff007f, #ffaa00, #00f0ff, #7000ff, #ff007f);
-    background-size: 200% auto;
+    font-family: 'Caveat', cursive, sans-serif !important; /* İstediğin El Yazısı */
+    background: linear-gradient(45deg, #ff007f, #ffaa00, #00f0ff);
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
-    animation: yazi-kaydir 10s linear infinite; 
-    white-space: nowrap;
-    display: inline-block;
-    padding-left: 100%;
-}
-@keyframes yazi-kaydir {
-    0% { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(-100%, 0, 0); }
+    line-height: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 </style>
-<div class="sefag-kayan-yazi-konteyner">
-    <div class="sefag-text">BTA Borsa Temel Analiz</div>
+<div class="logo-merkezleyici">
+    <div class="bta-neon-yuvarlak-logo">
+        <div class="logo-yildizlar">✦ ✦ ✦</div>
+        <div class="logo-yazi">BTA</div>
+        <div class="logo-yildizlar">✦ ✦ ✦</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 # 💥 FİYAT VE ALTIN MOTORLARI
 def hızlı_canli_fiyat_bul(hisse_kodu):
@@ -154,5 +187,3 @@ st.write("---")
 
 # 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
 st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
-arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
-
