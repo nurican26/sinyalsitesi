@@ -239,7 +239,7 @@ if os.path.exists(excel_yolu):
         tum_kodlar = []
         for idx, row in df_hisseler.iterrows():
             hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
-            if hisse_kodu and hisse_kodu != "None" and hisse_kodu not in tum_kodlar:
+            if hisse_kodu and hisse_kodu != "None" and hisse_kodu != "" and hisse_kodu not in tum_kodlar:
                 tum_kodlar.append(hisse_kodu)
         
         canli_fiyatlar = toplu_fiyat_cek(tum_kodlar)
@@ -249,7 +249,7 @@ if os.path.exists(excel_yolu):
             if hisse_kodu == "" or hisse_kodu == "None":
                 continue
                 
-            bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
+            bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) and str(row[1]).strip() != "" else 0
             al_sat_skoru = str(row[2]).strip() if pd.notna(row[2]) else "0"  # C SÜTUNU -> AL SAT SKORU
             al_sat = str(row[3]).strip() if pd.notna(row[3]) else "0"        # D SÜTUNU -> AL SAT
             bta_puani = str(row[4]).strip() if pd.notna(row[4]) else "0"     # E SÜTUNU -> BTA PUANI
@@ -260,6 +260,7 @@ if os.path.exists(excel_yolu):
                 canli_fiyat = bta_alimi
             
             satir_veri = {
+                "Hisse Kodu": hisse_kodu,
                 "BTA Hisse": bta_hisse_sutun,
                 "BTA Puanı": bta_puani,
                 "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
@@ -268,14 +269,10 @@ if os.path.exists(excel_yolu):
                 "Al Sat Skoru": al_sat_skoru
             }
             
-            if bta_hisse_sutun != "0" and bta_hisse_sutun != "":
+            # Filtreleri gevşetip Excel'de veri varsa listeye ekliyoruz
+            if bta_hisse_sutun != "0" and bta_hisse_sutun != "" and bta_hisse_sutun != "nan":
                 bta_listesi.append(satir_veri)
                 
-            if al_sat != "0" and al_sat != "":
+            if al_sat != "0" and al_sat != "" and al_sat != "nan":
                 alsat_listesi.append(satir_veri)
     except Exception as e:
-        st.error(f"Excel Okuma Hatası: {e}")
-else:
-    st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
-
-# Tabloları Ekrana Basma
