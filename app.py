@@ -76,8 +76,8 @@ def kilit_durumunu_degistir():
     with open(KILIT_DOSYASI, "w") as f:
         f.write(yeni_durum)
 
-# MEVCUT DURUMU AL
-oda_su an_kilitli = oda_kilitli_mi_kontrol_et()
+# MEVCUT DURUMU AL (Düzeltildi: Değişken adı standartlaştırıldı)
+oda_su_an_kilitli = oda_kilitli_mi_kontrol_et()
 
 # LOGO VE SPK UYARISI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA TRADING</div></div>', unsafe_allow_html=True)
@@ -95,7 +95,7 @@ st.markdown("""
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
 admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
 
-if oda_su an_kilitli:
+if oda_su_an_kilitli:
     st.sidebar.warning("🔒 Oda Şu An Kilitli")
 else:
     st.sidebar.info("🔓 Oda Şu An Herkese Açık")
@@ -105,7 +105,7 @@ if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.button("Odadaki Kilidi Değiştir", on_click=kilit_durumunu_degistir, use_container_width=True)
 
 # KİLİT KONTROLÜ (Ziyaretçiler yönetici değilse ve oda kilitliyse bloke et)
-if oda_su an_kilitli and admin_sifre != YONETICI_SIFRESI:
+if oda_su_an_kilitli and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -141,5 +141,3 @@ with sekme_arama:
                     grafik_verisi = hisse.history(period="1mo")
                     st.line_chart(grafik_verisi['Close'])
                 else:
-                    st.warning("Seçilen hisse için veri bulunamadı. Piyasa kapalı veya veri henüz yansımamış olabilir.")
-            except Exception as e:
