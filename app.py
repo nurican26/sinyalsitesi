@@ -8,19 +8,30 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Gökkuşağı Neon Animasyonlu BTA Logosu
+# CSS Tasarımı - Sürekli Sallanan, Bitişik Eğik Gökkuşağı BTA Logosu
 st.markdown("""
 <style>
     @import url('https://googleapis.com');
     
-    /* Gökkuşağı Renk Geçişli Neon Efekti */
+    /* Gökkuşağı Renk Değişim Animasyonu */
     @keyframes rainbowNeon {
-        0% { text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f, 0 0 10px #fff; }
-        25% { text-shadow: 0 0 15px #00f2fe, 0 0 30px #00f2fe, 0 0 10px #fff; }
-        50% { text-shadow: 0 0 15px #10b981, 0 0 30px #10b981, 0 0 10px #fff; }
-        75% { text-shadow: 0 0 15px #a855f7, 0 0 30px #a855f7, 0 0 10px #fff; }
-        100% { text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f, 0 0 10px #fff; }
+        0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
+        25% { color: #00f2fe !important; text-shadow: 0 0 15px #00f2fe, 0 0 30px #00f2fe; }
+        50% { color: #10b981 !important; text-shadow: 0 0 15px #10b981, 0 0 30px #10b981; }
+        75% { color: #a855f7 !important; text-shadow: 0 0 15px #a855f7, 0 0 30px #a855f7; }
+        100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
     }
+
+    /* Sürekli Sallanma/Titreme Animasyonu */
+    @keyframes shakeLogo {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        20% { transform: translate(-1px, 1px) rotate(-0.5deg); }
+        40% { transform: translate(1px, -1px) rotate(0.5deg); }
+        60% { transform: translate(-1px, -1px) rotate(-0.5deg); }
+        80% { transform: translate(1px, 1px) rotate(0.5deg); }
+        100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
         padding: 0.5rem;
@@ -64,18 +75,19 @@ st.markdown("""
         margin-bottom: 35px;
         width: 100%;
     } 
-    /* DÜZELTİLMİŞ HARF ARALIĞI VE GÖKKUŞAĞI NEON LOGO */
+    /* EĞİK, BİTİŞİK VE HAREKETLİ SALLANAN BTA LOGOSU */
     .bta-logo {
         background: transparent; 
-        color: #ffffff !important; 
         font-family: 'Alex Brush', cursive !important; 
+        font-style: italic !important; /* Eğik yazı */
         font-weight: normal; 
-        font-size: 7rem; 
+        font-size: 7.5rem; 
         padding: 0px; 
-        letter-spacing: 4px; /* Harf aralığı normale çekildi */
-        animation: rainbowNeon 5s infinite linear; /* Yumuşak gökkuşağı geçişi */
+        letter-spacing: 0px; /* Bitişik durması için ayarlandı */
+        display: inline-block;
+        animation: rainbowNeon 6s infinite linear, shakeLogo 0.4s infinite ease-in-out; /* Hem renk değişimi hem sallanma */
         text-align: center;
-        width: 100%;
+        width: auto;
     } 
     .kilit-uyari {
         background: rgba(255, 255, 255, 0.05); 
@@ -114,7 +126,7 @@ if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] 
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# BTA ORTALANMIŞ EL YAZILI IŞIKLI LOGO ALANI
+# BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ
@@ -221,6 +233,3 @@ else:
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
             cfiy = hızlı_canli_fiyat_bul(hisse)
             if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-        if tk_list:
-            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
