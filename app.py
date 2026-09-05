@@ -208,16 +208,13 @@ def canli_fiyatlari_toplu_getir(kod_listesi):
     try:
         istek_kodlari = [f"{str(k).strip()}.IS" for k in kod_listesi if pd.notna(k) and str(k).strip() != ""]
         data = yf.download(tickers=istek_kodlari, period="1d", progress=False)
-        
         fiyat_haritasi = {}
-        if len(istek_kodlari) == 1:
-            temiz_kod = istek_kodlari[0].replace(".IS", "")
-            fiyat_haritasi[temiz_kod] = data["Close"].iloc[-1]
-        else:
-            for kod in istek_kodlari:
-                temiz_kod = kod.replace(".IS", "")
-                if kod in data["Close"]:
-                    fiyat_haritasi[temiz_kod] = data["Close"][kod].iloc[-1]
+        for kod in istek_kodlari:
+            temiz_kod = kod.replace(".IS", "")
+            if len(istek_kodlari) == 1:
+                fiyat_haritasi[temiz_kod] = data["Close"].iloc[-1]
+            elif kod in data["Close"]:
+                fiyat_haritasi[temiz_kod] = data["Close"][kod].iloc[-1]
         return fiyat_haritasi
     except:
         return {}
@@ -225,7 +222,8 @@ def canli_fiyatlari_toplu_getir(kod_listesi):
 if os.path.exists(excel_yolu):
     try:
         # Excel'i doğrudan yükle ve kolonları isimlendir
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", skiprows=2, header=None)
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
+        df = df.iloc[2:].copy()
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
         # Kod sütunlarındaki boşlukları temizle
@@ -233,27 +231,37 @@ if os.path.exists(excel_yolu):
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
         
-        # None ve NaN değerleri tablolarda temiz dursun diye boş stringe veya sıfıra çevir
         df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
         df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
         
-        # Canlı Fiyatları Doğru Hisse Eşleşmesiyle Çek (Kayma Engellendi)
+        # Canlı Fiyatları Doğru Hisse Eşleşmesiyle Çek
         benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
         fiyat_haritasi = canli_fiyatlari_toplu_getir(benzersiz_kodlar)
         
-        # BTA Tablosu için Fiyatları Tanımla (BTA Hisse adına göre eşleşir)
-        df["BTA_Canli"] = df["BTA Hisse"].map(fiyat_haritasi).fillna(df["BTA Alımı"])
-        # Al Sat Tablosu için Fiyatları Tanımla (Al Sat adına göre eşleşir)
-        df["AlSat_Canli"] = df["Al Sat"].map(fiyat_haritasi).fillna(df["BTA Alımı"])
+        # Sayısal değer dönüşümleri ve temizliği
+        df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
+        df["BTA_Canli_Sayisal"] = df["BTA Hisse"].map(fiyat_haritasi).fillna(df["BTA Alımı Sayisal"])
+        df["AlSat_Canli_Sayisal"] = df["Al Sat"].map(fiyat_haritasi).fillna(df["BTA Alımı Sayisal"])
         
-        # Fiyat biçimlendirmeleri
-        df["BTA Alım Fiyatı"] = df["BTA Alımı"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').replace(',','').isdigit() else "0.00 TL")
-        df["BTA Canlı Fiyat"] = df["BTA_Canli"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').replace(',','').isdigit() else "0.00 TL")
-        df["AlSat Canlı Fiyat"] = df["AlSat_Canli"].apply(lambda x: f"{float(x):,.2f} TL" if pd.notna(x) and str(x).replace('.','').replace(',','').isdigit() else "0.00 TL")
+        # BTA Hisseleri İçin Kar / Zarar Durumu Hesaplama
+        def kar_zarar_hesapla(row_data):
+            alim = row_data["BTA Alımı Sayisal"]
+            canli = row_data["BTA_Canli_Sayisal"]
+            if alim <= 0 or canli <= 0:
+                return "0.00 %"
+            oran = ((canli - alim) / alim) * 100
+            if oran > 0:
+                return f"▲ %{oran:.2f}"
+            elif oran < 0:
+                return f"▼ %{abs(oran):.2f}"
+            return "%0.00"
+            
+        df["Kar / Zarar"] = df.apply(kar_zarar_hesapla, axis=1)
+        
+        # Metinsel gösterim formatları
+        df["BTA Alım Fiyatı"] = df["BTA Alımı Sayisal"].apply(lambda x: f"{x:,.2f} TL" if x > 0 else "0.00 TL")
+        df["BTA Canlı Fiyat"] = df["BTA_Canli_Sayisal"].apply(lambda x: f"{x:,.2f} TL" if x > 0 else "0.00 TL")
+        df["AlSat Canlı Fiyat"] = df["AlSat_Canli_Sayisal"].apply(lambda x: f"{x:,.2f} TL" if x > 0 else "0.00 TL")
 
         # TABLO 1: BTA Model Hisseleri (F Sütunu Dolu Olanlar)
         st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
-        bta_filtrlenmis = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "nan")]
-        if not bta_filtrlenmis.empty:
-            st.dataframe(bta_filtrlenmis[["BTA Hisse", "BTA Puanı", "BTA Alım Fiyatı", "BTA Canlı Fiyat"]].rename(columns={"BTA Canlı Fiyat": "Anlık Canlı Fiyat"}), use_container_width=True, hide_index=True)
-        else:
