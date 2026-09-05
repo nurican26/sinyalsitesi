@@ -31,7 +31,7 @@ st.markdown("""
         padding-top: 1rem; 
         padding-bottom: 0.5rem;
     } 
-    /* Şenlendirilmiş Neon Başlıklar */
+    /* Geliştirilmiş Neon Başlıklar */
     .alsat-baslik {
         background: linear-gradient(90deg, #ff007f 0%, #12131c 100%); 
         padding: 12px; 
@@ -165,7 +165,7 @@ else:
     if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
 
 st.sidebar.divider()
-st.sidebar.info("Bu menü oda kilit ayarları için tasarlanmıştır.")
+st.sidebar.info("Bu menu oda kilit ayarlari için tasarlanmistir.")
 
 # --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
 
@@ -179,7 +179,7 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     with col2: st.metric(label="🔥 Toplam Oy", value=st.session_state["topham_oy_sayisi"])
     with col3: st.metric(label="⭐ Panel Puanı", value=f"{puan:.2f} / 5")
 
-# 2. DURUM: ODA AÇIKSA (ASIL ŞENLENDİRİLMİŞ İÇERİK)
+# 2. DURUM: ODA AÇIKSA (ASIL İÇERİK MOTORU)
 else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
@@ -189,11 +189,11 @@ else:
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     st.markdown(f'<div style="font-size: 0.95rem; color: #a5b4fc; margin-bottom: 20px; font-weight:bold;">⭐ Puan: {puan:.2f} | 🔥 Toplam Oy: {st.session_state["topham_oy_sayisi"]} | 🚪 Ziyaretçi: {st.session_state["ziyaret_sayaci"]} | 🕒 {guncel_an}</div>', unsafe_allow_html=True)
 
-    # --- 🌌 CANLI PİYASA METRİKLERİ (YENİ EKSTRA ŞENLİK) ---
+    # Canlı Piyasa Metrikleri
     try:
         bist = yf.Ticker("XU100.IS").history(period="1d")['Close'].iloc[-1]
         usd = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
-        gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1] * 0.0321507466 / 3.42 # Yaklaşık Gram dönüşümü
+        gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1] * 0.0321507466 / 3.42
         
         m_col1, m_col2, m_col3 = st.columns(3)
         with m_col1:
@@ -201,7 +201,7 @@ else:
         with m_col2:
             st.markdown(f'<div class="piyasa-kart"><span style="color:#ca8a04;font-weight:bold;">💵 DOLAR / TL</span><h2 style="color:#fff;margin:5px 0;">{usd:.4f} TL</h2></div>', unsafe_allow_html=True)
         with m_col3:
-            st.markdown(f'<div class="piyasa-kart"><span style="color:#ff007f;font-weight:bold;">✨ GRAM ALTIN (ONS T.)</span><h2 style="color:#fff;margin:5px 0;">{gold:,.2f} TL</h2></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="piyasa-kart"><span style="color:#ff007f;font-weight:bold;">✨ GRAM ALTIN</span><h2 style="color:#fff;margin:5px 0;">{gold:,.2f} TL</h2></div>', unsafe_allow_html=True)
     except:
         pass
 
@@ -251,3 +251,4 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
+                            hisse = str(hisse_ara[0])
