@@ -90,7 +90,7 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.stop()
 
 # =========================================================================
-# GÜVENLİ ETKİLEŞİM SEKMELERİ (WITH BLOKLARI KALDIRILDI - %100 SABİT YAPI)
+# GÜVENLİ ETKİLEŞİM SEKMELERİ (%100 SABİT VE DOĞRUSAL YAPI)
 # =========================================================================
 sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 TÜM BIST ARAMA MOTORU", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
 
@@ -102,11 +102,12 @@ bist_all = [
 # 1. SEKME İÇERİĞİ: ARAMA MOTORU
 arama_girdisi = sekme_arama.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", "").strip().upper()
 if arama_girdisi in bist_all:
-    h_data = yf.ticker.Ticker(f"{arama_girdisi}.IS").fast_info
-    if "last_price" in h_data:
+    try:
+        h_data = yf.Ticker(f"{arama_girdisi}.IS").fast_info
+        c_price = float(h_data['last_price'])
         sekme_arama.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
-        sekme_arama.metric(label="Anlık Canlı Fiyat (TL)", value=f"{h_data['last_price']:,.2f} TL")
-    else:
+        sekme_arama.metric(label="Anlık Canlı Fiyat (TL)", value=f"{c_price:,.2f} TL")
+    except:
         sekme_arama.error("Fiyat sunucudan çekilemedi.")
 elif arama_girdisi:
     benzerler = [h for h in bist_all if arama_girdisi in h]
@@ -114,10 +115,10 @@ elif arama_girdisi:
 
 # 2. SEKME İÇERİĞİ: GÜVENLİ CANLI ALTIN
 altin_turleri = ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"]
-altin_fiyatlari = ["3.020.50", "4.935.00", "9.870.00", "19.740.00"] # Çökme önleyici taban fiyat
+altin_fiyatlari = ["3.020.50", "4.935.00", "9.870.00", "19.740.00"]
 try:
-    ons_price = yf.ticker.Ticker("GC=F").fast_info['last_price']
-    usd_price = yf.ticker.Ticker("TRY=X").fast_info['last_price']
+    ons_price = yf.Ticker("GC=F").fast_info['last_price']
+    usd_price = yf.Ticker("TRY=X").fast_info['last_price']
     if ons_price > 0 and usd_price > 0:
         g_altin = (ons_price / 31.1034768) * usd_price
         altin_fiyatlari = [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
@@ -128,7 +129,8 @@ df_altin_temiz["Altın Türü 🪙"] = altin_turleri
 df_altin_temiz["Fiyat (TL) 💰"] = altin_fiyatlari
 sekme_altin.table(df_altin_temiz)
 
-# 3. SEKME İÇERİĞİ: SOHBET ALANI
+# 3. SEKME İÇERİĞİ: SOHBET ALANI GÖVDESİ (HATA PAYI SIFIR DOĞRUSAL ATAMA)
 sohbet_isim = sekme_sohbet.text_input("Kullanıcı Adınız:", value="Yatırımcı")
 sohbet_mesaj = sekme_sohbet.text_input("Mesaj içeriği:", placeholder="Not ekleyin...")
-if sekme_sohbet.button("✉️ Mesajı İlet") and sohbet_mesaj.strip():
+if sekme_sohbet.button("✉️ Mesajı İlet"):
+    if sohbet_mesaj.strip():
