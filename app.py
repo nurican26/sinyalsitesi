@@ -98,7 +98,7 @@ st.markdown("""
     }
 </style>
 
-<!-- Dönen Yıldızlı ve Kayan Efektli BTA Başlığı -->
+<!-- Dönen Yıldızlı BTA Başlığı -->
 <div class="bta-cerceve-alani">
     <div class="bta-neon-box">
         <span class="yildiz-sol">★</span>
@@ -231,7 +231,7 @@ with sag_kolon:
             except:
                 st.error("Veri çekme hatası.")
 
-# 3. YASAL UYARI METNİ
+# 3. YASAL UYARI METNİ (Kapatılmayan Tırnak Hatası Giderildi!)
 st.markdown("""
 <div class="yasal-uyari-kutusu">
     <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
