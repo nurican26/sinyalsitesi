@@ -15,10 +15,7 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# LOGO
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
-
-# 🌟 PANEL KALDIRILMIŞ, SEFAG IŞIKLI, GÖLGELİ, RENKLİ CAVCAVLI KAYAN YAZI
+# SADECE "BTA" YAZAN PANEL KALDIRILMIŞ, SEFAG IŞIKLI, GÖLGELİ, RENKLİ CAVCAVLI KAYAN YAZI
 st.markdown("""
 <style>
 @keyframes neon-parlama {
@@ -36,14 +33,14 @@ st.markdown("""
     width: 100%;
 }
 .sefag-text {
-    font-size: 2.5rem !important;
+    font-size: 3.5rem !important; /* Yazı boyutu büyütüldü */
     font-weight: 900 !important;
     font-family: 'Arial Black', sans-serif !important;
     background: linear-gradient(90deg, #ff007f, #ffaa00, #00f0ff, #7000ff, #ff007f);
     background-size: 200% auto;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
-    animation: neon-parlama 2s infinite alternate, yazi-kaydir 12s linear infinite;
+    animation: neon-parlama 2s infinite alternate, yazi-kaydir 8s linear infinite; /* Hız biraz artırıldı */
     white-space: nowrap;
     display: inline-block;
     padding-left: 100%;
@@ -54,7 +51,7 @@ st.markdown("""
 }
 </style>
 <div class="sefag-kayan-yazi-konteyner">
-    <div class="sefag-text">✨ BTA GÖLGELİ REKLİ CAVCAVLI SİNYAL MERKEZİ 🚀 BTA GÖLGELİ REKLİ CAVCAVLI SİNYAL MERKEZİ ✨</div>
+    <div class="sefag-text">BTA</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -120,19 +117,19 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara[0]).strip()
+                        hisse = str(h_ara).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        bta_puan = p_bul if p_bul else t_deg
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                         tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
