@@ -74,7 +74,6 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.02);
         border-radius: 8px;
     } 
-    /* EL YAZILI, BİTİŞİK VE SAĞDAN SOLA YAVAŞÇA KAYAN GÖKKUŞAĞI BTA YAZISI */
     .bta-logo {
         display: inline-block;
         font-family: 'Alex Brush', cursive !important; 
@@ -169,6 +168,13 @@ else:
         if pd.isna(val): return ""
         return str(val).strip().upper()
 
+    # 🎯 %100 ETKİLİ METİN VE PARANTEZ TEMİZLEME MODÜLÜ
+    def listeyi_sadece_hisse_yap(ham_metin):
+        # Köşeli parantezleri, tırnakları, AL ve SAT kelimelerini tamamen imha eder
+        ad = str(ham_metin).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "")
+        ad = ad.replace(",AL", "").replace(",SAT", "").replace(",_SAT", "").replace(",_AL", "")
+        return ad.strip()
+
     tablo_alsat = []
     tablo_al = []
 
@@ -183,22 +189,26 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara).strip()
-                            canli_fiyat = hızlı_canli_fiyat_bul(hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                            # 🎯 Yeni filtre motorunu devreye alıyoruz
+                            temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
+                            if temiz_isim:
+                                canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
+                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                                bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                                tablo_alsat.append({"Hisse Kodu 📈": temiz_isim, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara).strip()
-                            canli_fiyat = hızlı_canli_fiyat_bul(hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
-                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                            # 🎯 Yeni filtre motorunu devreye alıyoruz
+                            temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
+                            if temiz_isim:
+                                canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
+                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                                bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                                if temiz_isim not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                                    st.session_state["ozel_takip_kutusu"][temiz_isim] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
+                                tablo_al.append({"Hisse Kodu 🚀": temiz_isim, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
             except:
                 pass
 
@@ -216,6 +226,3 @@ else:
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
             cfiy = hızlı_canli_fiyat_bul(hisse)
             if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-        if tk_list:
-            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
