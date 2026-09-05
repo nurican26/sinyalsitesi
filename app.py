@@ -246,24 +246,27 @@ else:
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
-        # Excel dosyasını BTA sayfasından ham veri olarak yükle
-        raw_df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
+        # Excel dosyasını 'WEB' sayfasından ham veri olarak yükle
+        raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
         
         # İlk 2 satırı (Başlıkları) atlayıp kolonları kilitliyoruz
         df = raw_df.iloc[2:].copy()
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Sütunlardaki tüm string tip dönüşümlerini güvenli yap
-        df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
-        df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
-        df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
+        # Sütunlardaki tüm string tip dönüşümlerini güvenli yap ve temizle
+        df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip().str.upper()
+        df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
+        df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
+        
+        # Düşeyara hatalarını veya formül boşluklarını temizleme filtresi
+        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"] != "") & (df["Hisse Kodu"] != "0") & (df["Hisse Kodu"] != "NAN") & (df["Hisse Kodu"] != "NONE")]
         
         df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
         df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
         
         # Canlı Fiyatları Tek İstekte Çek
         benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
-        istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and k != "nan" and k != "None" and len(str(k)) <= 6]
+        istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
         
         try:
             canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
@@ -273,8 +276,3 @@ else:
                 fiyat_sozluk = {col.replace(".IS", ""): canli_data[col].iloc[-1] for col in canli_data.columns}
         except:
             fiyat_sozluk = {}
-            
-        # Sayısal Alım Fiyatını Çevir
-        df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
-        
-        # Fiyat Haritalamalarını Kayma Olmadan Eşleştir
