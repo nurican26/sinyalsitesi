@@ -8,9 +8,26 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Sitenin Görsel Kimliği
+# CSS Tasarımı - Sağdan Sola Yavaşça Akan El Yazılı Gökkuşağı Neon BTA Logosu
 st.markdown("""
 <style>
+    @import url('https://googleapis.com');
+
+    /* Gökkuşağı Renk Değişim Animasyonu */
+    @keyframes rainbowNeon {
+        0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
+        25% { color: #00f2fe !important; text-shadow: 0 0 15px #00f2fe, 0 0 30px #00f2fe; }
+        50% { color: #10b981 !important; text-shadow: 0 0 15px #10b981, 0 0 30px #10b981; }
+        75% { color: #a855f7 !important; text-shadow: 0 0 15px #a855f7, 0 0 30px #a855f7; }
+        100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
+    }
+
+    /* Sağdan Sola Yavaş Kayma Animasyonu */
+    @keyframes marquee {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+    }
+
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
         padding: 0.5rem;
@@ -46,47 +63,74 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
+    /* Yavaşça Kayan Logo Konteyneri */
+    .bta-logo-konteyner {
+        width: 100%;
+        overflow: hidden; 
+        white-space: nowrap;
+        margin-top: 10px; 
+        margin-bottom: 25px;
+        padding: 10px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+    } 
+    /* EL YAZILI, BİTİŞİK VE SAĞDAN SOLA YAVAŞÇA KAYAN GÖKKUŞAĞI BTA YAZISI */
+    .bta-logo {
+        display: inline-block;
+        font-family: 'Alex Brush', cursive !important; 
+        font-style: italic !important;
+        font-weight: normal !important; 
+        font-size: 6rem; 
+        letter-spacing: 0px; 
+        padding-left: 100%; 
+        animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; 
+    } 
+    .kilit-uyari {
+        background: rgba(255, 255, 255, 0.05); 
+        border-left: 4px solid #ca8a04; 
+        padding: 15px; 
+        border-radius: 6px; 
+        margin-bottom: 20px; 
+        font-size: 1.1rem;
+    } 
     div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
         font-size: 1.25rem !important; 
         font-weight: bold !important; 
         color: #ffffff !important;
     } 
-    .piyasa-kutusu {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #3b82f6;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-    .spk-kutusu {
-        background: rgba(231, 76, 60, 0.1);
-        border-left: 5px solid #e74c3c;
-        padding: 15px;
-        border-radius: 6px;
-        margin-top: 30px;
-        font-size: 0.85rem;
-        color: #cccccc !important;
+    div.stButton > button {
+        background-color: transparent; 
+        color: #45f3ff; 
+        border: 2px solid #45f3ff; 
+        box-shadow: 0 0 10px #45f3ff; 
+        border-radius: 8px; 
+        transition: 0.3s;
+    } 
+    div.stButton > button:hover {
+        background-color: #45f3ff; 
+        color: #111; 
+        box-shadow: 0 0 20px #45f3ff;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # 🔑 PARAMETRELER
-YONETICI_SIFRESI = "3015"
+YONETICI_SIFRESI = "bta2026"
 
 # Hafıza Kontrolleri
 if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] = False
+if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
-if "sohbet_gecmisi" not in st.session_state: st.session_state["sohbet_gecmisi"] = []
 
-st.title("📈 BTA SİNYAL MERKEZİ")
+# BTA LOGO ALANI
+st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# --- 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ ---
+# 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
 admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için girin...")
 
 if admin_sifre == YONETICI_SIFRESI:
-    st.sidebar.success("⚡ Yatırım Yetkisi Aktif")
+    st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
     if st.session_state["oda_kilitli_mi"]:
         st.sidebar.error("🔴 Şu an: ODA KİLİTLİ")
         if st.sidebar.button("🔓 Odayı Herkese Aç", use_container_width=True):
@@ -97,24 +141,15 @@ if admin_sifre == YONETICI_SIFRESI:
         if st.sidebar.button("🔒 Odayı Herkese Kilitle", use_container_width=True):
             st.session_state["oda_kilitli_mi"] = True
             st.rerun()
+else:
+    if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
 
 # --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div class="kilit-uyari">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Analiz robotları ve sistem verileri şu an güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
 else:
-    # --- 📊 CANLI PİYASA TAKİP ALANI ---
-    st.markdown("### 📊 Canlı Piyasa Takip Ekranı")
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.markdown('<div class="piyasa-kutusu"><h4>📉 BIST 100</h4><h2>14.012,42</h2><p style="color:#2ecc71!important; margin:0;">+%0.57</p></div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="piyasa-kutusu"><h4>🟡 Gram Altın</h4><h2>6.857 TL</h2><p style="color:#e74c3c!important; margin:0;">-%1.30</p></div>', unsafe_allow_html=True)
-    with col3:
-        st.markdown('<div class="piyasa-kutusu"><h4>🪙 Çeyrek Altın</h4><h2>11.246 TL</h2><p style="color:#e74c3c!important; margin:0;">-%0.74</p></div>', unsafe_allow_html=True)
-    with col4:
-        st.markdown('<div class="piyasa-kutusu"><h4>🥈 Yarım Altın</h4><h2>22.492 TL</h2><p style="color:#e74c3c!important; margin:0;">-%0.74</p></div>', unsafe_allow_html=True)
-    with col5:
-        st.markdown('<div class="piyasa-kutusu"><h4>👑 Tam Altın</h4><h2>44.984 TL</h2><p style="color:#e74c3c!important; margin:0;">-%0.74</p></div>', unsafe_allow_html=True)
+    if st.session_state["oda_kilitli_mi"]:
+        st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
     # Excel Okuma
     df_kaynak = None
@@ -124,6 +159,8 @@ else:
             df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except Exception as e:
             st.error(f"Excel okuma hatası: {e}")
+    else:
+        st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
@@ -145,10 +182,15 @@ else:
         if pd.isna(val): return ""
         return str(val).strip().upper()
 
-    def listeyi_sadece_hisse_yap(ham_metin):
-        ad = str(ham_metin).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "")
-        ad = ad.replace(",AL", "").replace(",SAT", "").replace(",_SAT", "").replace(",_AL", "")
-        return ad.strip()
+    # 🎯 %100 SAF HİSSE KODU AYIRICI GÜVENLİ MOTOR
+    def saf_hisse_kodu_bul(metin):
+        # Hücredeki tüm parantez, tırnak, AL, SAT kelimelerini uçurur, sadece saf kelimeleri bulur
+        kelimeler = re.findall(r'[A-Z]+', str(metin))
+        for kelime in kelimeler:
+            # AL, SAT, NAN, NONE gibi borsa sinyal kelimelerini eler, geriye kalan İLK kelimeyi hisse kodu seçer
+            if kelime not in ["AL", "SAT", "NAN", "NONE", "SİNYALİ", "SİNYAL"]:
+                return kelime
+        return ""
 
     tablo_alsat = []
     tablo_al = []
@@ -161,62 +203,35 @@ else:
                     wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
                     t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
                     
+                    # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
-                        if hisse_ara:
-                            temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
-                            if temiz_isim:
-                                canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
-                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                                bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                                tablo_alsat.append({"Hisse Kodu 📈": temiz_isim, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                        temiz_hisse = saf_hisse_kodu_bul(uv_degeri)
+                        if temiz_hisse:
+                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
+                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            tablo_alsat.append({"Hisse Kodu 📈": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
+                    # 🟢 BTA SİNYAL MERKEZİ ANALİZİ
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                        hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
-                        if hisse_ara:
-                            temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
-                            if temiz_isim:
-                                canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
-                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                                bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                                tablo_al.append({"Hisse Kodu 📈": temiz_isim, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-            except Exception as e:
+                        temiz_hisse = saf_hisse_kodu_bul(wv_degeri)
+                        if temiz_hisse:
+                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
+                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                            if temiz_hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                                st.session_state["ozel_takip_kutusu"][temiz_hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
+                            tablo_al.append({"Hisse Kodu 🚀": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+            except:
                 pass
 
-        # --- 🔍 HAFIZADA SABİT DURAN ARAMA MOTORU ---
-        st.markdown("### 🔍 BTA Gelişmiş Hisse Tarama Motoru")
-        arama_kutusu = st.text_input("Aramak istediğiniz hisse kodunu yazın:", placeholder="Örn: SONME, THYAO...", key="ana_hisse_arama_motoru").upper().strip()
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif sinyal taranıyor...")
 
-        df_alsat_son = pd.DataFrame(tablo_alsat)
-        df_al_son = pd.DataFrame(tablo_al)
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif sinyal taranıyor...")
 
-        if arama_kutusu:
-            if not df_alsat_son.empty:
-                df_alsat_son = df_alsat_son[df_alsat_son["Hisse Kodu 📈"].str.contains(arama_kutusu, na=False)]
-            if not df_al_son.empty:
-                df_al_son = df_al_son[df_al_son["Hisse Kodu 📈"].str.contains(arama_kutusu, na=False)]
-
-        # --- 🖥️ TABLOLARIN GÖSTERİMİ ---
-        st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-        if not df_alsat_son.empty:
-            st.dataframe(df_alsat_son, use_container_width=True, hide_index=True)
-        else:
-            st.info("Dönemsel sinyal listesi yükleniyor...")
-
-        st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-        if not df_al_son.empty:
-            st.dataframe(df_al_son, use_container_width=True, hide_index=True)
-        else:
-            st.info("BTA sinyal listesi yükleniyor...")
-
-        # --- 💬 CANLI SOHBET ALANI ---
-        st.markdown("### 💬 BTA Canlı Sohbet & Analiz Alanı")
-        for msj in st.session_state["sohbet_gecmisi"]:
-            st.write(f"💬 **{msj['kisi']}:** {msj['metin']}")
-            
-        with st.form("sohbet_formu_kutusu", clear_on_submit=True):
-            kullanici_adi = st.text_input("Adınız / Takma Adınız:", placeholder="Ziyaretçi...", key="sohbet_nick")
-            mesaj_metni = st.text_area("Mesajınız veya Hisse Sorunuz:", key="sohbet_text")
-            gonder_butonu = st.form_submit_button("Mesaj Gönder 🚀")
-            
-            if gonder_butonu and mesaj_metni:
+    if st.session_state["ozel_takip_kutusu"]:
+        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
