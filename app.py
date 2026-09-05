@@ -33,13 +33,13 @@ for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
 # Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
-st.session_state["ziyaret_sayaci"] += 1
+st.session_state["ziyaret_sayaci"] += 102
 
 # BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 🔐 GİRİŞ KUTUSU
-st.markdown("### 🔐 Erişim Paneli")
+st.markdown("### 🔐 Erişim Paneli şifre girin enter tuşlayın")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
 # 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
@@ -53,7 +53,7 @@ if is_admin:
     if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
         st.rerun()
-    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
+    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (kilile)"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
 
