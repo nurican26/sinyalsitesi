@@ -8,7 +8,105 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} div.stButton > button {background-color: transparent; color: #45f3ff; border: 2px solid #45f3ff; box-shadow: 0 0 10px #45f3ff; border-radius: 8px; transition: 0.3s;} div.stButton > button:hover {background-color: #45f3ff; color: #111; box-shadow: 0 0 20px #45f3ff;}</style>', unsafe_allow_html=True)
+# CSS Tasarımı - BTA Yazısı İçin Parlayan Animasyon Eklendi
+st.markdown("""
+<style>
+    @keyframes neonPulse {
+        0% { text-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 30px #10b981; }
+        50% { text-shadow: 0 0 20px #059669, 0 0 40px #059669, 0 0 60px #059669; }
+        100% { text-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 30px #10b981; }
+    }
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
+        padding: 0.5rem;
+    } 
+    h1,h2,h3,h4,h5,h6,p,span,label {
+        color: #fff!important; 
+        font-family: "Segoe UI", sans-serif;
+    } 
+    input {
+        color: #000!important; 
+        background-color: #fff!important;
+    } 
+    .stDataFrame {
+        width: 100% !important; 
+        border: 1px solid #10b981 !important; 
+        border-radius: 8px;
+    } 
+    div.block-container {
+        padding-top: 1rem; 
+        padding-bottom: 0.5rem;
+    } 
+    .alsat-baslik {
+        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px;
+    } 
+    .al-baslik {
+        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px;
+    } 
+    .spk-kutusu {
+        background-color: rgba(220, 38, 38, 0.1); 
+        border: 1px solid #dc2626; 
+        padding: 8px; 
+        border-radius: 6px; 
+        margin-top: 15px; 
+        margin-bottom: 10px; 
+        color: #fca5a5 !important; 
+        font-size: 0.8rem; 
+        text-align: justify;
+    } 
+    .bta-logo-konteyner {
+        display: flex; 
+        align-items: center; 
+        margin-top: 15px; 
+        margin-bottom: 25px;
+    } 
+    /* Yenilenen Göz Alıcı BTA Yazı Stili */
+    .bta-logo {
+        background: transparent; 
+        color: #10b981 !important; 
+        font-family: "Segoe UI", sans-serif !important; 
+        font-weight: 900; 
+        font-size: 3.5rem; 
+        padding: 0px 10px; 
+        letter-spacing: 6px;
+        animation: neonPulse 2s infinite ease-in-out;
+    } 
+    .kilit-uyari {
+        background: rgba(255, 255, 255, 0.05); 
+        border-left: 4px solid #ca8a04; 
+        padding: 15px; 
+        border-radius: 6px; 
+        margin-bottom: 20px; 
+        font-size: 1.1rem;
+    } 
+    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
+        font-size: 1.25rem !important; 
+        font-weight: bold !important; 
+        color: #ffffff !important;
+    } 
+    div.stButton > button {
+        background-color: transparent; 
+        color: #45f3ff; 
+        border: 2px solid #45f3ff; 
+        box-shadow: 0 0 10px #45f3ff; 
+        border-radius: 8px; 
+        transition: 0.3s;
+    } 
+    div.stButton > button:hover {
+        background-color: #45f3ff; 
+        color: #111; 
+        box-shadow: 0 0 20px #45f3ff;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
@@ -41,7 +139,6 @@ else:
     if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
 
 # --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
-
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div class="kilit-uyari">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Analiz robotları ve sistem verileri şu an güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
 else:
@@ -93,7 +190,7 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]).strip() # Köşeli parantezi uçuran ve hisseyi net getiren formül
+                            hisse = str(hisse_ara).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -102,7 +199,7 @@ else:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]).strip() # Köşeli parantezi uçuran ve hisseyi net getiren formül
+                            hisse = str(hisse_ara).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
