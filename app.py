@@ -165,7 +165,7 @@ if admin_sifre == YONETICI_SIFRESI:
             st.session_state["oda_kilitli_mi"] = True
             st.rerun()
 else:
-    if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
+    if admin_sifre: st.sidebar.error("Hatalı Yatırım Şifresi!")
 
 st.sidebar.divider()
 st.sidebar.info("Bu menu oda kilit ayarlari için tasarlanmistir.")
@@ -222,15 +222,17 @@ else:
         st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     def hızlı_canli_fiyat_bul(hisse_kodu):
-        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        # Yfinance için gelen ham string yapısındaki parantezleri ve tırnakları temizliyoruz
+        temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').strip()
+        if temiz_kod in st.session_state["fiyat_hafizasi"]:
+            saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
             if time.time() - saved_time < 300: return saved_price
         try:
-            ticker = yf.Ticker(f"{hisse_kodu}.IS")
+            ticker = yf.Ticker(f"{temiz_kod}.IS")
             data = ticker.history(period="1d")
             if not data.empty and not pd.isna(data['Close'].iloc[-1]):
                 fiyat = float(data['Close'].iloc[-1])
-                st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+                st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
                 return fiyat
         except: pass
         return 0.0
@@ -243,11 +245,7 @@ else:
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # GÜVENLİ VERİ TARAMA MOTORU
+    # ORİJİNAL ÇALIŞAN VERİ MOTORUNA GERİ DÖNÜŞ (GÜVENLİ MODEL)
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
-            if len(df_kaynak.columns) <= 22:
-                continue
-                
-            uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-            wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+            try:
