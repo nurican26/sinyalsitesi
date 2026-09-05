@@ -253,26 +253,25 @@ else:
         df = raw_df.iloc[2:].copy()
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Sütunlardaki tüm string tip dönüşümlerini güvenli yap ve temizle
+        # Sütunlardaki string temizliklerini yapıyoruz
         df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip().str.upper()
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # Düşeyara hatalarını veya formül boşluklarını temizleme filtresi
-        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"] != "") & (df["Hisse Kodu"] != "0") & (df["Hisse Kodu"] != "NAN") & (df["Hisse Kodu"] != "NONE")]
+        # 🎯 KESİN FİLTRE: "BTA Hisse" (F sütunu) hücresi boşsa, nan, 0 veya None ise satırı kökten sil!
+        df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
         
-        df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
-        df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
-        
-        # Canlı Fiyatları Tek İstekte Çek
-        benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
-        istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
-        
-        try:
-            canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
-            if len(istek_kodlari) == 1:
-                fiyat_sozluk = {istek_kodlari[0].replace(".IS", ""): canli_data.iloc[-1]}
-            else:
-                fiyat_sozluk = {col.replace(".IS", ""): canli_data[col].iloc[-1] for col in canli_data.columns}
-        except:
-            fiyat_sozluk = {}
+        # Eğer bu filtreden sonra hala veri kaldıysa işlemleri yürüt
+        if not df.empty:
+            df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
+            df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
+            
+            # Canlı Fiyatları Tek İstekte Çek
+            benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
+            istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
+            
+            try:
+                canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
+                if len(istek_kodlari) == 1:
+                    fiyat_sozluk = {istek_kodlari.replace(".IS", ""): canli_data.iloc[-1]}
+                else:
