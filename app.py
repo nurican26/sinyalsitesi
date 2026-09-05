@@ -63,6 +63,33 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
+    /* Altın Kartları Tasarımı */
+    .altin-kartlar {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+    .altin-box {
+        flex: 1;
+        background: rgba(255, 215, 0, 0.05);
+        border: 1px solid #ca8a04;
+        border-radius: 10px;
+        padding: 12px;
+        text-align: center;
+        box-shadow: 0 0 15px rgba(202, 138, 4, 0.2);
+    }
+    .altin-baslik-kart {
+        color: #ffd700 !important;
+        font-weight: bold;
+        font-size: 0.95rem;
+        margin-bottom: 5px;
+    }
+    .altin-fiyat-kart {
+        color: #ffffff !important;
+        font-size: 1.4rem;
+        font-weight: bold;
+    }
     /* Yavaşça Kayan Logo Konteyneri */
     .bta-logo-konteyner {
         width: 100%;
@@ -74,7 +101,6 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.02);
         border-radius: 8px;
     } 
-    /* EL YAZILI, BİTİŞİK VE SAĞDAN SOLA YAVAŞÇA KAYAN GÖKKUŞAĞI BTA YAZISI */
     .bta-logo {
         display: inline-block;
         font-family: 'Alex Brush', cursive !important; 
@@ -151,6 +177,32 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
+    # --- 🪙 CANLI ALTIN PİYASASI PANELİ ---
+    try:
+        # Canlı verileri internetten çekiyoruz
+        ons_gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
+        dolar_tl = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
+        
+        # Altın Hesaplama Motoru (TL)
+        gram_altin = (ons_gold / 31.1034768) * dolar_tl
+        ceyrek_altin = gram_altin * 1.605 * 1.02  # İşçilik ve komisyon dahil yaklaşık çeyrek oranları
+        yarim_altin = ceyrek_altin * 2
+        tam_altin = ceyrek_altin * 4
+        
+        # Ekrana 4'lü neon sıra halinde basıyoruz
+        col_g, col_c, col_y, col_t = st.columns(4)
+        with col_g:
+            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">🟡 GRAM ALTIN</div><div class="altin-fiyat-kart">{gram_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+        with col_c:
+            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">📀 ÇEYREK ALTIN</div><div class="altin-fiyat-kart">{ceyrek_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+        with col_y:
+            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">🪙 YARIM ALTIN</div><div class="altin-fiyat-kart">{yarim_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+        with col_t:
+            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">👑 TAM ALTIN</div><div class="altin-fiyat-kart">{tam_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+    except:
+        # İnternette anlık bir donma olursa sistem hata vermez, gizlice geçer
+        pass
+
     # Excel Okuma
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
@@ -182,12 +234,10 @@ else:
         if pd.isna(val): return ""
         return str(val).strip().upper()
 
-    # 🎯 %100 SAF HİSSE KODU AYIRICI GÜVENLİ MOTOR
+    # SAF HİSSE KODU AYIRICI MOTOR
     def saf_hisse_kodu_bul(metin):
-        # Hücredeki tüm parantez, tırnak, AL, SAT kelimelerini uçurur, sadece saf kelimeleri bulur
         kelimeler = re.findall(r'[A-Z]+', str(metin))
         for kelime in kelimeler:
-            # AL, SAT, NAN, NONE gibi borsa sinyal kelimelerini eler, geriye kalan İLK kelimeyi hisse kodu seçer
             if kelime not in ["AL", "SAT", "NAN", "NONE", "SİNYALİ", "SİNYAL"]:
                 return kelime
         return ""
@@ -209,29 +259,3 @@ else:
                         if temiz_hisse:
                             canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            tablo_alsat.append({"Hisse Kodu 📈": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-                    
-                    # 🟢 BTA SİNYAL MERKEZİ ANALİZİ
-                    if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                        temiz_hisse = saf_hisse_kodu_bul(wv_degeri)
-                        if temiz_hisse:
-                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            if temiz_hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                                st.session_state["ozel_takip_kutusu"][temiz_hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
-                            tablo_al.append({"Hisse Kodu 🚀": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-            except:
-                pass
-
-    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
-
-    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
-
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
