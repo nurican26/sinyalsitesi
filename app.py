@@ -243,7 +243,7 @@ else:
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # GÜVENLİ VE HATASIZ VERİ TARAMA MOTORU
+    # GÜVENLİ VERİ TARAMA MOTORU
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
             if len(df_kaynak.columns) <= 22:
