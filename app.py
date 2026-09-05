@@ -78,10 +78,6 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             if len(data) > 1:
                 onceki_kapanis = float(data['Close'].iloc[-2])
                 yuzde_degisim = ((fiyat - onceki_kapanis) / onceki_kapanis) * 100
-            elif 'previousClose' in ticker.info:
-                onceki_kapanis = float(ticker.info['previousClose'])
-                yuzde_degisim = ((fiyat - onceki_kapanis) / onceki_kapanis) * 100
-                
             st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat, yuzde_degisim)
             return fiyat, yuzde_degisim
     except: pass
@@ -110,7 +106,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0])
+                            hisse = str(h_ara[0])  # Liste hatası düzeltildi
                             cfiy, cdeg = hızlı_canli_fiyat_bul(hisse)
                             tablo_alsat.append({
                                 "Hisse Kodu 📈": hisse, 
@@ -121,7 +117,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0])
+                            hisse = str(h_ara[0])  # Liste hatası düzeltildi
                             cfiy, cdeg = hızlı_canli_fiyat_bul(hisse)
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
@@ -150,3 +146,5 @@ if erisim_izni:
                 degisim = ((guncel_fiyat - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100
                 tablo_takip.append({
                     "Hisse 📌": hisse,
+                    "Sinyal Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL",
+                    "Anlık Canlı Fiyat": f"{guncel_fiyat:.2f} TL",
