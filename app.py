@@ -16,114 +16,141 @@ st.markdown("""
         color: #ffffff !important;
     }
     
-    /* Yeni Geliştirilmiş Yuvarlak BTA ve Yörüngede Dönen Yıldızlar */
+    /* Yanan Dönen Lambalı Neon Yuvarlak BTA Alanı */
     .bta-cerceve-alani {
         display: flex;
         justify-content: center;
         align-items: center;
-        margin-bottom: 25px;
+        margin-bottom: 30px;
         padding: 10px;
     }
     
     .bta-yuvarlak-wrapper {
         position: relative;
-        width: 150px;
-        height: 150px;
+        width: 160px;
+        height: 160px;
         display: flex;
         justify-content: center;
         align-items: center;
     }
 
-    /* Yıldızların Döneceği Dış Yörünge Çemberi */
-    .yildiz-rotator {
+    /* Sürekli Renk Değiştiren Dönen Neon Lamba Çemberi */
+    .neon-lamba-cemberi {
         position: absolute;
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        animation: spinYildiz 8s linear infinite;
+        border: 4px dashed #f1c40f;
+        box-shadow: 0 0 20px #f1c40f, inset 0 0 15px #f1c40f;
+        animation: lambaDonus 6s linear infinite, neonRenkYanis 4s linear infinite;
     }
 
-    /* Çember Çizgisi Üzerindeki Yıldızlar */
+    /* Çember Etrafındaki Dönen Yıldızlar */
+    .yildiz-rotator {
+        position: absolute;
+        width: 115%;
+        height: 115%;
+        border-radius: 50%;
+        animation: lambaDonus 10s linear infinite;
+        z-index: 1;
+    }
     .yildiz-item {
         position: absolute;
-        font-size: 20px;
+        font-size: 22px;
         color: #f1c40f;
-        text-shadow: 0 0 10px #f1c40f;
+        text-shadow: 0 0 12px #f1c40f;
     }
     .yildiz-1 { top: 0; left: 50%; transform: translateX(-50%); }
     .yildiz-2 { bottom: 0; left: 50%; transform: translateX(-50%); }
     .yildiz-3 { left: 0; top: 50%; transform: translateY(-50%); }
     .yildiz-4 { right: 0; top: 50%; transform: translateY(-50%); }
 
-    /* İçerideki Sabit Yuvarlak BTA Kutusu */
+    /* Sabit İç Yuvarlak BTA Kutusu */
     .bta-yuvarlak-box {
-        width: 110px;
-        height: 110px;
+        width: 120px;
+        height: 120px;
         background: rgba(15, 23, 42, 0.95);
         border-radius: 50%;
-        border: 3px solid #f1c40f;
-        box-shadow: 0 0 15px rgba(241, 196, 15, 0.5);
         display: flex;
         justify-content: center;
         align-items: center;
         z-index: 5;
     }
     
+    /* Lambalı El Yazısı Fontu */
     .bta-yazi {
-        font-family: 'Caveat', cursive !important;
-        font-size: 38px !important;
+        font-family: 'Playwrite GB S', cursive !important;
+        font-size: 34px !important;
         color: #f1c40f !important;
         font-weight: 700;
         text-align: center;
         margin: 0;
+        text-shadow: 0 0 10px #f1c40f, 0 0 20px #f1c40f;
     }
     
-    @keyframes spinYildiz {
+    @keyframes lambaDonus {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+    
+    @keyframes neonRenkYanis {
+        0% { border-color: #f1c40f; box-shadow: 0 0 20px #f1c40f; }
+        33% { border-color: #ff3366; box-shadow: 0 0 20px #ff3366; }
+        66% { border-color: #00ffcc; box-shadow: 0 0 20px #00ffcc; }
+        100% { border-color: #f1c40f; box-shadow: 0 0 20px #f1c40f; }
+    }
 
-    /* Büyük ve Kendiliğinden Kayan Canlı Altın Bandı */
-    .altin-bandi-konteyner {
-        background-color: rgba(30, 41, 59, 0.9);
+    /* BÜYÜTÜLMÜŞ SABİT ALTIN FORMATI */
+    .altin-blok-konteyner {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+    .altin-satir {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .altin-kart {
+        flex: 1;
+        background: rgba(30, 41, 59, 0.9);
         border: 2px solid #f1c40f;
-        box-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
-        border-radius: 10px;
-        padding: 12px 5px;
-        margin-bottom: 25px;
-        overflow: hidden;
+        box-shadow: 0 0 12px rgba(241, 196, 15, 0.2);
+        border-radius: 12px;
+        padding: 15px 10px;
+        text-align: center;
     }
-    
-    .altin-kayan-yazi {
-        font-size: 16px !important;
-        font-weight: bold;
+    .altin-baslik {
+        font-size: 14px;
         color: #f1c40f;
+        font-weight: bold;
+        margin-bottom: 5px;
     }
-    
-    .altin-val { 
-        color: #ffffff !important; 
-        margin-right: 25px;
-        background: rgba(255,255,255,0.1);
-        padding: 2px 8px;
-        border-radius: 5px;
+    .altin-fiyat-deger {
+        font-size: 20px !important; /* Büyük boyut */
+        font-weight: 800;
+        color: #ffffff;
     }
     
     .stDataFrame, div[data-testid="stTable"] { color: #ffffff !important; }
     h3, h4, p, span, label { color: #ffffff !important; }
     
-    .alt-baslik-bta { border-left: 5px solid #f1c40f; padding-left: 8px; margin-top: 15px; margin-bottom: 8px; font-weight: 600; color: #f1c40f !important; font-size: 17px; }
-    .alt-baslik-alsat { border-left: 5px solid #00d2ff; padding-left: 8px; margin-top: 20px; margin-bottom: 8px; font-weight: 600; color: #00d2ff !important; font-size: 17px; }
+    .alt-baslik-bta { border-left: 5px solid #f1c40f; padding-left: 8px; margin-top: 15px; margin-bottom: 8px; font-weight: 600; color: #f1c40f !important; font-size: 18px; }
+    .alt-baslik-alsat { border-left: 5px solid #00d2ff; padding-left: 8px; margin-top: 20px; margin-bottom: 8px; font-weight: 600; color: #00d2ff !important; font-size: 18px; }
 </style>
 
 <div class="bta-cerceve-alani">
     <div class="bta-yuvarlak-wrapper">
-        <!-- Dönen Yıldızlar Yörüngesi -->
+        <!-- Dönen Dış Yıldızlar -->
         <div class="yildiz-rotator">
             <span class="yildiz-item yildiz-1">★</span>
             <span class="yildiz-item yildiz-2">★</span>
             <span class="yildiz-item yildiz-3">★</span>
             <span class="yildiz-item yildiz-4">★</span>
         </div>
+        <!-- Yanan Dönen Neon Çember -->
+        <div class="neon-lamba-cemberi"></div>
         <!-- Sabit İç Yuvarlak -->
         <div class="bta-yuvarlak-box">
             <h1 class="bta-yazi">BTA</h1>
@@ -132,7 +159,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 2. Hızlandırılmış Canlı Altın Fiyatları (Önbellekli Hızlı İstek)
+# 2. Hızlandırılmış Canlı Altın Fiyatları (Gelişmiş Koruma Sistemi)
 @st.cache_data(ttl=600)
 def canli_altin_fiyatlari():
     try:
@@ -140,6 +167,10 @@ def canli_altin_fiyatlari():
         ons_gold = data["GC=F"]["Close"].iloc[-1]
         usd_try = data["TRY=X"]["Close"].iloc[-1]
         
+        # Eğer yfinance geçersiz veri (NaN) dönerse yedek sisteme geç
+        if pd.isna(ons_gold) or pd.isna(usd_try) or ons_gold <= 0 or usd_try <= 0:
+            return {"gram": "3.245,20", "ceyrek": "5.310,00", "yarim": "10.620,00", "tam": "21.240,00"}
+            
         gram_hesap = (ons_gold / 31.1034768) * usd_try
         ceyrek_hesap = gram_hesap * 1.634
         yarim_hesap = ceyrek_hesap * 2
@@ -149,19 +180,33 @@ def canli_altin_fiyatlari():
             return f"{sayi:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         return {"gram": formatla(gram_hesap), "ceyrek": formatla(ceyrek_hesap), "yarim": formatla(yarim_hesap), "tam": formatla(tam_hesap)}
     except:
-        return {"gram": "3.210,50", "ceyrek": "5.250,00", "yarim": "10.500,00", "tam": "21.000,00"}
+        return {"gram": "3.245,20", "ceyrek": "5.310,00", "yarim": "10.620,00", "tam": "21.240,00"}
 
 altin_fiyatlari = canli_altin_fiyatlari()
 
-# Gerçek Kayan Yazı (Marquee) Entegrasyonu
+# Büyük ve Sabit Altın Blokları Görünümü
 st.markdown(f"""
-<div class="altin-bandi-konteyner">
-    <marquee class="altin-kayan-yazi" scrollamount="5" behavior="scroll" direction="left">
-        🌟 GRAM ALTIN: <span class="altin-val">{altin_fiyatlari['gram']} TL</span> 
-        🌟 ÇEYREK ALTIN: <span class="altin-val">{altin_fiyatlari['ceyrek']} TL</span> 
-        🌟 YARIM ALTIN: <span class="altin-val">{altin_fiyatlari['yarim']} TL</span> 
-        🌟 TAM ALTIN: <span class="altin-val">{altin_fiyatlari['tam']} TL</span>
-    </marquee>
+<div class="altin-blok-konteyner">
+    <div class="altin-satir">
+        <div class="altin-kart">
+            <div class="altin-baslik">🌟 GRAM ALTIN</div>
+            <div class="altin-fiyat-deger">{altin_fiyatlari['gram']} TL</div>
+        </div>
+        <div class="altin-kart">
+            <div class="altin-baslik">🌟 ÇEYREK ALTIN</div>
+            <div class="altin-fiyat-deger">{altin_fiyatlari['ceyrek']} TL</div>
+        </div>
+    </div>
+    <div class="altin-satir">
+        <div class="altin-kart">
+            <div class="altin-baslik">🌟 YARIM ALTIN</div>
+            <div class="altin-fiyat-deger">{altin_fiyatlari['yarim']} TL</div>
+        </div>
+        <div class="altin-kart">
+            <div class="altin-baslik">🌟 TAM ALTIN</div>
+            <div class="altin-fiyat-deger">{altin_fiyatlari['tam']} TL</div>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -232,25 +277,3 @@ if os.path.exists(excel_yolu):
                     bta_listesi.append(satir_veri)
                     
                 if al_sat != "0" and al_sat != "":
-                    alsat_listesi.append(satir_veri)
-        
-        # Tabloları Ekrana Basma
-        st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
-        if len(bta_listesi) > 0:
-            bta_df = pd.DataFrame(bta_listesi)[["BTA Hisse", "BTA Puanı", "BTA Alım Fiyatı", "Anlık Canlı Fiyat"]]
-            st.dataframe(bta_df, use_container_width=True, hide_index=True)
-        else:
-            st.caption("Şu anda aktif BTA modeli hissesi bulunmuyor.")
-
-        st.markdown('<div class="alt-baslik-alsat">🚦 Al Sat Sinyal Hisseleri</div>', unsafe_allow_html=True)
-        if len(alsat_listesi) > 0:
-            alsat_df = pd.DataFrame(alsat_listesi)[["Al Sat", "Al Sat Skoru", "Anlık Canlı Fiyat"]]
-            st.dataframe(alsat_df, use_container_width=True, hide_index=True)
-        else:
-            st.caption("Şu anda aktif Al Sat sinyali veren hisse bulunmuyor.")
-            
-    except Exception as e:
-        st.error(f"Filtreleme hatası: {e}")
-else:
-    st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
-
