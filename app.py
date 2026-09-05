@@ -105,7 +105,12 @@ with sekme_arama:
         h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
         if not h_data.empty:
             st.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
-            st.metric(label="Dünkü Kapanış Fiyatı (TL)", value=f"{float(h_data.iloc[-1].iloc[0]):,.2f} TL")
+            # Hataya yol açan sütun pürüzü giderildi
+            try:
+                c_price = float(h_data['Close'].dropna().iloc[-1])
+                st.metric(label="Anlık Canlı Fiyat (TL)", value=f"{c_price:,.2f} TL")
+            except:
+                st.metric(label="Dünkü Kapanış Fiyatı (TL)", value=f"{float(h_data.iloc[-1].iloc[0]):,.2f} TL")
     elif arama_girdisi:
         benzerler = [h for h in bist_all if arama_girdisi in h]
         if benzerler:
@@ -116,20 +121,14 @@ with sekme_arama:
 with sekme_altin:
     st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
     altin_df_data = pd.DataFrame({"Altın Türü": ["Veri Alınamadı"], "Fiyat (TL)": ["0.00"]})
-    altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
-    if not altin_download.empty:
-        ons_v = float(altin_download.iloc[-1].iloc[0])
-        usd_v = float(altin_download.iloc[-1].iloc[1])
-        g_altin = (ons_v / 31.1034768) * usd_v
-        altin_df_data = pd.DataFrame({
-            "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"],
-            "Fiyat (TL) 💰": [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
-        })
-    st.table(altin_df_data)
-
-with sekme_sohbet:
-    st.markdown("### 💬 Bilgi Paylaşım & Analiz Notları")
-    s_isim = st.text_input("Kullanıcı Adınız:", value="Yatırımcı")
-    s_mesaj = st.text_input("Mesaj içeriği:", placeholder="Notunuzu buraya ekleyin...")
-    if st.button("✉️ Mesajı İlet") and s_mesaj.strip():
-        saat = datetime.datetime.now().strftime("%H:%M:%S")
+    try:
+        altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
+        if not altin_download.empty:
+            # MultiIndex başlık pürüzünü çözen güvenli okuma düzeneği
+            ons_v = float(altin_download['Close']['GC=F'].dropna().iloc[-1])
+            usd_v = float(altin_download['Close']['TRY=X'].dropna().iloc[-1])
+            g_altin = (ons_v / 31.1034768) * usd_v
+            altin_df_data = pd.DataFrame({
+                "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"],
+                "Fiyat (TL) 💰": [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
+            })
