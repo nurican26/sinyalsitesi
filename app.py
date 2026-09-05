@@ -31,11 +31,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Oturum Durumunu (Session State) Güvenli Başlatma
+# Oturum Durumunu Başlatma
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# --- HERKESE AÇIK ALAN (Giriş Yapılmasa da Görünür) ---
+# --- HERKESE AÇIK ALAN (Her Zaman En Üstte Görünür) ---
 st.markdown("<h1 class='neon-text'>BTA Bilgi Platformu</h1>", unsafe_allow_html=True)
 st.write("Bu alan **herkese açıktır**. Giriş yapmadan genel verileri görebilirsiniz.")
 
@@ -47,28 +47,27 @@ with col2:
 
 st.divider()
 
-# --- GİRİŞ KONTROLÜ VE ÖZEL ALAN ---
+
+# --- GİRİŞ VE İÇERİK KONTROLÜ ---
+# Eğer giriş YAPILMAMIŞSA sadece giriş formunu göster
 if not st.session_state.logged_in:
     st.subheader("🔒 Üye Paneline Giriş Yapın")
     
-    # Form yapısı giriş verilerinin kaybolmasını engeller
-    with st.form(key="login_form"):
-        username = st.text_input("Kullanıcı Adı")
-        password = st.text_input("Şifre", type="password")
-        submit_button = st.form_submit_button(label="Giriş Yap")
-        
-        if submit_button:
-            if username == "admin" and password == "bta123":
-                st.session_state.logged_in = True
-                st.success("Başarıyla giriş yapıldı! Sayfa yükleniyor...")
-                st.rerun()
-            else:
-                st.error("Hatalı kullanıcı adı veya şifre!")
+    username = st.text_input("Kullanıcı Adı", key="user_input")
+    password = st.text_input("Şifre", type="password", key="pass_input")
+    
+    if st.button("Giriş Yap"):
+        if username == "admin" and password == "bta123":
+            st.session_state.logged_in = True
+            st.rerun()  # Sayfayı yenileyip aşağıdaki 'else' kodunu çalıştırır
+        else:
+            st.error("Hatalı kullanıcı adı veya şifre!")
 
+# Eğer giriş YAPILMIŞSA giriş formunu gizle ve ÖZEL PANELİ göster
 else:
-    # --- SADECE GİRİŞ YAPANLARIN GÖRECEĞİ ÖZEL ALAN ---
     st.markdown("<h2 class='neon-text'>🚀 BTA Özel Üye Paneli</h2>", unsafe_allow_html=True)
-    st.write("Tebrikler! Giriş yaptınız ve şu an gizli / özel içerikleri görüyorsunuz.")
+    st.success("Başarıyla giriş yaptınız!")
+    st.write("Şu an gizli / özel içerikleri görüyorsunuz.")
     
     st.info("Bu mesajı sadece giriş yapan yetkili kişiler görebilir.")
     
