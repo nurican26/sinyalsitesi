@@ -242,19 +242,27 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # KUSURSUZ VE İNDEKS KİLİTLİ YENİ TABLO MOTORU
+    # GARANTİLİ VE FİLTRE KAÇIRMAYAN YENİ TABLO MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
-        # Excel'i ham veri olarak oku (İndekslere doğrudan erişmek için)
+        # Excel dosyasını BTA sayfasından yükle
         raw_df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
+        
+        # İlk 2 satırı (varsa başlıkları) atlayarak temiz bir kopya alıyoruz
         df_clean = raw_df.iloc[2:].copy()
         
-        # Kesin Sütun Haritalaması (Görselinizdeki gerçek dizilime göre kilitlendi)
-        hisse_kodlari = df_clean[0].astype(str).str.strip().unique().tolist()
-        istek_kodlari = [f"{str(k)}.IS" for k in hisse_kodlari if pd.notna(k) and str(k) != "" and str(k) != "nan"]
+        # Benzersiz hisse kodlarını topla ve internet verisi için temizle
+        hisse_kodlari = []
+        for idx, row in df_clean.iterrows():
+            # A sütunundaki (0. index) ham hisse kodunu oku
+            kod_ham = str(row[0]).strip() if pd.notna(row[0]) else ""
+            if kod_ham and kod_ham != "nan" and kod_ham != "None" and kod_ham not in hisse_kodlari:
+                hisse_kodlari.append(kod_ham)
+                
+        istek_kodlari = [f"{k}.IS" for k in hisse_kodlari]
         
-        # Borsa Fiyatlarını Tek İstekte Çek
+        # Borsa Fiyatlarını Tek Seferde Toplu Çek
         try:
             canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
             if len(istek_kodlari) == 1:
@@ -267,17 +275,11 @@ else:
         bta_listesi = []
         alsat_listesi = []
         
-        # Verileri İndeks Numaralarına Göre Kusursuzca Ayır
+        # Verileri Tam Sütun Mantığına Göre Satır Satır İşle
         for idx, row in df_clean.iterrows():
-            hk = str(row[0]).strip() if pd.notna(row[0]) else ""
-            if hk == "" or hk == "nan" or hk == "None":
-                continue
-                
-            bta_alimi_ham = str(row[1]).replace(",", ".") if pd.notna(row[1]) else "0"
-            try:
-                bta_alimi = float(bta_alimi_ham)
-            except:
-                bta_alimi = 0.0
-                
-            al_sat_skoru = str(row[2]).strip() if pd.notna(row[2]) else "0"
-            al_sat_durum = str(row[3]).strip() if pd.notna(row[3]) else "0"
+            # Excel'deki Gerçek Dağılım:
+            # row[0] = Hisse Kodu (Ana Anahtar)
+            # row[1] = BTA Alımı
+            # row[2] = Al Sat Skoru (C Sütunu)
+            # row[3] = Al Sat (D Sütunu)
+            # row[4] = BTA Puanı (E Sütunu)
