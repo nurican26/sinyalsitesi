@@ -105,3 +105,17 @@ else: st.write("🔒 Aktif Al sinyali taranıyor...")
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+
+st.write("---")
+
+# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
+st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
+arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
+
+# Girinti hatası yapabilecek tüm karmaşık if-else blokları düz bir mantığa çekildi
+if arama_terimi_girdi:
+    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
+    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
+    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
+
+# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
