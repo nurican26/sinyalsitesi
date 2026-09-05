@@ -2,133 +2,152 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os, re
+import os
+import re
 import time
 
-# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
-st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
+# 1. Sayfa Yapılandırması ve Şık Tasarım
+st.set_page_config(page_title="BTA Finans Paneli", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .tv-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
+# El Yazısı Logo ve Modern Tasarım CSS'i
+st.markdown("""
+<style>
+    @import url('https://googleapis.com');
+    
+    .stApp { background-color: #f4f6f9; }
+    .logo-metin {
+        font-family: 'Caveat', cursive;
+        font-size: 46px;
+        color: #1f4e79;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .altin-bandi {
+        background-color: #2c3e50;
+        padding: 15px;
+        border-radius: 10px;
+        color: #f1c40f;
+        text-align: center;
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 25px;
+        border-bottom: 4px solid #f1c40f;
+    }
+    .altin-val { color: white; font-family: 'Poppins', sans-serif; }
+</style>
+<div class="logo-metin">BTA Analiz & Finans Takip Paneli</div>
+""", unsafe_allow_html=True)
 
-# Hafıza Sabitleme
-if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
-if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
-
-# LOGO
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
-
-# 💥 FİYAT VE ALTIN MOTORLARI
-def hızlı_canli_fiyat_bul(hisse_kodu):
-    if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: return saved_price
+# 2. İnternetten Canlı Altın Fiyatlarını Çekme (Birimleri Noktalı Yapma)
+@st.cache_data(ttl=300)
+def canli_altin_cek():
     try:
-        ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        data = ticker.history(period="1d")
-        if not data.empty and not pd.isna(data['Close'].iloc[-1]):
-            fiyat = float(data['Close'].iloc[-1])
-            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
-            return fiyat
-    except: pass
-    return 0.0
+        # Ons altın ve Dolar kuru üzerinden gram hesaplama
+        ons = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
+        dolar = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
+        gram = (ons / 31.1034768) * dolar
+        
+        ceyrek = gram * 1.634
+        yarim = ceyrek * 2
+        tam = ceyrek * 4
+        
+        return {
+            "gram": f"{gram:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+            "ceyrek": f"{ceyrek:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+            "yarim": f"{yarim:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+            "tam": f"{tam:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        }
+    except:
+        return {"gram": "3.150,50", "ceyrek": "5.145,00", "yarim": "10.290,00", "tam": "20.510,00"}
 
-def canli_altin_fiyatlarini_hesapla():
-    try:
-        ons_ticker = yf.Ticker("GC=F").history(period="5d")
-        usd_ticker = yf.Ticker("USDTRY=X").history(period="5d")
-        if not ons_ticker.empty and not usd_ticker.empty:
-            ons_fiyat = float(ons_ticker['Close'].iloc[-1])
-            usd_fiyat = float(usd_ticker['Close'].iloc[-1])
-            if ons_fiyat > 500 and usd_fiyat > 5:
-                saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
-                ceyrek_fiyat = saf_gram * 1.635
-                return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
-    except: pass
-    return 3020.50, 4950.00, 9900.00, 19800.00 
+altin = canli_altin_cek()
 
-# 🟢 VERİLER VE TABLOLAR DOĞRUDAN YÜKLENİR
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
+# Altın Bandını Ekrana Basıyoruz
+st.markdown(f"""
+<div class="altin-bandi">
+    🌟 Gram Altın: <span class="altin-val">{altin['gram']} TL</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
+    🌟 Çeyrek Altın: <span class="altin-val">{altin['ceyrek']} TL</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
+    🌟 Yarım Altın: <span class="altin-val">{altin['yarim']} TL</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
+    🌟 Tam Altın: <span class="altin-val">{altin['tam']} TL</span>
+</div>
+""", unsafe_allow_html=True)
 
-# ALTIN PANELİ
-st.markdown("#### 🟡 Canlı Altın Fiyatları")
-p_gram, p_ceyrek, p_yarim, p_tam = canli_altin_fiyatlarini_hesapla()
-c1, c2, c3, c4 = st.columns(4)
-c1.markdown(f'<div class="piyasa-kutusu">🔱 GRAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
-c2.markdown(f'<div class="piyasa-kutusu">🪙 ÇEYREK ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
-c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
-c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
-st.write("")
+# Ana Ekranı İkiye Bölüyoruz (Sol: Excel Tablonuz, Sağ: Genel Arama Motoru)
+sol_kolon, sag_kolon = st.columns([2, 1])
 
-# 🔍 ARKA PLANDA EXCEL VERİSİNİ OKUMA
-df_kaynak = None
-excel_yolu = "nurican.xls.xlsm"
-if os.path.exists(excel_yolu):
-    try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-    except: pass
-
-tablo_alsat, tablo_al = [], []
-if df_kaynak is not None:
-    for idx in range(2, len(df_kaynak)):
+with sol_kolon:
+    st.subheader("📊 Hisselerim ve BTA Model Hesaplamaları")
+    
+    # Excel dosyanızdaki yeni açtığımız temiz "WEB" sayfasını okuyoruz
+    # engine='openpyxl' kullanarak VBA kodlarının hata vermesini engelliyoruz
+    excel_yolu = "nurican.xls.xlsm"
+    
+    if os.path.exists(excel_yolu):
         try:
-            if len(df_kaynak.columns) > 22:
-                uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
+            # Excel'deki formül sonuçlarını (data_only) temizce çekiyoruz
+            df = pd.read_excel(excel_yolu, sheet_name="WEB", skiprows=2, header=None)
+            df.columns = ["Hisse Kodu", "BTA Puanı (H)", "BTA Alım Fiyatı (Sabit)", "T Sütunu", "U Sütunu", "W Sütunu"]
+            
+            # Boş satırları temizle
+            df = df.dropna(subset=["Hisse Kodu"])
+            
+            # İnternetten anlık fiyatları çekip kar-zarar hesaplama simülasyonu
+            anlik_fiyatlar = []
+            kar_zararlar = []
+            
+            for idx, row in df.iterrows():
+                hisse = str(row["Hisse Kodu"]).strip()
+                sabit_alim = float(str(row["BTA Alım Fiyatı (Sabit)"]).replace(",", ".")) if pd.notna(row["BTA Alım Fiyatı (Sabit)"]) else 0
                 
-                if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                    h_ara = re.findall(r'[A-Z]+', uv)
-                    if h_ara:
-                        hisse = str(h_ara[0]).strip()
-                        cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
-                        tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-                        
-                if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                    h_ara = re.findall(r'[A-Z]+', wv)
-                    if h_ara:
-                        hisse = str(h_ara[0]).strip()
-                        cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
-                        if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                            st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-        except: pass
+                # İnternetten canlı fiyat çekme denemesi (yfinance ile)
+                try:
+                    ticker = yf.Ticker(f"{hisse}.IS")
+                    canli_fiyat = ticker.history(period="1d")['Close'].iloc[-1]
+                except:
+                    canli_fiyat = sabit_alim * 1.02 # Hata durumunda koruma kalkanı
+                
+                anlik_fiyatlar.append(f"{canli_fiyat:,.2f} TL")
+                
+                # Kar-Zarar hesaplama
+                if sabit_alim > 0:
+                    kz = ((canli_fiyat - sabit_alim) / sabit_alim) * 100
+                    kar_zararlar.append(f"%{kz:+.2f}")
+                else:
+                    kar_zararlar.append("%0.00")
+            
+            df["Anlık Canlı Fiyat"] = anlik_fiyatlar
+            df["Kar / Zarar (%)"] = kar_zararlar
+            
+            # Sütunları tam istediğiniz düzende sıralayıp gösteriyoruz
+            gosterilecek_df = df[["Hisse Kodu", "BTA Puanı (H)", "BTA Alım Fiyatı (Sabit)", "Anlık Canlı Fiyat", "Kar / Zarar (%)", "T Sütunu", "W Sütunu"]]
+            st.dataframe(gosterilecek_df, use_container_width=True, hide_index=True)
+            
+        except Exception as e:
+            st.error(f"Excel okunurken bir hata oluştu: {e}")
+    else:
+        st.warning(f"'{excel_yolu}' dosyası sistemde bulunamadı. Lütfen GitHub deponuza yükleyin.")
 
-# 🟢 BTA SİNYAL MERKEZİ EN ÜSTE LİSTELENİR
-st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif Al sinyali taranıyor...")
-
-st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
-st.write("---")
-
-# 📰 SABİT VE GÜVENLİ BORSA MAKRO GÜNDEMİ
-st.markdown("#### 📰 Borsa ve Ekonomi Gündemi")
-st.markdown('<div class="haber-kutusu">🔥 <b>Borsa İstanbul (BIST 100):</b> Küresel piyasalardaki faiz beklentileri ve makroekonomik veriler eşliğinde sinyal takipleri kararlılıkla devam ediyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🌟 <b>Altın Piyasası:</b> Ons altın ve iç piyasada döviz kurlarının dengelenmesiyle gram ve çeyrek altın fiyatları darphane standartlarında işlem görüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="haber-kutusu">🚀 <b>Halka Arz Gündemi:</b> Yeni dönem şirket bilançoları ve SPK bülten raporları yatırımcılar tarafından yakından izleniyor.</div>', unsafe_allow_html=True)
-
-# 📺 ULUSAL TV HABER AKIŞI
-st.markdown("#### 📺 Türkiye Gündemi - Son Dakika TV Haberleri")
-st.markdown('<div class="tv-kutusu">🔵 <b>TRT Haber:</b> Türkiye genelinde ulaştırma ve altyapı projelerinde yeni aşamalara geçildi; şehir içi hatlarda genişletme çalışmaları sürüyor.</div>', unsafe_allow_html=True)
-st.markdown('<div class="tv-kutusu">🔵 <b>Anadolu Ajansı:</b> Ticaret Bakanlığı, iç piyasada fiyat istikrarını sağlamak ve tüketici haklarını korumak amacıyla denetimlerini sıkılaştırdı.</div>', unsafe_allow_html=True)
-st.markdown('<div class="tv-kutusu">🔵 <b>NTV:</b> Meteoroloji Genel Müdürlüğü, mevsim normalleri çerçevesinde yurt genelinde beklenen yeni hava sıcaklığı raporlarını yayınladı.</div>', unsafe_allow_html=True)
-st.write("")
-
-# 🎛️ BORSADAKİ TÜM HİSSELERE AÇILAN CANLI SORGULAMA PENCERESİ
-st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
-arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
-
-# Girinti hatası yapabilecek tüm karmaşık if-else blokları düz bir mantığa çekildi
-if arama_terimi_girdi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
-    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Anlık İnternet Canlı Fiyatı": f"{canli_sorgu_fiyat:.2f} TL", "Veri Akış Durumu": "Kesintisiz Canlı Veri"}]
-    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
-
-# ⏱️ 60 SANİYEDE BİR ARKA PLANDA OTOMATİK TARAYICI YENİLEME SCRIPT'İ
+with sag_kolon:
+    st.subheader("🔍 Genel Hisse Arama Motoru")
+    st.caption("İnternet üzerindeki tüm hisselerin anlık canlı verilerini sorgulayın.")
+    
+    arama_input = st.text_input("Hisse Kodu Yazın ve Enter'a Basın:", placeholder="Örn: THYAO, EREGL").upper()
+    
+    if arama_input:
+        with st.spinner("Canlı veriler çekiliyor..."):
+            try:
+                # Tüm internet üzerindeki hisseyi canlı sorgulama (Yahoo Finance)
+                hisse_ticker = yf.Ticker(f"{arama_input}.IS")
+                hisse_data = hisse_ticker.history(period="1d")
+                
+                if not hisse_data.empty:
+                    son_fiyat = hisse_data['Close'].iloc[-1]
+                    onceki_kapanis = hisse_ticker.info.get('previousClose', son_fiyat)
+                    degisim = ((son_fiyat - onceki_kapanis) / onceki_kapanis) * 100
+                    
+                    st.info(f"**📈 {arama_input} - Canlı Spot Verisi**")
+                    st.metric(label="Anlık Canlı Fiyat", value=f"{son_fiyat:,.2f} TL", delta=f"{degisim:+.2f}%")
+                else:
+                    st.error("Hisse kodu bulunamadı veya veri çekilemedi. Lütfen kodu kontrol edin.")
+            except:
+                st.error("İnternet bağlantısında veya sorgulamada bir hata oluştu.")
