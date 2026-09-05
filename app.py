@@ -64,20 +64,14 @@ st.markdown("""
         margin-bottom: 5px;
     } 
     /* Altın Kartları Tasarımı */
-    .altin-kartlar {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 25px;
-    }
     .altin-box {
-        flex: 1;
         background: rgba(255, 215, 0, 0.05);
         border: 1px solid #ca8a04;
         border-radius: 10px;
         padding: 12px;
         text-align: center;
         box-shadow: 0 0 15px rgba(202, 138, 4, 0.2);
+        margin-bottom: 15px;
     }
     .altin-baslik-kart {
         color: #ffd700 !important;
@@ -181,21 +175,16 @@ else:
     try:
         ons_gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
         dolar_tl = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
-        
         gram_altin = (ons_gold / 31.1034768) * dolar_tl
         ceyrek_altin = gram_altin * 1.605 * 1.02  
         yarim_altin = ceyrek_altin * 2
         tam_altin = ceyrek_altin * 4
         
         col_g, col_c, col_y, col_t = st.columns(4)
-        with col_g:
-            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">🟡 GRAM ALTIN</div><div class="altin-fiyat-kart">{gram_altin:.2f} TL</div></div>', unsafe_allow_html=True)
-        with col_c:
-            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">📀 ÇEYREK ALTIN</div><div class="altin-fiyat-kart">{ceyrek_altin:.2f} TL</div></div>', unsafe_allow_html=True)
-        with col_y:
-            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">🪙 YARIM ALTIN</div><div class="altin-fiyat-kart">{yarim_altin:.2f} TL</div></div>', unsafe_allow_html=True)
-        with col_t:
-            st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">👑 TAM ALTIN</div><div class="altin-fiyat-kart">{tam_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+        with col_g: st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">🟡 GRAM ALTIN</div><div class="altin-fiyat-kart">{gram_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+        with col_c: st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">📀 ÇEYREK ALTIN</div><div class="altin-fiyat-kart">{ceyrek_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+        with col_y: st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">🪙 YARIM ALTIN</div><div class="altin-fiyat-kart">{yarim_altin:.2f} TL</div></div>', unsafe_allow_html=True)
+        with col_t: st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">👑 TAM ALTIN</div><div class="altin-fiyat-kart">{tam_altin:.2f} TL</div></div>', unsafe_allow_html=True)
     except:
         pass
 
@@ -213,15 +202,17 @@ else:
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu: return 0.0
-        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        # Yahoo araması öncesi parantezleri ve tırnakları kesin arındırır
+        temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "").strip()
+        if temiz_kod in st.session_state["fiyat_hafizasi"]:
+            saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
             if time.time() - saved_time < 300: return saved_price
         try:
-            ticker = yf.Ticker(f"{hisse_kodu}.IS")
+            ticker = yf.Ticker(f"{temiz_kod}.IS")
             data = ticker.history(period="1d")
             if not data.empty and not pd.isna(data['Close'].iloc[-1]):
                 fiyat = float(data['Close'].iloc[-1])
-                st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+                st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
                 return fiyat
         except: pass
         return 0.0
@@ -230,31 +221,28 @@ else:
         if pd.isna(val): return ""
         return str(val).strip().upper()
 
-    # SAF HİSSE KODU AYIRICI MOTOR
-    def saf_hisse_kodu_bul(metin):
-        kelimeler = re.findall(r'[A-Z]+', str(metin))
-        for kelime in kelimeler:
-            if kelime not in ["AL", "SAT", "NAN", "NONE", "SİNYALİ", "SİNYAL"]:
-                return kelime
-        return ""
-
-    # 🔍 BORSADA HİSSE ARAMA MOTORU (TÜM BIST HİSSELERİ İÇİN KESİN ÇÖZÜM)
+    # 🔍 BIST HİSSE ARAMA KUTUSU
     st.markdown("### 🔍 BIST Hisse Arama Motoru")
-    arama_sorgusu = st.text_input("Aramak istediğiniz hisse kodunu yazın (Örn: THYAO, SONME):", placeholder="Hisse ara...").strip().upper()
+    arama_sorgusu = st.text_input("Aramak istediğiniz hisse kodunu yazın (Boş bırakırsanız tümü listelenir):", placeholder="Hisse kodu yazın...").strip().upper()
 
     tablo_alsat = []
     tablo_al = []
 
-    # GÜVENLİ VE HIERARCHY HATASI VERMEYEN DÜZ MOTOR
-    if df_kaynak is not None and len(df_kaynak.columns) > 22:
+    # ORİJİNAL %100 ÇALIŞAN HİSSE AKTARIM DÖNGÜSÜ
+    if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
-            uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-            wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
-            t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
-            
-            # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
-            if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                temiz_hisse = saf_hisse_kodu_bul(uv_degeri)
-                if temiz_hisse:
-                    if not arama_sorgusu or arama_sorgusu in temiz_hisse:
-                        canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
+            try:
+                if len(df_kaynak.columns) > 22:
+                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+                    t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
+                    
+                    if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                        hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
+                        if hisse_ara:
+                            hisse = str(hisse_ara).strip()
+                            gosterim_ismi = hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "")
+                            
+                            # Arama filtresi uygulaması
+                            if not arama_sorgusu or arama_sorgusu in gosterim_ismi:
+                                canli_fiyat = hızlı_canli_fiyat_bul(hisse)
