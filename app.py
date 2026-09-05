@@ -251,6 +251,6 @@ else:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
             if time.time() - saved_time < 300:
                 return saved_price
+        
+        # İç içe try-except blokları yerine doğrusal akış kullanılmıştır.
         try:
-            hisse_data = yf.download(f"{hisse_kodu}.IS", period="1d", progress=False)
-            fiyat_val = float(hisse_data['Close'].iloc[-1])
