@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
@@ -124,10 +123,8 @@ st.markdown("""
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
 
-# Hafıza Kontrolleri
+# Hafıza Yönetimi
 if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] = False
-if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
-if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 if "sohbet_gecmisi" not in st.session_state: st.session_state["sohbet_gecmisi"] = []
 
 # BTA LOGO ALANI
@@ -139,9 +136,9 @@ st.markdown("""
     <h4 style="color:#ef4444 !important; margin-top:0;">⚠️ SPK YASAL UYARI</h4>
     <p style="font-size:0.9rem; color:#cbd5e1 !important; margin-bottom:0;">
         Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-        Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk and getiri tercihleri 
+        Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri 
         dikkate alınarak kişiye özel sunulmaktadır. Burada yer alan bilgilere dayanılarak yatırım kararı 
-        verilmesi beklentilenize uygun sonuçlar doğurmayabilir.
+        verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -165,32 +162,27 @@ if admin_sifre == YONETICI_SIFRESI:
 else:
     if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
 
-
 # --- GÜNCEL ALTIN FİYATLARI FONKSİYONU ---
-def canli_altin_fiyatlari():
+def canli_altin_fiyatlari_al():
     try:
-        ons_ticker = yf.Ticker("GC=F")
-        usd_kur_data = yf.download("TRY=X", period="1d", progress=False)
-        ons_data = ons_ticker.history(period="1d")
-        
-        ons_fiyat = float(ons_data['Close'].iloc[-1])
-        usd_kur = float(usd_kur_data['Close'].iloc[-1])
-        
-        gram_altin = (ons_fiyat / 31.1034768) * usd_kur
-        
-        altin_data = {
-            "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın (1.75g)", "Yarım Altın (3.50g)", "Tam Altın (7.01g)"],
-            "Güncel Fiyat (TL) 💰": [
-                f"{round(gram_altin, 2):,}".replace(",", "."),
-                f"{round(gram_altin * 1.75, 2):,}".replace(",", "."),
-                f"{round(gram_altin * 3.50, 2):,}".replace(",", "."),
-                f"{round(gram_altin * 7.01, 2):,}".replace(",", ".")
-            ]
-        }
-        return pd.DataFrame(altin_data)
+        altin_veri = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
+        if ('Close', 'GC=F') in altin_veri.columns and ('Close', 'TRY=X') in altin_veri.columns:
+            ons_fiyat = float(altin_veri[('Close', 'GC=F')].dropna().iloc[-1])
+            usd_kur = float(altin_veri[('Close', 'TRY=X')].dropna().iloc[-1])
+            gram_altin = (ons_fiyat / 31.1034768) * usd_kur
+            
+            return pd.DataFrame({
+                "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın (1.75g)", "Yarım Altın (3.50g)", "Tam Altın (7.01g)"],
+                "Güncel Fiyat (TL) 💰": [
+                    f"{round(gram_altin, 2):,}".replace(",", "."),
+                    f"{round(gram_altin * 1.75, 2):,}".replace(",", "."),
+                    f"{round(gram_altin * 3.50, 2):,}".replace(",", "."),
+                    f"{round(gram_altin * 7.01, 2):,}".replace(",", ".")
+                ]
+            })
     except:
-        return pd.DataFrame({"Durum": ["Altın fiyatları şu an yüklenemedi. Daha sonra tekrar deneyin."]})
-
+        pass
+    return pd.DataFrame({"Durum": ["Altın fiyatları şu an yüklenemedi. Daha sonra tekrar deneyin."]})
 
 # --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
@@ -199,9 +191,7 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # =========================================================================
-    # ⚡ YENİ NESİL ETKİLEŞİM PANELİ (ARAMA, ALTIN VE SOHBET SEKMELERİ)
-    # =========================================================================
+    # Interaktif Panel Sekmeleri
     sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
     
     with sekme_arama:
@@ -212,18 +202,17 @@ else:
         st.markdown("### 🪙 Canlı Döviz ve Altın Piyasası")
         if st.button("🔄 Altın Fiyatlarını Güncelle"):
             st.toast("Altın fiyatları yenileniyor...", icon="🪙")
-        df_altin = canli_altin_fiyatlari()
+        df_altin = canli_altin_fiyatlari_al()
         st.table(df_altin)
         
     with sekme_sohbet:
         st.markdown("### 💬 Bilgi Paylaşım & Analiz Notları")
         sohbet_isim = st.text_input("Adınız:", value="Yatırımcı")
-        sohbet_mesaj = st.text_input("Mesajınız:", placeholder="Analiz notunuzu veya sorunuzu yazın...")
-        if st.button("✉️ Gönder"):
-            if sohbet_mesaj.strip():
-                zaman = datetime.datetime.now().strftime("%H:%M:%S")
-                st.session_state["sohbet_gecmisi"].insert(0, f"[{zaman}] **{sohbet_isim}**: {sohbet_mesaj}")
-                st.toast("Mesaj iletildi!", icon="💬")
+        sohbet_mesaj = st.text_input("Mesajınız:", placeholder="Analiz notunuzu yazın...")
+        if st.button("✉️ Gönder") and sohbet_mesaj.strip():
+            zaman = datetime.datetime.now().strftime("%H:%M:%S")
+            st.session_state["sohbet_gecmisi"].insert(0, f"[{zaman}] **{sohbet_isim}**: {sohbet_mesaj}")
+            st.toast("Mesaj iletildi!", icon="💬")
         
         if st.session_state["sohbet_gecmisi"]:
             st.markdown("---")
@@ -232,26 +221,25 @@ else:
 
     st.markdown("---")
 
-    # Excel Okuma
-    df_kaynak = None
+    # Excel Okuma ve İşleme
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: 
-            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        except Exception as e:
-            st.error(f"Excel okuma hatası: {e}")
-    else:
-        st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
-
-    # --- SIFIR GİRİNTİ HATA RİSKLİ YENİ FİYAT MOTORU ---
-    def hızlı_canli_fiyat_bul(hisse_kodu):
-        if not hisse_kodu:
-            return 0.0
-        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-            if time.time() - saved_time < 300:
-                return saved_price
-        
         try:
-            hisse_data = yf.download(f"{hisse_kodu}.IS", period="1d", progress=False)
-            fiyat_val = float(hisse_data['Close'].iloc[-1])
+            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+            
+            # Excel'deki ham hisse listesini çıkar (Boşlukları temizle)
+            tum_hisseler = []
+            excel_satirlar = []
+            
+            for idx in range(2, len(df_kaynak)):
+                if len(df_kaynak.columns) > 22:
+                    uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
+                    wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+                    t_puan = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else "0.0"
+                    
+                    excel_satirlar.append({"uv": uv, "wv": wv, "t_puan": t_puan})
+                    if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]: tum_hisseler.append(f"{uv}.IS")
+                    if wv and wv not in ["NAN", "NONE", "W_SÜTUNU"]: tum_hisseler.append(f"{wv}.IS")
+            
+            # Benzersiz hisseleri filtrele ve internetten topluca indir (Hata riskini sıfırlar)
+            tum_hisseler = list(set(tum_hisseler))
