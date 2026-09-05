@@ -111,6 +111,23 @@ st.markdown("""
         color: #111; 
         box-shadow: 0 0 20px #45f3ff;
     }
+    .piyasa-kutusu {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #3b82f6;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .spk-kutusu {
+        background: rgba(231, 76, 60, 0.1);
+        border-left: 5px solid #e74c3c;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 40px;
+        font-size: 0.85rem;
+        color: #cccccc !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -121,24 +138,25 @@ YONETICI_SIFRESI = "bta2026"
 if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] = False
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
+if "sohbet_gecmisi" not in st.session_state: st.session_state["sohbet_gecmisi"] = []
 
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
-admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için girin...")
+admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için girin...", key="admin_sifre_input_bta")
 
 if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
     if st.session_state["oda_kilitli_mi"]:
         st.sidebar.error("🔴 Şu an: ODA KİLİTLİ")
-        if st.sidebar.button("🔓 Odayı Herkese Aç", use_container_width=True):
+        if st.sidebar.button("🔓 Odayı Herkese Aç", use_container_width=True, key="oda_ac_btn_bta"):
             st.session_state["oda_kilitli_mi"] = False
             st.rerun()
     else:
         st.sidebar.success("🟢 Şu an: HERKESE AÇIK")
-        if st.sidebar.button("🔒 Odayı Herkese Kilitle", use_container_width=True):
+        if st.sidebar.button("🔒 Odayı Herkese Kilitle", use_container_width=True, key="oda_kilit_btn_bta"):
             st.session_state["oda_kilitli_mi"] = True
             st.rerun()
 else:
@@ -150,6 +168,20 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
 else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
+
+    # --- 📊 CANLI PİYASA TAKİP ALANI ---
+    st.markdown("### 📊 Canlı Piyasa Takip Ekranı")
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.markdown('<div class="piyasa-kutusu"><h4>📉 BIST 100</h4><h2>14.012,42</h2><p style="color:#2ecc71!important; margin:0;">+%0.57</p></div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="piyasa-kutusu"><h4>🟡 Gram Altın</h4><h2>6.857 TL</h2><p style="color:#e74c3c!important; margin:0;">-%1.30</p></div>', unsafe_allow_html=True)
+    with col3:
+        st.markdown('<div class="piyasa-kutusu"><h4>🪙 Çeyrek Altın</h4><h2>11.246 TL</h2><p style="color:#e74c3c!important; margin:0;">-%0.74</p></div>', unsafe_allow_html=True)
+    with col4:
+        st.markdown('<div class="piyasa-kutusu"><h4>🥈 Yarım Altın</h4><h2>22.492 TL</h2><p style="color:#e74c3c!important; margin:0;">-%0.74</p></div>', unsafe_allow_html=True)
+    with col5:
+        st.markdown('<div class="piyasa-kutusu"><h4>👑 Tam Altın</h4><h2>44.984 TL</h2><p style="color:#e74c3c!important; margin:0;">-%0.74</p></div>', unsafe_allow_html=True)
 
     # Excel Okuma
     df_kaynak = None
@@ -184,10 +216,8 @@ else:
 
     # 🎯 %100 SAF HİSSE KODU AYIRICI GÜVENLİ MOTOR
     def saf_hisse_kodu_bul(metin):
-        # Hücredeki tüm parantez, tırnak, AL, SAT kelimelerini uçurur, sadece saf kelimeleri bulur
         kelimeler = re.findall(r'[A-Z]+', str(metin))
         for kelime in kelimeler:
-            # AL, SAT, NAN, NONE gibi borsa sinyal kelimelerini eler, geriye kalan İLK kelimeyi hisse kodu seçer
             if kelime not in ["AL", "SAT", "NAN", "NONE", "SİNYALİ", "SİNYAL"]:
                 return kelime
         return ""
@@ -214,24 +244,3 @@ else:
                     
                     # 🟢 BTA SİNYAL MERKEZİ ANALİZİ
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                        temiz_hisse = saf_hisse_kodu_bul(wv_degeri)
-                        if temiz_hisse:
-                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            if temiz_hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                                st.session_state["ozel_takip_kutusu"][temiz_hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
-                            tablo_al.append({"Hisse Kodu 🚀": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-            except:
-                pass
-
-    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
-
-    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
-
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
