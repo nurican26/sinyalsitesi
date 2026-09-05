@@ -8,15 +8,15 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Ortalanmış, El Yazılı ve Gölgeli Işıklı BTA Logosu
+# CSS Tasarımı - Lüks Zümrüt Neon ve Genişletilmiş Büyük El Yazısı BTA Logosu
 st.markdown("""
 <style>
     @import url('https://googleapis.com');
     
     @keyframes neonPulse {
-        0% { text-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 30px #10b981; }
-        50% { text-shadow: 0 0 20px #34d399, 0 0 40px #34d399, 0 0 60px #10b981; }
-        100% { text-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 30px #10b981; }
+        0% { text-shadow: 0 0 15px #059669, 0 0 30px #047857, 0 0 45px #065f46, 0 0 10px #fff; }
+        50% { text-shadow: 0 0 25px #10b981, 0 0 50px #059669, 0 0 75px #047857, 0 0 20px #fff; }
+        100% { text-shadow: 0 0 15px #059669, 0 0 30px #047857, 0 0 45px #065f46, 0 0 10px #fff; }
     }
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
@@ -55,23 +55,24 @@ st.markdown("""
     } 
     .bta-logo-konteyner {
         display: flex; 
-        justify-content: center; /* Ortaya hizalama */
+        justify-content: center; 
         align-items: center; 
         margin-top: 15px; 
-        margin-bottom: 25px;
+        margin-bottom: 35px;
         width: 100%;
     } 
-    /* Ortalanmış, El Yazılı ve Parlayan Neon BTA Logosu */
+    /* BÜYÜTÜLMÜŞ, GENİŞLETİLMİŞ VE DERİN NEON GÖLGELİ LÜKS BTA LOGOSU */
     .bta-logo {
         background: transparent; 
-        color: #10b981 !important; 
-        font-family: 'Alex Brush', cursive !important; /* El yazısı fontu */
+        color: #ffffff !important; /* Ana yazı elektrik beyazı */
+        font-family: 'Alex Brush', cursive !important; 
         font-weight: normal; 
-        font-size: 5rem; 
+        font-size: 7.5rem; /* El yazısı boyutu iyice büyütüldü */
         padding: 0px; 
-        letter-spacing: 2px;
-        animation: neonPulse 2.5s infinite ease-in-out;
+        letter-spacing: 20px; /* Harf arası boşluk genişletildi */
+        animation: neonPulse 3s infinite ease-in-out;
         text-align: center;
+        width: 100%;
     } 
     .kilit-uyari {
         background: rgba(255, 255, 255, 0.05); 
@@ -111,7 +112,7 @@ if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kut
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
 # BTA ORTALANMIŞ EL YAZILI IŞIKLI LOGO ALANI
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">Bta</div></div>', unsafe_allow_html=True)
+st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
@@ -184,7 +185,7 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]).strip()
+                            hisse = str(hisse_ara).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -193,7 +194,7 @@ else:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara[0]).strip()
+                            hisse = str(hisse_ara).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
