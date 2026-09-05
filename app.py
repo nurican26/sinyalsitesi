@@ -243,9 +243,10 @@ else:
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # KESİN VE TAM KORUMALI VERİ TARAMA DÖNGÜSÜ
+    # ASIL GÜVENLİ VE HİSSEYİ GERİ GETİREN MOTOR
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
-            if len(df_kaynak.columns) > 22:
-                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+            try:
+                if len(df_kaynak.columns) > 22:
+                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
