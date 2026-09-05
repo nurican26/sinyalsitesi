@@ -242,7 +242,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # %100 GÜVENLİ VE HATA VERMESİ İMKANSIZ SARE PANDAS TABLO MOTORU
+    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
@@ -258,19 +258,18 @@ else:
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # 🎯 ANA KURAL KİLİDİ: "BTA Hisse" (F sütunu) hücresi boşsa, nan, 0 veya None ise satırı kökten sil!
+        # 🎯 ANA KURAL KİLİDİ: "BTA Hisse" (F sütunu) hücresi boşsa veya geçersizse o satırı kökten yok et!
         df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
         
         if not df.empty:
             df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
             df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
             
-            # Canlı Fiyatları Tek İstekte Çek (Hata çıkaran try-except bloğu tamamen yok edildi)
+            # Canlı Fiyatları Tek İstekte Çek
             benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
             istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
             
-            # Güvenli tek satır borsa fiyat çekicisi
-            canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
-            
-            # Fiyatları sözlüğe kayıpsız aktarma
-            if isinstance(canli_data, pd.Series):
+            # Hata çıkaran tüm karmaşık if/isinstance yapıları tamamen kaldırıldı. Saf ve düz Pandas Haritalaması:
+            try:
+                canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
+                fiyat_series = pd.DataFrame(canli_data).iloc[-1]
