@@ -253,7 +253,7 @@ else:
         df = raw_df.iloc[2:].copy()
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Sütunlardaki boşlukları ve tip hatalarını temizle
+        # Sütunlardaki tüm string tip dönüşümlerini güvenli yap
         df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
@@ -263,7 +263,7 @@ else:
         
         # Canlı Fiyatları Tek İstekte Çek
         benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
-        istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and k != "nan" and k != "None"]
+        istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and k != "nan" and k != "None" and len(str(k)) <= 6]
         
         try:
             canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
