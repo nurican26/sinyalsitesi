@@ -81,7 +81,7 @@ st.markdown("""
         font-style: italic !important;
         font-weight: normal !important; 
         font-size: 6rem; 
-        letter-spacing: 0px; /* Harflerin ayrılmaması için sıfırlandı */
+        letter-spacing: 0px; 
         padding-left: 100%; 
         animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; 
     } 
@@ -165,15 +165,17 @@ else:
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu: return 0.0
-        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        # 🎯 KESİN PARANTEZ ARINDIRICI: Yahoo araması öncesi tüm parantez ve tırnakları uçurur
+        temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "").strip()
+        if temiz_kod in st.session_state["fiyat_hafizasi"]:
+            saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
             if time.time() - saved_time < 300: return saved_price
         try:
-            ticker = yf.Ticker(f"{hisse_kodu}.IS")
+            ticker = yf.Ticker(f"{temiz_kod}.IS")
             data = ticker.history(period="1d")
             if not data.empty and not pd.isna(data['Close'].iloc[-1]):
                 fiyat = float(data['Close'].iloc[-1])
-                st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
+                st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
                 return fiyat
         except: pass
         return 0.0
@@ -196,22 +198,26 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara).strip()
-                            canli_fiyat = hızlı_canli_fiyat_bul(hisse)
+                            # Hücreden gelen ham listeyi metne alıyoruz
+                            ham_hisse = str(hisse_ara).strip()
+                            # 🎯 TABLO TEMİZLEYİCİ: Ekranda gösterilecek isimdeki parantezleri siler
+                            temiz_hisse = ham_hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "")
+                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                            tablo_alsat.append({"Hisse Kodu 📈": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara).strip()
-                            canli_fiyat = hızlı_canli_fiyat_bul(hisse)
+                            ham_hisse = str(hisse_ara).strip()
+                            temiz_hisse = ham_hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(",AL", "").replace(",SAT", "").replace(" ", "")
+                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
-                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                            if temiz_hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                                st.session_state["ozel_takip_kutusu"][temiz_hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
+                            tablo_al.append({"Hisse Kodu 🚀": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
             except:
                 pass
 
@@ -220,15 +226,3 @@ else:
     else: st.write("🔒 Aktif sinyal taranıyor...")
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
-
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-        tk_list = []
-        for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
-            cfiy = hızlı_canli_fiyat_bul(hisse)
-            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
-            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
-        if tk_list:
-            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
