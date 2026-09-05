@@ -139,9 +139,9 @@ st.markdown("""
     <h4 style="color:#ef4444 !important; margin-top:0;">⚠️ SPK YASAL UYARI</h4>
     <p style="font-size:0.9rem; color:#cbd5e1 !important; margin-bottom:0;">
         Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-        Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri 
+        Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk and getiri tercihleri 
         dikkate alınarak kişiye özel sunulmaktadır. Burada yer alan bilgilere dayanılarak yatırım kararı 
-        verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.
+        verilmesi beklentilenize uygun sonuçlar doğurmayabilir.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -252,5 +252,6 @@ else:
             if time.time() - saved_time < 300:
                 return saved_price
         
-        # İç içe try-except blokları yerine doğrusal akış kullanılmıştır.
         try:
+            hisse_data = yf.download(f"{hisse_kodu}.IS", period="1d", progress=False)
+            fiyat_val = float(hisse_data['Close'].iloc[-1])
