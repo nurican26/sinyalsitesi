@@ -1,4 +1,4 @@
-streamlit
-pandas
-yfinance
-openpyxl
+pip install streamlit
+pip install pandas
+pip install yfinance
+pip install openpyxl
