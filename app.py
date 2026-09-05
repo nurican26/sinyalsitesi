@@ -222,6 +222,7 @@ else:
         st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     def hızlı_canli_fiyat_bul(hisse_kodu):
+        if not hisse_kodu: return 0.0
         if hisse_kodu in st.session_state["fiyat_hafizasi"]:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
             if time.time() - saved_time < 300: return saved_price
@@ -243,10 +244,8 @@ else:
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # ORİJİNAL KOD BLOKLARINA DÖNÜŞ (PARANTEZLERİ TABLODA TEMİZLER)
-    if df_kaynak is not None:
+    # 🛑 YENİ GELİŞMİŞ VERİ MOTORU (GİRİNTİ/EXCEPT HATASI VERMESİ İMKANSIZ)
+    if df_kaynak is not None and len(df_kaynak.columns) > 22:
         for idx in range(2, len(df_kaynak)):
-            try:
-                if len(df_kaynak.columns) > 22:
-                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+            uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+            wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
