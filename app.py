@@ -269,10 +269,11 @@ if os.path.exists(excel_yolu):
                 "Al Sat Skoru": al_sat_skoru
             }
             
-            # Filtreleri gevşetip Excel'de veri varsa listeye ekliyoruz
             if bta_hisse_sutun != "0" and bta_hisse_sutun != "" and bta_hisse_sutun != "nan":
                 bta_listesi.append(satir_veri)
                 
             if al_sat != "0" and al_sat != "" and al_sat != "nan":
                 alsat_listesi.append(satir_veri)
     except Exception as e:
+        st.error(f"Excel Okuma Hatası: {e}")
+else:
