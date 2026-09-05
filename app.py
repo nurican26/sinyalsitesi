@@ -100,7 +100,6 @@ bist_all = [
 with sekme_arama:
     st.markdown("### 🔎 Canlı BIST Tüm Hisse Arama Motoru")
     arama_girdisi = st.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", "").strip().upper()
-    
     if arama_girdisi in bist_all:
         h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
         if not h_data.empty:
@@ -118,7 +117,6 @@ with sekme_arama:
 with sekme_altin:
     st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
     altin_df_data = pd.DataFrame({"Altın Türü": ["Veri Alınamadı"], "Fiyat (TL)": ["0.00"]})
-    
     altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
     if not altin_download.empty:
         df_flat = altin_download.xs('Close', axis=1, drop_level=True) if isinstance(altin_download.columns, pd.MultiIndex) else altin_download['Close']
