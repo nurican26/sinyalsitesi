@@ -5,14 +5,14 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması ve Neon Tasarım (SPK Kutusu CSS'i Dahil)
+# 1. Sayfa Yapılandırması ve Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 25px; margin-bottom: 35px; width: 100%;} .bta-logo {font-family: "Brush Script MT", "Comic Sans MS", cursive, sans-serif !important; font-weight: bold; font-size: 5rem; padding: 10px 50px; background: transparent; background-image: linear-gradient(45deg, #ff007f, #ff00ff, #8b00ff, #0000ff, #00ffff, #00ff00, #ffff00, #ff7f00, #ff0000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(0, 255, 255, 0.4), 4px 4px 10px rgba(0, 0, 0, 0.8); display: inline-block; text-align: center; letter-spacing: 5px;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
-ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
+ZIYARETCI_SIFRESI = "bta3015"
+YONETICI_SIFRESI = "3015"
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -32,7 +32,6 @@ if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] 
 for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
-# Giriş sayısı artırma
 st.session_state["ziyaret_sayaci"] += 102
 
 # BTA LOGO ALANI
@@ -42,10 +41,7 @@ st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></di
 st.markdown("### 🔐 Erişim Paneli şifre girin enter tuşlayın")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
-is_admin = False
-if girilen_sifre == YONETICI_SIFRESI:
-    is_admin = True
+is_admin = (girilen_sifre == YONETICI_SIFRESI)
 
 if is_admin:
     st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
@@ -57,11 +53,9 @@ if is_admin:
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
 
-# 🛠️ ERİŞİM KONTROL MANTIĞI
-erisim_izni = False
-if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
-    erisim_izni = True
-else:
+erisim_izni = mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI
+
+if not erisim_izni:
     st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
 
 # 💥 CANLI FİYAT MOTORU
@@ -79,14 +73,15 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     except: pass
     return 0.0
 
-# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
+# 🟢 ERİŞİM İZNİ GEÇERLİYSE ÇALIŞACAK ALAN
 if erisim_izni:
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        try: 
+            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except: pass
 
     tablo_alsat, tablo_al = [], []
@@ -98,26 +93,32 @@ if erisim_izni:
                 if len(df_kaynak.columns) > 22:
                     uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
                     wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
-                    # 19. İndeks Excel'deki T sütununu yalın bir şekilde okur
-                    t_deg = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
+                    # T sütunu (19. indeks) verisi temizlenerek çekiliyor
+                    t_deg = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else "0"
                     
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0])
+                            hisse = str(h_ara[0])  # str(h_ara) yerine h_ara[0] yapılarak düzeltildi
                             cfiy = hızlı_canli_fiyat_bul(hisse)
-                            # BTA Puanı sadece ve doğrudan T sütunundan (t_deg) alıyoruz
-                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": t_deg, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                            tablo_alsat.append({
+                                "Hisse Kodu 📈": hisse, 
+                                "BTA Puan": t_deg, 
+                                "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."
+                            })
                             
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0])
+                            hisse = str(h_ara[0])  # str(h_ara) yerine h_ara[0] yapılarak düzeltildi
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                            # BTA Puanı sadece ve doğrudan T sütunundan (t_deg) alıyoruz
-                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": t_deg, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                            tablo_al.append({
+                                "Hisse Kodu 🚀": hisse, 
+                                "BTA Puan": t_deg, 
+                                "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."
+                            })
             except: pass
 
     st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
@@ -128,5 +129,5 @@ if erisim_izni:
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
     else: st.write("🔒 Aktif AL sinyali taranıyor...")
 
-    # 🏢 SPK YASAL UYARI KUTUSU (Geri eklenen kısım)
+    # YASAL UYARI KUTUSU
     st.markdown('<div class="spk-kutusu"><b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.</div>', unsafe_allow_html=True)
