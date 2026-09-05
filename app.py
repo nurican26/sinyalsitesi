@@ -17,13 +17,55 @@ st.markdown("""
         background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important; 
         color: #ffffff !important;
     }
-    .bta-logo-konteyner { text-align: center; margin-bottom: 25px; }
-    .bta-logo {
-        font-family: 'Caveat', cursive;
-        font-size: 55px;
-        color: #f1c40f;
-        text-shadow: 0 0 10px rgba(241, 196, 15, 0.5), 2px 2px 4px rgba(0,0,0,0.8);
+    
+    /* BTA Animasyonlu Yıldızlı ve Dönen Çerçeve Tasarımı */
+    .bta-cerceve-alani {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 25px;
+        padding: 10px;
     }
+    .bta-neon-box {
+        position: relative;
+        padding: 15px 50px;
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 15px;
+        overflow: hidden;
+        border: 3px solid #f1c40f;
+        box-shadow: 0 0 20px #f1c40f, inset 0 0 15px rgba(241, 196, 15, 0.3);
+        animation: neonYansima 2s ease-in-out infinite alternate;
+    }
+    .bta-yazi {
+        font-family: 'Caveat', cursive;
+        font-size: 65px;
+        color: #f1c40f;
+        font-weight: 700;
+        text-align: center;
+        margin: 0;
+        line-height: 1;
+    }
+    /* Çerçeve İçinde Dönen Yıldızlar */
+    .yildiz-sol, .yildiz-sag {
+        position: absolute;
+        top: 30%;
+        font-size: 24px;
+        color: #f1c40f;
+        animation: spinYildiz 3s linear infinite;
+    }
+    .yildiz-sol { left: 15px; }
+    .yildiz-sag { right: 15px; }
+    
+    @keyframes spinYildiz {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    @keyframes neonYansima {
+        0% { box-shadow: 0 0 10px #f1c40f; }
+        100% { box-shadow: 0 0 25px #f39c12; }
+    }
+
+    /* Altın Fiyatları Bandı */
     .altin-bandi {
         background-color: rgba(30, 41, 59, 0.8);
         padding: 15px;
@@ -34,17 +76,36 @@ st.markdown("""
         font-size: 16px;
         margin-bottom: 30px;
         border: 1px solid #f1c40f;
-        box-shadow: 0 0 15px rgba(241, 196, 15, 0.2);
     }
     .altin-val { color: #ffffff; font-family: 'Poppins', sans-serif; }
     .stDataFrame, div[data-testid="stTable"] { color: #ffffff !important; }
     h3, h4, p, span, label { color: #ffffff !important; }
     
-    /* Özel Başlık Tasarımları */
     .alt-baslik-bta { border-left: 5px solid #f1c40f; padding-left: 10px; margin-top: 20px; margin-bottom: 10px; font-weight: 600; color: #f1c40f !important; }
     .alt-baslik-alsat { border-left: 5px solid #00d2ff; padding-left: 10px; margin-top: 30px; margin-bottom: 10px; font-weight: 600; color: #00d2ff !important; }
+    
+    /* SPK Yasal Uyarı Alanı */
+    .yasal-uyari-kutusu {
+        margin-top: 50px;
+        padding: 20px;
+        background-color: rgba(30, 41, 59, 0.6);
+        border-top: 3px solid #e74c3c;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #bdc3c7 !important;
+        text-align: justify;
+        line-height: 1.6;
+    }
 </style>
-<div class="bta-logo-konteyner"><div class="bta-logo">BTA Analiz & Finans Takip Paneli</div></div>
+
+<!-- Dönen Yıldızlı ve Kayan Efektli BTA Başlığı -->
+<div class="bta-cerceve-alani">
+    <div class="bta-neon-box">
+        <span class="yildiz-sol">★</span>
+        <h1 class="bta-yazi">BTA</h1>
+        <span class="yildiz-sag">★</span>
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 # 2. Canlı Altın Fiyatları
@@ -93,56 +154,58 @@ with sol_kolon:
                 
                 if hisse_kodu != "" and hisse_kodu != "None":
                     bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
-                    al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"
-                    al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"
-                    bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"
-                    bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0"
+                    al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0" # D Sütunu
+                    al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"      # E Sütunu
+                    bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G Sütunu
                     
-                    # Canlı fiyat çekme
+                    # Canlı piyasa verisi çekme (Ok işaretleri için)
                     try:
                         ticker = yf.Ticker(f"{hisse_kodu}.IS")
-                        canli_fiyat = ticker.history(period="1d")['Close'].iloc[-1]
+                        hisse_data = ticker.history(period="1d")
+                        canli_fiyat = hisse_data['Close'].iloc[-1]
+                        
+                        # Anlık durum ok işaretleri
+                        onceki_kapanis = ticker.info.get('previousClose', canli_fiyat)
+                        if canli_fiyat > onceki_kapanis:
+                            canli_durum_oku = "▲ Yükselişte"
+                        elif canli_fiyat < onceki_kapanis:
+                            canli_durum_oku = "▼ Düşüşte"
+                        else:
+                            canli_durum_oku = "● Yatay"
                     except:
                         canli_fiyat = bta_alimi
+                        canli_durum_oku = "● Spot Canlı"
                     
-                    # Kar / Zarar (%) Hesaplama
-                    if bta_alimi > 0 and canli_fiyat > 0:
-                        kz = ((canli_fiyat - bta_alimi) / bta_alimi) * 100
-                        kar_zarar_str = f"%{kz:+.2f}"
-                    else:
-                        kar_zarar_str = "%0.00"
-                    
-                    satir_veri = {
-                        "Hisse Kodu": hisse_kodu,
-                        "BTA Puanı": bta_puani,
-                        "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
-                        "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
-                        "Kar / Zarar (%)": kar_zarar_str,
-                        "Al Sat Skoru": al_sat_skoru,
-                        "Al Sat": al_sat,
-                        "BTA Hisse": bta_hisse_sutun
-                    }
-                    
-                    # FİLTRE 1: G Sütununda (BTA Hisse) '0' yazmıyorsa ve boş değilse BTA listesine ekle
+                    # 1. Filtre: G Sütununda hisse adı varsa BTA Listesine ekle (Sıralama: BTA Hisse başa alındı)
                     if bta_hisse_sutun != "0" and bta_hisse_sutun != "":
-                        bta_listesi.append(satir_veri)
+                        bta_listesi.append({
+                            "BTA Hisse": bta_hisse_sutun,
+                            "BTA Puanı (Skor)": al_sat_skoru, # D sütunundaki puan
+                            "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
+                            "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL"
+                        })
                         
-                    # FİLTRE 2: E Sütununda (Al Sat) '0' yazmıyorsa ve boş değilse Al Sat listesine ekle
+                    # 2. Filtre: E Sütununda hisse adı varsa Al Sat Listesine ekle (Sıralama: Al Sat başa alındı)
                     if al_sat != "0" and al_sat != "":
-                        alsat_listesi.append(satir_veri)
+                        alsat_listesi.append({
+                            "Al Sat": al_sat,
+                            "Al Sat Skoru": al_sat_skoru,
+                            "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
+                            "Piyasa Yönü": canli_durum_oku # Kar/zarar yerine canlı ok işaretleri geldi
+                        })
             
-            # 1. TABLO: BTA HİSSELERİ
+            # 1. GÖRSEL TABLO: BTA HİSSELERİ
             st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
             if len(bta_listesi) > 0:
-                bta_df = pd.DataFrame(bta_listesi)[["Hisse Kodu", "BTA Puanı", "BTA Alım Fiyatı", "Anlık Canlı Fiyat", "Kar / Zarar (%)", "BTA Hisse"]]
+                bta_df = pd.DataFrame(bta_listesi)[["BTA Hisse", "BTA Puanı (Skor)", "BTA Alım Fiyatı", "Anlık Canlı Fiyat"]]
                 st.dataframe(bta_df, use_container_width=True, hide_index=True)
             else:
                 st.caption("Şu anda aktif BTA modeli hissesi bulunmuyor.")
 
-            # 2. TABLO: AL SAT HİSSELERİ
+            # 2. GÖRSEL TABLO: AL SAT HİSSELERİ
             st.markdown('<div class="alt-baslik-alsat">🚦 Al Sat Sinyal Hisseleri</div>', unsafe_allow_html=True)
             if len(alsat_listesi) > 0:
-                alsat_df = pd.DataFrame(alsat_listesi)[["Hisse Kodu", "Anlık Canlı Fiyat", "Kar / Zarar (%)", "Al Sat Skoru", "Al Sat"]]
+                alsat_df = pd.DataFrame(alsat_listesi)[["Al Sat", "Al Sat Skoru", "Anlık Canlı Fiyat", "Piyasa Yönü"]]
                 st.dataframe(alsat_df, use_container_width=True, hide_index=True)
             else:
                 st.caption("Şu anda aktif Al Sat sinyali veren hisse bulunmuyor.")
@@ -169,6 +232,3 @@ with sag_kolon:
                     st.success(f"**📈 {arama_input} - Canlı Spot Verisi Başarıyla Çekildi**")
                     st.metric(label="Anlık Hisse Fiyatı", value=f"{son_fiyat:,.2f} TL", delta=f"{degisim:+.2f}%")
                 else:
-                    st.error("Hisse kodu bulunamadı. Lütfen geçerli bir kod girin (Örn: EREGL).")
-            except:
-                st.error("Veri çekme hatası.")
