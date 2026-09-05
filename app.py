@@ -179,17 +179,14 @@ else:
 
     # --- 🪙 CANLI ALTIN PİYASASI PANELİ ---
     try:
-        # Canlı verileri internetten çekiyoruz
         ons_gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
         dolar_tl = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
         
-        # Altın Hesaplama Motoru (TL)
         gram_altin = (ons_gold / 31.1034768) * dolar_tl
-        ceyrek_altin = gram_altin * 1.605 * 1.02  # İşçilik ve komisyon dahil yaklaşık çeyrek oranları
+        ceyrek_altin = gram_altin * 1.605 * 1.02  
         yarim_altin = ceyrek_altin * 2
         tam_altin = ceyrek_altin * 4
         
-        # Ekrana 4'lü neon sıra halinde basıyoruz
         col_g, col_c, col_y, col_t = st.columns(4)
         with col_g:
             st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">🟡 GRAM ALTIN</div><div class="altin-fiyat-kart">{gram_altin:.2f} TL</div></div>', unsafe_allow_html=True)
@@ -200,7 +197,6 @@ else:
         with col_t:
             st.markdown(f'<div class="altin-box"><div class="altin-baslik-kart">👑 TAM ALTIN</div><div class="altin-fiyat-kart">{tam_altin:.2f} TL</div></div>', unsafe_allow_html=True)
     except:
-        # İnternette anlık bir donma olursa sistem hata vermez, gizlice geçer
         pass
 
     # Excel Okuma
@@ -242,20 +238,23 @@ else:
                 return kelime
         return ""
 
+    # 🔍 BORSADA HİSSE ARAMA MOTORU (TÜM BIST HİSSELERİ İÇİN KESİN ÇÖZÜM)
+    st.markdown("### 🔍 BIST Hisse Arama Motoru")
+    arama_sorgusu = st.text_input("Aramak istediğiniz hisse kodunu yazın (Örn: THYAO, SONME):", placeholder="Hisse ara...").strip().upper()
+
     tablo_alsat = []
     tablo_al = []
 
-    if df_kaynak is not None:
+    # GÜVENLİ VE HIERARCHY HATASI VERMEYEN DÜZ MOTOR
+    if df_kaynak is not None and len(df_kaynak.columns) > 22:
         for idx in range(2, len(df_kaynak)):
-            try:
-                if len(df_kaynak.columns) > 22:
-                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
-                    t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
-                    
-                    # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
-                    if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        temiz_hisse = saf_hisse_kodu_bul(uv_degeri)
-                        if temiz_hisse:
-                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+            uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+            wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+            t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
+            
+            # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
+            if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                temiz_hisse = saf_hisse_kodu_bul(uv_degeri)
+                if temiz_hisse:
+                    if not arama_sorgusu or arama_sorgusu in temiz_hisse:
+                        canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
