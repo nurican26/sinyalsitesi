@@ -89,7 +89,7 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
     st.stop()
 
-# 🎯 GİRİNTİ HATASINI ENGELLEYEN YENİ NESİL PANEL SEÇİCİ
+# 🎯 GİRİNTİ VEYA SÖZDİZİMİ HATASINI ENGELLEYEN YENİ NESİL PANEL SEÇİCİ
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📱 Ek Gösterge Paneli")
 secilen_panel = st.sidebar.radio("Görüntülemek istediğiniz aracı seçin:", ["🔎 Tüm BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
@@ -118,11 +118,12 @@ if secilen_panel == "🔎 Tüm BIST Arama Motoru":
 
 if secilen_panel == "🪙 Canlı Altın Takibi":
     st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
-    altin_df_data = pd.DataFrame({"Altın Türü": ["Veri Alınamadı"], "Fiyat (TL)": ["0.00"]})
-    altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
-    if not altin_download.empty:
+    try:
+        altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
         df_flat = altin_download.xs('Close', axis=1, drop_level=True) if isinstance(altin_download.columns, pd.MultiIndex) else altin_download['Close']
         ons_v = float(df_flat["GC=F"].dropna().iloc[-1])
         usd_v = float(df_flat["TRY=X"].dropna().iloc[-1])
         g_altin = (ons_v / 31.1034768) * usd_v
+        
         altin_df_data = pd.DataFrame({
+            "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"],
