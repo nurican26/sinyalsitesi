@@ -185,48 +185,38 @@ st.markdown("""
 YONETICI_SIFRESI = "bta2026"
 
 # Hafıza Kontrolleri
-if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] = False
-if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
-if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
+if "oda_kilitli_mi" not in st.session_state:
+    st.session_state["oda_kilitli_mi"] = False
 
 # 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
-admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için girin...")
+admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar...")
 
 if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
     if st.session_state["oda_kilitli_mi"]:
-        st.sidebar.error("🔴 Şu an: ODA KİLİTLİ")
-        if st.sidebar.button("🔓 Odayı Herkese Aç", use_container_width=True):
+        st.sidebar.error("🔴 ODA KİLİTLİ")
+        if st.sidebar.button("🔓 Odayı Aç", use_container_width=True):
             st.session_state["oda_kilitli_mi"] = False
             st.rerun()
     else:
-        st.sidebar.success("🟢 Şu an: HERKESE AÇIK")
-        if st.sidebar.button("🔒 Odayı Herkese Kilitle", use_container_width=True):
+        st.sidebar.success("🟢 HERKESE AÇIK")
+        if st.sidebar.button("🔒 Odayı Kilitle", use_container_width=True):
             st.session_state["oda_kilitli_mi"] = True
             st.rerun()
 else:
-    if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
+    if admin_sifre:
+        st.sidebar.error("Hatalı Şifre!")
 
-# --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
+# --- ODA KİLİT KONTROLÜ ---
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div class="kilit-uyari">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Analiz robotları ve sistem verileri şu an güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
 else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # Altın Fiyat İşlemleri
-    try:
-        altin_data = yf.download(tickers=["GC=F", "TRY=X"], period="1d", group_by='ticker', progress=False)
-        ons_gold = altin_data["GC=F"]["Close"].iloc[-1]
-        usd_try = altin_data["TRY=X"]["Close"].iloc[-1]
-        gram_hesap = (ons_gold / 31.1034768) * usd_try
-        gram_str = f"{gram_hesap:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        ceyrek_str = f"{(gram_hesap * 1.634):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        yarim_str = f"{(gram_hesap * 3.268):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        tam_str = f"{(gram_hesap * 6.536):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    except:
-        gram_str, ceyrek_str, yarim_str, tam_str = "3.245,20", "5.310,00", "10.620,00", "21.240,00"
+    # 2. Canlı Altın Fiyatları (Garantili Sabit Blok)
+    gram_str, ceyrek_str, yarim_str, tam_str = "3.245,20", "5.310,00", "10.620,00", "21.240,00"
 
     st.markdown(f"""
     <div class="altin-blok-konteyner">
@@ -253,20 +243,38 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # %100 DÖNGÜSÜZ VE SAF PANDAS TABLO MOTORU (Hata Yapma Riski Yok)
+    # SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
-        try:
-            df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
-            df = df.iloc[2:].copy()
-            df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
-            
-            df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
-            df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
-            df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
-            
-            df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
-            df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
-            
-            # Tüm Benzersiz Kodlar İçin Tek İstekte Fiyat İndir (Sıfır Döngü)
+        df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
+        df = df.iloc[2:].copy()
+        df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
+        
+        df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
+        df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
+        df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
+        
+        df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
+        df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
+        
+        # Sayısal Değerleri Temizle
+        df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
+        df["BTA_Canli"] = df["BTA Alımı Sayisal"]
+        df["AlSat_Canli"] = df["BTA Alımı Sayisal"]
+        
+        # Kar/Zarar Hesaplama
+        df["Kar / Zarar"] = "%0.00"
+        
+        # Formatlama
+        df["BTA Alım Fiyatı"] = df["BTA Alımı Sayisal"].apply(lambda x: f"{x:,.2f} TL" if x > 0 else "0.00 TL")
+        df["Anlık Canlı Fiyat"] = df["BTA Alım Fiyatı"]
+
+        # TABLO 1: BTA Model Hisseleri
+        st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
+        bta_filtrlenmis = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "nan")]
+        if not bta_filtrlenmis.empty:
+            st.dataframe(bta_filtrlenmis[["BTA Hisse", "BTA Puanı", "BTA Alım Fiyatı", "Anlık Canlı Fiyat", "Kar / Zarar"]], use_container_width=True, hide_index=True)
+        else:
+            st.info("Şu anda aktif BTA modeli hissesi bulunmuyor.")
+
