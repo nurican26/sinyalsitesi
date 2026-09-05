@@ -261,7 +261,6 @@ else:
         # 🎯 KESİN FİLTRE: "BTA Hisse" (F sütunu) hücresi boşsa veya geçersizse o satırı kökten yok et!
         df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
         
-        # Eğer bu filtreden sonra hala veri kaldıysa işlemleri yürüt
         if not df.empty:
             df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
             df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
@@ -270,8 +269,9 @@ else:
             benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
             istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
             
+            # İf/Else Girinti Hatası Çıkaran Blok Tamamen Düzleştirildi
+            fiyat_sozluk = {}
             try:
                 canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
                 if len(istek_kodlari) == 1:
                     fiyat_sozluk = {istek_kodlari[0].replace(".IS", ""): canli_data.iloc[-1]}
-                else:
