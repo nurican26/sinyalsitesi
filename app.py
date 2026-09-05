@@ -242,27 +242,29 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # GARANTİLİ VE FİLTRE KAÇIRMAYAN YENİ TABLO MOTORU
+    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
-        # Excel dosyasını BTA sayfasından yükle
+        # Excel dosyasını BTA sayfasından ham veri olarak yükle
         raw_df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
         
-        # İlk 2 satırı (varsa başlıkları) atlayarak temiz bir kopya alıyoruz
-        df_clean = raw_df.iloc[2:].copy()
+        # İlk 2 satırı (Başlıkları) atlayıp kolonları kilitliyoruz
+        df = raw_df.iloc[2:].copy()
+        df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Benzersiz hisse kodlarını topla ve internet verisi için temizle
-        hisse_kodlari = []
-        for idx, row in df_clean.iterrows():
-            # A sütunundaki (0. index) ham hisse kodunu oku
-            kod_ham = str(row[0]).strip() if pd.notna(row[0]) else ""
-            if kod_ham and kod_ham != "nan" and kod_ham != "None" and kod_ham not in hisse_kodlari:
-                hisse_kodlari.append(kod_ham)
-                
-        istek_kodlari = [f"{k}.IS" for k in hisse_kodlari]
+        # Sütunlardaki boşlukları ve tip hatalarını temizle
+        df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
+        df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
+        df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
         
-        # Borsa Fiyatlarını Tek Seferde Toplu Çek
+        df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
+        df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
+        
+        # Canlı Fiyatları Tek İstekte Çek
+        benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
+        istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and k != "nan" and k != "None"]
+        
         try:
             canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
             if len(istek_kodlari) == 1:
@@ -272,14 +274,7 @@ else:
         except:
             fiyat_sozluk = {}
             
-        bta_listesi = []
-        alsat_listesi = []
+        # Sayısal Alım Fiyatını Çevir
+        df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
         
-        # Verileri Tam Sütun Mantığına Göre Satır Satır İşle
-        for idx, row in df_clean.iterrows():
-            # Excel'deki Gerçek Dağılım:
-            # row[0] = Hisse Kodu (Ana Anahtar)
-            # row[1] = BTA Alımı
-            # row[2] = Al Sat Skoru (C Sütunu)
-            # row[3] = Al Sat (D Sütunu)
-            # row[4] = BTA Puanı (E Sütunu)
+        # Fiyat Haritalamalarını Kayma Olmadan Eşleştir
