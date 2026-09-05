@@ -210,10 +210,10 @@ if os.path.exists(excel_yolu):
             
             if hisse_kodu != "" and hisse_kodu != "None":
                 bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
-                al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"  # D SÜTUNU (index 3) -> Al Sat Skoru
-                al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"        # E SÜTUNU (index 4)
-                bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"     # F SÜTUNU (index 5) -> BTA Puanı
-                bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G SÜTUNU (index 6) -> BTA Hisse Adı
+                al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"  # D SÜTUNU -> Al Sat Skoru
+                al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"        # E SÜTUNU
+                bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"     # F SÜTUNU -> BTA Puanı
+                bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G SÜTUNU -> BTA Hisse Adı
                 
                 canli_fiyat = canli_fiyatlar.get(hisse_kodu, bta_alimi)
                 if canli_fiyat == 0: 
@@ -254,13 +254,3 @@ if os.path.exists(excel_yolu):
 else:
     st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
 
-# 4. GENEL HİSSE ARAMA MOTORU
-st.markdown("---")
-st.markdown('<div class="alt-baslik-bta">🔍 Genel Hisse Arama Motoru</div>', unsafe_allow_html=True)
-arama_input = st.text_input("Hisse Kodu Yazın ve Enter'a Basın (Örn: THYAO):", key="hisse_ara").upper()
-
-if arama_input:
-    try:
-        hisse_ticker = yf.Ticker(f"{arama_input}.IS")
-        hisse_data = hisse_ticker.history(period="1d")
-        if not hisse_data.empty:
