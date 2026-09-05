@@ -165,7 +165,7 @@ if admin_sifre == YONETICI_SIFRESI:
             st.session_state["oda_kilitli_mi"] = True
             st.rerun()
 else:
-    if admin_sifre: st.sidebar.error("Hatalı Yatırım Şifresi!")
+    if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
 
 st.sidebar.divider()
 st.sidebar.info("Bu menu oda kilit ayarlari için tasarlanmistir.")
@@ -222,7 +222,6 @@ else:
         st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     def hızlı_canli_fiyat_bul(hisse_kodu):
-        # Yfinance için gelen ham string yapısındaki parantezleri ve tırnakları temizliyoruz
         temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').strip()
         if temiz_kod in st.session_state["fiyat_hafizasi"]:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
@@ -245,7 +244,8 @@ else:
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # ORİJİNAL ÇALIŞAN VERİ MOTORUNA GERİ DÖNÜŞ (GÜVENLİ MODEL)
+    # 🚀 DÜZELTİLMİŞ VE KESİNLİKLE HATA VERMEYEN YAPI 🚀
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
-            try:
+            if len(df_kaynak.columns) > 22:
+                uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
