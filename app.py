@@ -83,19 +83,6 @@ st.markdown("""
     
     .alt-baslik-bta { border-left: 5px solid #f1c40f; padding-left: 10px; margin-top: 20px; margin-bottom: 10px; font-weight: 600; color: #f1c40f !important; }
     .alt-baslik-alsat { border-left: 5px solid #00d2ff; padding-left: 10px; margin-top: 30px; margin-bottom: 10px; font-weight: 600; color: #00d2ff !important; }
-    
-    /* SPK Yasal Uyarı Alanı */
-    .yasal-uyari-kutusu {
-        margin-top: 50px;
-        padding: 20px;
-        background-color: rgba(30, 41, 59, 0.6);
-        border-top: 3px solid #e74c3c;
-        border-radius: 8px;
-        font-size: 12px;
-        color: #bdc3c7 !important;
-        text-align: justify;
-        line-height: 1.6;
-    }
 </style>
 
 <!-- Dönen Yıldızlı BTA Başlığı -->
@@ -154,9 +141,9 @@ with sol_kolon:
                 
                 if hisse_kodu != "" and hisse_kodu != "None":
                     bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
-                    al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0" # D Sütunu
-                    al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"      # E Sütunu
-                    bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G Sütunu
+                    al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"
+                    al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"
+                    bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0"
                     
                     try:
                         ticker = yf.Ticker(f"{hisse_kodu}.IS")
@@ -230,9 +217,3 @@ with sag_kolon:
                     st.error("Hisse kodu bulunamadı. Lütfen geçerli bir kod girin (Örn: EREGL).")
             except:
                 st.error("Veri çekme hatası.")
-
-# 3. YASAL UYARI METNİ (Kapatılmayan Tırnak Hatası Giderildi!)
-st.markdown("""
-<div class="yasal-uyari-kutusu">
-    <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-    Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri
