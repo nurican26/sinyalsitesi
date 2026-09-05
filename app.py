@@ -120,7 +120,7 @@ st.markdown("""
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "3015"
 
-# Hafıza Kontrolleri (Bozulmayı Önleyen State Ayarları)
+# Hafıza Kontrolleri
 if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] = False
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
@@ -148,7 +148,6 @@ if admin_sifre == YONETICI_SIFRESI:
 else:
     if admin_sifre: st.sidebar.error("Hatalı Yönetici Şifresi!")
 
-
 # --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div class="kilit-uyari">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Analiz robotları ve sistem verileri şu an güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
@@ -156,10 +155,9 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # --- 📈 YENİ EKLEME: CANLI BIST 100 VE ALTIN FİYATLARI ALANI ---
+    # --- 📊 CANLI PİYASA TAKİP ALANI ---
     st.markdown("### 📊 Canlı Piyasa Takip Ekranı")
     col1, col2, col3, col4, col5 = st.columns(5)
-    
     with col1:
         st.markdown('<div class="piyasa-kutusu"><h4>📉 BIST 100</h4><h2>14.012,42</h2><p style="color:#2ecc71!important;">+%0.57</p></div>', unsafe_allow_html=True)
     with col2:
@@ -170,7 +168,6 @@ else:
         st.markdown('<div class="piyasa-kutusu"><h4>🥈 Yarım Altın</h4><h2>22.492 TL</h2><p style="color:#e74c3c!important;">-%0.74</p></div>', unsafe_allow_html=True)
     with col5:
         st.markdown('<div class="piyasa-kutusu"><h4>👑 Tam Altın</h4><h2>44.984 TL</h2><p style="color:#e74c3c!important;">-%0.74</p></div>', unsafe_allow_html=True)
-
 
     # Excel Okuma
     df_kaynak = None
@@ -225,8 +222,8 @@ else:
                             temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
                             if temiz_isim:
                                 canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
-                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                                bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                                puan_bul = re.findall(r'[-+]?\d* Albariño|\d+', uv_degeri)
+                                bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
                                 tablo_alsat.append({"Hisse Kodu 📈": temiz_isim, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
@@ -235,4 +232,5 @@ else:
                             temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
                             if temiz_isim:
                                 canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
-                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
+                                puan_bul = re.findall(r'[-+]?\d* Albariño|\d+', wv_degeri)
+                                bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else wv_degeri)
