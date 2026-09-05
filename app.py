@@ -4,8 +4,8 @@ import datetime
 import yfinance as yf
 import os
 
-# 1. SAYFA AYARLARI VE TELEFON UYUMLU NEON TASARIM
-st.set_page_config(page_title="BTA Piyasalar", page_icon="📈", layout="wide")
+# 1. SAYFA YAPILANDIRMASI VE TELEFON UYUMLU SÜPER NEON TASARIM
+st.set_page_config(page_title="BTA Canlı Piyasalar", page_icon="📈", layout="wide")
 
 st.markdown("""
 <style>
@@ -90,11 +90,34 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.stop()
 
 # ÜST PANEL SEKMELERİ
-sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
+sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 TÜM BIST ARAMA MOTORU", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
 
 with sekme_arama:
-    st.markdown("### 🔎 BIST Hisse Arama Filtresi")
-    arama_kelimesi = st.text_input("Filtrelemek istediğiniz hisse kodunu yazın (Örn: THYAO):", "").strip().upper()
+    st.markdown("### 🔎 Canlı BIST Tüm Hisse Arama Motoru")
+    arama_girdisi = st.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS, EREGL):", "").strip().upper()
+    
+    # 🎯 TÜM AKTİF BIST HİSSE LİSTESİ HAFIZASI
+    bist_all = [
+        "A1CAP", "ACSEL", "ADEL", "ADESE", "AGHOL", "AGROT", "AHGAZ", "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGGY", "ALKA", "ALKIM", "ALTNY", "ALVES", "ANELE", "ANGEN", "ANHYT", "ANSGR", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", "ASCEG", "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BAKAB", "BALAT", "BANVT", "BARMA", "BASCM", "BASGZ", "BATIS", "BAYRK", "BEGYO", "BERA", "BEYAZ", "BFREN", "BIENY", "BIGCH", "BIMAS", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BMSCH", "BMSTR", "BOBET", "BORLE", "BORSK", "BOSSA", "BRISA", "BRKVY", "BRMEN", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CEOEM", "CIMSA", "CLEBI", "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CUSAN", "CVKMD", "CWENE", "DAGHL", "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DIRIT", "DITAS", "DMSAS", "DNISI", "DOAS", "DOCO", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGEPO", "EGGUB", "EGPRO", "EGSER", "EKGYO", "EKIZ", "EKLOS", "EKOS", "ELITE", "EMKEL", "ENERY", "ENJSA", "ENKAI", "EPLAS", "ERBOS", "EREGL", "ERSU", "ESCAR", "ESCOM", "ESEN", "ETILR", "EUPWR", "EUREK", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FRIGO", "FROTO", "FZLGY", "GARAN", "GENTS", "GEREL", "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GMTTR", "GNEV", "GOLTS", "GOODY", "GOZDE", "GRNYO", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HATEK", "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", "ICKU", "IDGYO", "IEYHO", "IHAAS", "IHEVA", "IHGZT", "IHLAL", "IHLAS", "IHMAD", "IKND", "IMAGE", "INGRM", "INTEM", "INVEST", "ISATR", "ISBTR", "ISCTR", "ISDMR", "ISFIN", "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISYAT", "ITTFH", "IZENR", "IZFAS", "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", "KBTX", "KBUTY", "KCAER", "KCHOL", "KENT", "KERVN", "KERVT", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRGY", "KLSYN", "KLYS", "KMELE", "KMPUR", "KNFRT", "KOBIL", "KONFG", "KONTR", "KONYA", "KORDS", "KOZAA", "KOZAL", "KPLN", "KPTL", "KRALS", "KRTEK", "KRVGD", "KSTUR", "KTLEV", "KTSKR", "KUTPO", "KUVVA", "KVAZ", "LIDER", "LIDFA", "LINK", "LMKDC", "LOGO", "LRSHO", "LUKSK", "MAALT", "MACKO", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARKA", "MARTI", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MEPET", "MERCN", "MERIT", "MERKO", "METUR", "METRO", "MGROS", "MIPAZ", "MIATK", "MMCAS", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MRGYO", "MRSHL", "MSGYO", "MTRKS", "MTRYO", "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NUGYO", "NUHCM", "OBAMS", "ODAS", "ODINE", "ONCSM", "ORCA", "ORGE", "ORMA", "OSMEN", "OSTIM", "OTKAR", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZATD", "OZGYO", "OZKGY", "OZSUB", "OZUCP", "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATRK", "PCILT", "PEGYO", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", "PGSUS", "PINSU", "PKENT", "PKART", "PLTUR", "PNLSN", "PNSUT", "POLHO", "POLTK", "PRKAB", "PRKME", "PRMA", "PRZMA", "PSDTC", "PSGYO", "QNBFB", "QNBFL", "QUAGR", "RALYH", "RAYSG", "REEDR", "RNPOL", "RODRG", "ROYAL", "RYSAS", "RYGYO", "SAFKR", "SAHOL", "SAMAT", "SANEL", "SANFM", "SANKO", "SARKY", "SASA", "SAYAS", "SDTTR", "SEKFA", "SEKO", "SELEC", "SELVA", "SEYKM", "SILVR", "SIMART", "SINKO", "SNGYO", "SNTRA", "SOKMD", "SONME", "SRVGY", "SUWEN", "TABGD", "TAFEX", "TARKM", "TATEN", "TATGD", "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TEZOL", "TGSAS", "THYAO", "TLMAN", "TMPOL", "TMSN", "TNZTP", "TOASO", "TORUN", "TSKB", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", "TURGG", "TURSG", "UFUK", "ULAS", "ULFA", "ULKER", "ULUSE", "UNLU", "USAK", "VAKFN", "VAKKO", "VAKMY", "VALF", "VANET", "VBTYZ", "VERTU", "VESTL", "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBCLK", "YEOTK", "YGGYO", "YGYO", "YKBNK", "YLTEK", "YONGA", "YOTK", "YUNSA", "YYLGD", "ZEDUR", "ZRGYO"
+    ]
+    
+    if arama_girdisi:
+        if arama_girdisi in bist_all:
+            # Tekil hisse sorgusunu en kararlı şekilde yfinance ile indir
+            h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
+            if not h_data.empty:
+                c_price = float(h_data['Close'].dropna().iloc[-1])
+                st.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
+                st.metric(label="Anlık Canlı Fiyat (TL)", value=f"{c_price:,.2f} TL")
+            else:
+                st.error("Fiyat bilgisi şu an Yahoo sunucularından çekilemedi.")
+        else:
+            # Benzer kodları süzüp göster
+            benzerler = [h for h in bist_all if arama_girdisi in h]
+            if benzerler:
+                st.info(f"Aradığınız koda benzer {len(benzerler)} hisse bulundu: " + ", ".join(benzerler))
+            else:
+                st.error("Borsa İstanbul listesinde böyle bir hisse kodu bulunamadı!")
 
 with sekme_altin:
     st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
@@ -111,63 +134,3 @@ with sekme_altin:
     except:
         pass
     st.table(altin_df_data)
-
-with sekme_sohbet:
-    st.markdown("### 💬 Bilgi Paylaşım & Analiz Notları")
-    s_isim = st.text_input("Kullanıcı Adınız:", value="Yatırımcı")
-    s_mesaj = st.text_input("Mesaj içeriği:", placeholder="Notunuzu buraya ekleyin...")
-    if st.button("✉️ Mesajı İlet") and s_mesaj.strip():
-        saat = datetime.datetime.now().strftime("%H:%M:%S")
-        st.session_state["sohbet_gecmisi"].insert(0, f"[{saat}] **{s_isim}**: {s_mesaj}")
-        st.toast("Not kaydedildi!", icon="💬")
-    for msg in st.session_state["sohbet_gecmisi"][:8]:
-        st.markdown(msg)
-
-st.markdown("---")
-
-# =========================================================================
-# %100 GARANTİLİ VE HIZLI EXCEL LİSTELEME MOTORU (SIFIR HATA RİSKİ)
-# =========================================================================
-excel_adi = "nurican.xls.xlsm"
-
-if os.path.exists(excel_adi):
-    df_excel = pd.read_excel(excel_adi, header=None, engine="openpyxl")
-    
-    t_alsat_list = []
-    t_al_list = []
-    
-    # Excel verisini listelere doğrudan doldurma (Hata payı sıfır)
-    if len(df_excel.columns) > 22:
-        for satir_idx in range(2, len(df_excel)):
-            u_cell = str(df_excel.iloc[satir_idx, 20]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 20]) else ""
-            w_cell = str(df_excel.iloc[satir_idx, 22]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 22]) else ""
-            t_cell = str(df_excel.iloc[satir_idx, 19]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 19]) else "0.0"
-            
-            # U Sütunu Filtreleme (Dönsmsel Al/Sat)
-            if u_cell and u_cell not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                if arama_kelimesi == "" or arama_kelimesi in u_cell:
-                    t_alsat_list.append({"Hisse Kodu 📈": u_cell, "BTA Puan": t_cell})
-            
-            # W Sütunu Filtreleme (Sadece Al)
-            if w_cell and w_cell not in ["NAN", "NONE", "W_SÜTUNU"]:
-                if arama_kelimesi == "" or arama_kelimesi in w_cell:
-                    t_al_list.append({"Hisse Kodu 📈": w_cell})
-
-    # EKRANA VERİLERİ YAN YANA BASMA ALANI
-    c1, c2 = st.columns(2)
-    
-    with c1:
-        st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL/SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-        if len(t_alsat_list) > 0:
-            st.dataframe(pd.DataFrame(t_alsat_list), use_container_width=True)
-        else:
-            st.info("Listelenecek veri bulunamadı.")
-            
-    with c2:
-        st.markdown('<div class="al-baslik">🟢 SADECE AL SİNYALLERİ (W)</div>', unsafe_allow_html=True)
-        if len(t_al_list) > 0:
-            st.dataframe(pd.DataFrame(t_al_list), use_container_width=True)
-        else:
-            st.info("Listelenecek veri bulunamadı.")
-else:
-    st.error("⚠️ 'nurican.xls.xlsm' veri tabanı dosyası ana dizinde bulunamadı!")
