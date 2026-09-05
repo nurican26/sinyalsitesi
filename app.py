@@ -54,12 +54,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 🔑 PARAMETRELER
-YONETICI_SIFRESI = "bta2026"
-
-# KİLİDİN BAŞLANGIÇTA HERKESE AÇIK OLMASI İÇİN FORCE FALSE YAPIYORUZ
-if "oda_kilitli_mi" not in st.session_state:
-    st.session_state["oda_kilitli_mi"] = False
+# 🔑 PARAMETRELER VE HAFIZA
 if "sohbet_gecmisi" not in st.session_state:
     st.session_state["sohbet_gecmisi"] = []
 
@@ -69,38 +64,11 @@ st.markdown("""
 <div class="spk-kutusu">
     <h4 style="color:#ef4444 !important; margin-top:0;">⚠️ SPK YASAL UYARI</h4>
     <p style="font-size:0.9rem; color:#cbd5e1 !important; margin-bottom:0;">
-        Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
+        Burada yer alan yatırım bilgi, yorumer ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
         Burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.
     </p>
 </div>
 """, unsafe_allow_html=True)
-
-# 🛠️ SOL YAN MENÜ: ODA YÖNETİM MERKEZİ
-st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
-admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
-
-# SIFRE DOGRUYSA BUTONA GEREK KALMADAN KILIDI ACMAYA YETKI VERELIM VEYA DURUMU GOSTERELIM
-if admin_sifre == YONETICI_SIFRESI:
-    st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
-    if st.session_state["oda_kilitli_mi"]:
-        if st.sidebar.button("🔓 Odadaki Kilidi Kaldır (Herkes Girebilsin)", use_container_width=True):
-            st.session_state["oda_kilitli_mi"] = False
-            st.rerun()
-    else:
-        if st.sidebar.button("🔒 Odayı Geçici Olarak Kilitle", use_container_width=True):
-            st.session_state["oda_kilitli_mi"] = True
-            st.rerun()
-else:
-    # Eğer şifre girilmemişse ve buton kilit takılı kalmışsa yöneticinin paneli sıfırlayabilmesi için acil durum kilidi butonu
-    if st.sidebar.checkbox("Yönetici Değilim / Sorun Gider"):
-        if st.sidebar.button("Hafızayı Temizle ve Odayı Aç"):
-            st.session_state["oda_kilitli_mi"] = False
-            st.rerun()
-
-# KİLİT KONTROLÜ
-if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
-    st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
-    st.stop()
 
 # =========================================================================
 # GÜVENLİ ETKİLEŞİM SEKMELERİ
@@ -132,3 +100,36 @@ with sekme_arama:
                 
                 k1, k2, k3 = st.columns(3)
                 k1.metric("Son Kapanış Fiyatı", f"{son_fiyat:.2f} TL")
+                k2.metric("Günlük Değişim", f"{degisim:.2f}%", delta=f"{degisim:.2f}%")
+                k3.metric("En Yüksek (Aylık)", f"{gecmis_veri['High'].max():.2f} TL")
+                
+                st.markdown("### 📊 Son 1 Aylık Fiyat Hareketi")
+                st.line_chart(gecmis_veri['Close'])
+                
+                with st.expander("📋 Son Dönem Detaylı Veri Tablosu"):
+                    st.dataframe(gecmis_veri.tail(10), use_container_width=True)
+            else:
+                st.warning(f"⚠️ {secilen_hisse} için güncel veri çekilemedi.")
+        except Exception:
+            st.error("❌ Hisse senedi verisi çekilirken bir hata oluştu.")
+
+# =========================================================================
+# SEKME 2: 🪙 CANLI ALTIN TAKİBİ
+# =========================================================================
+with sekme_altin:
+    st.markdown("<div class='al-baslik'>🪙 Canlı Altın ve Küresel Emtia Fiyatları</div>", unsafe_allow_html=True)
+    try:
+        ons_gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
+        usd_try = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
+        gram_altin = (ons_gold / 31.10347) * usd_try
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Gram Altın (Hesaplanan)", f"{gram_altin:.2f} TL")
+        col2.metric("Ons Altın ($)", f"{ons_gold:.2f} $")
+        col3.metric("USD / TRY Kuru", f"{usd_try:.4f} TL")
+        st.info("💡 Not: Altın fiyatları uluslararası piyasalardan anlık/gecikmeli olarak hesaplanmaktadır.")
+    except Exception:
+        st.error("❌ Altın verisi yüklenirken hata oluştu.")
+
+# =========================================================================
+# SEKME 3: 💬 SOHBET & NOT ALANI
