@@ -129,8 +129,9 @@ df_altin_temiz["Altın Türü 🪙"] = altin_turleri
 df_altin_temiz["Fiyat (TL) 💰"] = altin_fiyatlari
 sekme_altin.table(df_altin_temiz)
 
-# 3. SEKME İÇERİĞİ: SOHBET ALANI GÖVDESİ (HATA PAYI SIFIR DOĞRUSAL ATAMA)
+# 3. SEKME İÇERİĞİ: SOHBET ALANI GÖVDESİ (HİZALAMA KUSURSUZLAŞTIRILDI)
 sohbet_isim = sekme_sohbet.text_input("Kullanıcı Adınız:", value="Yatırımcı")
 sohbet_mesaj = sekme_sohbet.text_input("Mesaj içeriği:", placeholder="Not ekleyin...")
-if sekme_sohbet.button("✉️ Mesajı İlet"):
-    if sohbet_mesaj.strip():
+buton_gonder = sekme_sohbet.button("✉️ Mesajı İlet")
+
+if buton_gonder:
