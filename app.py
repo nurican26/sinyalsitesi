@@ -4,7 +4,6 @@ import datetime
 import yfinance as yf
 import os, re
 import time
-import requests
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
@@ -170,14 +169,12 @@ else:
 # --- GÜNCEL ALTIN FİYATLARI FONKSİYONU ---
 def canli_altin_fiyatlari():
     try:
-        # Altın fiyatları için Yahoo Finance üzerinden ONS ve Dolar verisiyle hesaplama
         ons_ticker = yf.Ticker("GC=F")
         usd_ticker = yf.Ticker("TRY=X")
         
         ons_fiyat = ons_ticker.history(period="1d")['Close'].iloc[-1]
         usd_kur = usd_ticker.history(period="1d")['Close'].iloc[-1]
         
-        # 1 Ons = 31.1034768 gramdır
         gram_altin = (ons_fiyat / 31.1034768) * usd_kur
         
         altin_data = {
@@ -191,7 +188,7 @@ def canli_altin_fiyatlari():
         }
         return pd.DataFrame(altin_data)
     except:
-        return pd.DataFrame({"Hata": ["Altın fiyatları yüklenemedi. İnternet bağlantısını kontrol edin."]})
+        return pd.DataFrame({"Durum": ["Altın fiyatları şu an yüklenemedi. Daha sonra tekrar deneyin."]})
 
 
 # --- 🏢 DURUM KONTROLÜ VE İÇERİK ---
@@ -227,10 +224,9 @@ else:
                 st.session_state["sohbet_gecmisi"].insert(0, f"[{zaman}] **{sohbet_isim}**: {sohbet_mesaj}")
                 st.toast("Mesaj iletildi!", icon="💬")
         
-        # Sohbet Geçmişini Listeleme
         if st.session_state["sohbet_gecmisi"]:
             st.markdown("---")
-            for msg in st.session_state["sohbet_gecmisi"][:10]: # Son 10 mesajı göster
+            for msg in st.session_state["sohbet_gecmisi"][:10]:
                 st.markdown(msg)
 
     st.markdown("---")
@@ -254,3 +250,6 @@ else:
             if time.time() - saved_time < 300: return saved_price
         try:
             ticker = yf.Ticker(f"{hisse_kodu}.IS")
+            data = ticker.history(period="1d")
+            if not data.empty and not pd.isna(data['Close'].iloc[-1]):
+                fiyat = float(data['Close'].iloc[-1])
