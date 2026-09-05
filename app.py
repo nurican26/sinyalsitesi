@@ -55,7 +55,6 @@ if is_admin:
     if col_kilitle.button("🔒 SİTEYİ KİLİTLE (kilile)"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
-    # Yönetici Mesaj Silme Özelliği
     if col_sil.button("🗑️ SOHBET GEÇMİŞİNİ TEMİZLE"):
         with open(MESAJ_DOSYASI, "w", encoding="utf-8") as f: f.write("")
         st.success("Sohbet odası başarıyla temizlendi!")
@@ -96,7 +95,6 @@ if erisim_izni:
         
         chat_html = '<div class="chat-kutusu">'
         if mesajlar:
-            # En yeni mesajların en altta kalması ve kutunun otomatik aşağı kayması için ters çevrilerek basılır
             for m in reversed(mesajlar):
                 if " - " in m and ": " in m:
                     parca = m.split(" - ", 1)
@@ -132,7 +130,8 @@ if erisim_izni:
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        try: 
+            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except: pass
 
     tablo_alsat, tablo_al = [], []
@@ -151,11 +150,15 @@ if erisim_izni:
                         if h_ara:
                             hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
-                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": t_deg, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                            tablo_alsat.append({
+                                "Hisse Kodu 📈": hisse, 
+                                "BTA Puan": t_deg, 
+                                "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."
+                            })
                             
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
                             hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
-                            if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                            if hisse not in st.session_state["ozel_takip_kutusu"]:
