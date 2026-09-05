@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Sağdan Sola Yavaşça Akan El Yazılı Gökkuşağı Neon BTA Logosu
+# CSS Tasarımı - Sağdan Sola Yavaşça Akan Gökkuşağı Neon BTA Logosu ve Canlı Ekonomi Kartları
 st.markdown("""
 <style>
     @import url('https://googleapis.com');
@@ -63,6 +63,28 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
+    /* Canlı Ekonomi Kart Tasarımları */
+    .ekonomi-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(0, 242, 254, 0.2);
+        border-radius: 10px;
+        padding: 12px;
+        text-align: center;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+        margin-bottom: 15px;
+    }
+    .ekonomi-baslik-kart {
+        color: #00f2fe !important;
+        font-weight: bold;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+    }
+    .ekonomi-fiyat-kart {
+        color: #ffffff !important;
+        font-size: 1.35rem;
+        font-weight: bold;
+    }
     /* Yavaşça Kayan Logo Konteyneri */
     .bta-logo-konteyner {
         width: 100%;
@@ -74,7 +96,6 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.02);
         border-radius: 8px;
     } 
-    /* EL YAZILI, BİTİŞİK VE SAĞDAN SOLA YAVAŞÇA KAYAN GÖKKUŞAĞI BTA YAZISI */
     .bta-logo {
         display: inline-block;
         font-family: 'Alex Brush', cursive !important; 
@@ -98,19 +119,6 @@ st.markdown("""
         font-weight: bold !important; 
         color: #ffffff !important;
     } 
-    div.stButton > button {
-        background-color: transparent; 
-        color: #45f3ff; 
-        border: 2px solid #45f3ff; 
-        box-shadow: 0 0 10px #45f3ff; 
-        border-radius: 8px; 
-        transition: 0.3s;
-    } 
-    div.stButton > button:hover {
-        background-color: #45f3ff; 
-        color: #111; 
-        box-shadow: 0 0 20px #45f3ff;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -150,6 +158,22 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
 else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
+
+    # --- 📊 CANLI EKONOMİ PANELİ (HER DAİM SABİT VE PARLAK) ---
+    try:
+        bist_veri = yf.Ticker("XU100.IS").history(period="1d")['Close'].iloc[-1]
+        usd_veri = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
+        eur_veri = yf.Ticker("EURTRY=X").history(period="1d")['Close'].iloc[-1]
+        ons_gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
+        gram_altin_veri = (ons_gold / 31.1034768) * usd_veri
+        
+        col_b, col_u, col_e, col_a = st.columns(4)
+        with col_b: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">📈 BIST 100</div><div class="ekonomi-fiyat-kart">{bist_veri:,.2f}</div></div>', unsafe_allow_html=True)
+        with col_u: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">💵 DOLAR / TL</div><div class="ekonomi-fiyat-kart">{usd_veri:.4f} TL</div></div>', unsafe_allow_html=True)
+        with col_e: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">💶 EURO / TL</div><div class="ekonomi-fiyat-kart">{eur_veri:.4f} TL</div></div>', unsafe_allow_html=True)
+        with col_a: st.markdown(f'<div class="ekonomi-box"><div class="ekonomi-baslik-kart">🟡 GRAM ALTIN</div><div class="ekonomi-fiyat-kart">{gram_altin_veri:.2f} TL</div></div>', unsafe_allow_html=True)
+    except:
+        pass
 
     # Excel Okuma
     df_kaynak = None
@@ -208,24 +232,3 @@ else:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
                             hisse = str(hisse_ara).strip()
-                            gosterim_ismi = hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(",AL", "").replace(",SAT", "").replace(" ", "")
-                            canli_fiyat = hızlı_canli_fiyat_bul(gosterim_ismi)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            if gosterim_ismi not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                                st.session_state["ozel_takip_kutusu"][gosterim_ismi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
-                            tablo_al.append({"Hisse Kodu 🚀": gosterim_ismi, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-            except:
-                pass
-
-    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
-
-    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
-
-    if st.session_state["ozel_takip_kutusu"]:
-        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
-        tk_list = []
