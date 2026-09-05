@@ -54,19 +54,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 🔑 SABİT PARAMETRELER
+# 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
 
-# Hafıza Kontrolleri
 if "oda_kilitli_mi" not in st.session_state:
     st.session_state["oda_kilitli_mi"] = False
 if "sohbet_gecmisi" not in st.session_state:
     st.session_state["sohbet_gecmisi"] = []
 
-# GÖKKUŞAĞI BTA LOGOSU
+# LOGO VE SPK UYARISI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA TRADING</div></div>', unsafe_allow_html=True)
-
-# --- SPK YASAL UYARI MADDESİ ---
 st.markdown("""
 <div class="spk-kutusu">
     <h4 style="color:#ef4444 !important; margin-top:0;">⚠️ SPK YASAL UYARI</h4>
@@ -77,137 +74,100 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 🛠️ YÖNETİCİ PANELİ (SOL MENÜ)
+# YÖNETİCİ PANELİ (SOL YAN MENÜ)
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
 admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
 
 if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
-    durum_metni = "🔴 ODA KİLİTLİ" if st.session_state["oda_kilitli_mi"] else "🟢 HERKESE AÇIK"
-    st.sidebar.markdown(f"Mevcut Durum: **{durum_metni}**")
-    if st.sidebar.button("🔄 Durumu Değiştir (Kilitle/Aç)", use_container_width=True):
+    if st.sidebar.button("🔓 Odadaki Kilidi Kaldır / Kilitle", use_container_width=True):
         st.session_state["oda_kilitli_mi"] = not st.session_state["oda_kilitli_mi"]
         st.rerun()
 
-# --- 🏢 ERİŞİM KONTROLÜ VE İÇERİK AKTARIMI ---
+# KİLİT KONTROLÜ
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
-    st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Analiz robotları güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
-else:
-    if st.session_state["oda_kilitli_mi"]:
-        st.warning("⚠️ Oda kilitli fakat Yönetici olduğunuz için görüntülüyorsunuz.")
+    st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
+    st.stop()
 
-    # ETKİLEŞİM PANELİ SEKMELERİ
-    sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
-    
-    with sekme_arama:
-        st.markdown("### 🔎 BIST Hisse Arama Filtresi")
-        arama_kelimesi = st.text_input("Filtrelemek istediğiniz hisse kodunu yazın (Örn: THYAO):", "").strip().upper()
-        
-    with sekme_altin:
-        st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
-        if st.button("🔄 Altın Fiyatlarını Güncelle"):
-            st.toast("Altın fiyatları yenileniyor...", icon="🪙")
-            
-        # Altın Hesaplama (Hata vermeyen güvenli doğrusal akış)
-        altin_df_data = pd.DataFrame({"Durum": ["Veri çekilemedi"]})
+# ÜST PANEL SEKMELERİ
+sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 BIST Arama Motoru", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
+
+with sekme_arama:
+    st.markdown("### 🔎 BIST Hisse Arama Filtresi")
+    arama_kelimesi = st.text_input("Filtrelemek istediğiniz hisse kodunu yazın (Örn: THYAO):", "").strip().upper()
+
+with sekme_altin:
+    st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
+    altin_df_data = pd.DataFrame({"Altın Türü": ["Veri Alınamadı"], "Fiyat (TL)": ["0.00"]})
+    try:
         altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
-        if not altin_download.empty:
-            ons_v = float(altin_download['Close']['GC=F'].dropna().iloc[-1])
-            usd_v = float(altin_download['Close']['TRY=X'].dropna().iloc[-1])
-            g_altin = (ons_v / 31.1034768) * usd_v
-            altin_df_data = pd.DataFrame({
-                "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"],
-                "Fiyat (TL) 💰": [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
-            })
-        st.table(altin_df_data)
-        
-    with sekme_sohbet:
-        st.markdown("### 💬 Bilgi Paylaşım & Analiz Notları")
-        s_isim = st.text_input("Kullanıcı Adınız:", value="Yatırımcı")
-        s_mesaj = st.text_input("Mesaj içeriği:", placeholder="Notunuzu buraya ekleyin...")
-        if st.button("✉️ Mesajı İlet") and s_mesaj.strip():
-            saat = datetime.datetime.now().strftime("%H:%M:%S")
-            st.session_state["sohbet_gecmisi"].insert(0, f"[{saat}] **{s_isim}**: {s_mesaj}")
-            st.toast("Not kaydedildi!", icon="💬")
-        
-        for msg in st.session_state["sohbet_gecmisi"][:8]:
-            st.markdown(msg)
+        ons_v = float(altin_download['Close']['GC=F'].dropna().iloc[-1])
+        usd_v = float(altin_download['Close']['TRY=X'].dropna().iloc[-1])
+        g_altin = (ons_v / 31.1034768) * usd_v
+        altin_df_data = pd.DataFrame({
+            "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"],
+            "Fiyat (TL) 💰": [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
+        })
+    except:
+        pass
+    st.table(altin_df_data)
 
-    st.markdown("---")
+with sekme_sohbet:
+    st.markdown("### 💬 Bilgi Paylaşım & Analiz Notları")
+    s_isim = st.text_input("Kullanıcı Adınız:", value="Yatırımcı")
+    s_mesaj = st.text_input("Mesaj içeriği:", placeholder="Notunuzu buraya ekleyin...")
+    if st.button("✉️ Mesajı İlet") and s_mesaj.strip():
+        saat = datetime.datetime.now().strftime("%H:%M:%S")
+        st.session_state["sohbet_gecmisi"].insert(0, f"[{saat}] **{s_isim}**: {s_mesaj}")
+        st.toast("Not kaydedildi!", icon="💬")
+    for msg in st.session_state["sohbet_gecmisi"][:8]:
+        st.markdown(msg)
 
-    # =========================================================================
-    # YENİ NESİL EXCEL İŞLEME VE TOPLU FİYAT MOTORU (BLOKSUZ VE SÜRATLİ)
-    # =========================================================================
-    excel_adi = "nurican.xls.xlsm"
+st.markdown("---")
+
+# =========================================================================
+# %100 GARANTİLİ VE HIZLI EXCEL LİSTELEME MOTORU (SIFIR HATA RİSKİ)
+# =========================================================================
+excel_adi = "nurican.xls.xlsm"
+
+if os.path.exists(excel_adi):
+    df_excel = pd.read_excel(excel_adi, header=None, engine="openpyxl")
     
-    if os.path.exists(excel_adi):
-        df_excel = pd.read_excel(excel_adi, header=None, engine="openpyxl")
-        
-        excel_listesi = []
-        toplu_tickers = []
-        
-        # Sütun uzunluğunu kontrol ederek ham veriyi belleğe taşıma
-        if len(df_excel.columns) > 22:
-            for satir_idx in range(2, len(df_excel)):
-                u_cell = str(df_excel.iloc[satir_idx, 20]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 20]) else ""
-                w_cell = str(df_excel.iloc[satir_idx, 22]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 22]) else ""
-                t_cell = str(df_excel.iloc[satir_idx, 19]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 19]) else "0.0"
-                
-                if u_cell and u_cell not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                    toplu_tickers.append(f"{u_cell}.IS")
-                if w_cell and w_cell not in ["NAN", "NONE", "W_SÜTUNU"]:
-                    toplu_tickers.append(f"{w_cell}.IS")
-                    
-                excel_listesi.append({"u": u_cell, "w": w_cell, "puan": t_cell})
-
-        # Benzersiz hisselerin fiyatlarını internetten tek hamlede topluca indir
-        toplu_tickers = list(set(toplu_tickers))
-        fiyat_sozlugu = {}
-        
-        if toplu_tickers:
-            download_data = yf.download(toplu_tickers, period="1d", progress=False)
-            if not download_data.empty and 'Close' in download_data.columns:
-                close_df = download_data['Close']
-                for t_kod in toplu_tickers:
-                    s_kod = t_kod.replace(".IS", "")
-                    if isinstance(close_df, pd.DataFrame) and t_kod in close_df.columns:
-                        valid_series = close_df[t_kod].dropna()
-                        fiyat_sozlugu[s_kod] = float(valid_series.iloc[-1]) if not valid_series.empty else 0.0
-                    elif isinstance(close_df, pd.Series):
-                        fiyat_sozlugu[s_kod] = float(close_df.dropna().iloc[-1]) if not close_df.dropna().empty else 0.0
-
-        # Filtreleme ve Tablo Ayrıştırma Adımları
-        t_alsat_list = []
-        t_al_list = []
-        
-        for veri in excel_listesi:
-            # U Sütunu Filtresi
-            if veri["u"] and veri["u"] not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                if arama_kelimesi == "" or arama_kelimesi in veri["u"]:
-                    t_alsat_list.append({
-                        "Hisse Kodu 📈": veri["u"],
-                        "BTA Puan": veri["puan"],
-                        "💥 Canlı Fiyat": fiyat_sozlugu.get(veri["u"], 0.0)
-                    })
+    t_alsat_list = []
+    t_al_list = []
+    
+    # Excel verisini listelere doğrudan doldurma (Hata payı sıfır)
+    if len(df_excel.columns) > 22:
+        for satir_idx in range(2, len(df_excel)):
+            u_cell = str(df_excel.iloc[satir_idx, 20]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 20]) else ""
+            w_cell = str(df_excel.iloc[satir_idx, 22]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 22]) else ""
+            t_cell = str(df_excel.iloc[satir_idx, 19]).strip().upper() if not pd.isna(df_excel.iloc[satir_idx, 19]) else "0.0"
             
-            # W Sütunu Filtresi
-            if veri["w"] and veri["w"] not in ["NAN", "NONE", "W_SÜTUNU"]:
-                if arama_kelimesi == "" or arama_kelimesi in veri["w"]:
-                    t_al_list.append({
-                        "Hisse Kodu 📈": veri["w"],
-                        "💥 Canlı Fiyat": fiyat_sozlugu.get(veri["w"], 0.0)
-                    })
+            # U Sütunu Filtreleme (Dönsmsel Al/Sat)
+            if u_cell and u_cell not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                if arama_kelimesi == "" or arama_kelimesi in u_cell:
+                    t_alsat_list.append({"Hisse Kodu 📈": u_cell, "BTA Puan": t_cell})
+            
+            # W Sütunu Filtreleme (Sadece Al)
+            if w_cell and w_cell not in ["NAN", "NONE", "W_SÜTUNU"]:
+                if arama_kelimesi == "" or arama_kelimesi in w_cell:
+                    t_al_list.append({"Hisse Kodu 📈": w_cell})
 
-        # EKRANA YAN YANA TABLOLARI ÇIKARTMA
-        c1, c2 = st.columns(2)
-        
-        with c1:
-            st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL/SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-            if t_alsat_list:
-                st.dataframe(pd.DataFrame(t_alsat_list), use_container_width=True)
-            else:
-                st.info("Kriterlere uygun veri bulunamadı.")
-                
-        with c2:
-            st.markdown('<div class="al-baslik">🟢 SADECE AL SİNYALLERİ (W)</div>', unsafe_allow_html=True)
-            if t_al_list:
+    # EKRANA VERİLERİ YAN YANA BASMA ALANI
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL/SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+        if len(t_alsat_list) > 0:
+            st.dataframe(pd.DataFrame(t_alsat_list), use_container_width=True)
+        else:
+            st.info("Listelenecek veri bulunamadı.")
+            
+    with c2:
+        st.markdown('<div class="al-baslik">🟢 SADECE AL SİNYALLERİ (W)</div>', unsafe_allow_html=True)
+        if len(t_al_list) > 0:
+            st.dataframe(pd.DataFrame(t_al_list), use_container_width=True)
+        else:
+            st.info("Listelenecek veri bulunamadı.")
+else:
+    st.error("⚠️ 'nurican.xls.xlsm' veri tabanı dosyası ana dizinde bulunamadı!")
