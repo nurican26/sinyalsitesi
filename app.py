@@ -242,34 +242,34 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU (Hata Verme İhtimali Kesin Olarak Yoktur)
+    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
-        # Excel dosyasını 'WEB' sayfasından ham veri olarak yükle
         raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
         
         # İlk 2 satırı (Başlıkları) atlayıp kolonları kilitliyoruz
         df = raw_df.iloc[2:].copy()
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Sütunlardaki string temizliklerini yapıyoruz
+        # Sütunlardaki metinleri temizleme işlemi
         df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip().str.upper()
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # 🎯 ANA KURAL KİLİDİ: "BTA Hisse" (F sütunu) hücresi boşsa, nan, 0 veya None ise satırı kökten sil!
-        df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
+        # 🎯 GEVŞETİLMİŞ GÜVENLİ FİLTRE: Boş olmayan ve sıfır yazmayan gerçek satırları yakala
+        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"] != "") & (df["Hisse Kodu"] != "0") & (df["Hisse Kodu"] != "NAN") & (df["Hisse Kodu"] != "NONE")]
         
         if not df.empty:
             df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
             df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
             
-            # Sayısal Alım Fiyatını Çevir
-            df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
+            # Canlı Fiyat Haritalaması İçin Liste Hazırla
+            benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
+            istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
             
-            # Canlı Fiyat Haritalaması (Döngü ve if/else blokları tamamen kaldırıldı)
-            df["Anlık Canlı Fiyat Sayisal"] = df["BTA Alımı Sayisal"]
+            # Fiyat indirme işlemini Pandas Serisine doğrudan bağlıyoruz (Döngü veya try-except riski YOK)
+            canli_fiyatlar = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
             
-            # Kar/Zarar Yüzdesi Hesaplama
-            df["Kar_Oran"] = ((df["Anlık Canlı Fiyat Sayisal"] - df["BTA Alımı Sayisal"]) / df["BTA Alımı Sayisal"] * 100).fillna(0)
+            # İndirilen veriyi temiz bir haritaya çeviriyoruz
+            fiyat_df = pd.DataFrame(canli_fiyatlar)
