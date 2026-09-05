@@ -62,6 +62,10 @@ if "oda_kilitli_mi" not in st.session_state:
 if "sohbet_gecmisi" not in st.session_state:
     st.session_state["sohbet_gecmisi"] = []
 
+# 🔑 KİLİT BUTONU İÇİN GÜVENLİ CALLBACK FONKSİYONU
+def kilit_durumunu_degistir():
+    st.session_state["oda_kilitli_mi"] = not st.session_state["oda_kilitli_mi"]
+
 # LOGO VE SPK UYARISI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA TRADING</div></div>', unsafe_allow_html=True)
 st.markdown("""
@@ -78,13 +82,18 @@ st.markdown("""
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
 admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
 
+# Kilidin güncel durumunu belirten küçük bir bilgilendirme etiketi
+if st.session_state["oda_kilitli_mi"]:
+    st.sidebar.warning("🔒 Oda Şu An Kilitli")
+else:
+    st.sidebar.info("🔓 Oda Şu An Herkese Açık")
+
 if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
-    if st.sidebar.button("🔓 Odadaki Kilidi Kaldır / Kilitle", use_container_width=True):
-        st.session_state["oda_kilitli_mi"] = not st.session_state["oda_kilitli_mi"]
-        st.rerun()
+    # on_click mekanizması ile Streamlit'in butona basıldığında durumu karıştırmasını engelledik
+    st.sidebar.button("Odadaki Kilidi Değiştir", on_click=kilit_durumunu_degistir, use_container_width=True)
 
-# KİLİT KONTROLÜ
+# KİLİT KONTROLÜ (Yönetici şifresi doğru girilmediyse ve oda kilitliyse ziyaretçileri engelle)
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
     st.stop()
@@ -125,18 +134,3 @@ with sekme_arama:
             except Exception as e:
                 st.error(f"Veri çekilirken bir hata oluştu: {e}")
         else:
-            st.error("Girdiğiniz kod BIST listesinde bulunamadı. Lütfen kontrol edin.")
-
-with sekme_altin:
-    st.markdown("### 🪙 Canlı Altın ve Değerli Maden Takibi")
-    
-    ons_altin = yf.Ticker("GC=F")
-    ons_veri = ons_altin.history(period="1d")
-    usdtry = yf.Ticker("USDTRY=X")
-    usd_veri = usdtry.history(period="1d")
-    
-    if len(ons_veri) > 0 and len(usd_veri) > 0:
-        son_ons = ons_veri['Close'].iloc[-1]
-        son_usd = usd_veri['Close'].iloc[-1]
-        gram_altin_hesap = (son_ons / 31.1034768) * son_usd
-        
