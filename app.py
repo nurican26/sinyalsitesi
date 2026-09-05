@@ -159,22 +159,19 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 2. Hızlandırılmış Canlı Altın Fiyatları (Gelişmiş Koruma Sistemi)
+# 2. Hızlandırılmış Canlı Altın Fiyatları
 @st.cache_data(ttl=600)
 def canli_altin_fiyatlari():
     try:
         data = yf.download(tickers=["GC=F", "TRY=X"], period="1d", group_by='ticker', progress=False)
         ons_gold = data["GC=F"]["Close"].iloc[-1]
         usd_try = data["TRY=X"]["Close"].iloc[-1]
-        
         if pd.isna(ons_gold) or pd.isna(usd_try) or ons_gold <= 0 or usd_try <= 0:
             return {"gram": "3.245,20", "ceyrek": "5.310,00", "yarim": "10.620,00", "tam": "21.240,00"}
-            
         gram_hesap = (ons_gold / 31.1034768) * usd_try
         ceyrek_hesap = gram_hesap * 1.634
         yarim_hesap = ceyrek_hesap * 2
         tam_hesap = ceyrek_hesap * 4
-        
         def formatla(sayi):
             return f"{sayi:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         return {"gram": formatla(gram_hesap), "ceyrek": formatla(ceyrek_hesap), "yarim": formatla(yarim_hesap), "tam": formatla(tam_hesap)}
@@ -183,7 +180,6 @@ def canli_altin_fiyatlari():
 
 altin_fiyatlari = canli_altin_fiyatlari()
 
-# Büyük ve Sabit Altın Blokları Görünümü
 st.markdown(f"""
 <div class="altin-blok-konteyner">
     <div class="altin-satir">
@@ -209,7 +205,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# 3. TOPLU HİSSE FİYATI ÇEKİCİ (Hız Koruma Sistemi)
+# 3. TOPLU HİSSE FİYATI ÇEKİCİ
 @st.cache_data(ttl=300)
 def toplu_fiyat_cek(hisse_kodlari):
     if not hisse_kodlari:
@@ -232,6 +228,9 @@ def toplu_fiyat_cek(hisse_kodlari):
 
 excel_yolu = "nurican.xls.xlsm"
 
+bta_listesi = []
+alsat_listesi = []
+
 if os.path.exists(excel_yolu):
     try:
         raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
@@ -244,8 +243,6 @@ if os.path.exists(excel_yolu):
                 tum_kodlar.append(hisse_kodu)
         
         canli_fiyatlar = toplu_fiyat_cek(tum_kodlar)
-        bta_listesi = []
-        alsat_listesi = []
         
         for idx, row in df_hisseler.iterrows():
             hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
@@ -253,10 +250,10 @@ if os.path.exists(excel_yolu):
                 continue
                 
             bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
-            al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"  # D SÜTUNU -> Al Sat Skoru
+            al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"  # D SÜTUNU
             al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"        # E SÜTUNU
-            bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"     # F SÜTUNU -> BTA Puanı
-            bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G SÜTUNU -> BTA Hisse Adı
+            bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"     # F SÜTUNU
+            bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G SÜTUNU
             
             canli_fiyat = canli_fiyatlar.get(hisse_kodu, bta_alimi)
             if canli_fiyat == 0: 
@@ -276,5 +273,11 @@ if os.path.exists(excel_yolu):
                 
             if al_sat != "0" and al_sat != "":
                 alsat_listesi.append(satir_veri)
-        
-        # Tabloları Ekrana Basma
+    except Exception as e:
+        st.error(f"Excel Okuma Hatası: {e}")
+else:
+    st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
+
+# Tabloları Ekrana Basma
+st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
+if len(bta_listesi) > 0:
