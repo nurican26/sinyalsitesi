@@ -8,15 +8,18 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Lüks Zümrüt Neon ve Genişletilmiş Büyük El Yazısı BTA Logosu
+# CSS Tasarımı - Gökkuşağı Neon Animasyonlu BTA Logosu
 st.markdown("""
 <style>
     @import url('https://googleapis.com');
     
-    @keyframes neonPulse {
-        0% { text-shadow: 0 0 15px #059669, 0 0 30px #047857, 0 0 45px #065f46, 0 0 10px #fff; }
-        50% { text-shadow: 0 0 25px #10b981, 0 0 50px #059669, 0 0 75px #047857, 0 0 20px #fff; }
-        100% { text-shadow: 0 0 15px #059669, 0 0 30px #047857, 0 0 45px #065f46, 0 0 10px #fff; }
+    /* Gökkuşağı Renk Geçişli Neon Efekti */
+    @keyframes rainbowNeon {
+        0% { text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f, 0 0 10px #fff; }
+        25% { text-shadow: 0 0 15px #00f2fe, 0 0 30px #00f2fe, 0 0 10px #fff; }
+        50% { text-shadow: 0 0 15px #10b981, 0 0 30px #10b981, 0 0 10px #fff; }
+        75% { text-shadow: 0 0 15px #a855f7, 0 0 30px #a855f7, 0 0 10px #fff; }
+        100% { text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f, 0 0 10px #fff; }
     }
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
@@ -61,16 +64,16 @@ st.markdown("""
         margin-bottom: 35px;
         width: 100%;
     } 
-    /* BÜYÜTÜLMÜŞ, GENİŞLETİLMİŞ VE DERİN NEON GÖLGELİ LÜKS BTA LOGOSU */
+    /* DÜZELTİLMİŞ HARF ARALIĞI VE GÖKKUŞAĞI NEON LOGO */
     .bta-logo {
         background: transparent; 
-        color: #ffffff !important; /* Ana yazı elektrik beyazı */
+        color: #ffffff !important; 
         font-family: 'Alex Brush', cursive !important; 
         font-weight: normal; 
-        font-size: 7.5rem; /* El yazısı boyutu iyice büyütüldü */
+        font-size: 7rem; 
         padding: 0px; 
-        letter-spacing: 20px; /* Harf arası boşluk genişletildi */
-        animation: neonPulse 3s infinite ease-in-out;
+        letter-spacing: 4px; /* Harf aralığı normale çekildi */
+        animation: rainbowNeon 5s infinite linear; /* Yumuşak gökkuşağı geçişi */
         text-align: center;
         width: 100%;
     } 
