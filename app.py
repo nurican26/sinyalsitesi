@@ -101,7 +101,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 🔑 PARAMETRELER
-YONETICI_SIFRESI = "bta2026"
+YONETICI_SIFRESI = "3015"
 
 # Hafıza Kontrolleri
 if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] = False
