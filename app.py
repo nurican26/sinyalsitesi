@@ -243,7 +243,7 @@ else:
     else:
         st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
-    # --- EN HIZLI VE SADE CANLI FİYAT MOTORU ---
+    # --- SIFIR GİRİNTİ HATA RİSKLİ YENİ FİYAT MOTORU ---
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu:
             return 0.0
@@ -253,4 +253,4 @@ else:
                 return saved_price
         try:
             hisse_data = yf.download(f"{hisse_kodu}.IS", period="1d", progress=False)
-            if not hisse_data.empty:
+            fiyat_val = float(hisse_data['Close'].iloc[-1])
