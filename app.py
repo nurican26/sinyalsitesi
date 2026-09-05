@@ -10,12 +10,12 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} div.stButton > button {background-color: transparent; color: #45f3ff; border: 2px solid #45f3ff; box-shadow: 0 0 10px #45f3ff; border-radius: 8px; transition: 0.3s;} div.stButton > button:hover {background-color: #45f3ff; color: #111; box-shadow: 0 0 20px #45f3ff;}</style>', unsafe_allow_html=True)
 
-# 🎛️ PANEL KONTROL DÜĞMELERİ (Buradan Ayarla)
-SIFRE_AKTIF_MI = True    # 👈 Şifreli yapmak için TRUE, herkese açmak için FALSE yaz!
-GIRIS_SIFRESI = "bta2026"  # 🔐 Giriş şifren
+# 🎛️ PANEL KONTROL DÜĞMELERİ
+SIFRE_AKTIF_MI = True      # 👈 Herkese açmak için FALSE, şifrelemek için TRUE yap!
+GIRIS_SIFRESI = "bta2026"    # 🔐 Giriş şifren
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 
-# Hafıza Kontrolleri
+# Hafıza Kontrollerini Başlatma
 if "logged_in" not in st.session_state: 
     st.session_state["logged_in"] = False
 if "ozel_takip_kutusu" not in st.session_state: 
@@ -34,11 +34,17 @@ if "sayildi" not in st.session_state:
 # BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA Bilgi Platformu</div></div>', unsafe_allow_html=True)
 
-# ŞİFRE KONTROL MEKANİZMASI
+# 🔐 KENAR ÇUBUĞU (SIDEBAR) GİRİŞ VE SIFIRLAMA ALANI
+st.sidebar.markdown("### 🔐 Erişim Yönetimi")
+
+# Oturumu kesin olarak kapatmak için manuel sıfırlama butonu
+if st.sidebar.button("🔒 Oturumu Kapat / Sıfırla", use_container_width=True):
+    st.session_state["logged_in"] = False
+    st.rerun()
+
 giris_izni = False
 
 if SIFRE_AKTIF_MI:
-    st.sidebar.markdown("### 🔐 Erişim Girişi")
     if not st.session_state["logged_in"]:
         girilen_sifre = st.sidebar.text_input("Giriş Şifresini Yazın:", type="password", placeholder="Şifre...")
         if st.sidebar.button("Giriş Yap", use_container_width=True):
@@ -50,17 +56,14 @@ if SIFRE_AKTIF_MI:
     else:
         st.sidebar.success("🔓 Oturum Açık")
         giris_izni = True
-        if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
-            st.session_state["logged_in"] = False
-            st.rerun()
 else:
-    # Şifre aktif değilse doğrudan giriş izni verilir ve kenar çubuğu temiz kalır
+    # Şifre aktif değilse doğrudan herkese açılır
     giris_izni = True
 
 # --- 1. DURUM: GİRİŞ İZNİ YOKSA (HERKESE AÇIK KISITLI ALAN) ---
 if not giris_izni:
     st.markdown("### 📢 Genel Bilgilendirme")
-    st.write("Bu panel geçici olarak **şifrelenmiştir**. Verileri ve sinyal merkezini görebilmek için sol menüden şifreyle giriş yapmalısınız.")
+    st.write("Bu panel şu an **şifrelidir**. Verileri ve sinyal merkezini görebilmek için sol menüden şifreyle giriş yapmalısınız.")
     
     puan = st.session_state["topham_yildiz_puani"] / st.session_state["topham_oy_sayisi"] if st.session_state["topham_oy_sayisi"] > 0 else 0.0
     col1, col2, col3 = st.columns(3)
@@ -116,7 +119,7 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = hisse_ara[0] # Listeden çıkarıp direkt temiz metin yapıyoruz (Parantezleri kaldırır)
+                            hisse = hisse_ara[0] # Listenin ilk elemanını alarak köşeli parantezleri temizleriz
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -125,7 +128,7 @@ else:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = hisse_ara[0] # Listeden çıkarıp direkt temiz metin yapıyoruz (Parantezleri kaldırır)
+                            hisse = hisse_ara[0] # Listenin ilk elemanını alarak köşeli parantezleri temizleriz
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
