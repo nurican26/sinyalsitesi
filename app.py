@@ -95,7 +95,7 @@ st.markdown("""
     }
     
     .altin-kayan-yazi {
-        font-size: 16px !important; /* Yazı boyutu büyütüldü */
+        font-size: 16px !important;
         font-weight: bold;
         color: #f1c40f;
     }
@@ -133,7 +133,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 2. Hızlandırılmış Canlı Altın Fiyatları (Önbellekli Hızlı İstek)
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=600)
 def canli_altin_fiyatlari():
     try:
         data = yf.download(tickers=["GC=F", "TRY=X"], period="1d", group_by='ticker', progress=False)
@@ -155,7 +155,7 @@ altin_fiyatlari = canli_altin_fiyatlari()
 
 # Gerçek Kayan Yazı (Marquee) Entegrasyonu
 st.markdown(f"""
-<div class="altin-bandikonteyner">
+<div class="altin-bandi-konteyner">
     <marquee class="altin-kayan-yazi" scrollamount="5" behavior="scroll" direction="left">
         🌟 GRAM ALTIN: <span class="altin-val">{altin_fiyatlari['gram']} TL</span> 
         🌟 ÇEYREK ALTIN: <span class="altin-val">{altin_fiyatlari['ceyrek']} TL</span> 
@@ -166,7 +166,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # 3. TOPLU HİSSE FİYATI ÇEKİCİ (Hız Koruma Sistemi)
-@st.cache_data(ttl=180)
+@st.cache_data(ttl=300)
 def toplu_fiyat_cek(hisse_kodlari):
     if not hisse_kodlari:
         return {}
@@ -263,3 +263,4 @@ if arama_input:
     try:
         hisse_ticker = yf.Ticker(f"{arama_input}.IS")
         hisse_data = hisse_ticker.history(period="1d")
+        if not hisse_data.empty:
