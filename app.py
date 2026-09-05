@@ -19,7 +19,7 @@ if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kut
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
 
-# 🌟 SADECE BTA - PARILDAYAN NEON YILDIZLI YUVARLAK LOGO ÇERÇEVESİ
+# 🌟 SADECE BTA - KENDİ EKSENİNDE DÖNEN PARLAK YILDIZLI NEON LOGO
 st.markdown("""
 <style>
 @keyframes neon-isik {
@@ -39,10 +39,10 @@ st.markdown("""
         border-color: #ff007f; 
     }
 }
-@keyframes yildiz-parla {
-    0% { transform: scale(1); opacity: 0.7; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.7; }
+@keyframes yildiz-donme {
+    0% { transform: rotate(0deg) scale(1); opacity: 0.8; }
+    50% { transform: rotate(180deg) scale(1.15); opacity: 1; }
+    100% { transform: rotate(360deg) scale(1); opacity: 0.8; }
 }
 .logo-merkezleyici {
     display: flex;
@@ -54,9 +54,9 @@ st.markdown("""
 .bta-neon-yuvarlak-logo {
     background: transparent !important;
     border: 4px solid #ff007f !important;
-    border-radius: 50% !important; /* Kusursuz Yuvarlak Logo */
-    width: 180px !important;
-    height: 180px !important;
+    border-radius: 50% !important;
+    width: 190px !important;
+    height: 190px !important;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -66,22 +66,24 @@ st.markdown("""
     box-sizing: border-box;
 }
 .logo-yildizlar {
-    font-size: 1.1rem !important;
+    font-size: 1.2rem !important;
     color: #ffaa00 !important;
-    animation: yildiz-parla 1s infinite ease-in-out;
-    letter-spacing: 3px;
-    margin: 2px 0;
+    animation: yildiz-donme 4s infinite linear; /* Yıldızların 360 derece kesintisiz dönmesini sağlar */
+    display: inline-block;
+    letter-spacing: 5px;
+    margin: 4px 0;
 }
 .logo-yazi {
-    font-size: 3.2rem !important;
+    font-size: 3.5rem !important;
     font-weight: bold !important;
-    font-family: 'Caveat', cursive, sans-serif !important; /* İstediğin El Yazısı */
+    font-family: 'Caveat', cursive, sans-serif !important;
     background: linear-gradient(45deg, #ff007f, #ffaa00, #00f0ff);
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     line-height: 1 !important;
     margin: 0 !important;
     padding: 0 !important;
+    z-index: 2;
 }
 </style>
 <div class="logo-merkezleyici">
