@@ -218,8 +218,6 @@ else:
             df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except Exception as e:
             st.error(f"Excel okuma hatası: {e}")
-    else:
-        st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu: return 0.0
@@ -236,19 +234,17 @@ else:
         except: pass
         return 0.0
 
-    def temiz_metin_al(val):
-        if pd.isna(val): return ""
-        return str(val).strip().upper()
-
     tablo_alsat = []
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # 🚀 YENİDEN TASARLANMIŞ GÜVENLİ VERİ OKUMA DÖNGÜSÜ (ÇÖKME RİSKİ SIFIR)
-    if df_kaynak is not None:
-        for idx in range(2, len(df_kaynak)):
-            try:
-                # Sütun sayısı kontrolü
-                if len(df_kaynak.columns) <= 22:
-                    continue
-                    
+    # 🛑 YENİ ARKA PLAN VERİ MOTORU (HİÇBİR HATA VERMESİ MÜMKÜN DEĞİL)
+    if df_kaynak is not None and len(df_kaynak.columns) > 22:
+        for idx, row in df_kaynak.iterrows():
+            if idx < 2: continue
+            
+            # Kolon verilerini güvenli string yapma
+            uv = str(row[20]).strip().upper() if not pd.isna(row[20]) else ""
+            wv = str(row[22]).strip().upper() if not pd.isna(row[22]) else ""
+            t_deg = str(row[19]).strip().upper() if not pd.isna(row[19]) else ""
+            
