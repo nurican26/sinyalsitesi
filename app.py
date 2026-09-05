@@ -128,7 +128,7 @@ st.markdown("""
         margin-bottom: 5px;
     }
     .altin-fiyat-deger {
-        font-size: 20px !important; /* Büyük boyut */
+        font-size: 20px !important;
         font-weight: 800;
         color: #ffffff;
     }
@@ -167,7 +167,6 @@ def canli_altin_fiyatlari():
         ons_gold = data["GC=F"]["Close"].iloc[-1]
         usd_try = data["TRY=X"]["Close"].iloc[-1]
         
-        # Eğer yfinance geçersiz veri (NaN) dönerse yedek sisteme geç
         if pd.isna(ons_gold) or pd.isna(usd_try) or ons_gold <= 0 or usd_try <= 0:
             return {"gram": "3.245,20", "ceyrek": "5.310,00", "yarim": "10.620,00", "tam": "21.240,00"}
             
@@ -218,7 +217,6 @@ def toplu_fiyat_cek(hisse_kodlari):
     try:
         ticker_listesi = [f"{kod}.IS" for kod in hisse_kodlari]
         data = yf.download(tickers=ticker_listesi, period="1d", progress=False)
-        
         fiyat_sozlugu = {}
         for kod in hisse_kodlari:
             try:
@@ -246,34 +244,37 @@ if os.path.exists(excel_yolu):
                 tum_kodlar.append(hisse_kodu)
         
         canli_fiyatlar = toplu_fiyat_cek(tum_kodlar)
-        
         bta_listesi = []
         alsat_listesi = []
         
         for idx, row in df_hisseler.iterrows():
             hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
+            if hisse_kodu == "" or hisse_kodu == "None":
+                continue
+                
+            bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
+            al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"  # D SÜTUNU -> Al Sat Skoru
+            al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"        # E SÜTUNU
+            bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"     # F SÜTUNU -> BTA Puanı
+            bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G SÜTUNU -> BTA Hisse Adı
             
-            if hisse_kodu != "" and hisse_kodu != "None":
-                bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
-                al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"  # D SÜTUNU -> Al Sat Skoru
-                al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"        # E SÜTUNU
-                bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"     # F SÜTUNU -> BTA Puanı
-                bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G SÜTUNU -> BTA Hisse Adı
+            canli_fiyat = canli_fiyatlar.get(hisse_kodu, bta_alimi)
+            if canli_fiyat == 0: 
+                canli_fiyat = bta_alimi
+            
+            satir_veri = {
+                "BTA Hisse": bta_hisse_sutun,
+                "BTA Puanı": bta_puani,
+                "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
+                "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
+                "Al Sat": al_sat,
+                "Al Sat Skoru": al_sat_skoru
+            }
+            
+            if bta_hisse_sutun != "0" and bta_hisse_sutun != "":
+                bta_listesi.append(satir_veri)
                 
-                canli_fiyat = canli_fiyatlar.get(hisse_kodu, bta_alimi)
-                if canli_fiyat == 0: 
-                    canli_fiyat = bta_alimi
-                
-                satir_veri = {
-                    "BTA Hisse": bta_hisse_sutun,
-                    "BTA Puanı": bta_puani,
-                    "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
-                    "Anlık Canlı Fiyat": f"{canli_fiyat:,.2f} TL" if canli_fiyat > 0 else "0.00 TL",
-                    "Al Sat": al_sat,
-                    "Al Sat Skoru": al_sat_skoru
-                }
-                
-                if bta_hisse_sutun != "0" and bta_hisse_sutun != "":
-                    bta_listesi.append(satir_veri)
-                    
-                if al_sat != "0" and al_sat != "":
+            if al_sat != "0" and al_sat != "":
+                alsat_listesi.append(satir_veri)
+        
+        # Tabloları Ekrana Basma
