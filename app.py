@@ -11,36 +11,42 @@ st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 # CSS stilleri ve Göz Alıcı Kayan Yazı Animasyonu
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;} .haber-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 10px;} .tv-kutusu {background: rgba(255, 255, 255, 0.03); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;}</style>', unsafe_allow_html=True)
 
+# Google Fonts'tan El Yazısı (Caveat ve Great Vibes) fontunu çekiyoruz
+st.markdown('<link href="https://googleapis.com" rel="stylesheet">', unsafe_allow_html=True)
+
 # Hafıza Sabitleme
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# SADECE "BTA" YAZAN PANEL KALDIRILMIŞ, SEFAG IŞIKLI, GÖLGELİ, RENKLİ CAVCAVLI KAYAN YAZI
+# 🌟 BTA BORSA TEMEL ANALİZ - EL YAZILI, YUVALAK BOŞ ÇERÇEVELİ, SEFAG IŞIKLI NEON KAYAN YAZI
 st.markdown("""
 <style>
 @keyframes neon-parlama {
-    0% { text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #00f0ff; }
-    50% { text-shadow: 0 0 15px #00f0ff, 0 0 30px #7000ff, 0 0 45px #ff007f; }
-    100% { text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #00f0ff; }
+    0% { text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #00f0ff; box-shadow: inset 0 0 15px #ff007f, 0 0 15px #ff007f; border-color: #ff007f; }
+    50% { text-shadow: 0 0 15px #00f0ff, 0 0 30px #7000ff, 0 0 45px #ff007f; box-shadow: inset 0 0 20px #00f0ff, 0 0 20px #00f0ff; border-color: #00f0ff; }
+    100% { text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #00f0ff; box-shadow: inset 0 0 15px #ff007f, 0 0 15px #ff007f; border-color: #ff007f; }
 }
 .sefag-kayan-yazi-konteyner {
     background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 10px 0;
+    background-color: transparent !important;
+    border: 3px solid #ff007f !important; /* Boş çerçeve çizgisi */
+    border-radius: 50px !important;       /* Yuvarlak / Oval tasarım */
+    padding: 10px 20px !important;
+    margin: 15px 0;
     overflow: hidden;
     width: 100%;
+    box-sizing: border-box;
+    animation: neon-parlama 2s infinite alternate; /* Çerçevenin de parlamasını sağlar */
 }
 .sefag-text {
-    font-size: 3.5rem !important; /* Yazı boyutu büyütüldü */
-    font-weight: 900 !important;
-    font-family: 'Arial Black', sans-serif !important;
+    font-size: 2.8rem !important; 
+    font-weight: bold !important;
+    font-family: 'Caveat', cursive, sans-serif !important; /* El yazısı tipi */
     background: linear-gradient(90deg, #ff007f, #ffaa00, #00f0ff, #7000ff, #ff007f);
     background-size: 200% auto;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
-    animation: neon-parlama 2s infinite alternate, yazi-kaydir 8s linear infinite; /* Hız biraz artırıldı */
+    animation: yazi-kaydir 10s linear infinite; 
     white-space: nowrap;
     display: inline-block;
     padding-left: 100%;
@@ -51,7 +57,7 @@ st.markdown("""
 }
 </style>
 <div class="sefag-kayan-yazi-konteyner">
-    <div class="sefag-text">BTA</div>
+    <div class="sefag-text">BTA Borsa Temel Analiz</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -150,7 +156,3 @@ st.write("---")
 st.markdown("#### 🔍 Canlı Hisse Arama Motoru")
 arama_terimi_girdi = st.text_input("Aramak istediğiniz herhangi bir hisse kodunu girin (Örn: THYAO, SASA, EREGL):", "").strip().upper()
 
-if arama_terimi_girdi:
-    canli_sorgu_fiyat = hızlı_canli_fiyat_bul(arama_terimi_girdi)
-    tablo_canli_arama = [{"Hisse Kodu": arama_terimi_girdi, "Fiyat": f"{canli_sorgu_fiyat:.2f} TL" if canli_sorgu_fiyat > 0 else "Yükleniyor..."}]
-    st.dataframe(pd.DataFrame(tablo_canli_arama), use_container_width=True, hide_index=True)
