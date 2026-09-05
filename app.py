@@ -244,10 +244,12 @@ else:
 
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
-        if not hisse_kodu: return 0.0
+        if not hisse_kodu:
+            return 0.0
         if hisse_kodu in st.session_state["fiyat_hafizasi"]:
             saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-            if time.time() - saved_time < 300: return saved_price
+            if time.time() - saved_time < 300:
+                return saved_price
         try:
             ticker = yf.Ticker(f"{hisse_kodu}.IS")
             data = ticker.history(period="1d")
