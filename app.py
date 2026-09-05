@@ -250,10 +250,10 @@ if os.path.exists(excel_yolu):
                 continue
                 
             bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
-            al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"  # D SÜTUNU
-            al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"        # E SÜTUNU
-            bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"     # F SÜTUNU
-            bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0" # G SÜTUNU
+            al_sat_skoru = str(row[2]).strip() if pd.notna(row[2]) else "0"  # C SÜTUNU -> AL SAT SKORU
+            al_sat = str(row[3]).strip() if pd.notna(row[3]) else "0"        # D SÜTUNU -> AL SAT
+            bta_puani = str(row[4]).strip() if pd.notna(row[4]) else "0"     # E SÜTUNU -> BTA PUANI
+            bta_hisse_sutun = str(row[5]).strip() if pd.notna(row[5]) else "0" # F SÜTUNU -> BTA HISSE
             
             canli_fiyat = canli_fiyatlar.get(hisse_kodu, bta_alimi)
             if canli_fiyat == 0: 
@@ -279,5 +279,3 @@ else:
     st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
 
 # Tabloları Ekrana Basma
-st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
-if len(bta_listesi) > 0:
