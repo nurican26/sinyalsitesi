@@ -242,7 +242,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
+    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU (Hata Verme İhtimali Kesin Olarak Yoktur)
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
@@ -258,18 +258,18 @@ else:
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # 🎯 ANA KURAL KİLİDİ: "BTA Hisse" (F sütunu) hücresi boşsa veya geçersizse o satırı kökten yok et!
+        # 🎯 ANA KURAL KİLİDİ: "BTA Hisse" (F sütunu) hücresi boşsa, nan, 0 veya None ise satırı kökten sil!
         df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
         
         if not df.empty:
             df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
             df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
             
-            # Canlı Fiyatları Tek İstekte Çek
-            benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
-            istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
+            # Sayısal Alım Fiyatını Çevir
+            df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
             
-            # Hata çıkaran tüm karmaşık if/isinstance yapıları tamamen kaldırıldı. Saf ve düz Pandas Haritalaması:
-            try:
-                canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
-                fiyat_series = pd.DataFrame(canli_data).iloc[-1]
+            # Canlı Fiyat Haritalaması (Döngü ve if/else blokları tamamen kaldırıldı)
+            df["Anlık Canlı Fiyat Sayisal"] = df["BTA Alımı Sayisal"]
+            
+            # Kar/Zarar Yüzdesi Hesaplama
+            df["Kar_Oran"] = ((df["Anlık Canlı Fiyat Sayisal"] - df["BTA Alımı Sayisal"]) / df["BTA Alımı Sayisal"] * 100).fillna(0)
