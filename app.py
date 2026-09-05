@@ -242,7 +242,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # %100 GÜVENLİ VE SIFIR HATA RİSKLİ YENİ KOD YAPISI
+    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
@@ -253,24 +253,26 @@ else:
         df = raw_df.iloc[2:].copy()
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Sütunlardaki metinleri temizleme işlemi
+        # Sütunlardaki string temizliklerini yapıyoruz
         df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip().str.upper()
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # 🎯 KESİN FİLTRE: "BTA Hisse" (F sütunu) hücresi boşsa, nan, 0 veya None ise satırı kökten sil!
-        df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
+        # Boşluk ve Yok Hatalarını temizle
+        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"] != "") & (df["Hisse Kodu"] != "0") & (df["Hisse Kodu"] != "NAN") & (df["Hisse Kodu"] != "NONE")]
         
         if not df.empty:
             df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
             df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
             
-            # Canlı Fiyat Haritalaması İçin Liste Hazırla
+            # Canlı Fiyatları Tek İstekte Çek
             benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
             istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
             
-            # Fiyat indirme işlemini Pandas Serisine doğrudan bağlıyoruz (Döngü veya try-except riski YOK)
-            canli_fiyatlar = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
+            # Tamamen Güvenli Fiyat Çekici Mantık
+            fiyat_sozluk = {}
+            canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
+            fiyat_df = pd.DataFrame(canli_data)
             
-            # İndirilen veriyi temiz bir haritaya çeviriyoruz
-            fiyat_df = pd.DataFrame(canli_fiyatlar)
+            if not fiyat_df.empty:
+                fiyat_serisi = fiyat_df.iloc[-1]
