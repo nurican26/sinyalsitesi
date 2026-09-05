@@ -8,7 +8,111 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} div.stButton > button {background-color: transparent; color: #45f3ff; border: 2px solid #45f3ff; box-shadow: 0 0 10px #45f3ff; border-radius: 8px; transition: 0.3s;} div.stButton > button:hover {background-color: #45f3ff; color: #111; box-shadow: 0 0 20px #45f3ff;}</style>', unsafe_allow_html=True)
+# CSS Tasarımı - Sağdan Sola Yavaşça Akan El Yazılı Gökkuşağı Neon BTA Logosu
+st.markdown("""
+<style>
+    @import url('https://googleapis.com');
+
+    /* Gökkuşağı Renk Değişim Animasyonu */
+    @keyframes rainbowNeon {
+        0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
+        25% { color: #00f2fe !important; text-shadow: 0 0 15px #00f2fe, 0 0 30px #00f2fe; }
+        50% { color: #10b981 !important; text-shadow: 0 0 15px #10b981, 0 0 30px #10b981; }
+        75% { color: #a855f7 !important; text-shadow: 0 0 15px #a855f7, 0 0 30px #a855f7; }
+        100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
+    }
+
+    /* Sağdan Sola Yavaş Kayma Animasyonu */
+    @keyframes marquee {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+    }
+
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
+        padding: 0.5rem;
+    } 
+    h1,h2,h3,h4,h5,h6,p,span,label {
+        color: #fff!important; 
+        font-family: "Segoe UI", sans-serif;
+    } 
+    input {
+        color: #000!important; 
+        background-color: #fff!important;
+    } 
+    .stDataFrame {
+        width: 100% !important; 
+        border: 1px solid #10b981 !important; 
+        border-radius: 8px;
+    } 
+    div.block-container {
+        padding-top: 1rem; 
+        padding-bottom: 0.5rem;
+    } 
+    .alsat-baslik {
+        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px;
+    } 
+    .al-baslik {
+        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px;
+    } 
+    /* Yavaşça Kayan Logo Konteyneri */
+    .bta-logo-konteyner {
+        width: 100%;
+        overflow: hidden; 
+        white-space: nowrap;
+        margin-top: 10px; 
+        margin-bottom: 25px;
+        padding: 10px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+    } 
+    /* EL YAZILI, BİTİŞİK VE SAĞDAN SOLA YAVAŞÇA KAYAN GÖKKUŞAĞI BTA YAZISI */
+    .bta-logo {
+        display: inline-block;
+        font-family: 'Alex Brush', cursive !important; 
+        font-style: italic !important;
+        font-weight: normal !important; 
+        font-size: 6rem; 
+        letter-spacing: 0px; /* Harflerin ayrılmaması için sıfırlandı */
+        padding-left: 100%; 
+        animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; 
+    } 
+    .kilit-uyari {
+        background: rgba(255, 255, 255, 0.05); 
+        border-left: 4px solid #ca8a04; 
+        padding: 15px; 
+        border-radius: 6px; 
+        margin-bottom: 20px; 
+        font-size: 1.1rem;
+    } 
+    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
+        font-size: 1.25rem !important; 
+        font-weight: bold !important; 
+        color: #ffffff !important;
+    } 
+    div.stButton > button {
+        background-color: transparent; 
+        color: #45f3ff; 
+        border: 2px solid #45f3ff; 
+        box-shadow: 0 0 10px #45f3ff; 
+        border-radius: 8px; 
+        transition: 0.3s;
+    } 
+    div.stButton > button:hover {
+        background-color: #45f3ff; 
+        color: #111; 
+        box-shadow: 0 0 20px #45f3ff;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
