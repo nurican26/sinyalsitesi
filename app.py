@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import datetime
 import yfinance as yf
-import os, re
-import time
+import os
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="centered")
@@ -20,10 +18,6 @@ st.markdown("""
     h1,h2,h3,h4,h5,h6,p,span,label {
         color: #fff !important; 
         font-family: "Segoe UI", sans-serif;
-    } 
-    input {
-        color: #000 !important; 
-        background-color: #fff !important;
     } 
     .stDataFrame {
         width: 100% !important; 
@@ -221,58 +215,58 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # 2. Canlı Altın Fiyatları (Sabit Güvenli İstek)
-    @st.cache_data(ttl=600)
-    def canli_altin_fiyatlari():
-        try:
-            data = yf.download(tickers=["GC=F", "TRY=X"], period="1d", group_by='ticker', progress=False)
-            ons_gold = data["GC=F"]["Close"].iloc[-1]
-            usd_try = data["TRY=X"]["Close"].iloc[-1]
-            if pd.isna(ons_gold) or pd.isna(usd_try):
-                return {"gram": "3.245,20", "ceyrek": "5.310,00", "yarim": "10.620,00", "tam": "21.240,00"}
-            gram_hesap = (ons_gold / 31.1034768) * usd_try
-            def formatla(sayi):
-                return f"{sayi:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            return {"gram": formatla(gram_hesap), "ceyrek": formatla(gram_hesap * 1.634), "yarim": formatla(gram_hesap * 3.268), "tam": formatla(gram_hesap * 6.536)}
-        except:
-            return {"gram": "3.245,20", "ceyrek": "5.310,00", "yarim": "10.620,00", "tam": "21.240,00"}
-
-    altin_fiyatlari = canli_altin_fiyatlari()
+    # Altın Fiyat İşlemleri
+    try:
+        altin_data = yf.download(tickers=["GC=F", "TRY=X"], period="1d", group_by='ticker', progress=False)
+        ons_gold = altin_data["GC=F"]["Close"].iloc[-1]
+        usd_try = altin_data["TRY=X"]["Close"].iloc[-1]
+        gram_hesap = (ons_gold / 31.1034768) * usd_try
+        gram_str = f"{gram_hesap:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        ceyrek_str = f"{(gram_hesap * 1.634):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        yarim_str = f"{(gram_hesap * 3.268):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        tam_str = f"{(gram_hesap * 6.536):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        gram_str, ceyrek_str, yarim_str, tam_str = "3.245,20", "5.310,00", "10.620,00", "21.240,00"
 
     st.markdown(f"""
     <div class="altin-blok-konteyner">
         <div class="altin-satir">
             <div class="altin-kart">
                 <div class="altin-baslik">🌟 GRAM ALTIN</div>
-                <div class="altin-fiyat-deger">{altin_fiyatlari['gram']} TL</div>
+                <div class="altin-fiyat-deger">{gram_str} TL</div>
             </div>
             <div class="altin-kart">
                 <div class="altin-baslik">🌟 ÇEYREK ALTIN</div>
-                <div class="altin-fiyat-deger">{altin_fiyatlari['ceyrek']} TL</div>
+                <div class="altin-fiyat-deger">{ceyrek_str} TL</div>
             </div>
         </div>
         <div class="altin-satir">
             <div class="altin-kart">
                 <div class="altin-baslik">🌟 YARIM ALTIN</div>
-                <div class="altin-fiyat-deger">{altin_fiyatlari['yarim']} TL</div>
+                <div class="altin-fiyat-deger">{yarim_str} TL</div>
             </div>
             <div class="altin-kart">
                 <div class="altin-baslik">🌟 TAM ALTIN</div>
-                <div class="altin-fiyat-deger">{altin_fiyatlari['tam']} TL</div>
+                <div class="altin-fiyat-deger">{tam_str} TL</div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Excel Okuma ve Toplu Fiyat Çekici Motor
+    # %100 DÖNGÜSÜZ VE SAF PANDAS TABLO MOTORU (Hata Yapma Riski Yok)
     excel_yolu = "nurican.xls.xlsm"
 
-    @st.cache_data(ttl=300)
-    def canli_fiyatlari_toplu_getir(kod_listesi):
-        if not kod_listesi:
-            return {}
+    if os.path.exists(excel_yolu):
         try:
-            istek_kodlari = [f"{str(k).strip()}.IS" for k in kod_listesi if pd.notna(k) and str(k).strip() != ""]
-            data = yf.download(tickers=istek_kodlari, period="1d", progress=False)
-            fiyat_haritasi = {}
-            for kod in istek_kodlari:
+            df = pd.read_excel(excel_yolu, sheet_name="BTA", header=None)
+            df = df.iloc[2:].copy()
+            df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
+            
+            df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip()
+            df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip()
+            df["Al Sat"] = df["Al Sat"].astype(str).str.strip()
+            
+            df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
+            df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
+            
+            # Tüm Benzersiz Kodlar İçin Tek İstekte Fiyat İndir (Sıfır Döngü)
