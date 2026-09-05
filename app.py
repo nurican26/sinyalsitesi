@@ -5,10 +5,10 @@ import yfinance as yf
 import os, re
 import time
 
-# 1. Sayfa Yapılandırması
+# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Sağdan Sola Yavaşça Akan El Yazılı Gökkuşağı Neon BTA Logosu
+# CSS Tasarımı - Sitenin Görsel Kimliği
 st.markdown("""
 <style>
     @import url('https://googleapis.com');
@@ -230,7 +230,7 @@ else:
                         temiz_hisse = saf_hisse_kodu_bul(uv_degeri)
                         if temiz_hisse:
                             canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                            puan_bul = re.findall(r'[-+]?\d* Albariño|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             tablo_alsat.append({"Hisse Kodu 📈": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
@@ -238,5 +238,5 @@ else:
                         temiz_hisse = saf_hisse_kodu_bul(wv_degeri)
                         if temiz_hisse:
                             canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
+                            puan_bul = re.findall(r'[-+]?\d* Albariño|\d+', wv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else wv_degeri)
