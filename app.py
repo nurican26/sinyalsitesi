@@ -8,105 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown("""
-<style>
-    /* Gökkuşağı Renk Değişim Animasyonu */
-    @keyframes rainbowNeon {
-        0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
-        25% { color: #00f2fe !important; text-shadow: 0 0 15px #00f2fe, 0 0 30px #00f2fe; }
-        50% { color: #10b981 !important; text-shadow: 0 0 15px #10b981, 0 0 30px #10b981; }
-        75% { color: #a855f7 !important; text-shadow: 0 0 15px #a855f7, 0 0 30px #a855f7; }
-        100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
-    }
-
-    /* Sağdan Sola Gözü Yormayan Yavaş Kayma Animasyonu */
-    @keyframes marquee {
-        0% { transform: translateX(100%); }
-        100% { transform: translateX(-100%); }
-    }
-
-    .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; 
-        padding: 0.5rem;
-    } 
-    h1,h2,h3,h4,h5,h6,p,span,label {
-        color: #fff!important; 
-        font-family: "Segoe UI", sans-serif;
-    } 
-    input {
-        color: #000!important; 
-        background-color: #fff!important;
-    } 
-    .stDataFrame {
-        width: 100% !important; 
-        border: 1px solid #10b981 !important; 
-        border-radius: 8px;
-    } 
-    div.block-container {
-        padding-top: 1rem; 
-        padding-bottom: 0.5rem;
-    } 
-    .alsat-baslik {
-        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
-        padding: 8px; 
-        border-radius: 5px; 
-        font-weight: bold; 
-        margin-bottom: 5px;
-    } 
-    .al-baslik {
-        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
-        padding: 8px; 
-        border-radius: 5px; 
-        font-weight: bold; 
-        margin-bottom: 5px;
-    } 
-    .bta-logo-konteyner {
-        width: 100%;
-        overflow: hidden; 
-        white-space: nowrap;
-        margin-top: 10px; 
-        margin-bottom: 25px;
-        padding: 10px 0;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 8px;
-    } 
-    .bta-logo {
-        display: inline-block;
-        font-family: "Segoe UI", -apple-system, sans-serif !important; 
-        font-weight: 900 !important; 
-        font-size: 5rem; 
-        letter-spacing: 6px; 
-        padding-left: 100%; 
-        animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; 
-    } 
-    .kilit-uyari {
-        background: rgba(255, 255, 255, 0.05); 
-        border-left: 4px solid #ca8a04; 
-        padding: 15px; 
-        border-radius: 6px; 
-        margin-bottom: 20px; 
-        font-size: 1.1rem;
-    } 
-    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
-        font-size: 1.25rem !important; 
-        font-weight: bold !important; 
-        color: #ffffff !important;
-    } 
-    div.stButton > button {
-        background-color: transparent; 
-        color: #45f3ff; 
-        border: 2px solid #45f3ff; 
-        box-shadow: 0 0 10px #45f3ff; 
-        border-radius: 8px; 
-        transition: 0.3s;
-    } 
-    div.stButton > button:hover {
-        background-color: #45f3ff; 
-        color: #111; 
-        box-shadow: 0 0 20px #45f3ff;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 2.2rem; padding: 4px 25px; border-radius: 12px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} div.stButton > button {background-color: transparent; color: #45f3ff; border: 2px solid #45f3ff; box-shadow: 0 0 10px #45f3ff; border-radius: 8px; transition: 0.3s;} div.stButton > button:hover {background-color: #45f3ff; color: #111; box-shadow: 0 0 20px #45f3ff;}</style>', unsafe_allow_html=True)
 
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
@@ -116,7 +18,7 @@ if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] 
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# BTA LOGO ALANI (YAVAŞÇA KAYAN YENİ TASARIM)
+# BTA LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ
@@ -159,17 +61,15 @@ else:
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu: return 0.0
-        # Güvenli Kararlı Temizleme: Gelen koddaki parantezleri ve tırnakları sisteme dokunmadan temizler
-        temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(", 'AL'", "").replace(", 'SAT'", "").strip()
-        if temiz_kod in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
+        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
             if time.time() - saved_time < 300: return saved_price
         try:
-            ticker = yf.Ticker(f"{temiz_kod}.IS")
+            ticker = yf.Ticker(f"{hisse_kodu}.IS")
             data = ticker.history(period="1d")
             if not data.empty and not pd.isna(data['Close'].iloc[-1]):
                 fiyat = float(data['Close'].iloc[-1])
-                st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
+                st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
                 return fiyat
         except: pass
         return 0.0
@@ -192,26 +92,22 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            # Orijinal çalışan yapıya geri dönüldü
                             hisse = str(hisse_ara).strip()
-                            # Tabloda gösterilecek ismi parantezsiz ve tırnaksız yapar
-                            gosterim_ismi = hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '')
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            tablo_alsat.append({"Hisse Kodu 📈": gosterim_ismi, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
                             hisse = str(hisse_ara).strip()
-                            gosterim_ismi = hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(", AL", "").replace(",AL", "")
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            if gosterim_ismi not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
-                                st.session_state["ozel_takip_kutusu"][gosterim_ismi] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
-                            tablo_al.append({"Hisse Kodu 🚀": gosterim_ismi, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+                            if hisse not in st.session_state["ozel_takip_kutusu"] and canli_fiyat > 0:
+                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": canli_fiyat, "kayit_zamani": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")}
+                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
             except:
                 pass
 
@@ -227,3 +123,8 @@ else:
         st.markdown("#### 🌟 Özel Takip Havuzu 💰")
         tk_list = []
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
+            cfiy = hızlı_canli_fiyat_bul(hisse)
+            if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
+            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
+        if tk_list:
+            st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
