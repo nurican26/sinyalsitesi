@@ -59,9 +59,9 @@ st.markdown("""
 }
 .logo-ust-konteyner {
     position: relative;
-    width: 140px;  /* İstediğin gibi boyut küçültüldü */
+    width: 140px;
     height: 140px;
-    animation: cerceve-kayma 5s infinite ease-in-out; /* Küçülen çerçeveye kayma efekti */
+    animation: cerceve-kayma 5s infinite ease-in-out;
 }
 .bta-neon-yuvarlak-logo {
     background: transparent !important;
@@ -79,7 +79,7 @@ st.markdown("""
     left: 0;
 }
 .logo-yazi {
-    font-size: 2.8rem !important; /* Küçülen çerçeveye tam oturan font boyutu */
+    font-size: 2.8rem !important;
     font-weight: bold !important;
     font-family: 'Caveat', cursive, sans-serif !important;
     background: linear-gradient(45deg, #ff007f, #ffaa00, #00f0ff);
@@ -96,7 +96,7 @@ st.markdown("""
     left: -15px;
     width: 170px;
     height: 170px;
-    animation: yildiz-yolculuk 6s infinite linear; /* Dönüş hızı ayarı */
+    animation: yildiz-yolculuk 6s infinite linear;
     pointer-events: none;
 }
 .tek-yildiz {
@@ -105,7 +105,6 @@ st.markdown("""
     color: #ffaa00 !important;
     text-shadow: 0 0 8px #ffaa00, 0 0 15px #ff007f;
 }
-/* Yıldızları çerçevenin etrafına dairesel olarak dağıtıyoruz */
 .y1 { top: 0; left: 50%; transform: translateX(-50%); }
 .y2 { bottom: 0; left: 50%; transform: translateX(-50%); }
 .y3 { top: 50%; left: 0; transform: translateY(-50%); }
@@ -113,14 +112,12 @@ st.markdown("""
 </style>
 <div class="logo-merkezleyici">
     <div class="logo-ust-konteyner">
-        <!-- Çerçevenin etrafında fır fır dönen yıldızlar -->
         <div class="yildiz-yorungesi">
             <div class="tek-yildiz y1">✦</div>
             <div class="tek-yildiz y2">✦</div>
             <div class="tek-yildiz y3">✦</div>
             <div class="tek-yildiz y4">✦</div>
         </div>
-        <!-- Küçültülmüş ve parlayan yuvarlak çerçeve -->
         <div class="bta-neon-yuvarlak-logo">
             <div class="logo-yazi">BTA</div>
         </div>
@@ -141,7 +138,8 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             fiyat = float(data['Close'].iloc[-1])
             st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
             return fiyat
-    except: pass
+    except:
+        pass
     return 0.0
 
 def canli_altin_fiyatlarini_hesapla():
@@ -155,7 +153,8 @@ def canli_altin_fiyatlarini_hesapla():
                 saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
                 ceyrek_fiyat = saf_gram * 1.635
                 return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
-    except: pass
+    except:
+        pass
     return 3020.50, 4950.00, 9900.00, 19800.00 
 
 # 🟢 VERİLER VE TABLOLAR DOĞRUDAN YÜKLENİR
@@ -176,8 +175,10 @@ st.write("")
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
-    try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-    except: pass
+    try: 
+        df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+    except: 
+        pass
 
 tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
@@ -191,14 +192,17 @@ if df_kaynak is not None:
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
                         p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul if p_bul else t_deg
+                        bta_puan = p_bul[0] if p_bul else t_deg
                         tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
-                        hisse = str(h_ara).strip()
+                        hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
+                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                        bta_puan = p_bul[0] if p_bul else t_deg
+                        if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
