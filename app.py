@@ -165,17 +165,15 @@ else:
     # Fiyat Motoru
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu: return 0.0
-        # 🎯 KESİN PARANTEZ ARINDIRICI: Yahoo araması öncesi tüm parantez ve tırnakları uçurur
-        temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "").strip()
-        if temiz_kod in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
+        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
             if time.time() - saved_time < 300: return saved_price
         try:
-            ticker = yf.Ticker(f"{temiz_kod}.IS")
+            ticker = yf.Ticker(f"{hisse_kodu}.IS")
             data = ticker.history(period="1d")
             if not data.empty and not pd.isna(data['Close'].iloc[-1]):
                 fiyat = float(data['Close'].iloc[-1])
-                st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
+                st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
                 return fiyat
         except: pass
         return 0.0
@@ -183,6 +181,16 @@ else:
     def temiz_metin_al(val):
         if pd.isna(val): return ""
         return str(val).strip().upper()
+
+    # 🎯 %100 SAF HİSSE KODU AYIRICI GÜVENLİ MOTOR
+    def saf_hisse_kodu_bul(metin):
+        # Hücredeki tüm parantez, tırnak, AL, SAT kelimelerini uçurur, sadece saf kelimeleri bulur
+        kelimeler = re.findall(r'[A-Z]+', str(metin))
+        for kelime in kelimeler:
+            # AL, SAT, NAN, NONE gibi borsa sinyal kelimelerini eler, geriye kalan İLK kelimeyi hisse kodu seçer
+            if kelime not in ["AL", "SAT", "NAN", "NONE", "SİNYALİ", "SİNYAL"]:
+                return kelime
+        return ""
 
     tablo_alsat = []
     tablo_al = []
@@ -195,23 +203,19 @@ else:
                     wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
                     t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
                     
+                    # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
-                        if hisse_ara:
-                            # Hücreden gelen ham listeyi metne alıyoruz
-                            ham_hisse = str(hisse_ara).strip()
-                            # 🎯 TABLO TEMİZLEYİCİ: Ekranda gösterilecek isimdeki parantezleri siler
-                            temiz_hisse = ham_hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(" ", "")
+                        temiz_hisse = saf_hisse_kodu_bul(uv_degeri)
+                        if temiz_hisse:
                             canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                             tablo_alsat.append({"Hisse Kodu 📈": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
+                    # 🟢 BTA SİNYAL MERKEZİ ANALİZİ
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                        hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
-                        if hisse_ara:
-                            ham_hisse = str(hisse_ara).strip()
-                            temiz_hisse = ham_hisse.replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace(",AL", "").replace(",SAT", "").replace(" ", "")
+                        temiz_hisse = saf_hisse_kodu_bul(wv_degeri)
+                        if temiz_hisse:
                             canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -226,3 +230,8 @@ else:
     else: st.write("🔒 Aktif sinyal taranıyor...")
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: st.write("🔒 Aktif sinyal taranıyor...")
+
+    if st.session_state["ozel_takip_kutusu"]:
+        st.markdown("#### 🌟 Özel Takip Havuzu 💰")
