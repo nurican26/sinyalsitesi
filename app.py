@@ -137,32 +137,6 @@ st.markdown("""
 
     .alt-baslik-bta { border-left: 5px solid #f1c40f; padding-left: 8px; margin-top: 15px; margin-bottom: 8px; font-weight: 600; color: #f1c40f !important; font-size: 18px; }
     .alt-baslik-alsat { border-left: 5px solid #00d2ff; padding-left: 8px; margin-top: 20px; margin-bottom: 8px; font-weight: 600; color: #00d2ff !important; font-size: 18px; }
-    .kilit-uyari {
-        background: rgba(255, 255, 255, 0.05); 
-        border-left: 4px solid #ff3366; 
-        padding: 15px; 
-        border-radius: 6px; 
-        margin-bottom: 20px; 
-        font-size: 1.1rem;
-    } 
-    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
-        font-size: 1.25rem !important; 
-        font-weight: bold !important; 
-        color: #ffffff !important;
-    } 
-    div.stButton > button {
-        background-color: transparent; 
-        color: #45f3ff; 
-        border: 2px solid #45f3ff; 
-        box-shadow: 0 0 10px #45f3ff; 
-        border-radius: 8px; 
-        transition: 0.3s;
-    } 
-    div.stButton > button:hover {
-        background-color: #45f3ff; 
-        color: #111; 
-        box-shadow: 0 0 20px #45f3ff;
-    }
 </style>
 
 <div class="bta-cerceve-alani">
@@ -214,7 +188,7 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # Canlı Altın Fiyatları (Garantili Sabit Blok)
+    # Canlı Altın Fiyatları
     gram_str, ceyrek_str, yarim_str, tam_str = "3.245,20", "5.310,00", "10.620,00", "21.240,00"
 
     st.markdown(f"""
@@ -242,37 +216,49 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
+    # %100 FİLTRESİZ VE DOĞRUDAN OKUMA MOTORU
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
-        # Excel dosyasını 'WEB' sayfasından ham veri olarak yükle
         raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
         
-        # İlk 2 satırı (Başlıkları) atlayıp kolonları kilitliyoruz
+        # İlk 2 satırı atla ve sütunları kilitli indekslere bağla
         df = raw_df.iloc[2:].copy()
         df.columns = ["Hisse Kodu", "BTA Alımı", "Al Sat Skoru", "Al Sat", "BTA Puanı", "BTA Hisse"] + list(df.columns[6:])
         
-        # Sütunlardaki string temizliklerini yapıyoruz
+        # Sütunları düz metne çevir ve boşlukları at
         df["Hisse Kodu"] = df["Hisse Kodu"].astype(str).str.strip().str.upper()
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # Boşluk ve Yok Hatalarını temizle
-        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"] != "") & (df["Hisse Kodu"] != "0") & (df["Hisse Kodu"] != "NAN") & (df["Hisse Kodu"] != "NONE")]
+        # Geçersiz boşluk ve hata satırlarını süz
+        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"] != "") & (df["Hisse Kodu"] != "NAN") & (df["Hisse Kodu"] != "NONE")]
         
         if not df.empty:
             df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
-            df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("0")
+            df["Al Sat Skoru"] = df["Al Sat Skoru"].fillna("-")
             
-            # Canlı Fiyatları Tek İstekte Çek
+            # Canlı fiyatları kayma olmadan toplu çek
             benzersiz_kodlar = df["Hisse Kodu"].unique().tolist()
-            istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if k and len(str(k)) <= 6]
+            istek_kodlari = [f"{str(k)}.IS" for k in benzersiz_kodlar if len(str(k)) <= 6]
             
-            # Tamamen Güvenli Fiyat Çekici Mantık
-            fiyat_sozluk = {}
+            fiziki_sozluk = {}
             canli_data = yf.download(tickers=istek_kodlari, period="1d", progress=False)["Close"]
-            fiyat_df = pd.DataFrame(canli_data)
+            fiyat_data_frame = pd.DataFrame(canli_data)
             
-            if not fiyat_df.empty:
-                fiyat_serisi = fiyat_df.iloc[-1]
+            if not fiyat_data_frame.empty:
+                seri_data = fiyat_data_frame.iloc[-1]
+                fiziki_sozluk = {str(k).replace(".IS", ""): float(v) for k, v in seri_data.items()}
+            
+            # Sayısal alım hesaplaması
+            df["BTA Alımı Sayisal"] = pd.to_numeric(df["BTA Alımı"].astype(str).str.replace(",", "."), errors='coerce').fillna(0)
+            df["Canli_Fiyat"] = df["Hisse Kodu"].map(fiziki_sozluk).fillna(df["BTA Alımı Sayisal"])
+            
+            # Kar/Zarar Vektörel
+            df["Kar_Oran"] = ((df["Canli_Fiyat"] - df["BTA Alımı Sayisal"]) / df["BTA Alımı Sayisal"] * 100).fillna(0)
+            df["Kar / Zarar"] = df["Kar_Oran"].apply(lambda x: f"▲ %{x:.2f}" if x > 0 else (f"▼ %{abs(x):.2f}" if x < 0 else "%0.00"))
+            
+            # Metin formatları
+            df["BTA Alım Fiyatı"] = df["BTA Alımı Sayisal"].apply(lambda x: f"{x:,.2f} TL" if x > 0 else "0.00 TL")
+            df["Anlık Canlı Fiyat"] = df["Canli_Fiyat"].apply(lambda x: f"{x:,.2f} TL" if x > 0 else "0.00 TL")
+
