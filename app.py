@@ -99,7 +99,7 @@ bist_all = [
 
 with sekme_arama:
     st.markdown("### 🔎 Canlı BIST Tüm Hisse Arama Motoru")
-    arama_girdisi = st.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS, EREGL):", "").strip().upper()
+    arama_girdisi = st.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS):", "").strip().upper()
     
     if arama_girdisi in bist_all:
         h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
