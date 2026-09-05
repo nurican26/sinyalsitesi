@@ -8,7 +8,7 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - BTA Yazısı İçin Parlayan Animasyon Eklendi
+# CSS Tasarımı - BTA Yazısı İçin Parlayan Animasyon
 st.markdown("""
 <style>
     @keyframes neonPulse {
@@ -68,7 +68,6 @@ st.markdown("""
         margin-top: 15px; 
         margin-bottom: 25px;
     } 
-    /* Yenilenen Göz Alıcı BTA Yazı Stili */
     .bta-logo {
         background: transparent; 
         color: #10b981 !important; 
@@ -226,6 +225,3 @@ else:
             tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
         if tk_list:
             st.dataframe(pd.DataFrame(tk_list), use_container_width=True, hide_index=True)
-            if st.button("🗑️ Havuzu Temizle", use_container_width=True):
-                st.session_state["ozel_takip_kutusu"] = {}
-                st.rerun()
