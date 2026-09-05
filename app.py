@@ -242,10 +242,11 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # %100 SAF PANDAS VE DÖNGÜSÜZ TABLO MOTORU
+    # %100 GÜVENLİ VE SIFIR HATA RİSKLİ YENİ KOD YAPISI
     excel_yolu = "nurican.xls.xlsm"
 
     if os.path.exists(excel_yolu):
+        # Excel dosyasını 'WEB' sayfasından ham veri olarak yükle
         raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
         
         # İlk 2 satırı (Başlıkları) atlayıp kolonları kilitliyoruz
@@ -257,8 +258,8 @@ else:
         df["BTA Hisse"] = df["BTA Hisse"].astype(str).str.strip().str.upper()
         df["Al Sat"] = df["Al Sat"].astype(str).str.strip().str.upper()
         
-        # 🎯 GEVŞETİLMİŞ GÜVENLİ FİLTRE: Boş olmayan ve sıfır yazmayan gerçek satırları yakala
-        df = df[df["Hisse Kodu"].notna() & (df["Hisse Kodu"] != "") & (df["Hisse Kodu"] != "0") & (df["Hisse Kodu"] != "NAN") & (df["Hisse Kodu"] != "NONE")]
+        # 🎯 KESİN FİLTRE: "BTA Hisse" (F sütunu) hücresi boşsa, nan, 0 veya None ise satırı kökten sil!
+        df = df[df["BTA Hisse"].notna() & (df["BTA Hisse"] != "") & (df["BTA Hisse"] != "0") & (df["BTA Hisse"] != "NAN") & (df["BTA Hisse"] != "NONE")]
         
         if not df.empty:
             df["BTA Puanı"] = df["BTA Puanı"].fillna("-")
