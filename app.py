@@ -222,16 +222,15 @@ else:
         st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
     def hızlı_canli_fiyat_bul(hisse_kodu):
-        temiz_kod = str(hisse_kodu).replace("[", "").replace("]", "").replace("'", "").replace('"', '').strip()
-        if temiz_kod in st.session_state["fiyat_hafizasi"]:
-            saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
+        if hisse_kodu in st.session_state["fiyat_hafizasi"]:
+            saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
             if time.time() - saved_time < 300: return saved_price
         try:
-            ticker = yf.Ticker(f"{temiz_kod}.IS")
+            ticker = yf.Ticker(f"{hisse_kodu}.IS")
             data = ticker.history(period="1d")
             if not data.empty and not pd.isna(data['Close'].iloc[-1]):
                 fiyat = float(data['Close'].iloc[-1])
-                st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
+                st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
                 return fiyat
         except: pass
         return 0.0
@@ -244,8 +243,9 @@ else:
     tablo_al = []
     hisse_kodlari_listesi = []
 
-    # 🚀 DÜZELTİLMİŞ VE KESİNLİKLE HATA VERMEYEN YAPI 🚀
+    # KESİN VE TAM KORUMALI VERİ TARAMA DÖNGÜSÜ
     if df_kaynak is not None:
         for idx in range(2, len(df_kaynak)):
             if len(df_kaynak.columns) > 22:
                 uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+                wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
