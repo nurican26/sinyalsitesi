@@ -71,7 +71,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
         if time.time() - saved_time < 300: return saved_price, saved_change
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        data = ticker.history(period="2d")  # Değişim hesabı için en az 2 gün gerekli
+        data = ticker.history(period="2d")
         if not data.empty and len(data) >= 1:
             fiyat = float(data['Close'].iloc[-1])
             yuzde_degisim = 0.0
@@ -149,3 +149,4 @@ if erisim_izni:
             if guncel_fiyat > 0:
                 degisim = ((guncel_fiyat - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100
                 tablo_takip.append({
+                    "Hisse 📌": hisse,
