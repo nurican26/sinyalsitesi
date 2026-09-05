@@ -63,7 +63,6 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
-    /* Yavaşça Kayan Logo Konteyneri */
     .bta-logo-konteyner {
         width: 100%;
         overflow: hidden; 
@@ -120,7 +119,7 @@ st.markdown("""
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "3015"
 
-# Hafıza Kontrolleri
+# Hafıza Kontrolleri (Bozulmayı ve Sıfırlanmayı Önleyen State Ayarları)
 if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] = False
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
@@ -155,7 +154,7 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # --- 📊 CANLI PİYASA TAKİP ALANI ---
+    # --- 📈 CANLI PİYASA TAKİP ALANI ---
     st.markdown("### 📊 Canlı Piyasa Takip Ekranı")
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
@@ -222,8 +221,8 @@ else:
                             temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
                             if temiz_isim:
                                 canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
-                                puan_bul = re.findall(r'[-+]?\d* Albariño|\d+', uv_degeri)
-                                bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                                bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
                                 tablo_alsat.append({"Hisse Kodu 📈": temiz_isim, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
                     
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
@@ -232,5 +231,5 @@ else:
                             temiz_isim = listeyi_sadece_hisse_yap(hisse_ara)
                             if temiz_isim:
                                 canli_fiyat = hızlı_canli_fiyat_bul(temiz_isim)
-                                puan_bul = re.findall(r'[-+]?\d* Albariño|\d+', wv_degeri)
-                                bta_puan = puan_bul[0] if puan_bul else (t_degeri if t_degeri else wv_degeri)
+                                puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv_degeri)
+                                bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else wv_degeri)
