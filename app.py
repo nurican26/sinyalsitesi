@@ -6,7 +6,7 @@ import os
 import re
 import time
 
-# 1. Sayfa Yapılandırması ve Şık Neon Tasarım
+# 1. Sayfa Yapılandırması ve Şık Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown("""
@@ -38,12 +38,16 @@ st.markdown("""
     }
     .altin-val { color: #ffffff; font-family: 'Poppins', sans-serif; }
     .stDataFrame, div[data-testid="stTable"] { color: #ffffff !important; }
-    h3, p, span, label { color: #ffffff !important; }
+    h3, h4, p, span, label { color: #ffffff !important; }
+    
+    /* Özel Başlık Tasarımları */
+    .alt-baslik-bta { border-left: 5px solid #f1c40f; padding-left: 10px; margin-top: 20px; margin-bottom: 10px; font-weight: 600; color: #f1c40f !important; }
+    .alt-baslik-alsat { border-left: 5px solid #00d2ff; padding-left: 10px; margin-top: 30px; margin-bottom: 10px; font-weight: 600; color: #00d2ff !important; }
 </style>
 <div class="bta-logo-konteyner"><div class="bta-logo">BTA Analiz & Finans Takip Paneli</div></div>
 """, unsafe_allow_html=True)
 
-# 2. Canlı Altın Fiyatları Fonksiyonu
+# 2. Canlı Altın Fiyatları
 @st.cache_data(ttl=300)
 def canli_altin_fiyatlari():
     try:
@@ -74,48 +78,41 @@ st.markdown(f"""
 sol_kolon, sag_kolon = st.columns(2)
 
 with sol_kolon:
-    st.subheader("📊 Hisselerim ve BTA Model Hesaplamaları")
     excel_yolu = "nurican.xls.xlsm"
     
     if os.path.exists(excel_yolu):
         try:
-            # Sizin Excel tablonuzun gerçek yapısına göre sütun harflerini (indisleri) nokta atışı seçiyoruz
-            # Sütun isimlerine bağımlı kalmadan direkt pozisyonel okuma yapıyoruz!
             raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
-            
-            # Verileriniz 3. satırdan (index 2) başladığı için üst kısmı kesiyoruz
             df_hisseler = raw_df.iloc[2:].copy()
             
-            # Sizin Excel sütun harflerinizin karşılıkları:
-            # 0->A (Hisse), 1->B (BTA Alımı), 3->D (Al Sat Skoru), 4->E (Al Sat), 5->F (BTA Puanı), 6->G (BTA Hisse)
-            veri_listesi = []
+            bta_listesi = []
+            alsat_listesi = []
             
             for idx, row in df_hisseler.iterrows():
                 hisse_kodu = str(row[0]).strip() if pd.notna(row[0]) else ""
                 
-                # Eğer A sütunundaki hisse kodu boş değilse satırı işle
                 if hisse_kodu != "" and hisse_kodu != "None":
                     bta_alimi = float(str(row[1]).replace(",", ".")) if pd.notna(row[1]) else 0
-                    al_sat_skoru = str(row[3]) if pd.notna(row[3]) else "0"
-                    al_sat = str(row[4]) if pd.notna(row[4]) else "0"
-                    bta_puani = str(row[5]) if pd.notna(row[5]) else "0"
-                    bta_hisse_sutun = str(row[6]) if pd.notna(row[6]) else "0"
+                    al_sat_skoru = str(row[3]).strip() if pd.notna(row[3]) else "0"
+                    al_sat = str(row[4]).strip() if pd.notna(row[4]) else "0"
+                    bta_puani = str(row[5]).strip() if pd.notna(row[5]) else "0"
+                    bta_hisse_sutun = str(row[6]).strip() if pd.notna(row[6]) else "0"
                     
-                    # İnternetten o hissenin anlık fiyatını çekiyoruz
+                    # Canlı fiyat çekme
                     try:
                         ticker = yf.Ticker(f"{hisse_kodu}.IS")
                         canli_fiyat = ticker.history(period="1d")['Close'].iloc[-1]
                     except:
-                        canli_fiyat = bta_alimi if bta_alimi > 0 else 0
+                        canli_fiyat = bta_alimi
                     
-                    # Kar / Zarar (%) Hesaplaması
+                    # Kar / Zarar (%) Hesaplama
                     if bta_alimi > 0 and canli_fiyat > 0:
                         kz = ((canli_fiyat - bta_alimi) / bta_alimi) * 100
                         kar_zarar_str = f"%{kz:+.2f}"
                     else:
                         kar_zarar_str = "%0.00"
-                        
-                    veri_listesi.append({
+                    
+                    satir_veri = {
                         "Hisse Kodu": hisse_kodu,
                         "BTA Puanı": bta_puani,
                         "BTA Alım Fiyatı": f"{bta_alimi:,.2f} TL" if bta_alimi > 0 else "0.00 TL",
@@ -124,18 +121,36 @@ with sol_kolon:
                         "Al Sat Skoru": al_sat_skoru,
                         "Al Sat": al_sat,
                         "BTA Hisse": bta_hisse_sutun
-                    })
+                    }
+                    
+                    # FİLTRE 1: G Sütununda (BTA Hisse) '0' yazmıyorsa ve boş değilse BTA listesine ekle
+                    if bta_hisse_sutun != "0" and bta_hisse_sutun != "":
+                        bta_listesi.append(satir_veri)
+                        
+                    # FİLTRE 2: E Sütununda (Al Sat) '0' yazmıyorsa ve boş değilse Al Sat listesine ekle
+                    if al_sat != "0" and al_sat != "":
+                        alsat_listesi.append(satir_veri)
             
-            if len(veri_listesi) > 0:
-                final_df = pd.DataFrame(veri_listesi)
-                st.dataframe(final_df, use_container_width=True, hide_index=True)
+            # 1. TABLO: BTA HİSSELERİ
+            st.markdown('<div class="alt-baslik-bta">📈 BTA Model Hisseleri</div>', unsafe_allow_html=True)
+            if len(bta_listesi) > 0:
+                bta_df = pd.DataFrame(bta_listesi)[["Hisse Kodu", "BTA Puanı", "BTA Alım Fiyatı", "Anlık Canlı Fiyat", "Kar / Zarar (%)", "BTA Hisse"]]
+                st.dataframe(bta_df, use_container_width=True, hide_index=True)
             else:
-                st.warning("Excel 'WEB' sayfasında işlenecek hisse kodu bulunamadı.")
+                st.caption("Şu anda aktif BTA modeli hissesi bulunmuyor.")
+
+            # 2. TABLO: AL SAT HİSSELERİ
+            st.markdown('<div class="alt-baslik-alsat">🚦 Al Sat Sinyal Hisseleri</div>', unsafe_allow_html=True)
+            if len(alsat_listesi) > 0:
+                alsat_df = pd.DataFrame(alsat_listesi)[["Hisse Kodu", "Anlık Canlı Fiyat", "Kar / Zarar (%)", "Al Sat Skoru", "Al Sat"]]
+                st.dataframe(alsat_df, use_container_width=True, hide_index=True)
+            else:
+                st.caption("Şu anda aktif Al Sat sinyali veren hisse bulunmuyor.")
                 
         except Exception as e:
-            st.error(f"Tablo eşleştirme hatası: {e}")
+            st.error(f"Filtreleme hatası: {e}")
     else:
-        st.info("⚙️ 'nurican.xls.xlsm' dosyası henüz yüklenmedi veya ismi tam uyuşmuyor.")
+        st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
 
 with sag_kolon:
     st.subheader("🔍 Genel Hisse Arama Motoru")
@@ -156,4 +171,4 @@ with sag_kolon:
                 else:
                     st.error("Hisse kodu bulunamadı. Lütfen geçerli bir kod girin (Örn: EREGL).")
             except:
-                st.error("Veri çekme sınırına ulaşıldı veya internet bağlantısı kesildi.")
+                st.error("Veri çekme hatası.")
