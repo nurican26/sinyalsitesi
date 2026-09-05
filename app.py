@@ -90,7 +90,7 @@ if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
     st.stop()
 
 # =========================================================================
-# GÜVENLİ ETKİLEŞİM SEKMELERİ (%100 SABİT VE DOĞRUSAL YAPI)
+# GÜVENLİ ETKİLEŞİM SEKMELERİ
 # =========================================================================
 sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 TÜM BIST ARAMA MOTORU", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
 
@@ -104,12 +104,10 @@ bist_all = [
 # =========================================================================
 with sekme_arama:
     st.markdown("<div class='alsat-baslik'>🔍 BIST Hisse Analiz ve Veri Sorgulama</div>", unsafe_allow_html=True)
-    
     secilen_hisse = st.selectbox("Analiz etmek istediğiniz BIST hissesini seçin veya yazın:", bist_all, index=0)
     
     if secilen_hisse:
         ticker_kod = f"{secilen_hisse}.IS"
-        
         try:
             hisse_data = yf.Ticker(ticker_kod)
             gecmis_veri = hisse_data.history(period="1mo")
@@ -134,4 +132,4 @@ with sekme_arama:
                     st.dataframe(gecmis_veri.tail(10), use_container_width=True)
             else:
                 st.warning(f"⚠️ {secilen_hisse} için güncel veri çekilemedi. Lütfen piyasa saatlerini kontrol edin.")
-                
+        except Exception as e:
