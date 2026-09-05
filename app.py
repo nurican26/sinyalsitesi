@@ -63,7 +63,7 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
-    /* Altın Kartları Yeni Düzenli Tasarım */
+    /* Altın Kartları Düzenli Tasarım */
     .altin-box {
         background: rgba(255, 215, 0, 0.05);
         border: 1px solid #ca8a04;
@@ -158,14 +158,13 @@ else:
     if st.session_state["oda_kilitli_mi"]:
         st.warning("⚠️ Oda dışarıya kilitli fakat Yönetici olduğunuz için erişim sağladınız.")
 
-    # --- 🪙 CANLI ALTIN PİYASASI PANELİ (KUSURSUZ DOĞRU FORMÜL) ---
+    # --- 🪙 CANLI ALTIN PİYASASI PANELİ ---
     try:
         ons_gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
         dolar_tl = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
         
-        # Uluslararası standart 24 ayar has altın hesaplama formülü
         gram_altin = (ons_gold / 31.1034768) * dolar_tl
-        ceyrek_altin = gram_altin * 1.605 * 1.025  # Rafineri işçilik payları dahil piyasa satış fiyatı
+        ceyrek_altin = gram_altin * 1.605 * 1.025  
         yarim_altin = ceyrek_altin * 2
         tam_altin = ceyrek_altin * 4
         
@@ -208,33 +207,31 @@ else:
         if pd.isna(val): return ""
         return str(val).strip().upper()
 
-    # 🎯 HÜCRE METNİNDEN SADECE SAF HİSSE KODUNU AYIRAN SÜPER FİLTRE
-    def saf_hisse_kodunu_bul(hücre_metni):
-        # Hücredeki tüm parantez, tırnak işaretlerini temizler ve sadece büyük harfli kelimeleri bulur
-        kelimeler = re.findall(r'[A-Z]+', str(hücre_metni))
-        for k in kelimeler:
-            # Excel'den gelebilecek AL, SAT, NAN gibi sinyal veya boş kelimeleri eler
-            if k not in ["AL", "SAT", "NAN", "NONE", "SİNYALİ", "SİNYAL", "AL_SAT"]:
-                return k  # Geriye kalan ilk saf kelimeyi (örn: SONME) doğrudan kod olarak seçer
-        return ""
-
     tablo_alsat = []
     tablo_al = []
 
-    if df_kaynak is not None:
+    # 🚀 DÜZ VE KESİNLİKLE HATA VERMEYEN YAPI (YENİ SÜRÜM) 🚀
+    if df_kaynak is not None and len(df_kaynak.columns) > 22:
         for idx in range(2, len(df_kaynak)):
-            try:
-                if len(df_kaynak.columns) > 22:
-                    uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
-                    wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
-                    t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
-                    
-                    # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
-                    if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        temiz_hisse = saf_hisse_kodunu_bul(uv_degeri)
-                        if temiz_hisse:
-                            canli_fiyat = hızlı_canli_fiyat_bul(temiz_hisse)
-                            puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
-                            bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
-                            tablo_alsat.append({"Hisse Kodu 📈": temiz_hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
-                    
+            uv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 20])
+            wv_degeri = temiz_metin_al(df_kaynak.iloc[idx, 22])
+            t_degeri = temiz_metin_al(df_kaynak.iloc[idx, 19])
+            
+            # 🟡 DÖNEMSEL AL SAT SİNYALLERİ ANALİZİ
+            if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
+                hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
+                if hisse_ara:
+                    # Hücredeki listeyi yazıp tüm parantez, tırnak ve AL/SAT kelimelerini kalıcı olarak uçurur
+                    ham_kod = str(hisse_ara).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace("AL", "").replace("SAT", "").replace(" ", "").strip()
+                    if ham_kod:
+                        canli_fiyat = hızlı_canli_fiyat_bul(ham_kod)
+                        puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
+                        bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
+                        tablo_alsat.append({"Hisse Kodu 📈": ham_kod, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor..."})
+            
+            # 🟢 BTA SİNYAL MERKEZİ ANALİZİ
+            if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
+                hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
+                if hisse_ara:
+                    # Hücredeki listeyi yazıp tüm parantez, tırnak ve AL/SAT kelimelerini kalıcı olarak uçurur
+                    ham_kod = str(hisse_ara).replace("[", "").replace("]", "").replace("'", "").replace('"', '').replace("AL", "").replace("SAT", "").replace(" ", "").strip()
