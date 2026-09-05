@@ -8,11 +8,9 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# CSS Tasarımı - Sürekli Sallanan, Bitişik Eğik Gökkuşağı BTA Logosu
+# CSS Tasarımı - Gözü Yormayan, Yavaşça Kayan Gökkuşağı Neon BTA Logosu
 st.markdown("""
 <style>
-    @import url('https://googleapis.com');
-    
     /* Gökkuşağı Renk Değişim Animasyonu */
     @keyframes rainbowNeon {
         0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
@@ -22,14 +20,10 @@ st.markdown("""
         100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f, 0 0 30px #ff007f; }
     }
 
-    /* Sürekli Sallanma/Titreme Animasyonu */
-    @keyframes shakeLogo {
-        0% { transform: translate(0, 0) rotate(0deg); }
-        20% { transform: translate(-1px, 1px) rotate(-0.5deg); }
-        40% { transform: translate(1px, -1px) rotate(0.5deg); }
-        60% { transform: translate(-1px, -1px) rotate(-0.5deg); }
-        80% { transform: translate(1px, 1px) rotate(0.5deg); }
-        100% { transform: translate(0, 0) rotate(0deg); }
+    /* Sağdan Sola Yavaş Kayma Animasyonu */
+    @keyframes marquee {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
     }
 
     .stApp {
@@ -67,27 +61,26 @@ st.markdown("""
         font-weight: bold; 
         margin-bottom: 5px;
     } 
+    /* Yavaşça Kayan Logo Konteyneri */
     .bta-logo-konteyner {
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        margin-top: 15px; 
-        margin-bottom: 35px;
         width: 100%;
+        overflow: hidden; /* Dışarı taşan yazıyı gizler */
+        white-space: nowrap;
+        margin-top: 10px; 
+        margin-bottom: 25px;
+        padding: 10px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
     } 
-    /* EĞİK, BİTİŞİK VE HAREKETLİ SALLANAN BTA LOGOSU */
+    /* DÜZ, BÜYÜK VE SAĞDAN SOLA YAVAŞÇA KAYAN BTA YAZISI */
     .bta-logo {
-        background: transparent; 
-        font-family: 'Alex Brush', cursive !important; 
-        font-style: italic !important; /* Eğik yazı */
-        font-weight: normal; 
-        font-size: 7.5rem; 
-        padding: 0px; 
-        letter-spacing: 0px; /* Bitişik durması için ayarlandı */
         display: inline-block;
-        animation: rainbowNeon 6s infinite linear, shakeLogo 0.4s infinite ease-in-out; /* Hem renk değişimi hem sallanma */
-        text-align: center;
-        width: auto;
+        font-family: "Segoe UI", -apple-system, sans-serif !important; 
+        font-weight: 900 !important; 
+        font-size: 5rem; 
+        letter-spacing: 6px; 
+        padding-left: 100%; /* Başlangıç pozisyonu */
+        animation: marquee 25s infinite linear, rainbowNeon 8s infinite linear; /* Yavaş kayma ve renk değişimi */
     } 
     .kilit-uyari {
         background: rgba(255, 255, 255, 0.05); 
@@ -126,7 +119,7 @@ if "oda_kilitli_mi" not in st.session_state: st.session_state["oda_kilitli_mi"] 
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# BTA LOGO ALANI
+# BTA YAVAŞÇA KAYAN LOGO ALANI
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 🛠️ SOL MENÜ: ODA YÖNETİM MERKEZİ
@@ -200,7 +193,8 @@ else:
                     if uv_degeri and uv_degeri not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', uv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara).strip()
+                            # Listeden sadece kodu alarak parantezleri ve tırnakları kesin olarak yok eder
+                            hisse = str(hisse_ara[0]).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -209,7 +203,8 @@ else:
                     if wv_degeri and wv_degeri not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         hisse_ara = re.findall(r'[A-Z]+', wv_degeri)
                         if hisse_ara:
-                            hisse = str(hisse_ara).strip()
+                            # Listeden sadece kodu alarak parantezleri ve tırnakları kesin olarak yok eder
+                            hisse = str(hisse_ara[0]).strip()
                             canli_fiyat = hızlı_canli_fiyat_bul(hisse)
                             puan_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv_degeri)
                             bta_puan = puan_bul if puan_bul else (t_degeri if t_degeri else uv_degeri)
@@ -225,7 +220,7 @@ else:
 
     st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: st.write("🔒 Aktif sinyal taranıyor...")
+    else: rgb.write("🔒 Aktif sinyal taranıyor...")
 
     if st.session_state["ozel_takip_kutusu"]:
         st.markdown("#### 🌟 Özel Takip Havuzu 💰")
@@ -233,3 +228,5 @@ else:
         for hisse, bilge in list(st.session_state["ozel_takip_kutusu"].items()):
             cfiy = hızlı_canli_fiyat_bul(hisse)
             if cfiy == 0.0: cfiy = bilge["kayit_fiyati"]
+            tk_list.append({"Hisse Kodu 🗝️": hisse, "Havuz Maliyeti": f"{bilge['kayit_fiyati']:.2f} TL", "Anlık Güncel": f"{cfiy:.2f} TL"})
+        if tk_list:
