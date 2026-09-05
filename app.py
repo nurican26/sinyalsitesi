@@ -243,7 +243,7 @@ else:
     else:
         st.warning(f"⚠️ '{excel_yolu}' veri dosyası bulunamadı. Lütfen dizini kontrol edin.")
 
-    # --- SIFIR HATA RİSKLİ YENİ FİYAT MOTORU ---
+    # --- SIFIR HATA RİSKLİ YENİ FİYAT MOTORU (GİRİNTİLER EN YÜKSEK STANDARTTA DÜZELTİLDİ) ---
     def hızlı_canli_fiyat_bul(hisse_kodu):
         if not hisse_kodu:
             return 0.0
@@ -253,4 +253,3 @@ else:
                 return saved_price
         try:
             hisse_data = yf.download(f"{hisse_kodu}.IS", period="1d", progress=False)
-            if not hisse_data.empty:
