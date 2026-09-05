@@ -269,7 +269,8 @@ else:
 
     @st.cache_data(ttl=300)
     def canli_fiyatlari_toplu_getir(kod_listesi):
-        if not kod_listesi: return {}
+        if not kod_listesi:
+            return {}
         try:
             istek_kodlari = [f"{str(k).strip()}.IS" for k in kod_listesi if pd.notna(k) and str(k).strip() != ""]
             data = yf.download(tickers=istek_kodlari, period="1d", progress=False)
