@@ -227,11 +227,12 @@ def toplu_fiyat_cek(hisse_kodlari):
         return {}
 
 excel_yolu = "nurican.xls.xlsm"
-
 bta_listesi = []
 alsat_listesi = []
 
-if os.path.exists(excel_yolu):
+if not os.path.exists(excel_yolu):
+    st.info("⚙️ 'nurican.xls.xlsm' dosyası bekleniyor...")
+else:
     try:
         raw_df = pd.read_excel(excel_yolu, sheet_name="WEB", header=None)
         df_hisseler = raw_df.iloc[2:].copy()
@@ -275,5 +276,3 @@ if os.path.exists(excel_yolu):
             if al_sat != "0" and al_sat != "" and al_sat != "nan":
                 alsat_listesi.append(satir_veri)
     except Exception as e:
-        st.error(f"Excel Okuma Hatası: {e}")
-else:
