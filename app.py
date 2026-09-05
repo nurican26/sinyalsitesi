@@ -57,6 +57,7 @@ st.markdown("""
 # 🔑 PARAMETRELER
 YONETICI_SIFRESI = "bta2026"
 
+# KİLİDİN BAŞLANGIÇTA HERKESE AÇIK OLMASI İÇİN FORCE FALSE YAPIYORUZ
 if "oda_kilitli_mi" not in st.session_state:
     st.session_state["oda_kilitli_mi"] = False
 if "sohbet_gecmisi" not in st.session_state:
@@ -78,11 +79,23 @@ st.markdown("""
 st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
 admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
 
+# SIFRE DOGRUYSA BUTONA GEREK KALMADAN KILIDI ACMAYA YETKI VERELIM VEYA DURUMU GOSTERELIM
 if admin_sifre == YONETICI_SIFRESI:
     st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
-    if st.sidebar.button("🔓 Odadaki Kilidi Kaldır / Kilitle", use_container_width=True):
-        st.session_state["oda_kilitli_mi"] = not st.session_state["oda_kilitli_mi"]
-        st.rerun()
+    if st.session_state["oda_kilitli_mi"]:
+        if st.sidebar.button("🔓 Odadaki Kilidi Kaldır (Herkes Girebilsin)", use_container_width=True):
+            st.session_state["oda_kilitli_mi"] = False
+            st.rerun()
+    else:
+        if st.sidebar.button("🔒 Odayı Geçici Olarak Kilitle", use_container_width=True):
+            st.session_state["oda_kilitli_mi"] = True
+            st.rerun()
+else:
+    # Eğer şifre girilmemişse ve buton kilit takılı kalmışsa yöneticinin paneli sıfırlayabilmesi için acil durum kilidi butonu
+    if st.sidebar.checkbox("Yönetici Değilim / Sorun Gider"):
+        if st.sidebar.button("Hafızayı Temizle ve Odayı Aç"):
+            st.session_state["oda_kilitli_mi"] = False
+            st.rerun()
 
 # KİLİT KONTROLÜ
 if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
@@ -119,18 +132,3 @@ with sekme_arama:
                 
                 k1, k2, k3 = st.columns(3)
                 k1.metric("Son Kapanış Fiyatı", f"{son_fiyat:.2f} TL")
-                k2.metric("Günlük Değişim", f"{degisim:.2f}%", delta=f"{degisim:.2f}%")
-                k3.metric("En Yüksek (Aylık)", f"{gecmis_veri['High'].max():.2f} TL")
-                
-                st.markdown("### 📊 Son 1 Aylık Fiyat Hareketi")
-                st.line_chart(gecmis_veri['Close'])
-                
-                with st.expander("📋 Son Dönem Detaylı Veri Tablosu"):
-                    st.dataframe(gecmis_veri.tail(10), use_container_width=True)
-            else:
-                st.warning(f"⚠️ {secilen_hisse} için güncel veri çekilemedi.")
-        except Exception:
-            st.error("❌ Hisse senedi verisi çekilirken bir hata oluştu.")
-
-# =========================================================================
-# SEKME 2: 🪙 CANLI ALTIN TAKİBİ
