@@ -19,21 +19,74 @@ anim_id = int(time.time())
 # 🔥 FIREBASE REALTIME DATABASE AYARLARI
 FIREBASE_URL = "https://SİZİN_PROJE_://firebaseio.com"
 
-# 📥 Firebase'den Mesajları Çeken Blok
-canli_mesajlar = [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
-try:
-    response = requests.get(FIREBASE_URL, timeout=3)
-    if response.status_code == 200 and response.json():
-        veriler = response.json()
-        mesaj_listesi = [veri for veri in veriler.values()]
-        canli_mesajlar = sorted(mesaj_listesi, key=lambda x: x.get('timestamp', 0))[-30:]
-except Exception:
-    pass
+# --- GÜVENLİ VE GİRİNTİSİZ YARDIMCI FONKSİYONLAR (Hataları Önlemek İçin) ---
+def güvenli_mesaj_çek(url):
+    üye_mesajları = [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
+    try:
+        r = requests.get(url, timeout=3)
+        if r.status_code == 200 and r.json():
+            liste = [v for v in r.json().values()]
+            üye_mesajları = sorted(liste, key=lambda x: x.get('timestamp', 0))[-30:]
+    except:
+        pass
+    return üye_mesajları
+
+def güvenli_mesaj_gönder(url, ad, msg):
+    try:
+        an = datetime.datetime.now()
+        veri = {"kullanici": ad, "mesaj": msg, "zaman": an.strftime("%H:%M"), "timestamp": int(an.timestamp())}
+        requests.post(url, json=veri, timeout=3)
+    except:
+        pass
+
+def yfinance_fiyat_al(kod):
+    try:
+        t = yf.Ticker(f"{kod}.IS")
+        h = t.history(period="1d")
+        if not h.empty:
+            return float(h['Close'].iloc[-1])
+    except:
+        pass
+    return 0.0
+
+def yfinance_alsat_al(kod):
+    try:
+        t = yf.Ticker(f"{kod}.IS")
+        h = t.history(period="2d")
+        if not h.empty and len(h) >= 2:
+            son = float(h['Close'].iloc[-1])
+            önce = float(h['Close'].iloc[-2])
+            oran = ((son - önce) / önce) * 100
+            return son, oran
+        elif not h.empty:
+            son = float(h['Close'].iloc[-1])
+            return son, 0.0
+    except:
+        pass
+    return 0.0, 0.0
+
+def puan_temizle(p):
+    if pd.isna(p) or str(p).strip().lower() in ["nan", "none", ""]: return ""
+    try: return f"{float(p):.2f}"
+    except: return str(p).strip()
+
+def maliyet_temizle(m):
+    if pd.isna(m) or str(m).strip().lower() in ["nan", "none", ""]: return 0.0
+    try: return float(str(m).replace(",", "."))
+    except: return 0.0
+
+def kar_zarar_hesapla(maliyet, canli):
+    if maliyet > 0 and canli > 0:
+        return f"%{(((canli - maliyet) / maliyet) * 100):+.2f}"
+    return "-"
+# -------------------------------------------------------------------------
+
+# 📥 Firebase'den Verileri Çek
+canli_mesajlar = güvenli_mesaj_çek(FIREBASE_URL)
 
 # 🖥️ SOL MENÜ (SIDEBAR) - CANLI SOHBET ODASI ALANI
 with st.sidebar:
     st.markdown('<div class="sohbet-baslik">💬 BTA CANLI SOHBET ODASI</div>', unsafe_allow_html=True)
-    
     sohbet_html = '<div class="sohbet-kutusu">'
     for m in canli_mesajlar:
         if m.get("kullanici") == "Sistem":
@@ -47,22 +100,11 @@ with st.sidebar:
         takma_ad = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=15)
         yeni_mesaj = st.text_input("Mesajınız:", max_chars=100, placeholder="Hisseler hakkında konuşun...")
         gonder_butonu = st.form_submit_form_button("Gönder 📩")
-        
         if gonder_butonu and yeni_mesaj.strip():
-            try:
-                su_an = datetime.datetime.now()
-                yeni_veri = {
-                    "kullanici": takma_ad.strip(),
-                    "mesaj": yeni_mesaj.strip(),
-                    "zaman": su_an.strftime("%H:%M"),
-                    "timestamp": int(su_an.timestamp())
-                }
-                requests.post(FIREBASE_URL, json=yeni_veri, timeout=3)
-                st.rerun()
-            except Exception:
-                pass
+            güvenli_mesaj_gönder(FIREBASE_URL, takma_ad.strip(), yeni_mesaj.strip())
+            st.rerun()
 
-# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Sohbet Kutusu CSS Kodları
+# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -102,13 +144,7 @@ st.markdown(f'''
 </style>''', unsafe_allow_html=True)
 
 # LOGO EKRAN ÇIKTISI
-st.markdown(f'''
-<div class="logo-konteyner">
-    <div class="cember-animasyon-{anim_id}">
-        <span class="bta-yazi-{anim_id}">BTA</span>
-    </div>
-</div>
-''', unsafe_allow_html=True)
+st.markdown(f'''<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>''', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -126,18 +162,11 @@ if os.path.exists(excel_yolu):
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
-            try:
-                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
-                hist_ara = ticker_ara.history(period="2d")
-                if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
-                else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
-            except Exception:
-                st.error("Veri motoru bağlantı hatası.")
+            fiyat_s, oran_s = yfinance_alsat_al(secilen_hisse)
+            if fiyat_s > 0:
+                st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{fiyat_s:.2f} TL** | Günlük Değişim: **%{oran_s:+.2f}**")
+            else:
+                st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
         
         st.write("---")
 
@@ -150,31 +179,13 @@ if os.path.exists(excel_yolu):
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
 
-            # Üst Panel Verileri İşleme
+            # Üst Panel İşlemleri (Tamamen düz mantık, iç içe try-except yok)
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                puan_temiz_veri = ""
-                if not pd.isna(puan_d) and str(puan_d).strip().lower() not in ["nan", "none", ""]:
-                    try:
-                        puan_temiz_veri = f"{float(puan_d):.2f}"
-                    except Exception:
-                        puan_temiz_veri = str(puan_d).strip()
+                p_temiz = puan_temizle(puan_d)
+                c_fiyat = yfinance_fiyat_al(hisse_a)
+                maliyet = maliyet_temizle(alim_c)
+                kz_str = kar_zarar_hesapla(maliyet, c_fiyat)
 
-                canli_fiyat = 0.0
-                try:
-                    ticker = yf.Ticker(f"{hisse_a}.IS")
-                    hist_bta = ticker.history(period="1d")
-                    if not hist_bta.empty:
-                        canli_fiyat = float(hist_bta['Close'].iloc[-1])
-                except Exception:
-                    pass
-
-                maliyet = 0.0
-                if not pd.isna(alim_c) and str(alim_c).strip().lower() not in ["nan", "none", ""]:
-                    try:
-                        maliyet = float(str(alim_c).replace(",", "."))
-                    except Exception:
-                        pass
-                
-                kz_oran_str = "-"
-                if maliyet > 0 and canli_fiyat > 0:
-                    kz = ((canli_fiyat - maliyet) / maliyet) * 100
+                tablo_bta.append({
+                    "BTA PUAN 🔢": p_temiz, 
+                    "BTA HİSSE 📈": hisse_a,
