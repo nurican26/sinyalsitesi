@@ -23,7 +23,7 @@ st.markdown(f'''
     .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
+    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top: 30px; margin-bottom: 20px; line-height: 1.5;}}
     
     /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
     .logo-konteyner {{
@@ -106,21 +106,19 @@ if os.path.exists(excel_yolu):
         if len(df.columns) >= 5:
             e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
             hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-            hisse_havuzu = sorted(list(set(hisse_havuzu))) # Benzersiz yap ve sırala
+            hisse_havuzu = sorted(list(set(hisse_havuzu)))
         
-        # Kullanıcıya E sütunundan gelen temiz listeyi seçenek olarak sunuyoruz
+        # Seçenek Kutusu
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
             try:
-                # Sadece seçilen hisse için internete gidilir (Kasma yapmaz)
                 ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
                 hist_ara = ticker_ara.history(period="2d")
                 if not hist_ara.empty:
                     arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
                     onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
                     arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    
                     st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
                 else:
                     st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
@@ -140,10 +138,8 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                try:
-                    puan_temiz = f"{float(puan_d):.2f}"
-                except:
-                    puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
+                try: puan_temiz = f"{float(puan_d):.2f}"
+                except: puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
 
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
@@ -211,3 +207,4 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
 
+# 🎯 EN ALT KISIM: RESMİ SPK YASAL UYARI METNİ
