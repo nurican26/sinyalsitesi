@@ -5,6 +5,7 @@ import yfinance as yf
 import os
 import time
 import uuid
+import sqlite3
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici
@@ -35,6 +36,25 @@ st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}
 st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
+db_yolu = "bta_sohbet.db"
+
+# Veritabanı kurulumu (Mesajları herkes için ortak hafızada tutar)
+def vt_kur():
+    conn = sqlite3.connect(db_yolu)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS mesajlar (
+            mesaj_id TEXT PRIMARY KEY,
+            cihaz_id TEXT,
+            isim TEXT,
+            mesaj TEXT,
+            zaman TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+vt_kur()
 
 # Küfür ve argo kelime filtresi listesi
 KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
@@ -51,10 +71,6 @@ def sohbet_temizle(metin):
 
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
-
-# Global mesaj hafızasını başlatma
-if "global_sohbet_gecmisi" not in st.session_state:
-    st.session_state.global_sohbet_gecmisi = []
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -151,30 +167,39 @@ if not st.session_state.kullanici_adi:
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
     
-    # Hızlı Mesaj Gönderme Tetikleyicisi
-    def mesaj_gonder_yeni():
+    # Ortak Veritabanına Mesaj Gönderme Tetikleyicisi
+    def mesaj_gonder_vt():
         metin = st.session_state.yeni_mesaj_kutusu.strip()
         if metin:
             filtrelenmis_mesaj = sohbet_temizle(metin)
-            st.session_state.global_sohbet_gecmisi.append({
-                "mesaj_id": str(uuid.uuid4()),
-                "cihaz_id": st.session_state.cihaz_id,
-                "isim": st.session_state.kullanici_adi, 
-                "mesaj": filtrelenmis_mesaj, 
-                "zaman": datetime.datetime.now().strftime("%H:%M:%S")
-            })
-            if len(st.session_state.global_sohbet_gecmisi) > 40:
-                st.session_state.global_sohbet_gecmisi = st.session_state.global_sohbet_gecmisi[-40:]
+            m_id = str(uuid.uuid4())
+            c_id = st.session_state.cihaz_id
+            isim = st.session_state.kullanici_adi
+            zaman = datetime.datetime.now().strftime("%H:%M:%S")
+            
+            conn = sqlite3.connect(db_yolu)
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO mesajlar VALUES (?, ?, ?, ?, ?)", (m_id, c_id, isim, filtrelenmis_mesaj, zaman))
+            
+            # Son 40 mesaj hariç eskileri otomatik temizle (Veritabanı şişmesin diye)
+            cursor.execute("DELETE FROM mesajlar WHERE mesaj_id NOT IN (SELECT mesaj_id FROM mesajlar ORDER BY rowid DESC LIMIT 40)")
+            
+            conn.commit()
+            conn.close()
             st.session_state.yeni_mesaj_kutusu = "" # Kutuyu boşalt
 
-    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_yeni, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
-    st.button("Gönder 🚀", on_click=mesaj_gonder_yeni)
+    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_vt, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
+    st.button("Gönder 🚀", on_click=mesaj_gonder_vt)
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...", key="admin_sifre_key")
         if admin_sifre == "3015":
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
-                st.session_state.global_sohbet_gecmisi = []
+                conn = sqlite3.connect(db_yolu)
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM mesajlar")
+                conn.commit()
+                conn.close()
                 st.success("Sohbet odası sıfırlandı!")
                 time.sleep(1)
                 st.rerun()
@@ -182,16 +207,6 @@ else:
     st.write("")
     chat_alani = st.container()
     
-    with chat_alani:
-        if st.session_state.global_sohbet_gecmisi:
-            for m in reversed(st.session_state.global_sohbet_gecmisi):
-                # Streamlit'in kendi yerel ve hatasız chat baloncuğu kullanıldı
-                with st.chat_message("user"):
-                    col_m, col_s = st.columns([0.85, 0.15])
-                    with col_m:
-                        st.markdown(f"**@{m['isim']}**  *({m['zaman']})*")
-                        st.write(m['mesaj'])
-                    with col_s:
-                        if m.get("cihaz_id") == st.session_state.cihaz_id:
-                            if st.button("❌ Sil", key=m.get("mesaj_id")):
-                                st.session_state.global_sohbet_gecmisi = [msg for msg in st.session_state.global_sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
+    # Veritabanından Mesajları Çekme
+    conn = sqlite3.connect(db_yolu)
+    cursor = conn.cursor()
