@@ -23,6 +23,7 @@ st.markdown(f'''
     .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
+    .yukselen-baslik {{background: linear-gradient(90deg, #2563eb 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
     
     /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
@@ -93,10 +94,46 @@ st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px
 
 excel_yolu = "nurican.xls.xlsm"
 
+# 🔥 YENİ EKLENTİ: ARACI KURUM TARZI EN ÇOK YÜKSELEN HİSSELER SİSTEMİ
+def bst_en_cok_yukselenler():
+    # Hızlı tarama için lokomotif büyük BİST hisse havuzu
+    ornek_havuz = [
+        "THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", 
+        "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"
+    ]
+    sonuclar = []
+    for h in ornek_havuz:
+        try:
+            t = yf.Ticker(f"{h}.IS")
+            hist = t.history(period="2d")
+            if len(hist) >= 2:
+                canli = float(hist['Close'].iloc[-1])
+                onceki = float(hist['Close'].iloc[-2])
+                degisim = ((canli - onceki) / onceki) * 100
+                sonuclar.append({"HİSSE 🚀": h, "FİYAT 💰": f"{canli:.2f} TL", "DEĞİŞİM 📈": degisim})
+        except:
+            continue
+    if sonuclar:
+        df_yukselen = pd.DataFrame(sonuclar)
+        df_yukselen = df_yukselen.sort_values(by="DEĞİŞİM 📈", ascending=False).head(5)
+        df_yukselen["DEĞİŞİM 📈"] = df_yukselen["DEĞİŞİM 📈"].map(lambda x: f"%+{x:.2f}")
+        return df_yukselen
+    return pd.DataFrame()
+
 if os.path.exists(excel_yolu):
     try:
         # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        
+        # 📊 ARACI KURUM EKSTRE PANELİ GÖSTERİMİ
+        st.markdown('<div class="yukselen-baslik">🔥 ARACI KURUM: GÜNÜN EN ÇOK YÜKSELEN HİSSELERİ (CANLI)</div>', unsafe_allow_html=True)
+        yukselen_df = bst_en_cok_yukselenler()
+        if not yukselen_df.empty:
+            st.dataframe(yukselen_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("Canlı piyasa liderleri taranıyor...")
+            
+        st.write("---")
         
         # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
@@ -173,43 +210,3 @@ if os.path.exists(excel_yolu):
             
             if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
                 try:
-                    ticker_as = yf.Ticker(f"{alsat_b}.IS")
-                    hist_as = ticker_as.history(period="2d")
-                    as_canli_fiyat = float(hist_as['Close'].iloc[-1]) if not hist_as.empty else 0.0
-                    
-                    if len(hist_as) >= 2:
-                        onceki_kapanis = float(hist_as['Close'].iloc[-2])
-                        as_degisim = ((as_canli_fiyat - onceki_kapanis) / onceki_kapanis) * 100
-                    else:
-                        as_degisim = 0.0
-                except:
-                    as_canli_fiyat, as_degisim = 0.0, 0.0
-
-                tablo_alsat.append({
-                    "GÜNLÜK AL SAT HİSSELERİ ⚡": alsat_b,
-                    "ANLIK VERİ CANLI 📊": f"{as_canli_fiyat:.2f} TL" if as_canli_fiyat > 0 else "Yükleniyor...",
-                    "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"
-                })
-
-        # EKRANA BASMA İŞLEMLERİ
-        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
-        if tablo_bta:
-            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
-        else:
-            st.info("Üst panel için veri işleniyor...")
-
-        st.write("")
-
-        st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
-        if tablo_alsat:
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else:
-            st.info("Alt panel için veri işleniyor...")
-
-    except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
-    
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
-
