@@ -42,7 +42,7 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
-# Küfür ve argo kelime filtresi listesi (İstediğiniz kadar ekleme yapabilirsiniz)
+# Küfür ve argo kelime filtresi listesi
 KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
 
 def sohbet_temizle(metin):
@@ -153,13 +153,11 @@ if not st.session_state.kullanici_adi:
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
     
-    # MESAJ GÖNDERME FORMU
-    with st.form("mesaj_formu", clear_on_submit=True):
-        yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
-        gonderildi = st.form_submit_button("Gönder 🚀")
-        
-        if gonderildi and yeni_mesaj_metni.strip():
-            filtrelenmis_mesaj = sohbet_temizle(yeni_mesaj_metni.strip())
+    # MESAJ GÖNDERME TETİKLEYİCİSİ (Hızlı ve kilitsiz yapı)
+    def mesaj_gonder():
+        metin = st.session_state.yeni_mesaj_girdisi.strip()
+        if metin:
+            filtrelenmis_mesaj = sohbet_temizle(metin)
             mevcut = []
             if os.path.exists(sohbet_dosyası):
                 try:
@@ -181,10 +179,14 @@ else:
                     json.dump(mevcut, f, ensure_ascii=False, indent=4)
             except:
                 pass
-            st.rerun()
+            st.session_state.yeni_mesaj_girdisi = "" # Kutuyu temizle
+
+    # Giriş kutusu (Enter'a basıldığında veya butona tıklandığında anında gönderir)
+    st.text_input("Mesajınızı yazın ve Enter'a basın...", key="yeni_mesaj_girdisi", on_change=mesaj_gonder, placeholder="Buraya yazın...")
+    st.button("Gönder 🚀", on_click=mesaj_gonder)
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
-        admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...")
+        admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...", key="admin_sifre_key")
         if admin_sifre == "3015":
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
                 try:
@@ -195,8 +197,3 @@ else:
                     st.rerun()
                 except:
                     pass
-
-    # MESAJLARI LISTELEME ALANI (Bileşen çakışması olmaması için konteynere alındı)
-    chat_alani = st.container()
-    
-    sohbet_gecmisi = []
