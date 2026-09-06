@@ -64,12 +64,10 @@ def sunucu_sayacini_getir():
 sayac_verisi = sunucu_sayacini_getir()
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 
-# Gün değiştiyse günlük girişi otomatik sıfırlama kontrolü
 if sayac_verisi["son_gun"] != bugun:
     sayac_verisi["gunluk_giris"] = 0
     sayac_verisi["son_gun"] = bugun
 
-# Sadece yeni gelen tekil oturumları listeye dahil et
 if "ziyaret_kaydi_tamam" not in st.session_state:
     sayac_verisi["toplam_giris"] += 1
     sayac_verisi["gunluk_giris"] += 1
@@ -86,7 +84,6 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-# Hisseler ve Arama Motoru Listesi İçin Hafıza Ataması
 tum_hisseler = []
 
 if os.path.exists(excel_yolu):
@@ -154,14 +151,13 @@ if os.path.exists(excel_yolu):
         if len(tablo_alsat) > 0:
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 
-        # Excel'deki E sütunundaki (WEB sayfası) tüm hisseleri alıyoruz
         if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
             tum_hisseler.sort()
 
-    except Exception as e:
-        st.error("Excel verileri okunurken teknik bir sorun oluştu.")
+    except:
+        st.error("Excel verileri yüklenirken sistemsel bir hata oluştu.")
 else:
     st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
 
@@ -192,3 +188,9 @@ if tum_hisseler:
                 else:
                     st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı.")
             except:
+                st.error("Borsa verisi çekilirken teknik bir sorun oluştu.")
+else:
+    st.warning("Arama motoru için Excel E sütunundan hisse listesi yüklenemedi.")
+
+# --- CANLI ZİYARETÇİ İSTATİSTİKLERİ PANELİ ---
+st.write("---")
