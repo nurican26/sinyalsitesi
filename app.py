@@ -14,7 +14,6 @@ st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1
 def excel_oku(yol):
     if os.path.exists(yol):
         try:
-            # Excel'deki kırmızı logolu "BTA" sekmesini doğrudan hedef alıyoruz
             return pd.read_excel(yol, sheet_name="BTA", header=0, engine="openpyxl")
         except:
             return None
@@ -64,19 +63,20 @@ if df_kaynak is not None:
     tablo_bta_ham = []
     tablo_alsat_ham = []
 
-    # Excel satırlarını tek tek tarama (E SÜTUNUNA ASLA BAKILMAZ)
+    # Excel satırlarını tek tek tarama
     for idx in range(len(df_kaynak)):
         try:
             # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
-            # Sütun İndeksleri: 0=BTA HİSSE, 2=BTA ALIM FİYATI, 3=BTA PUANI
+            # 0=BTA HİSSE, 2=BTA ALIM FİYATI, 3=BTA PUANI
             bta_hisse_raw = str(df_kaynak.iloc[idx, 0]).strip().upper() if pd.notna(df_kaynak.iloc[idx, 0]) else ""
             bta_alim_raw = str(df_kaynak.iloc[idx, 2]).strip() if pd.notna(df_kaynak.iloc[idx, 2]) else ""
             bta_puan_raw = str(df_kaynak.iloc[idx, 3]).strip() if pd.notna(df_kaynak.iloc[idx, 3]) else ""
 
-            if bta_hisse_raw and bta_hisse_raw not in ["NAN", "NONE", "BTA HİSSE", "HİSSE"]:
+            # Sadece geçerli, 3-5 harfli borsa kodlarını ve temiz satırları al (ANA, HİSSE vb. elenir)
+            if bta_hisse_raw and bta_hisse_raw not in ["NAN", "NONE", "BTA HİSSE", "HİSSE", "ANA"]:
                 h_ara = re.findall(r'[A-Z]+', bta_hisse_raw)
-                if h_ara:
-                    temiz_bta_kod = str(h_ara[0]).strip()
+                if h_ara and 3 <= len(h_ara[0]) <= 5:
+                    temiz_bta_kod = str(h_ara[0]).strip()  # HATA BURADAYDI, ARTIK LİSTE DEĞİL DÜZ METİN ALIYOR
                     _bta_kodlari.append(temiz_bta_kod)
                     
                     try: maliyet = float(bta_alim_raw.replace(",", "."))
@@ -87,12 +87,12 @@ if df_kaynak is not None:
                     })
 
             # 2. ALT PANEL VERİLERİ (B Sütunu)
-            # Sütun İndeksleri: 1=BTA AL SAT
+            # 1=BTA AL SAT
             alsat_raw = str(df_kaynak.iloc[idx, 1]).strip().upper() if pd.notna(df_kaynak.iloc[idx, 1]) else ""
-            if alsat_raw and alsat_raw not in ["NAN", "NONE", "BTA AL SAT"]:
+            if alsat_raw and alsat_raw not in ["NAN", "NONE", "BTA AL SAT", "AL SAT"]:
                 as_ara = re.findall(r'[A-Z]+', alsat_raw)
-                if as_ara:
-                    temiz_alsat_kod = str(as_ara[0]).strip()
+                if as_ara and 3 <= len(as_ara[0]) <= 5:
+                    temiz_alsat_kod = str(as_ara[0]).strip()  # HATA BURADAYDI, DÜZ METİN ALIYOR
                     _alsat_kodlari.append(temiz_alsat_kod)
                     tablo_alsat_ham.append({"hisse": temiz_alsat_kod})
         except:
