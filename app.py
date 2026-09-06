@@ -33,7 +33,7 @@ for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
 # Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
-st.session_state["ziyaret_sayaci"] += 1
+st.session_state["ziyaret_sayaci"] += 4000
 
 # BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
