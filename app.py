@@ -4,6 +4,7 @@ import datetime
 import yfinance as yf
 import os
 import time
+import requests  # 🌐 Firebase REST API iletişimi için eklendi
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa Yapılandırması
@@ -15,11 +16,40 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# 💬 CANLI SOHBET ODASI HAFIZASI (Session State)
-if "sohbet_gecmisi" not in st.session_state:
-    st.session_state["sohbet_gecmisi"] = [
-        {"kullanici": "Sistem", "mesaj": "BTA Canlı Sohbet Odasına Hoş Geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}
-    ]
+# 🔥 FIREBASE REALTIME DATABASE AYARLARI
+# Kendi Firebase Realtime Database URL'nizi buraya yapıştırın (Sonundaki '/' işaretini unutmayın)
+FIREBASE_URL = "https://SİZİN_PROJE_://firebaseio.com"
+
+# 📥 Firebase'den Mesajları Çeken Fonksiyon
+def veritabanindan_mesajlari_getir():
+    try:
+        response = requests.get(FIREBASE_URL, timeout=3)
+        if response.status_code == 200 and response.json():
+            veriler = response.json()
+            # Firebase verileri benzersiz key'ler ile tutar, onları listeye çeviriyoruz
+            mesaj_listesi = [veri for veri in veriler.values()]
+            # Mesajları zaman damgasına göre sırala
+            mesaj_listesi = sorted(mesaj_listesi, key=lambda x: x.get('timestamp', 0))
+            return mesaj_listesi[-30:] # Sadece son 30 mesajı getir (Performans için)
+    except Exception:
+        pass
+    # Hata durumunda veya veritabanı boşsa varsayılan mesaj döner
+    return [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
+
+# 📤 Firebase'e Yeni Mesaj Gönderen Fonksiyon
+def veritabanina_mesaj_gonder(kullanici, mesaj):
+    try:
+        su_an = datetime.datetime.now()
+        yeni_veri = {
+            "kullanici": kullanici,
+            "mesaj": mesaj,
+            "zaman": su_an.strftime("%H:%M"),
+            "timestamp": int(su_an.timestamp())
+        }
+        requests.post(FIREBASE_URL, json=yeni_veri, timeout=3)
+        return True
+    except Exception:
+        return False
 
 # Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Sohbet Kutusu CSS Kodları
 st.markdown(f'''
@@ -96,13 +126,16 @@ st.markdown(f'''
 with st.sidebar:
     st.markdown('<div class="sohbet-baslik">💬 BTA CANLI SOHBET ODASI</div>', unsafe_allow_html=True)
     
+    # Mesajları veritabanından anlık çekiyoruz
+    canli_mesajlar = veritabanindan_mesajlari_getir()
+    
     # Mesajları Ekrana Basma Döngüsü
     sohbet_html = '<div class="sohbet-kutusu">'
-    for m in st.session_state["sohbet_gecmisi"]:
-        if m["kullanici"] == "Sistem":
-            sohbet_html += f'<div class="mesaj-satiri mesaj-sistem">🤖 <b>{m["kullanici"]}:</b> {m["mesaj"]}<span class="mesaj-zaman">{m["zaman"]}</span></div>'
+    for m in canli_mesajlar:
+        if m.get("kullanici") == "Sistem":
+            sohbet_html += f'<div class="mesaj-satiri mesaj-sistem">🤖 <b>{m.get("kullanici")}:</b> {m.get("mesaj")}<span class="mesaj-zaman">{m.get("zaman")}</span></div>'
         else:
-            sohbet_html += f'<div class="mesaj-satiri">👤 <span class="mesaj-yetkili">{m["kullanici"]}:</span> {m["mesaj"]}<span class="mesaj-zaman">{m["zaman"]}</span></div>'
+            sohbet_html += f'<div class="mesaj-satiri">👤 <span class="mesaj-yetkili">{m.get("kullanici")}:</span> {m.get("mesaj")}<span class="mesaj-zaman">{m.get("zaman")}</span></div>'
     sohbet_html += '</div>'
     st.markdown(sohbet_html, unsafe_allow_html=True)
     
@@ -113,16 +146,10 @@ with st.sidebar:
         gonder_butonu = st.form_submit_form_button("Gönder 📩")
         
         if gonder_butonu and yeni_mesaj.strip():
-            su_an = datetime.datetime.now().strftime("%H:%M")
-            st.session_state["sohbet_gecmisi"].append({
-                "kullanici": takma_ad.strip(),
-                "mesaj": yeni_mesaj.strip(),
-                "zaman": su_an
-            })
-            # Son 50 mesajı hafızada tut, şişmeyi önle
-            if len(st.session_state["sohbet_gecmisi"]) > 50:
-                st.session_state["sohbet_gecmisi"].pop(1)
-            st.rerun()
+            # Veritabanına kaydet
+            basarili = veritabanina_mesaj_gonder(takma_ad.strip(), yeni_mesaj.strip())
+            if basarili:
+                st.rerun()
 
 # LOGO EKRAN ÇIKTISI
 st.markdown(f'''
@@ -169,31 +196,3 @@ if os.path.exists(excel_yolu):
                     
                     st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
                 else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
-            except:
-                st.error("Veri motoru bağlantı hatası.")
-        
-        st.write("---")
-
-        tablo_bta = []
-        tablo_alsat = []
-        sinir = min(10, len(df))
-        
-        for idx in range(sinir):
-            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
-            hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-
-            if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                try:
-                    puan_temiz = f"{float(puan_d):.2f}"
-                except:
-                    puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
-
-                try:
-                    ticker = yf.Ticker(f"{hisse_a}.IS")
-                    hist = ticker.history(period="1d")
-                    canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
-                except:
-                    canli_fiyat = 0.0
