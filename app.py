@@ -99,7 +99,7 @@ else:
     st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
 
 st.write("---")
-st.header("💬 BTA ORTAK CANLI SOHBET ODASI")
+st.header("💬  CANLI SOHBET ODASI")
 
 if "kullanici_adi" not in st.session_state:
     st.session_state.kullanici_adi = ""
@@ -143,7 +143,7 @@ else:
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...")
-        if admin_sifre == "bta123":
+        if admin_sifre == "3015":
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
                 try:
                     with open(sohbet_dosyası, "w", encoding="utf-8") as f:
