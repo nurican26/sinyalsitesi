@@ -202,7 +202,7 @@ if os.path.exists(excel_yolu):
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
                     hist = ticker.history(period="1d")
-                    canli_fiyat = float(hist['Close'].iloc[-1]) if not font.empty else 0.0
+                    canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
                 except:
                     canli_fiyat = 0.0
                     
