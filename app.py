@@ -276,7 +276,5 @@ if erisim_izni:
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             puan = p_bul[0] if p_bul else t_deg
                             
-                            satir = {
-                                "Hisse Kodu 📈": h_kod,
-                                "BTA Puan": puan,
-                                "💥 İnternet Canlı": f"{fiyat:.2f} TL{trend}" if fiyat > 0 else "Yükleniyor..."
+                            # Parantez aç-kapa hatası oluşturmayacak şekilde tek satırda veri ekleme
+                            tablo_alsat.append({"Hisse Kodu 📈": h_kod, "BTA Puan": puan, "💥 İnternet Canlı": f"{fiyat:.2f} TL{trend}" if fiyat > 0 else "Yükleniyor..."})
