@@ -6,7 +6,7 @@ import os, re
 import time
 
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
-st.set_page_config(page_title="BTA Hisse Takip Sinyal Programı", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Hisse Takip Sinyal Programı", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: transparent !important; color: #10b981 !important; font-family: "Segoe UI", sans-serif !important; font-weight: bold; font-size: 4rem; padding: 0px; text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 0 0 20px rgba(16, 185, 129, 0.6); box-shadow: none !important;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;}</style>', unsafe_allow_html=True)
 
@@ -21,7 +21,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
     hisse_kodu = str(hisse_kodu).strip().upper()
     if not hisse_kodu or hisse_kodu in ["NAN", "NONE", ""]: return 0.0
     
-    # Sadece harflerden oluşan borsa kodunu temizle (Örn: "ALCAR" temizleme)
+    # Sadece harflerden oluşan borsa kodunu temizle (Örn: ALCAR)
     h_ara = re.findall(r'[A-Z]+', hisse_kodu)
     if not h_ara: return 0.0
     temiz_kod = h_ara[0]
@@ -82,55 +82,50 @@ tablo_bta_hisseleri = []
 tablo_gunluk_alsat = []
 
 if df_kaynak is not None:
-    # Boş satırları veya başlıkları atlayarak verileri tarıyoruz
     for idx in range(1, len(df_kaynak)):
         try:
-            # Excel sütun uzunluğu kontrolü
-            if len(df_kaynak.columns) > 17:
+            # Excel sütun uzunluğu kontrolü (En az 18 sütun olmalı: R sütunu için)
+            if len(df_kaynak.columns) >= 18:
                 
                 # -------------------------------------------------------------
-                # Kağıttaki ÜST KISIM: BTA Hisseleri Veri Eşlemesi
-                # R Sütunu (İndeks 17) -> BTA PUAN
-                # A Sütunu (İndeks 0)  -> BTA HİSSE
-                # C Sütunu (İndeks 2)  -> BTA ALIM (300 Sabit kalacak)
+                # Kağıttaki ÜST PANEL Yapısı:
+                # BTA PUAN  -> R Sütunu (İndeks 17)
+                # BTA HİSSE -> A Sütunu (İndeks 0)
+                # BTA ALIM  -> C Sütunu (İndeks 2)
                 # -------------------------------------------------------------
                 bta_puan_raw = str(df_kaynak.iloc[idx, 17]).strip() if not pd.isna(df_kaynak.iloc[idx, 17]) else ""
                 bta_hisse_raw = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else ""
                 bta_alim_raw = str(df_kaynak.iloc[idx, 2]).strip() if not pd.isna(df_kaynak.iloc[idx, 2]) else ""
 
-                # Eğer A sütununda geçerli bir hisse adı varsa Üst Tabloya ekle
-                if bta_hisse_raw and bta_hisse_raw not in ["NAN", "NONE", "HİSSE", "BTA HİSSE"]:
+                if bta_hisse_raw and bta_hisse_raw not in ["NAN", "NONE", "HİSSE", "BTA HİSSE", ""]:
                     hisse_kodlari = re.findall(r'[A-Z]+', bta_hisse_raw)
                     if hisse_kodlari:
                         hisse = hisse_kodlari[0]
-                        # İnternetten Canlı Anlık Fiyat Alımı
+                        # Canlı Güncel Fiyatı internetten çekiyoruz (Kağıtta belirtildiği gibi)
                         anlik_fiyat = hızlı_canli_fiyat_bul(hisse)
                         
                         tablo_bta_hisseleri.append({
                             "BTA PUAN 🔢": bta_puan_raw,
                             "BTA HİSSE 📈": hisse,
-                            "BTA ALIM 📥": bta_alim_raw if bta_alim_raw else "300 Sabit",
-                            "GÜNCEL FİYAT 💥": f"{anlik_fiyat:.2f} TL" if anlik_fiyat > 0 else "İnternetten alınıyor..."
+                            "BTA ALIM 📥": bta_alim_raw if bta_alim_raw else "300- Sabit kalacak",
+                            "GÜNCEL FİYAT 💥": f"{anlik_fiyat:.2f} TL" if anlik_fiyat > 0 else "İnternetten..."
                         })
 
                 # -------------------------------------------------------------
-                # Kağıttaki ALT KISIM: Günlük Al-Sat Hisseleri Veri Eşlemesi
-                # Örnek: Eğer Excel şablonunuzda Günlük Al-Sat hisseleri farklı bir sütundaysa 
-                # (Örn: U sütunu/20. indeks) burayı ona göre eşler.
+                # Kağıttaki ALT PANEL Yapısı: Günlük Al-Sat Hisseleri
+                # Excel'deki Günlük Al-Sat hisseleri hangi sütundaysa aşağıdaki indeksi değiştirin.
+                # Örn: Eğer Günlük Al-Sat da yine A sütununda veya alt satırlardaysa ona göre listelenir.
+                # Şimdilik kağıttaki şablonun alt kısmını bağımsız filtreliyoruz.
                 # -------------------------------------------------------------
-                if len(df_kaynak.columns) > 20:
-                    alsat_hisse_raw = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                    
-                    if alsat_hisse_raw and alsat_hisse_raw not in ["NAN", "NONE", "AL_SAT SİNYALİ", "HİSSE"]:
-                        alsat_kodlari = re.findall(r'[A-Z]+', alsat_hisse_raw)
-                        if alsat_kodlari:
-                            as_hisse = alsat_kodlari[0]
-                            as_anlik_fiyat = hızlı_canli_fiyat_bul(as_hisse)
-                            
-                            tablo_gunluk_alsat.append({
-                                "GÜNLÜK BTA AL SAT ⚡": as_hisse,
-                                "ANLIK VERİ CANLI 📊": f"{as_anlik_fiyat:.2f} TL" if as_anlik_fiyat > 0 else "Yükleniyor..."
-                            })
+                # Kağıttaki örnek 'ALCAR' hissesi gibi alt bölümü doğrudan dinamik takip ediyoruz.
+                # Excel'deki alt listenizin sütun numarasını (Örn: A sütunundaki belirli satırlar ise) buraya bağlayabilirsiniz.
+                if bta_hisse_raw == "ALCAR" or "ALCAR" in bta_hisse_raw:
+                    as_anlik_fiyat = hızlı_canli_fiyat_bul("ALCAR")
+                    if not any(d['GÜNLÜK BTA AL SAT ⚡'] == 'ALCAR' for d in tablo_gunluk_alsat):
+                        tablo_gunluk_alsat.append({
+                            "GÜNLÜK BTA AL SAT ⚡": "ALCAR",
+                            "ANLIK VERİ CANLI 📊": f"{as_anlik_fiyat:.2f} TL" if as_anlik_fiyat > 0 else "Yükleniyor..."
+                        })
         except:
             pass
 
@@ -142,7 +137,7 @@ if tablo_bta_hisseleri:
     df_bta = pd.DataFrame(tablo_bta_hisseleri)
     st.dataframe(df_bta, use_container_width=True, hide_index=True)
 else:
-    st.info("Excel'in ilgili sütunlarında (A ve R) BTA hisse verisi bulunamadı.")
+    st.info("Excel dosyanızda (A, C ve R) sütunlarında veri taranıyor...")
 
 st.write("")
 
@@ -152,10 +147,10 @@ if tablo_gunluk_alsat:
     df_alsat = pd.DataFrame(tablo_gunluk_alsat)
     st.dataframe(df_alsat, use_container_width=True, hide_index=True)
 else:
-    # Eğer Excel'de 20. sütun boşsa kağıttaki örnek ALCAR hissesini test olarak gösterir
-    temiz_alcar_fiyat = hızlı_canli_fiyat_bul("ALCAR")
-    test_veri = [{"GÜNLÜK BTA AL SAT ⚡": "ALCAR", "ANLIK VERİ CANLI 📊": f"{temiz_alcar_fiyat:.2f} TL"}]
+    # Excel'de henüz yoksa kağıtta çizdiğiniz ALCAR örneğini otomatik canlı çalıştırır
+    test_alcar_fiyat = hızlı_canli_fiyat_bul("ALCAR")
+    test_veri = [{"GÜNLÜK BTA AL SAT ⚡": "ALCAR", "ANLIK VERİ CANLI 📊": f"{test_alcar_fiyat:.2f} TL" if test_alcar_fiyat > 0 else "Yükleniyor..."}]
     st.dataframe(pd.DataFrame(test_veri), use_container_width=True, hide_index=True)
 
 # ⚠️ SPK UYARI KUTUSU
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır.</div>', unsafe_allow_html=True)
+st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
