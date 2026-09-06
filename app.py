@@ -6,7 +6,7 @@ import os
 import json
 import time
 import uuid
-import re  # Regex modülü eklendi
+import re  
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa Yapılandırması ve Otomatik Yenileme (10 saniyede bir)
