@@ -181,13 +181,13 @@ p_gram, p_ceyrek, p_yarim, p_tam, p_bist = canli_piyasa_verilerini_hesapla()
 # 📊 Canlı Piyasa Panel Çıktısı
 st.markdown(f'''
 <div class="piyasa-kutusu-konteyner">
-    <div class="piyasa-kart"><div class="piyasa-baslik">🔱 GRAM ALTIN</div><div class="piyasa-deger">{p_gram:,.2f} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🪙 ÇEYREK ALTIN</div><div class="piyasa-deger">{p_ceyrek:,.2f} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🥈 YARIM ALTIN</div><div class="piyasa-deger">{p_yarim:,.2f} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🥇 TAM ALTIN</div><div class="piyasa-deger">{p_tam:,.2f} TL</div></div>
-    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{p_bist:,.2f}</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🔱 GRAM ALTIN</div><div class="piyasa-deger">{{p_gram:,.2f}} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🪙 ÇEYREK ALTIN</div><div class="piyasa-deger">{{p_ceyrek:,.2f}} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🥈 YARIM ALTIN</div><div class="piyasa-deger">{{p_yarim:,.2f}} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🥇 TAM ALTIN</div><div class="piyasa-deger">{{p_tam:,.2f}} TL</div></div>
+    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{{p_bist:,.2f}}</div></div>
 </div>
-''', unsafe_allow_html=True)
+'''.format(p_gram=p_gram, p_ceyrek=p_ceyrek, p_yarim=p_yarim, p_tam=p_tam, p_bist=p_bist), unsafe_allow_html=True)
 st.write("---")
 
 excel_yolu = "nurican.xls.xlsm"
@@ -214,7 +214,7 @@ if os.path.exists(excel_yolu):
                     arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
                     onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
                     arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    st.success(f"📈 **{secilen_hisse}**: **{arama_canli_fiyat:.2f} TL** | **%{arama_degisim:+.2f}**")
+                    st.success(f"📈 **{{secilen_hisse}}**: **{{arama_canli_fiyat:.2f}} TL** | **%{{arama_degisim:+.2f}}**".format(secilen_hisse=secilen_hisse, arama_canli_fiyat=arama_canli_fiyat, arama_degisim=arama_degisim))
                 else:
                     st.warning("Veri çekilemedi.")
             except:
@@ -233,18 +233,13 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                # Puanı güvenle biçimlendir
+                # Puanı biçimlendir
+                puan_temiz = ""
                 if pd.notna(puan_d):
-                    try: puan_temiz = f"{float(puan_d):.2f}"
-                    except: puan_temiz = str(puan_d).strip()
-                else:
-                    puan_temiz = ""
+                    if isinstance(puan_d, (int, float)):
+                        puan_temiz = f"{float(puan_d):.2f}"
+                    else:
+                        puan_temiz = str(puan_d).strip()
 
                 # Canlı Fiyat Çekimi
                 canli_fiyat = 0.0
-                try:
-                    ticker = yf.Ticker(f"{hisse_a}.IS")
-                    hist = ticker.history(period="1d")
-                    if not hist.empty:
-                        canli_fiyat = float(hist['Close'].iloc[-1])
-                except:
