@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -48,9 +48,7 @@ st.header("📊 BTA ALGORİTMİK HİSSE ")
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
-        # Önce İngiliz formatında binlik ayraç ekler (Örn: 3,625.00)
         ingiliz_stil = f"{f_deger:,.2f}"
-        # İngiliz formatındaki virgül ve noktaları yer değiştirir -> 3.625,00
         tr_stil = ingiliz_stil.replace(",", "X").replace(".", ",").replace("X", ".")
         return f"{tr_stil} TL"
     except:
@@ -200,3 +198,5 @@ else:
             with col_s:
                 if m.get("cihaz_id") == st.session_state.cihaz_id:
                     if st.button("❌ Sil", key=m.get("mesaj_id")):
+                        try:
+                            g_liste = [msg for msg in sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
