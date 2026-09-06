@@ -42,7 +42,7 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# Kapsamlı Küfür, Argo ve Hakaret Filtre Listesi
+# Kapsamlı Küfür ve Argo Filtre Listesi
 KUFUR_LISTESI = [
     "amk", "aq", "amına", "amını", "orospu", "siktir", "sik", "piç", "pç", "sktr", "yarrak", "yarak",
     "göt", "got", "gavat", "pezevenk", "pkk", "oç", "meme", "daşşak", "taşşak", "orostopol", "kahpe",
@@ -51,15 +51,12 @@ KUFUR_LISTESI = [
 ]
 
 def icerik_kontrol_et(metin):
-    # Metindeki boşlukları ve özel karakterleri temizleyerek kelime bazlı ve bütünsel kontrol yapar
     temiz_metin = metin.lower().strip()
     for kelime in KUFUR_LISTESI:
-        # Kelimenin metin içinde parça olarak veya doğrudan geçip geçmediğini kontrol eder
         if kelime in temiz_metin:
             return True
     return False
 
-# Tüm kullanıcıların göreceği ortak canlı havuz
 @st.cache_resource
 def sunucu_canli_havuzunu_getir():
     return []
@@ -176,8 +173,9 @@ st.write("---")
 # --- CANLI SOHBET ODASI ALANI ---
 st.markdown('<div class="sohbet-baslik">💬 CANLI TOPLULUK SOHBET ODASI</div>', unsafe_allow_html=True)
 
+# Syntax hatası veren yapıyı güvenli dize birleştirme yöntemiyle değiştirdik
 sohbet_html = '<div class="sohbet-kutusu">'
 for msg in ortak_havuz[-50:]:
-    sohbet_html += f'''
-    <div class="mesaj-satiri">
-        <span class="mesaj-sahibi">{msg["kullanici"]}</span>
+    sohbet_html += '<div class="mesaj-satiri">'
+    sohbet_html += '<span class="mesaj-sahibi">' + str(msg["kullanici"]) + '</span>'
+    sohbet_html += '<span class="mesaj-zamani">' + str(msg["zaman"]) + '</span>'
