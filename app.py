@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -42,7 +42,7 @@ st.markdown(f'''
         border-radius: 8px;
         padding: 10px;
         text-align: center;
-        flex: 1 1 160px;
+        flex: 1 1 180px;
         max-width: 220px;
     }}
     .piyasa-kart-bist {{
@@ -51,7 +51,7 @@ st.markdown(f'''
         border-radius: 8px;
         padding: 10px;
         text-align: center;
-        flex: 1 1 160px;
+        flex: 1 1 180px;
         max-width: 220px;
     }}
     .piyasa-baslik {{ font-size: 0.85rem; color: #cbd5e1; font-weight: bold; margin-bottom: 4px; }}
@@ -219,7 +219,7 @@ if os.path.exists(excel_yolu):
         
         st.write("---")
 
-        # ⚡ 6 HİSSEYİ KASMADAN TOPLAYAN VE İNDİREN KESİN ALTYAPI
+        # ⚡ TOPLU VERİ İNDİRME ALTYAPISI (Hata veren döngü içi try-except blokları yerine)
         sinir = min(10, len(df))
         ust_kodlar = []
         alt_kodlar = []
@@ -240,4 +240,3 @@ if os.path.exists(excel_yolu):
                 indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
                 toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
                 for k in tum_liste:
-                    is_kodu = f"{k}.IS"
