@@ -134,7 +134,7 @@ if os.path.exists(excel_yolu):
         sinir = min(10, len(df))
         
         for idx in range(sinir):
-            # 1.(A, C, D Sütunları)
+            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
@@ -168,7 +168,7 @@ if os.path.exists(excel_yolu):
                     "KAR / ZARAR 📊": kz_oran_str
                 })
 
-            # 2. (B Sütunu)
+            # 2. ALT PANEL VERİLERİ (B Sütunu)
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             
             if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
