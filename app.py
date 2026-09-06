@@ -3,15 +3,19 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+from streamlit_autorefresh import st_autorefresh
 
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
 st.markdown('<style>.stApp {background: #0f172a!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}</style>', unsafe_allow_html=True)
 
+# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir hiçbir şeye dokunmadan kendi kendini yeniler
+st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
+
 # Saat Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an}</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -23,24 +27,21 @@ if os.path.exists(excel_yolu):
         tablo_bta = []
         tablo_alsat = []
 
-        # Sadece ilk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
+        # İlk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
         sinir = min(10, len(df))
         
         for idx in range(sinir):
             # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3] # Hücre değerini sayısal olarak korumak için doğrudan alıyoruz
+            puan_d = df.iloc[idx, 3]
 
-            # Başlık satırlarını ve boşlukları süzüyoruz
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 
-                # 🎯 BTA PUAN YUVARLAMA KONTROLÜ
+                # BTA PUAN YUVARLAMA KONTROLÜ
                 try:
-                    # Hücre sayısal bir değerse virgülden sonra 2 basamağa yuvarla ve string yap
                     puan_temiz = f"{float(puan_d):.2f}"
                 except:
-                    # Eğer sayısal değilse (metin vb.) Excel'de ne yazıyorsa bozmadan göster
                     puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
 
                 try:
