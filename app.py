@@ -179,14 +179,12 @@ if os.path.exists(excel_yolu):
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
 
-            # Üst Panel İşlemleri
+            # Üst Panel İşlemleri (Tek satırda hatasız atama)
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 p_temiz = puan_temizle(puan_d)
                 c_fiyat = yfinance_fiyat_al(hisse_a)
                 maliyet = maliyet_temizle(alim_c)
                 kz_str = kar_zarar_hesapla(maliyet, c_fiyat)
-
-                tablo_bta.append({
-                    "BTA PUAN 🔢": p_temiz, 
-                    "BTA HİSSE 📈": hisse_a,
-                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
+                g_fiyat_str = f"{c_fiyat:.2f} TL" if c_fiyat > 0 else "Yükleniyor..."
+                alim_str = f"{maliyet:.2f} TL" if maliyet > 0 else alim_c
+                
