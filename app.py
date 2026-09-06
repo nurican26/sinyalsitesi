@@ -22,27 +22,12 @@ st.markdown(f'''
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .arama-baslik {{background: linear-gradient(90deg, #3b82f6 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:10px; margin-bottom:20px;}}
-    
-    /* BTA LOGO - Yukarıdan Düşüş ve 30 Saniyede Bir Alev Efekti */
-    .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px; position: relative;}}
-    .cember-animasyon-{anim_id} {{
-        width: 120px; height: 120px; 
-        border: 4px solid #fff; border-radius: 50%; 
-        display: flex; justify-content: center; align-items: center; 
-        background: transparent; position: relative; overflow: hidden;
-        animation: yukaridanDus-{anim_id} 1.5s ease-out forwards, atesPatla-{anim_id} 30s infinite;
-    }}
+    .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
+    .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite;}}
     .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));}}
-    
-    @keyframes yukaridanDus-{anim_id} {{
-        0% {{ transform: translateY(-200px); opacity: 0; }}
-        60% {{ transform: translateY(20px); opacity: 1; }}
-        80% {{ transform: translateY(-10px); }}
-        100% {{ transform: translateY(0); }}
-    }}
-    @keyframes atesPatla-{anim_id} {{
-        0%, 95%, 100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
-        97% {{ border-color: #ff5500; box-shadow: 0 0 35px 15px #ff3300, inset 0 0 25px 10px #ff7700; transform: scale(1.1); }}
+    @keyframes gokkusagiCember {{
+        0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
+        100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
     }}
 </style>
 ''', unsafe_allow_html=True)
@@ -65,6 +50,7 @@ def sohbet_temizle(metin):
             temiz_metin = insens_kelime.sub(sansur, temiz_metin)
     return temiz_metin
 
+# Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Tüm kullanıcılar için ortaktır)
 @st.cache_resource
 def sunucu_canli_havuzunu_getir():
     return []
@@ -76,6 +62,7 @@ if "cihaz_id" not in st.session_state:
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
+# Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -84,9 +71,6 @@ def formatla_tl(deger):
         return f"{tr_stil} TL"
     except:
         return str(deger)
-
-# Hisseler ve Arama Motoru Listesi İçin Hafıza Ataması
-tum_hisseler = []
 
 if os.path.exists(excel_yolu):
     try:
@@ -153,49 +137,45 @@ if os.path.exists(excel_yolu):
         if len(tablo_alsat) > 0:
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 
-        # Excel'deki E sütunundaki (WEB sayfası) tüm hisseleri alıyoruz
-        if len(df.columns) >= 5:
+        st.write("---")
+        
+        # --- BIST ANLIK ARAMA MOTORU (E SÜTUNU, E2 SATIRINDAN İTİBAREN) ---
+        st.markdown('<div class="arama-baslik">🔍 BIST ANLIK HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
+        
+        # Excel'deki E sütunundaki tüm benzersiz ve boş olmayan hisseleri okur
+        if len(df.columns) >= 5: # E sütunu var mı kontrolü
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
+            # Başlık satırını veya geçersiz verileri temizle
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
             tum_hisseler.sort()
+            
+            if tum_hisseler:
+                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
+                
+                if aranan_hisse != "Seçiniz...":
+                    with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
+                        try:
+                            h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
+                            if not h_detay.empty:
+                                anlik_fiyat = float(h_detay['Close'].iloc[-1])
+                                dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
+                                gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
+                                gunun_en_yuksek = float(h_detay['High'].iloc[-1])
+                                gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
+                                
+                                # Arama Sonuçlarını Kart Düzeni Şeklinde Göster
+                                col1, col2, col3 = st.columns(3)
+                                col1.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                                col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                                col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                            else:
+                                st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı. Lütfen Excel'deki kodu kontrol edin (Örn: THYAO, EREGL).")
+                        except Exception as e:
+                            st.error("Borsa verisi çekilirken bir hata oluştu.")
+            else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+        else:
+            st.error("Excel dosyasında E sütunu bulunamadı!")
 
     except Exception as e:
-        st.error("Excel verileri okunurken teknik bir sorun oluştu.")
-else:
-    st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
-
-# --- BIST ANLIK ARAMA MOTORU PANELİ ---
-st.write("---")
-st.markdown('<div class="arama-baslik">🔍 BIST ANLIK HİSSE ARAMA MOTORU (SADECE WEB SAYFASI)</div>', unsafe_allow_html=True)
-
-if tum_hisseler:
-    aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
-    if aranan_hisse != "Seçiniz...":
-        with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
-            try:
-                h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
-                if not h_detay.empty:
-                    anlik_fiyat = float(h_detay['Close'].iloc[-1])
-                    dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
-                    gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
-                    gunun_en_yuksek = float(h_detay['High'].iloc[-1])
-                    gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
-                    
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
-                    col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
-                    col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
-                else:
-                    st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı.")
-            except:
-                st.error("Borsa verisi çekilirken bir hata oluştu.")
-else:
-    st.warning("Arama motoru için Excel E sütunundan hisse listesi yüklenemedi.")
-
-# --- CANLI SOHBET ODASI ---
-st.write("---")
-st.header("💬  CANLI SOHBET ODASI")
-
-if "kullanici_adi" not in st.session_state:
-    st.session_state.kullanici_adi = ""
-
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
