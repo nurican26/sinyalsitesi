@@ -6,23 +6,95 @@ import os, re
 import time
 import streamlit.components.v1 as components
 
-# 📊 SAYFA YAPILANDIRMASI VE KOYU MATRİS TEMA
+# 1. Sayfa Yapılandırması ve Modern Koyu Matris Tasarım
 st.set_page_config(page_title="BTA Sinyal", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #111827 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
+st.markdown('''
+<style>
+    .stApp {
+        background: linear-gradient(135deg, #090d16 0%, #111827 100%)!important; 
+        padding: 0.5rem;
+    }
+    h1,h2,h3,h4,h5,h6,p,span,label {
+        color: #fff!important; 
+        font-family: "Segoe UI", sans-serif;
+    }
+    input {
+        color: #000!important; 
+        background-color: #fff!important;
+        border-radius: 6px !important;
+    }
+    /* Cam Efekti Verilen Giriş Paneli Kutusu */
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    .stDataFrame {
+        width: 100% !important; 
+        border: 1px solid #10b981 !important; 
+        border-radius: 8px;
+    }
+    div.block-container {
+        padding-top: 1rem; 
+        padding-bottom: 0.5rem;
+    }
+    /* Başlık Grupları */
+    .alsat-baslik {
+        background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); 
+        padding: 10px; 
+        border-radius: 6px; 
+        font-weight: bold; 
+        margin-top: 15px;
+        margin-bottom: 10px;
+        letter-spacing: 0.5px;
+    }
+    .al-baslik {
+        background: linear-gradient(90deg, #16a34a 0%, #111827 100%); 
+        padding: 10px; 
+        border-radius: 6px; 
+        font-weight: bold; 
+        margin-top: 25px;
+        margin-bottom: 10px;
+        letter-spacing: 0.5px;
+    }
+    div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
+        font-size: 1.25rem !important; 
+        font-weight: bold !important; 
+        color: #ffffff !important;
+    }
+    /* Canlı Parlayan Buton Tasarımları */
+    div[data-testid="stButton"] button {
+        background: rgba(255,255,255,0.05) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        transition: all 0.3s ease-in-out;
+        font-weight: bold !important;
+    }
+    div[data-testid="stButton"] button:hover {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.6) !important;
+        border-color: #10b981 !important;
+        transform: scale(1.02);
+    }
+</style>
+''', unsafe_allow_html=True)
 
-# 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
+# 🔑 PARAMETRELER VE DOSYA KONTROLLERİ
 ZIYARETCI_SIFRESI = "bta3015"
 YONETICI_SIFRESI = "3015"
 DURUM_DOSYASI = "site_durumu.txt"
 
 if not os.path.exists(DURUM_DOSYASI):
-    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
+    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: 
+        f.write("Açık")
 
 with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
     mevcut_kilit = f.read().strip()
 
-# Hafıza Kontrolleri
+# Hafıza Yönetimi
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 if "ziyaret_sayaci" not in st.session_state: st.session_state["ziyaret_sayaci"] = 0
@@ -43,9 +115,9 @@ let textObj = {
     x: canvas.width / 2,
     y: -30,
     targetY: canvas.height / 2 + 10,
-    speedY: 2.2, // Yavaş süzülme
+    speedY: 2.2, 
     angle: 0,
-    amp: 55, // Zikzak genişliği
+    amp: 55, 
     text: "BTA",
     fadedOut: false
 };
@@ -131,7 +203,8 @@ drawLoop();
 """
 components.html(bta_zikzak_efekti, height=160)
 
-# 🔐 ERİŞİM KONTROLÜ
+# 🔐 ERİŞİM KONTROLÜ (Görsel Cam Panel İçinde)
+st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
@@ -150,22 +223,35 @@ erisim_izni = (mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or
 
 if not erisim_izni:
     st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# 💥 CANLI FİYAT MOTORU
+# 💥 YENİ ENTEGRASYONLU CANLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
-        saved_time, saved_price = st.session_state["fiyat_hafizasi"][hisse_kodu]
-        if time.time() - saved_time < 300: return saved_price
+        saved_time, saved_price, trend = st.session_state["fiyat_hafizasi"][hisse_kodu]
+        if time.time() - saved_time < 300: 
+            return saved_price, trend
+            
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        data = ticker.history(period="1d")
-        if not data.empty and not pd.isna(data['Close'].iloc[-1]):
-            fiyat = float(data['Close'].iloc[-1])
-            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
-            return fiyat
+        data = ticker.history(period="2d") # Trend tespiti için 2 günlük veri çekiyoruz
+        if len(data) >= 2:
+            bugun_fiyat = float(data['Close'].iloc[-1])
+            dun_fiyat = float(data['Close'].iloc[-2])
+            
+            # Trend Belirleme Mekanizması
+            if bugun_fiyat > dun_fiyat:
+                trend = " ▲"  # Yeşil neon yükseliş oku
+            elif bugun_fiyat < dun_fiyat:
+                trend = " ▼"  # Kırmızı neon düşüş oku
+            else:
+                trend = " ▬"
+                
+            st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), bugun_fiyat, trend)
+            return bugun_fiyat, trend
     except:
         pass
-    return 0.0
+    return 0.0, ""
 
 # 🟢 VERİ İŞLEME VE TABLOLAR
 if erisim_izni:
@@ -193,33 +279,5 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0])
-                            cfiy = hızlı_canli_fiyat_bul(hisse)
-                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
-                            tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-                            
-                    if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                        h_ara = re.findall(r'[A-Z]+', wv)
-                        if h_ara:
-                            hisse = str(h_ara[0])
-                            cfiy = hızlı_canli_fiyat_bul(hisse)
-                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
-                            if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-            except:
-                pass
-
-    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
-    if tablo_alsat: 
-        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
-    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
-    if tablo_al: 
-        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
-    else: 
-        st.write("🔒 Aktif AL sinyali taranıyor...")
+                            hisse = str(h_ara[0]) # Kodu bozan liste hatası düzeltildi
+                            cfiy, trend_oku = hızlı_canli_fiyat_bul(hisse)
