@@ -100,7 +100,7 @@ with ust_sag:
     st.markdown('''
     <div class="animasyon-konteyner">
         <div class="neon-circle">
-            <div class="neon-text">YOLOYACAM<br>KODO<br>BTA</div>
+            <div class="neon-text"><br>BTA</div>
         </div>
     </div>
     ''', unsafe_allow_html=True)
