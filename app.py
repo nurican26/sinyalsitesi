@@ -3,50 +3,93 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import time
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-# CSS, Özel Efektler ve Kayan Renkli El Yazısı (BTA) Stilleri
-st.markdown('''
+# 🔄 CANLI FİYAT VE ANIMASYON KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir
+st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
+
+# Her yenilemede animasyonu baştan oynatmak için zaman damgası
+anim_id = int(time.time())
+
+# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
+st.markdown(f'''
 <style>
-    .stApp {background: #0f172a!important; padding: 0.5rem;} 
-    h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} 
-    .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} 
-    .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
-    .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
-    .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}
-
-    /* 🌈 HER RENGE DÖNEN, EL YAZISI VE IŞIKLI BTA STİLİ */
-    @keyframes rgb-text {
-        0% { color: #ff0000; text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000; }
-        20% { color: #00ff00; text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
-        40% { color: #0000ff; text-shadow: 0 0 10px #0000ff, 0 0 20px #0000ff; }
-        60% { color: #ffff00; text-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00; }
-        80% { color: #00ffff; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
-        100% { color: #ff00ff; text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff; }
-    }
-
-    .kayan-bta {
-        font-family: 'Brush Script MT', 'Comic Sans MS', cursive; /* El yazısı fontu */
-        font-size: 3rem; /* Orta Boy */
+    .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
+    h1,h2,h3,h4,h5,h6,p,span,label {{color: #fff!important;}} 
+    .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
+    .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
+    .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
+    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
+    
+    /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
+    .logo-konteyner {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 0;
+        margin-bottom: 10px;
+    }}
+    .cember-animasyon-{anim_id} {{
+        width: 120px;
+        height: 120px;
+        border: 4px solid #fff;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: transparent;
+        position: relative;
+        overflow: hidden;
+        animation: 
+            gokkusagiCember 4s linear infinite,
+            yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }}
+    .bta-yazi-{anim_id} {{
+        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
+        font-size: 3.2rem;
         font-weight: bold;
-        white-space: nowrap;
-        animation: rgb-text 8s infinite linear; /* Renk değiştirme hızı */
-    }
+        margin: 0;
+        padding: 0;
+        z-index: 2;
+        background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
+        animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }}
+    
+    @keyframes gokkusagiCember {{
+        0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
+        14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
+        28% {{ border-color: #ffff00; box-shadow: 0 0 15px #ffff00, inset 0 0 15px #ffff00; }}
+        42% {{ border-color: #00ff00; box-shadow: 0 0 15px #00ff00, inset 0 0 15px #00ff00; }}
+        56% {{ border-color: #00ffff; box-shadow: 0 0 15px #00ffff, inset 0 0 15px #00ffff; }}
+        70% {{ border-color: #0000ff; box-shadow: 0 0 15px #0000ff, inset 0 0 15px #0000ff; }}
+        84% {{ border-color: #8b00ff; box-shadow: 0 0 15px #8b00ff, inset 0 0 15px #8b00ff; }}
+        100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
+    }}
+    @keyframes yukardanDus {{ 0% {{ transform: translateY(-200px) scale(0.3); opacity: 0; }} 70% {{ transform: translateY(10px) scale(1.05); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
+    @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-140px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
 </style>
 ''', unsafe_allow_html=True)
 
-# 🚀 GEZEN (KAYAN) BTA PANELI (SAYFA ÜSTÜNDE GEZER)
-st.markdown('<marquee scrollamount="5" behavior="scroll" direction="left"><span class="kayan-bta">BTA</span></marquee>', unsafe_allow_html=True)
-
-# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir hiçbir şeye dokunmadan kendi Recovery eder
-st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
+# LOGO EKRAN ÇIKTISI
+st.markdown(f'''
+<div class="logo-konteyner">
+    <div class="cember-animasyon-{anim_id}">
+        <span class="bta-yazi-{anim_id}">BTA</span>
+    </div>
+</div>
+''', unsafe_allow_html=True)
 
 # Saat Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;"> <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -55,10 +98,39 @@ if os.path.exists(excel_yolu):
         # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
+        # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
+        st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
+        
+        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz
+        hisse_havuzu = []
+        if len(df.columns) >= 5:
+            e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
+            hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
+            hisse_havuzu = sorted(list(set(hisse_havuzu))) # Benzersiz yap ve sırala
+        
+        # Kullanıcıya E sütunundan gelen temiz listeyi seçenek olarak sunuyoruz
+        secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
+        
+        if secilen_hisse != "Seçiniz...":
+            try:
+                # Sadece seçilen hisse için internete gidilir (Kasma yapmaz)
+                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
+                hist_ara = ticker_ara.history(period="2d")
+                if not hist_ara.empty:
+                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
+                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
+                    
+                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
+                else:
+                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+            except:
+                st.error("Veri motoru bağlantı hatası.")
+        
+        st.write("---")
+
         tablo_bta = []
         tablo_alsat = []
-
-        # İlk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
         sinir = min(10, len(df))
         
         for idx in range(sinir):
@@ -68,8 +140,6 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                
-                # BTA PUAN YUVARLAMA KONTROLÜ
                 try:
                     puan_temiz = f"{float(puan_d):.2f}"
                 except:
@@ -141,4 +211,3 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
 
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
