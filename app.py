@@ -19,60 +19,48 @@ anim_id = int(time.time())
 # 🔥 FIREBASE REALTIME DATABASE AYARLARI
 FIREBASE_URL = "https://SİZİN_PROJE_://firebaseio.com"
 
-# 📥 Firebase'den Mesajları Çeken Fonksiyon
-def veritabanindan_mesajlari_getir():
-    try:
-        response = requests.get(FIREBASE_URL, timeout=3)
-        if response.status_code == 200 and response.json():
-            veriler = response.json()
-            mesaj_listesi = [veri for veri in veriler.values()]
-            mesaj_listesi = sorted(mesaj_listesi, key=lambda x: x.get('timestamp', 0))
-            return mesaj_listesi[-30:]
-    except Exception:
-        pass
-    return [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
+# 📥 Firebase'den Mesajları Çeken Blok
+canli_mesajlar = [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
+try:
+    response = requests.get(FIREBASE_URL, timeout=3)
+    if response.status_code == 200 and response.json():
+        veriler = response.json()
+        mesaj_listesi = [veri for veri in veriler.values()]
+        canli_mesajlar = sorted(mesaj_listesi, key=lambda x: x.get('timestamp', 0))[-30:]
+except Exception:
+    pass
 
-# 📤 Firebase'e Yeni Mesaj Gönderen Fonksiyon
-def veritabanina_mesaj_gonder(kullanici, mesaj):
-    try:
-        su_an = datetime.datetime.now()
-        yeni_veri = {
-            "kullanici": kullanici,
-            "mesaj": mesaj,
-            "zaman": su_an.strftime("%H:%M"),
-            "timestamp": int(su_an.timestamp())
-        }
-        requests.post(FIREBASE_URL, json=yeni_veri, timeout=3)
-        return True
-    except Exception:
-        return False
-
-# Yardımcı Veri İşleme Fonksiyonları
-def hisse_fiyati_cek(hisse_kodu, period="1d"):
-    try:
-        ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        hist = ticker.history(period=period)
-        if not hist.empty:
-            return hist
-    except Exception:
-        pass
-    return None
-
-def temiz_puan(puan_d):
-    if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
-        return ""
-    try:
-        return f"{float(puan_d):.2f}"
-    except Exception:
-        return str(puan_d).strip()
-
-def temiz_maliyet(alim_c):
-    if pd.isna(alim_c) or str(alim_c).strip().lower() in ["nan", "none", ""]:
-        return 0.0
-    try:
-        return float(str(alim_c).replace(",", "."))
-    except Exception:
-        return 0.0
+# 🖥️ SOL MENÜ (SIDEBAR) - CANLI SOHBET ODASI ALANI
+with st.sidebar:
+    st.markdown('<div class="sohbet-baslik">💬 BTA CANLI SOHBET ODASI</div>', unsafe_allow_html=True)
+    
+    sohbet_html = '<div class="sohbet-kutusu">'
+    for m in canli_mesajlar:
+        if m.get("kullanici") == "Sistem":
+            sohbet_html += f'<div class="mesaj-satiri mesaj-sistem">🤖 <b>{m.get("kullanici")}:</b> {m.get("mesaj")}<span class="mesaj-zaman">{m.get("zaman")}</span></div>'
+        else:
+            sohbet_html += f'<div class="mesaj-satiri">👤 <span class="mesaj-yetkili">{m.get("kullanici")}:</span> {m.get("mesaj")}<span class="mesaj-zaman">{m.get("zaman")}</span></div>'
+    sohbet_html += '</div>'
+    st.markdown(sohbet_html, unsafe_allow_html=True)
+    
+    with st.form(key="sohbet_formu", clear_on_submit=True):
+        takma_ad = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=15)
+        yeni_mesaj = st.text_input("Mesajınız:", max_chars=100, placeholder="Hisseler hakkında konuşun...")
+        gonder_butonu = st.form_submit_form_button("Gönder 📩")
+        
+        if gonder_butonu and yeni_mesaj.strip():
+            try:
+                su_an = datetime.datetime.now()
+                yeni_veri = {
+                    "kullanici": takma_ad.strip(),
+                    "mesaj": yeni_mesaj.strip(),
+                    "zaman": su_an.strftime("%H:%M"),
+                    "timestamp": int(su_an.timestamp())
+                }
+                requests.post(FIREBASE_URL, json=yeni_veri, timeout=3)
+                st.rerun()
+            except Exception:
+                pass
 
 # Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Sohbet Kutusu CSS Kodları
 st.markdown(f'''
@@ -83,16 +71,12 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
-    
-    /* 💬 SOHBET ODASI ÖZEL STİLLERİ */
     .sohbet-baslik {{background: linear-gradient(90deg, #0284c7 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; color:#fff; font-size:1.1rem; text-align:center;}}
     .sohbet-kutusu {{background-color: #1e293b; border: 1px solid #38bdf8; border-radius: 8px; padding: 10px; max-height: 350px; overflow-y: auto; margin-bottom: 10px;}}
     .mesaj-satiri {{margin-bottom: 8px; padding: 6px; border-radius: 4px; background-color: #334155; font-size: 0.9rem;}}
     .mesaj-sistem {{background-color: rgba(14, 165, 233, 0.2); border-left: 3px solid #0ea5e9;}}
     .mesaj-zaman {{font-size: 0.75rem; color: #94a3b8; float: right; margin-top: 2px;}}
     .mesaj-yetkili {{color: #38bdf8 !important; font-weight: bold;}}
-    
-    /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
     .logo-konteyner {{ display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px; }}
     .cember-animasyon-{anim_id} {{
         width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden;
@@ -116,29 +100,6 @@ st.markdown(f'''
     @keyframes yukardanDus {{ 0% {{ transform: translateY(-200px) scale(0.3); opacity: 0; }} 70% {{ transform: translateY(10px) scale(1.05); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
     @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-140px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
 </style>''', unsafe_allow_html=True)
-
-# 🖥️ SOL MENÜ (SIDEBAR) - CANLI SOHBET ODASI ALANI
-with st.sidebar:
-    st.markdown('<div class="sohbet-baslik">💬 BTA CANLI SOHBET ODASI</div>', unsafe_allow_html=True)
-    canli_mesajlar = veritabanindan_mesajlari_getir()
-    
-    sohbet_html = '<div class="sohbet-kutusu">'
-    for m in canli_mesajlar:
-        if m.get("kullanici") == "Sistem":
-            sohbet_html += f'<div class="mesaj-satiri mesaj-sistem">🤖 <b>{m.get("kullanici")}:</b> {m.get("mesaj")}<span class="mesaj-zaman">{m.get("zaman")}</span></div>'
-        else:
-            sohbet_html += f'<div class="mesaj-satiri">👤 <span class="mesaj-yetkili">{m.get("kullanici")}:</span> {m.get("mesaj")}<span class="mesaj-zaman">{m.get("zaman")}</span></div>'
-    sohbet_html += '</div>'
-    st.markdown(sohbet_html, unsafe_allow_html=True)
-    
-    with st.form(key="sohbet_formu", clear_on_submit=True):
-        takma_ad = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=15)
-        yeni_mesaj = st.text_input("Mesajınız:", max_chars=100, placeholder="Hisseler hakkında konuşun...")
-        gonder_butonu = st.form_submit_form_button("Gönder 📩")
-        
-        if gonder_butonu and yeni_mesaj.strip():
-            if veritabanina_mesaj_gonder(takma_ad.strip(), yeni_mesaj.strip()):
-                st.rerun()
 
 # LOGO EKRAN ÇIKTISI
 st.markdown(f'''
@@ -165,14 +126,18 @@ if os.path.exists(excel_yolu):
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
-            hist_ara = hisse_fiyati_cek(secilen_hisse, period="2d")
-            if hist_ara is not None:
-                arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-                arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
-            else:
-                st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+            try:
+                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
+                hist_ara = ticker_ara.history(period="2d")
+                if not hist_ara.empty:
+                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
+                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
+                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
+                else:
+                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+            except Exception:
+                st.error("Veri motoru bağlantı hatası.")
         
         st.write("---")
 
@@ -187,6 +152,29 @@ if os.path.exists(excel_yolu):
 
             # Üst Panel Verileri İşleme
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                puan_temiz_veri = temiz_puan(puan_d)
-                hist_bta = hisse_fiyati_cek(hisse_a, period="1d")
-                canli_fiyat = float(hist_bta['Close'].iloc[-1]) if hist_bta is not None else 0.0
+                puan_temiz_veri = ""
+                if not pd.isna(puan_d) and str(puan_d).strip().lower() not in ["nan", "none", ""]:
+                    try:
+                        puan_temiz_veri = f"{float(puan_d):.2f}"
+                    except Exception:
+                        puan_temiz_veri = str(puan_d).strip()
+
+                canli_fiyat = 0.0
+                try:
+                    ticker = yf.Ticker(f"{hisse_a}.IS")
+                    hist_bta = ticker.history(period="1d")
+                    if not hist_bta.empty:
+                        canli_fiyat = float(hist_bta['Close'].iloc[-1])
+                except Exception:
+                    pass
+
+                maliyet = 0.0
+                if not pd.isna(alim_c) and str(alim_c).strip().lower() not in ["nan", "none", ""]:
+                    try:
+                        maliyet = float(str(alim_c).replace(",", "."))
+                    except Exception:
+                        pass
+                
+                kz_oran_str = "-"
+                if maliyet > 0 and canli_fiyat > 0:
+                    kz = ((canli_fiyat - maliyet) / maliyet) * 100
