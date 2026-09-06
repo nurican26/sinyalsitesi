@@ -8,9 +8,79 @@ from streamlit_autorefresh import st_autorefresh
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-st.markdown('<style>.stApp {background: #0f172a!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}</style>', unsafe_allow_html=True)
+# Şık Neon Tasarım ve Yukarıdan Düşen Fosforlu Çember Logosu CSS Kodları
+st.markdown('''
+<style>
+    .stApp {background: #0f172a!important; padding: 0.5rem;} 
+    h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} 
+    .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} 
+    .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
+    .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
+    .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}
+    
+    /* 🟢 ANIMASYONLU FOSFORLU ÇEMBER VE BTA LOGO ALANI */
+    .logo-konteyner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 0;
+        margin-bottom: 10px;
+    }
+    .cember-animasyon {
+        width: 110px;
+        height: 110px;
+        border: 4px solid #10b981;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: transparent;
+        position: relative;
+        box-shadow: 0 0 15px #10b981, inset 0 0 15px #10b981; /* Fosforlu neon parlama */
+        
+        /* Çemberin yukarıdan düşme animasyonu */
+        animation: yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .bta-yazi {
+        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
+        font-size: 2.8rem;
+        font-weight: bold;
+        color: #10b981 !important;
+        text-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+        margin: 0;
+        padding: 0;
+        z-index: 2;
+    }
+    
+    @keyframes yukardanDus {
+        0% {
+            transform: translateY(-200px) scale(0.3);
+            opacity: 0;
+            box-shadow: 0 0 0px transparent;
+        }
+        70% {
+            transform: translateY(10px) scale(1.05);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+<link href="https://googleapis.com" rel="stylesheet">
+''', unsafe_allow_html=True)
 
-# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir hiçbir şeye dokunmadan kendi kendini yeniler
+# 🟢 LOGO EKRAN ÇIKTISI (En Üst Kısım)
+st.markdown('''
+<div class="logo-konteyner">
+    <div class="cember-animasyon">
+        <span class="bta-yazi">BTA</span>
+    </div>
+</div>
+''', unsafe_allow_html=True)
+
+# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir
 st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 
 # Saat Göstergesi
