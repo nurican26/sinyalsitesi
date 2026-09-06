@@ -77,8 +77,9 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-if os.path.exists(excel_yolu):
-    try:
+# HİSSE TABLOLARI ALANI (Hatalara karşı korumaya alındı)
+try:
+    if os.path.exists(excel_yolu):
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
         hisse_listesi = []
@@ -105,9 +106,12 @@ if os.path.exists(excel_yolu):
                 p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 c_fiyat = 0.0
                 
-                ticker_str = f"{ha}.IS"
-                if ticker_str in canli_veriler and not canli_veriler[ticker_str].empty:
-                    c_fiyat = float(canli_veriler[ticker_str]['Close'].iloc[-1])
+                try:
+                    ticker_str = f"{ha}.IS"
+                    if ticker_str in canli_veriler and not canli_veriler[ticker_str].empty:
+                        c_fiyat = float(canli_veriler[ticker_str]['Close'].iloc[-1])
+                except:
+                    c_fiyat = 0.0
                     
                 try: maliyet = float(alim_c.replace(",", "."))
                 except: maliyet = 0.0
@@ -135,11 +139,15 @@ if os.path.exists(excel_yolu):
                 as_fiyat = 0.0
                 as_deg = 0.0
                 
-                ticker_str = f"{hb}.IS"
-                if ticker_str in canli_veriler and not canli_veriler[ticker_str].empty:
-                    as_fiyat = float(canli_veriler[ticker_str]['Close'].iloc[-1])
-                    as_prev = float(canli_veriler[ticker_str]['Close'].iloc[-2]) if len(canli_veriler[ticker_str]) >= 2 else as_fiyat
-                    as_deg = ((as_fiyat - as_prev) / as_prev) * 100
+                try:
+                    ticker_str = f"{hb}.IS"
+                    if ticker_str in canli_veriler and not canli_veriler[ticker_str].empty:
+                        as_fiyat = float(canli_veriler[ticker_str]['Close'].iloc[-1])
+                        as_prev = float(canli_veriler[ticker_str]['Close'].iloc[-2]) if len(canli_veriler[ticker_str]) >= 2 else as_fiyat
+                        as_deg = ((as_fiyat - as_prev) / as_prev) * 100
+                except:
+                    as_fiyat = 0.0
+                    as_deg = 0.0
                 
                 tablo_alsat.append({
                     "GÜNLÜK AL SAT HİSSELERİ ⚡": hb, 
@@ -164,18 +172,15 @@ if os.path.exists(excel_yolu):
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
                     st.info(f"Seçilen Hisse: {aranan_hisse} - Teknik analiz verileri yüklendi.")
-                    
-    except Exception as e:
-        st.error(f"Excel dosyası işlenirken bir sorun oluştu: {e}")
+    else:
+        st.error("Excel dosyası bulunamadı!")
+except Exception as e:
+    st.warning(f"Tablo verileri yüklenirken geçici bir kesinti oldu, sohbet alanı aktif.")
 
 st.write("---")
 
 # --- CANLI SOHBET ODASI ALANI ---
 st.markdown('<div class="sohbet-baslik">💬 CANLI TOPLULUK SOHBET ODASI</div>', unsafe_allow_html=True)
 
-# Syntax hatası veren yapıyı güvenli dize birleştirme yöntemiyle değiştirdik
 sohbet_html = '<div class="sohbet-kutusu">'
 for msg in ortak_havuz[-50:]:
-    sohbet_html += '<div class="mesaj-satiri">'
-    sohbet_html += '<span class="mesaj-sahibi">' + str(msg["kullanici"]) + '</span>'
-    sohbet_html += '<span class="mesaj-zamani">' + str(msg["zaman"]) + '</span>'
