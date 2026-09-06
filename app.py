@@ -7,7 +7,6 @@ import json
 import time
 import uuid
 import re  
-from streamlit_autorefresh import st_autorefresh
 
 # Sayfa Yapılandırması ve Otomatik Yenileme (10 saniyede bir)
 st.set_page_config(page_title="BTA Merkez", layout="wide")
@@ -135,7 +134,7 @@ else:
         st.error("🚫 **CEZA:** Topluluk kurallarını 3 kez ihlal ettiğiniz için bu oturumda mesaj göndermeniz ENGELLENMİŞTİR!")
     else:
         with st.form("mesaj_formu", clear_on_submit=True):
-            yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
+            yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...", key="chat_input_text")
             if st.form_submit_button("Gönder 🚀"):
                 if yeni_mesaj_metni.strip():
                     
@@ -155,7 +154,6 @@ else:
                             st.session_state["sohbet_hata_mesaji"] = "❌ 3. İhlal! Kurallara uymadığınız için sohbet odasından uzaklaştırıldınız."
                         else:
                             st.session_state["sohbet_hata_mesaji"] = f"⚠️ Yazdığınız mesaj argo/küfür içerdiği için engellendi! (Uyarı: {st.session_state.sohbet_uyari_sayisi}/3)"
-                        time.sleep(0.1)
                         st.rerun()
                     else:
                         # Temiz mesajı JSON'a kaydetme süreci
@@ -166,6 +164,8 @@ else:
                                     mevcut = json.load(f)
                             except:
                                 pass
+                        
+                        # Anlık güncelleme için yeni mesaj listesine hemen ekle
                         mevcut.append({
                             "mesaj_id": str(uuid.uuid4()),
                             "cihaz_id": st.session_state.cihaz_id,
@@ -181,3 +181,4 @@ else:
                         except:
                             pass
                         
+ 
