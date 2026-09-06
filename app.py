@@ -24,7 +24,6 @@ st.markdown('''
         background-color: #fff!important;
         border-radius: 6px !important;
     }
-    /* Cam Efekti Verilen Giriş Paneli Kutusu */
     .glass-panel {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -42,7 +41,6 @@ st.markdown('''
         padding-top: 1rem; 
         padding-bottom: 0.5rem;
     }
-    /* Başlık Grupları */
     .alsat-baslik {
         background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); 
         padding: 10px; 
@@ -66,7 +64,6 @@ st.markdown('''
         font-weight: bold !important; 
         color: #ffffff !important;
     }
-    /* Canlı Parlayan Buton Tasarımları */
     div[data-testid="stButton"] button {
         background: rgba(255,255,255,0.05) !important;
         color: white !important;
@@ -203,7 +200,7 @@ drawLoop();
 """
 components.html(bta_zikzak_efekti, height=160)
 
-# 🔐 ERİŞİM KONTROLÜ (Görsel Cam Panel İçinde)
+# 🔐 ERİŞİM KONTROLÜ
 st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
@@ -225,7 +222,7 @@ if not erisim_izni:
     st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# 💥 YENİ ENTEGRASYONLU CANLI FİYAT MOTORU
+# 💥 CANLI FİYAT MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price, trend = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -234,16 +231,15 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        data = ticker.history(period="2d") # Trend tespiti için 2 günlük veri çekiyoruz
+        data = ticker.history(period="2d")
         if len(data) >= 2:
             bugun_fiyat = float(data['Close'].iloc[-1])
             dun_fiyat = float(data['Close'].iloc[-2])
             
-            # Trend Belirleme Mekanizması
             if bugun_fiyat > dun_fiyat:
-                trend = " ▲"  # Yeşil neon yükseliş oku
+                trend = " ▲"  
             elif bugun_fiyat < dun_fiyat:
-                trend = " ▼"  # Kırmızı neon düşüş oku
+                trend = " ▼"  
             else:
                 trend = " ▬"
                 
@@ -279,5 +275,10 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0]) # Kodu bozan liste hatası düzeltildi
+                            hisse = str(h_ara[0])
                             cfiy, trend_oku = hızlı_canli_fiyat_bul(hisse)
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
+                            bta_puan = p_bul[0] if p_bul else t_deg
+                            tablo_alsat.append({
+                                "Hisse Kodu 📈": hisse, 
+                                "BTA Puan": bta_puan, 
