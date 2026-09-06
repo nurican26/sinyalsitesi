@@ -233,11 +233,14 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                try: 
-                    puan_temiz = f"{float(puan_d):.2f}"
-                except: 
-                    puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
+                # Puanı güvenle biçimlendir
+                if pd.notna(puan_d):
+                    try: puan_temiz = f"{float(puan_d):.2f}"
+                    except: puan_temiz = str(puan_d).strip()
+                else:
+                    puan_temiz = ""
 
+                # Canlı Fiyat Çekimi
                 canli_fiyat = 0.0
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
@@ -245,7 +248,3 @@ if os.path.exists(excel_yolu):
                     if not hist.empty:
                         canli_fiyat = float(hist['Close'].iloc[-1])
                 except:
-                    pass
-                
-                kz_oran_str = "-"
-                try:
