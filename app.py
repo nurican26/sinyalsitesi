@@ -77,9 +77,9 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-# HİSSE TABLOLARI ALANI (Hatalara karşı korumaya alındı)
-try:
-    if os.path.exists(excel_yolu):
+# HİSSE TABLOLARI ALANI
+if os.path.exists(excel_yolu):
+    try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
         hisse_listesi = []
@@ -172,10 +172,10 @@ try:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
                     st.info(f"Seçilen Hisse: {aranan_hisse} - Teknik analiz verileri yüklendi.")
-    else:
-        st.error("Excel dosyası bulunamadı!")
-except Exception as e:
-    st.warning(f"Tablo verileri yüklenirken geçici bir kesinti oldu, sohbet alanı aktif.")
+    except Exception as e:
+        st.error(f"Excel dosyası işlenirken bir sorun oluştu: {e}")
+else:
+    st.error("Excel dosyası bulunamadı!")
 
 st.write("---")
 
@@ -184,3 +184,4 @@ st.markdown('<div class="sohbet-baslik">💬 CANLI TOPLULUK SOHBET ODASI</div>',
 
 sohbet_html = '<div class="sohbet-kutusu">'
 for msg in ortak_havuz[-50:]:
+    sohbet_html += '<div class="mesaj-satiri">'
