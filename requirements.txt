@@ -6,3 +6,4 @@ pyxlsb
 xlrd
 requests
 lxml
+streamlit-autorefresh
