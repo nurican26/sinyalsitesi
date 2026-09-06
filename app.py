@@ -3,9 +3,9 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import json
 import time
-import urllib.request
+import uuid
+import re
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici
@@ -21,7 +21,6 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .arama-baslik {{background: linear-gradient(90deg, #3b82f6 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .sayac-baslik {{background: linear-gradient(90deg, #ec4899 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}}
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:10px; margin-bottom:20px;}}
     
     /* BTA LOGO - Yukarıdan Düşüş ve 30 Saniyede Bir Alev Efekti */
@@ -54,46 +53,26 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- BULUT SAYAÇ API BAĞLANTISI (Asla Sıfırlanmaz) ---
-SAYAC_BULUT_URL = "https://kvjson.com"
+# Küfür ve argo kelime filtresi listesi
+KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
 
-def bulut_sayac_oku():
-    try:
-        req = urllib.request.Request(SAYAC_BULUT_URL, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=4) as response:
-            veri = json.loads(response.read().decode('utf-8'))
-            if isinstance(veri, dict) and "value" in veri:
-                return veri["value"]
-    except:
-        pass
-    return {"toplam_giris": 0, "gunluk_giris": 0, "son_gun": datetime.date.today().strftime("%Y-%m-%d")}
+def sohbet_temizle(metin):
+    temiz_metin = metin
+    for kelime in KUFUR_LISTESI:
+        if kelime in temiz_metin.lower():
+            sansur = "*" * len(kelime)
+            insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
+            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
+    return temiz_metin
 
-def bulut_sayac_yaz(veri_dict):
-    try:
-        req = urllib.request.Request(
-            SAYAC_BULUT_URL, 
-            data=json.dumps({"value": veri_dict}).encode('utf-8'),
-            headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'},
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=4) as response:
-            return True
-    except:
-        return False
+@st.cache_resource
+def sunucu_canli_havuzunu_getir():
+    return []
 
-# Sayaç Senkronizasyonu
-canli_sayac = bulut_sayac_oku()
-bugun = datetime.date.today().strftime("%Y-%m-%d")
+ortak_havuz = sunucu_canli_havuzunu_getir()
 
-if canli_sayac.get("son_gun", "") != bugun:
-    canli_sayac["gunluk_giris"] = 0
-    canli_sayac["son_gun"] = bugun
-
-if "ziyaret_onaylandi" not in st.session_state:
-    canli_sayac["toplam_giris"] = canli_sayac.get("toplam_giris", 0) + 1
-    canli_sayac["gunluk_giris"] = canli_sayac.get("gunluk_giris", 0) + 1
-    bulut_sayac_yaz(canli_sayac)
-    st.session_state["ziyaret_onaylandi"] = True
+if "cihaz_id" not in st.session_state:
+    st.session_state.cihaz_id = str(uuid.uuid4())
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -106,21 +85,7 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-# Hisseleri Güvenli Çekme Fonksiyonu (Hizalama Hatasını Engelleyen Yapı)
-def hisse_verisi_al(kod):
-    try:
-        h_detay = yf.Ticker(f"{kod}.IS").history(period="2d")
-        if not h_detay.empty:
-            anlik = float(h_detay['Close'].iloc[-1])
-            prev = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik
-            degisim = ((anlik - prev) / prev) * 100
-            yuksek = float(h_detay['High'].iloc[-1])
-            dusuk = float(h_detay['Low'].iloc[-1])
-            return anlik, degisim, yuksek, dusuk
-    except:
-        pass
-    return None
-
+# Hisseler ve Arama Motoru Listesi İçin Hafıza Ataması
 tum_hisseler = []
 
 if os.path.exists(excel_yolu):
@@ -188,12 +153,14 @@ if os.path.exists(excel_yolu):
         if len(tablo_alsat) > 0:
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 
+        # Excel'deki E sütunundaki (WEB sayfası) tüm hisseleri alıyoruz
         if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
             tum_hisseler.sort()
-    except:
-        st.error("Excel verileri okunurken bir sorun oluştu.")
+
+    except Exception as e:
+        st.error("Excel verileri okunurken teknik bir sorun oluştu.")
 else:
     st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
 
@@ -203,3 +170,32 @@ st.markdown('<div class="arama-baslik">🔍 BIST ANLIK HİSSE ARAMA MOTORU (SADE
 
 if tum_hisseler:
     aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
+    if aranan_hisse != "Seçiniz...":
+        with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
+            try:
+                h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
+                if not h_detay.empty:
+                    anlik_fiyat = float(h_detay['Close'].iloc[-1])
+                    dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
+                    gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
+                    gunun_en_yuksek = float(h_detay['High'].iloc[-1])
+                    gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
+                    
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                    col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                    col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                else:
+                    st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı.")
+            except:
+                st.error("Borsa verisi çekilirken bir hata oluştu.")
+else:
+    st.warning("Arama motoru için Excel E sütunundan hisse listesi yüklenemedi.")
+
+# --- CANLI SOHBET ODASI ---
+st.write("---")
+st.header("💬  CANLI SOHBET ODASI")
+
+if "kullanici_adi" not in st.session_state:
+    st.session_state.kullanici_adi = ""
+
