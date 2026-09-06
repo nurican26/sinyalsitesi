@@ -6,16 +6,10 @@ import os
 import time
 from streamlit_autorefresh import st_autorefresh
 
-# Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
-
-# 🔄 CANLI FİYAT VE ANIMASYON KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir
 st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
-
-# Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -25,45 +19,9 @@ st.markdown(f'''
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .yukselen-baslik {{background: linear-gradient(90deg, #2563eb 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
-    
-    /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
-    .logo-konteyner {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px 0;
-        margin-bottom: 10px;
-    }}
-    .cember-animasyon-{anim_id} {{
-        width: 120px;
-        height: 120px;
-        border: 4px solid #fff;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: transparent;
-        position: relative;
-        overflow: hidden;
-        animation: 
-            gokkusagiCember 4s linear infinite,
-            yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }}
-    .bta-yazi-{anim_id} {{
-        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 3.2rem;
-        font-weight: bold;
-        margin: 0;
-        padding: 0;
-        z-index: 2;
-        background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
-        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
-        animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    }}
-    
+    .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
+    .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite, yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}}
+    .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3)); animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;}}
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
         14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
@@ -79,29 +37,15 @@ st.markdown(f'''
 </style>
 ''', unsafe_allow_html=True)
 
-# LOGO EKRAN ÇIKTISI
-st.markdown(f'''
-<div class="logo-konteyner">
-    <div class="cember-animasyon-{anim_id}">
-        <span class="bta-yazi-{anim_id}">BTA</span>
-    </div>
-</div>
-''', unsafe_allow_html=True)
-
-# Saat Göstergesi
+st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;"> <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
-# 🔥 ARACI KURUM TARZI EN ÇOK YÜKSELEN HİSSELER SİSTEMİ
 def bst_en_cok_yukselenler():
-    ornek_havuz = [
-        "THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", 
-        "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"
-    ]
     sonuclar = []
-    for h in ornek_havuz:
+    for h in ["THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"]:
         try:
             t = yf.Ticker(f"{h}.IS")
             hist = t.history(period="2d")
@@ -111,15 +55,13 @@ def bst_en_cok_yukselenler():
                 degisim = ((canli - onceki) / onceki) * 100
                 sonuclar.append({"HİSSE 🚀": h, "FİYAT 💰": f"{canli:.2f} TL", "DEĞİŞİM 📈": degisim})
         except:
-            continue
+            pass
     if sonuclar:
-        df_yukselen = pd.DataFrame(sonuclar)
-        df_yukselen = df_yukselen.sort_values(by="DEĞİŞİM 📈", ascending=False).head(5)
+        df_yukselen = pd.DataFrame(sonuclar).sort_values(by="DEĞİŞİM 📈", ascending=False).head(5)
         df_yukselen["DEĞİŞİM 📈"] = df_yukselen["DEĞİŞİM 📈"].map(lambda x: f"%+{x:.2f}")
         return df_yukselen
     return pd.DataFrame()
 
-# Güvenli Canlı Fiyat Çekme Yardımcı Fonksiyonu
 def get_live_data(hisse_kodu, period="2d"):
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
@@ -132,10 +74,7 @@ def get_live_data(hisse_kodu, period="2d"):
 
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
-        # 📊 ARACI KURUM EKSTRE PANELİ GÖSTERİMİ
         st.markdown('<div class="yukselen-baslik">🔥 ARACI KURUM: GÜNÜN EN ÇOK YÜKSELEN HİSSELERİ (CANLI)</div>', unsafe_allow_html=True)
         yukselen_df = bst_en_cok_yukselenler()
         if not yukselen_df.empty:
@@ -144,8 +83,6 @@ if os.path.exists(excel_yolu):
             st.info("Canlı piyasa liderleri taranıyor...")
             
         st.write("---")
-        
-        # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
         
         hisse_havuzu = []
@@ -167,53 +104,57 @@ if os.path.exists(excel_yolu):
                 st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
         
         st.write("---")
-
         tablo_bta = []
         tablo_alsat = []
         sinir = min(10, len(df))
         
         for idx in range(sinir):
-            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
-
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 try:
                     puan_temiz = f"{float(puan_d):.2f}"
                 except:
                     puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
-
                 canli_fiyat = 0.0
                 hist_bta = get_live_data(hisse_a, "1d")
                 if hist_bta is not None:
                     canli_fiyat = float(hist_bta['Close'].iloc[-1])
-                
                 try:
                     maliyet = float(alim_c.replace(",", "."))
                 except:
                     maliyet = 0.0
-                
                 kz_oran_str = "-"
                 if maliyet > 0 and canli_fiyat > 0:
                     kz = ((canli_fiyat - maliyet) / maliyet) * 100
                     kz_oran_str = f"%{kz:+.2f}"
+                tablo_bta.append({"BTA PUAN 🔢": puan_temiz, "BTA HİSSE 📈": hisse_a, "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c, "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...", "KAR / ZARAR 📊": kz_oran_str})
 
-                tablo_bta.append({
-                    "BTA PUAN 🔢": puan_temiz,
-                    "BTA HİSSE 📈": hisse_a,
-                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
-                    "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...",
-                    "KAR / ZARAR 📊": kz_oran_str
-                })
-
-            # 2. ALT PANEL VERİLERİ (B Sütunu)
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            
             if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
                 as_canli_fiyat = 0.0
                 as_degisim = 0.0
                 hist_as = get_live_data(alsat_b, "2d")
-                
                 if hist_as is not None:
                     as_canli_fiyat = float(hist_as['Close'].iloc[-1])
+                    onceki_kap_as = float(hist_as['Close'].iloc[-2]) if len(hist_as) >= 2 else as_canli_fiyat
+                    as_degisim = ((as_canli_fiyat - onceki_kap_as) / onceki_kap_as) * 100
+                tablo_alsat.append({"GÜNLÜK AL SAT HİSSELERİ ⚡": alsat_b, "ANLIK VERİ CANLI 📊": f"{as_canli_fiyat:.2f} TL" if as_canli_fiyat > 0 else "Yükleniyor...", "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"})
+
+        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
+        if tablo_bta:
+            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
+        else:
+            st.info("Üst panel için veri işleniyor...")
+            
+        st.write("")
+        st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
+        if tablo_alsat:
+            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+        else:
+            st.info("Alt panel için veri işleniyor...")
+    except Exception as e:
+        st.error(f"Excel okunurken bir sorun oluştu: {e}")
+else:
+    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
