@@ -65,11 +65,13 @@ def sohbet_temizle(metin):
             temiz_metin = insens_kelime.sub(sansur, temiz_metin)
     return temiz_metin
 
+# Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Referans hatasını önlemek için dict yapıldı)
 @st.cache_resource
 def sunucu_canli_havuzunu_getir():
-    return []
+    return {"liste": []}
 
-ortak_havuz = sunucu_canli_havuzunu_getir()
+ortak_havuz_veri = sunucu_canli_havuzunu_getir()
+ortak_havuz = ortak_havuz_veri["liste"]
 
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
@@ -191,11 +193,4 @@ if tum_hisseler:
                 st.error("Borsa verisi çekilirken bir hata oluştu.")
 else:
     st.warning("Arama motoru için Excel E sütunundan hisse listesi yüklenemedi.")
-
-# --- CANLI SOHBET ODASI ---
-st.write("---")
-st.header("💬  CANLI SOHBET ODASI")
-
-if "kullanici_adi" not in st.session_state:
-    st.session_state.kullanici_adi = ""
 
