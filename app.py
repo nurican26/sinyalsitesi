@@ -13,9 +13,27 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici") 
 
 anim_id = int(time.time()) 
-st.markdown(f''' ''', unsafe_allow_html=True) 
-st.markdown(f'<p>BTA</p>', unsafe_allow_html=True) 
-st.markdown('<p>⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</p>', unsafe_allow_html=True) 
+st.markdown(f'''
+<style>
+@keyframes pulse {{
+    0% {{ transform: scale(1); opacity: 1; }}
+    50% {{ transform: scale(1.05); opacity: 0.8; }}
+    100% {{ transform: scale(1); opacity: 1; }}
+}}
+.bta-logo {{
+    font-size: 42px;
+    font-weight: bold;
+    color: #1E3A8A;
+    text-align: center;
+    font-family: 'Arial Black', Gadget, sans-serif;
+    animation: pulse 2s infinite;
+    margin-bottom: 20px;
+}}
+</style>
+''', unsafe_allow_html=True) 
+
+st.markdown('<div class="bta-logo">BTA</div>', unsafe_allow_html=True) 
+st.markdown('<p style="color:#FF0000; font-weight:bold;">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</p>', unsafe_allow_html=True) 
 
 excel_yolu = "nurican.xls.xlsm" 
 
@@ -85,7 +103,7 @@ if os.path.exists(excel_yolu):
                     "KAR / ZARAR 📊": kz_str 
                 }) 
         
-        st.markdown('<p>📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True) 
+        st.markdown('<h3>📈 BTA HİSSELERİ (ÜST PANEL)</h3>', unsafe_allow_html=True) 
         if len(tablo_bta) > 0: 
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True) 
         st.write("") 
@@ -111,13 +129,13 @@ if os.path.exists(excel_yolu):
                     "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-" 
                 }) 
         
-        st.markdown('<p>⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True) 
+        st.markdown('<h3>⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</h3>', unsafe_allow_html=True) 
         if len(tablo_alsat) > 0: 
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True) 
         st.write("---") 
         
         # --- BIST ANLIK ARAMA MOTORU --- 
-        st.markdown('<p>🔍 BIST ANLIK HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True) 
+        st.markdown('<h3>🔍 BIST ANLIK HİSSE ARAMA MOTORU</h3>', unsafe_allow_html=True) 
         if len(df.columns) >= 5: 
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist() 
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
