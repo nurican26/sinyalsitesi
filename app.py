@@ -176,12 +176,13 @@ else:
                             except:
                                 pass
                         
-                        # Anlık güncelleme için yeni mesaj listesine hemen ekle
-                        mevcut.append({
+                        # Yeni mesaj verisini hazırlıyoruz
+                        yeni_veri = {
                             "mesaj_id": str(uuid.uuid4()),
                             "cihaz_id": st.session_state.cihaz_id,
                             "isim": st.session_state.kullanici_adi, 
                             "mesaj": yeni_mesaj_metni.strip(), 
                             "zaman": datetime.datetime.now().strftime("%H:%M:%S")
-                        })
-                        if len(mevcut) > 40:
+                        }
+                        mevcut.append(yeni_veri)
+                        
