@@ -199,5 +199,3 @@ else:
                 if m.get("cihaz_id") == st.session_state.cihaz_id:
                     if st.button("❌ Sil", key=m.get("mesaj_id")):
                         g_liste = [msg for msg in sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
-                        try:
- 
