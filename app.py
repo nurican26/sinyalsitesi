@@ -3,7 +3,9 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import json
 import time
+import urllib.request
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici
@@ -52,26 +54,48 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- BULUT UYUMLU GÜVENLİ SAYAÇ SİSTEMİ ---
-@st.cache_resource
-def sunucu_sayacini_getir():
-    return {
-        "toplam_giris": 0,
-        "gunluk_giris": 0,
-        "son_gun": datetime.date.today().strftime("%Y-%m-%d")
-    }
+# --- ÜCRETSİZ İNTERNET TABANLI SAYAÇ API BAĞLANTISI (Kalıcı ve Sıfırlanmaz) ---
+SAYAC_BULUT_URL = "https://kvjson.com"
 
-sayac_verisi = sunucu_sayacini_getir()
+def bulut_sayac_oku():
+    try:
+        req = urllib.request.Request(SAYAC_BULUT_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=4) as response:
+            veri = json.loads(response.read().decode('utf-8'))
+            if isinstance(veri, dict) and "value" in veri:
+                return veri["value"]
+    except:
+        pass
+    return {"toplam_giris": 0, "gunluk_giris": 0, "son_gun": datetime.date.today().strftime("%Y-%m-%d")}
+
+def bulut_sayac_yaz(veri_dict):
+    try:
+        req = urllib.request.Request(
+            SAYAC_BULUT_URL, 
+            data=json.dumps({"value": veri_dict}).encode('utf-8'),
+            headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            return True
+    except:
+        return False
+
+# Mevcut sayaç verisini buluttan çekiyoruz
+canli_sayac = bulut_sayac_oku()
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 
-if sayac_verisi["son_gun"] != bugun:
-    sayac_verisi["gunluk_giris"] = 0
-    sayac_verisi["son_gun"] = bugun
+# Tarih değiştiyse günlük girişi sıfırla
+if canli_sayac.get("son_gun", "") != bugun:
+    canli_sayac["gunluk_giris"] = 0
+    canli_sayac["son_gun"] = bugun
 
-if "ziyaret_kaydi_tamam" not in st.session_state:
-    sayac_verisi["toplam_giris"] += 1
-    sayac_verisi["gunluk_giris"] += 1
-    st.session_state["ziyaret_kaydi_tamam"] = True
+# Kullanıcı ilk defa girdiyse veya sayfayı açtıysa sayaçları arttır ve buluta kaydet
+if "ziyaret_onaylandi" not in st.session_state:
+    canli_sayac["toplam_giris"] = canli_sayac.get("toplam_giris", 0) + 1
+    canli_sayac["gunluk_giris"] = canli_sayac.get("gunluk_giris", 0) + 1
+    bulut_sayac_yaz(canli_sayac)
+    st.session_state["ziyaret_onaylandi"] = True
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -157,7 +181,7 @@ if os.path.exists(excel_yolu):
             tum_hisseler.sort()
 
     except:
-        st.error("Excel verileri yüklenirken sistemsel bir hata oluştu.")
+        st.error("Excel verileri okunurken sistemsel bir hata oluştu.")
 else:
     st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
 
@@ -174,23 +198,3 @@ if tum_hisseler:
                 if not h_detay.empty:
                     anlik_fiyat = float(h_detay['Close'].iloc[-1])
                     dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
-                    gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
-                    gunun_en_yuksek = float(h_detay['High'].iloc[-1])
-                    gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
-                    with col2:
-                        st.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
-                    with col3:
-                        st.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
-                else:
-                    st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı.")
-            except:
-                st.error("Borsa verisi çekilirken teknik bir sorun oluştu.")
-else:
-    st.warning("Arama motoru için Excel E sütunundan hisse listesi yüklenemedi.")
-
-# --- CANLI ZİYARETÇİ İSTATİSTİKLERİ PANELİ ---
-st.write("---")
