@@ -15,7 +15,7 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Piyasa Kutuları CSS Kodları
+# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Akar Haber Bülteni CSS Kodları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -24,36 +24,32 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     
-    /* Canlı Piyasa Bilgi Kutuları CSS */
-    .piyasa-kutusu-konteyner {{
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+    /* 📺 AKAR HABER BÜLTENİ BANTI CSS */
+    .haber-banti-konteyner {{
+        background: rgba(255, 255, 255, 0.03);
+        border-top: 1px solid #ca8a04;
+        border-bottom: 1px solid #10b981;
+        overflow: hidden;
+        white-space: nowrap;
+        padding: 10px 0;
+        margin-top: 10px;
         margin-bottom: 25px;
-        justify-content: center;
     }}
-    .piyasa-kart {{
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid #ca8a04;
-        border-radius: 8px;
-        padding: 10px;
-        text-align: center;
-        flex: 1 1 160px;
-        max-width: 220px;
+    .haber-akisi {{
+        display: inline-block;
+        padding-left: 100%;
+        animation: haberKaydir 25s linear infinite;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #fff;
     }}
-    .piyasa-kart-bist {{
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid #10b981;
-        border-radius: 8px;
-        padding: 10px;
-        text-align: center;
-        flex: 1 1 160px;
-        max-width: 220px;
+    .haber-item {{
+        display: inline-block;
+        margin-right: 50px;
     }}
-    .piyasa-baslik {{ font-size: 0.85rem; color: #cbd5e1; font-weight: bold; margin-bottom: 4px; }}
-    .piyasa-deger {{ font-size: 1.25rem; color: #eab308; font-weight: bold; }}
-    .piyasa-deger-bist {{ font-size: 1.25rem; color: #10b981; font-weight: bold; }}
-
+    .altin-vurgu {{ color: #eab308; }}
+    .bist-vurgu {{ color: #10b981; }}
+    
     /* Sağ Köşedeki Yeni Uyarı Yazısı Tasarımı */
     .ytd-yazi {{
         text-align: right;
@@ -65,7 +61,7 @@ st.markdown(f'''
         padding-right: 10px;
         letter-spacing: 0.5px;
     }}
-    
+
     /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
     .logo-konteyner {{
         display: flex;
@@ -116,6 +112,7 @@ st.markdown(f'''
     }}
     @keyframes yukardanDus {{ 0% {{ transform: translateY(-150px) scale(0.5); opacity: 0; }} 70% {{ transform: translateY(8px) scale(1.03); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
     @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-110px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
+    @keyframes haberKaydir {{ 0% {{ transform: translateX(0); }} 100% {{ transform: translateX(-100%); }} }}
 </style>
 ''', unsafe_allow_html=True)
 
@@ -158,17 +155,18 @@ yr_txt = f"{p_yarim:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 tm_txt = f"{p_tam:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 bi_txt = f"{p_bist:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-piyasa_html = f'''
-<div class="piyasa-kutusu-konteyner">
-    <div class="piyasa-kart"><div class="piyasa-baslik">🔱 GRAM ALTIN</div><div class="piyasa-deger">{sg_txt} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🪙 ÇEYREK ALTIN</div><div class="piyasa-deger">{cy_txt} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🥈 YARIM ALTIN</div><div class="piyasa-deger">{yr_txt} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🥇 TAM ALTIN</div><div class="piyasa-deger">{tm_txt} TL</div></div>
-    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{bi_txt} TL</div></div>
+# 📺 LOGONUN ALTINDAN GEÇEN AKAR HABER BÜLTENİ BANTI ÇIKTISI
+st.markdown(f'''
+<div class="haber-banti-konteyner">
+    <div class="haber-akisi">
+        <span class="haber-item">🔱 <span class="altin-vurgu">GRAM ALTIN:</span> {sg_txt} TL</span>
+        <span class="haber-item">🪙 <span class="altin-vurgu">ÇEYREK ALTIN:</span> {cy_txt} TL</span>
+        <span class="haber-item">🥈 <span class="altin-vurgu">YARIM ALTIN:</span> {yr_txt} TL</span>
+        <span class="haber-item">🥇 <span class="altin-vurgu">TAM ALTIN:</span> {tm_txt} TL</span>
+        <span class="haber-item">📈 <span class="bist-vurgu">BİST 100 ENDEKS:</span> {bi_txt} TL</span>
+    </div>
 </div>
-'''
-st.markdown(piyasa_html, unsafe_allow_html=True)
-st.write("---")
+''', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -199,7 +197,7 @@ if os.path.exists(excel_yolu):
         
         st.write("---")
 
-        # ⚡ TOPLU VERİ İNDİRME ALTYAPISI
+        # ⚡ TOPLU VERİ İNDİRME ALTYAPISI (Hata veren tüm döngü içi kodları sıfırlayan emniyet kilidi)
         sinir = min(10, len(df))
         ust_kodlar = []
         alt_kodlar = []
@@ -218,3 +216,6 @@ if os.path.exists(excel_yolu):
         if tum_liste:
             try:
                 indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
+                toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
+                for k in tum_liste:
+                    is_kodu = f"{k}.IS"
