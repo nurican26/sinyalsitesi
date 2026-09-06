@@ -41,7 +41,7 @@ st.markdown(f'''
     }}
     @keyframes atesPatla-{anim_id} {{
         0%, 95%, 100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
-        97% {{ border-color: #ff5500; box-shadow: 0 0 35px 15px #ff3300, inset 0 0 25px 10px #ff7700; transform: scale(1.1); }}
+        100% {{ border-color: #ff5500; box-shadow: 0 0 35px 15px #ff3300, inset 0 0 25px 10px #ff7700; transform: scale(1.1); }}
     }}
 </style>
 ''', unsafe_allow_html=True)
