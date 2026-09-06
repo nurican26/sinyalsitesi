@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -19,7 +19,7 @@ st.markdown(f'''
     .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:20px;}}
+    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:10px; margin-bottom:20px;}}
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite;}}
     .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));}}
@@ -36,8 +36,27 @@ st.markdown(f'''
 
 st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
 
+# SPK Uyarısı üst kısma, herkesin görebileceği yere sabitlendi
+st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</div>', unsafe_allow_html=True)
+
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
+
+# Küfür ve argo kelime filtresi listesi (Buraya istediğiniz kadar kelime ekleyebilirsiniz)
+KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
+
+def sohbet_temizle(metin):
+    temiz_metin = metin
+    for kelime in KUFUR_LISTESI:
+        # Büyük/küçük harf duyarlılığını ortadan kaldırarak sansürler
+        if kelime in temiz_metin.lower():
+            # Kelimenin uzunluğu kadar yıldız koyar
+            sansur = "*" * len(kelime)
+            # Metin içindeki eşleşen kısımları değiştirir
+            import re
+            insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
+            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
+    return temiz_metin
 
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
@@ -140,6 +159,9 @@ else:
         yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
         if st.form_submit_button("Gönder 🚀"):
             if yeni_mesaj_metni.strip():
+                # Gelen mesajı filtre fonksiyonundan geçiriyoruz
+                filtrelenmis_mesaj = sohbet_temizle(yeni_mesaj_metni.strip())
+                
                 mevcut = []
                 if os.path.exists(sohbet_dosyası):
                     try:
@@ -151,7 +173,7 @@ else:
                     "mesaj_id": str(uuid.uuid4()),
                     "cihaz_id": st.session_state.cihaz_id,
                     "isim": st.session_state.kullanici_adi, 
-                    "mesaj": yeni_mesaj_metni.strip(), 
+                    "mesaj": filtrelenmis_mesaj, 
                     "zaman": datetime.datetime.now().strftime("%H:%M:%S")
                 })
                 if len(mevcut) > 40:
@@ -169,33 +191,3 @@ else:
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
                 try:
                     with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                        json.dump([], f)
-                    st.success("Sohbet odası sıfırlandı!")
-                    time.sleep(1)
-                    st.rerun()
-                except:
-                    pass
-
-    sohbet_gecmisi = []
-    if os.path.exists(sohbet_dosyası):
-        try:
-            with open(sohbet_dosyası, "r", encoding="utf-8") as f:
-                sohbet_gecmisi = json.load(f)
-        except:
-            pass
-
-    if sohbet_gecmisi:
-        for m in reversed(sohbet_gecmisi):
-            col_m, col_s = st.columns([0.85, 0.15])
-            with col_m:
-                st.markdown(f'''
-                <div class="chat-kutusu">
-                    <span class="chat-isim">@{m['isim']}</span>
-                    <span class="chat-zaman">{m['zaman']}</span>
-                    <div class="chat-mesaj">{m['mesaj']}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            with col_s:
-                if m.get("cihaz_id") == st.session_state.cihaz_id:
-                    if st.button("❌ Sil", key=m.get("mesaj_id")):
-                        g_liste = [msg for msg in sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
