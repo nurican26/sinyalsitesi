@@ -21,15 +21,10 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .arama-baslik {{background: linear-gradient(90deg, #3b82f6 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .sohbet-baslik {{background: linear-gradient(90deg, #ec4899 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:10px; margin-bottom:20px;}}
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite;}}
     .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));}}
-    .sohbet-kutusu {{background-color: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 8px; height: 300px; overflow-y: auto; margin-bottom: 10px;}}
-    .mesaj-satiri {{margin-bottom: 8px; padding: 6px; border-radius: 4px; background-color: #0f172a; border-left: 3px solid #ec4899;}}
-    .mesaj-sahibi {{color: #38bdf8 !important; font-weight: bold;}}
-    .mesaj-zamani {{color: #64748b !important; font-size: 0.8rem; margin-left: 8px;}}
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
         100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
@@ -38,25 +33,24 @@ st.markdown(f'''
 ''', unsafe_allow_html=True)
 
 st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
+
 st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
-# Kapsamlı Küfür ve Argo Filtre Listesi
-KUFUR_LISTESI = [
-    "amk", "aq", "amına", "amını", "orospu", "siktir", "sik", "piç", "pç", "sktr", "yarrak", "yarak",
-    "göt", "got", "gavat", "pezevenk", "pkk", "oç", "meme", "daşşak", "taşşak", "orostopol", "kahpe",
-    "orospu çocuğu", "sikik", "sikiş", "sokam", "sokayım", "amcık", "ibne", "puşt", "yavşak", "it",
-    "köpek", "şerefsiz", "orospu cocugu", "mal", "salak", "gerizekalı", "keriz", "embesil"
-]
+# Küfür ve argo kelime filtresi listesi
+KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
 
-def icerik_kontrol_et(metin):
-    temiz_metin = metin.lower().strip()
+def sohbet_temizle(metin):
+    temiz_metin = metin
     for kelime in KUFUR_LISTESI:
-        if kelime in temiz_metin:
-            return True
-    return False
+        if kelime in temiz_metin.lower():
+            sansur = "*" * len(kelime)
+            insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
+            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
+    return temiz_metin
 
+# Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Tüm kullanıcılar için ortaktır)
 @st.cache_resource
 def sunucu_canli_havuzunu_getir():
     return []
@@ -68,6 +62,7 @@ if "cihaz_id" not in st.session_state:
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
+# Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -77,44 +72,29 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-# HİSSE TABLOLARI ALANI (Kendi içinde tamamen sınırlandırıldı)
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        hisse_listesi = []
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            if ha and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]: hisse_listesi.append(f"{ha}.IS")
-            if hb and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]: hisse_listesi.append(f"{hb}.IS")
-        
-        canli_veriler = {}
-        if hisse_listesi:
-            try:
-                canli_veriler = yf.download(list(set(hisse_listesi)), period="2d", group_by='ticker', progress=False)
-            except:
-                pass
-        
-        # --- ÜST PANEL ---
+        # --- ÜST PANEL (BTA HİSSELERİ) ---
         tablo_bta = []
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 c_fiyat = 0.0
-                
                 try:
-                    ticker_str = f"{ha}.IS"
-                    if ticker_str in canli_veriler and not canli_veriler[ticker_str].empty:
-                        c_fiyat = float(canli_veriler[ticker_str]['Close'].iloc[-1])
+                    h_bta = yf.Ticker(f"{ha}.IS").history(period="1d")
+                    if not h_bta.empty:
+                        c_fiyat = float(h_bta['Close'].iloc[-1])
                 except:
-                    c_fiyat = 0.0
-                    
-                try: maliyet = float(alim_c.replace(",", "."))
-                except: maliyet = 0.0
+                    pass
+                try:
+                    maliyet = float(alim_c.replace(",", "."))
+                except:
+                    maliyet = 0.0
                 kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
                 
                 tablo_bta.append({
@@ -131,23 +111,21 @@ if os.path.exists(excel_yolu):
 
         st.write("")
         
-        # --- ALT PANEL ---
+        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) ---
         tablo_alsat = []
         for idx in range(min(10, len(df))):
             hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             if hb != "" and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
                 as_fiyat = 0.0
                 as_deg = 0.0
-                
                 try:
-                    ticker_str = f"{hb}.IS"
-                    if ticker_str in canli_veriler and not canli_veriler[ticker_str].empty:
-                        as_fiyat = float(canli_veriler[ticker_str]['Close'].iloc[-1])
-                        as_prev = float(canli_veriler[ticker_str]['Close'].iloc[-2]) if len(canli_veriler[ticker_str]) >= 2 else as_fiyat
+                    h_as = yf.Ticker(f"{hb}.IS").history(period="2d")
+                    if not h_as.empty:
+                        as_fiyat = float(h_as['Close'].iloc[-1])
+                        as_prev = float(h_as['Close'].iloc[-2]) if len(h_as) >= 2 else as_fiyat
                         as_deg = ((as_fiyat - as_prev) / as_prev) * 100
                 except:
-                    as_fiyat = 0.0
-                    as_deg = 0.0
+                    pass
                 
                 tablo_alsat.append({
                     "GÜNLÜK AL SAT HİSSELERİ ⚡": hb, 
@@ -161,25 +139,43 @@ if os.path.exists(excel_yolu):
 
         st.write("---")
         
-        # --- BIST ANLIK ARAMA MOTORU ---
+        # --- BIST ANLIK ARAMA MOTORU (E SÜTUNU, E2 SATIRINDAN İTİBAREN) ---
         st.markdown('<div class="arama-baslik">🔍 BIST ANLIK HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
-        if len(df.columns) >= 5:
+        
+        # Excel'deki E sütunundaki tüm benzersiz ve boş olmayan hisseleri okur
+        if len(df.columns) >= 5: # E sütunu var mı kontrolü
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
+            # Başlık satırını veya geçersiz verileri temizle
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
             tum_hisseler.sort()
             
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
+                
                 if aranan_hisse != "Seçiniz...":
-                    st.info(f"Seçilen Hisse: {aranan_hisse} - Teknik analiz verileri yüklendi.")
+                    with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
+                        try:
+                            h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
+                            if not h_detay.empty:
+                                anlik_fiyat = float(h_detay['Close'].iloc[-1])
+                                dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
+                                gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
+                                gunun_en_yuksek = float(h_detay['High'].iloc[-1])
+                                gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
+                                
+                                # Arama Sonuçlarını Kart Düzeni Şeklinde Göster
+                                col1, col2, col3 = st.columns(3)
+                                col1.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                                col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                                col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                            else:
+                                st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı. Lütfen Excel'deki kodu kontrol edin (Örn: THYAO, EREGL).")
+                        except Exception as e:
+                            st.error("Borsa verisi çekilirken bir hata oluştu.")
+            else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+        else:
+            st.error("Excel dosyasında E sütunu bulunamadı!")
+
     except Exception as e:
-        st.error(f"Excel dosyası işlenirken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası bulunamadı!")
-
-# EXCEL BLOKLARINDAN TAMAMEN BAĞIMSIZ SOHBET ODASI
-st.write("---")
-st.markdown('<div class="sohbet-baslik">💬 CANLI TOPLULUK SOHBET ODASI</div>', unsafe_allow_html=True)
-
-sohbet_html = '<div class="sohbet-kutusu">'
-for msg in ortak_havuz[-50:]:
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
