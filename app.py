@@ -52,27 +52,28 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- BULUT UYUMLU SAYAÇ SİSTEMİ ---
-# Sunucu belleğinde global bir sayaç alanı açar
-if "bta_toplam_sayac" not in st.session_state.__class__._get_environ():
-    st.session_state.__class__._get_environ()["bta_toplam_sayac"] = 0
-if "bta_gunluk_sayac" not in st.session_state.__class__._get_environ():
-    st.session_state.__class__._get_environ()["bta_gunluk_sayac"] = 0
-if "bta_son_tarih" not in st.session_state.__class__._get_environ():
-    st.session_state.__class__._get_environ()["bta_son_tarih"] = datetime.date.today().strftime("%Y-%m-%d")
+# --- BULUT UYUMLU GÜVENLİ SAYAÇ SİSTEMİ ---
+@st.cache_resource
+def sunucu_sayacini_getir():
+    return {
+        "toplam_giris": 0,
+        "gunluk_giris": 0,
+        "son_gun": datetime.date.today().strftime("%Y-%m-%d")
+    }
 
+sayac_verisi = sunucu_sayacini_getir()
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 
-# Gün değiştiyse günlük sayacı otomatik sıfırla
-if st.session_state.__class__._get_environ()["bta_son_tarih"] != bugun:
-    st.session_state.__class__._get_environ()["bta_gunluk_sayac"] = 0
-    st.session_state.__class__._get_environ()["bta_son_tarih"] = bugun
+# Gün değiştiyse günlük girişi otomatik sıfırlama kontrolü
+if sayac_verisi["son_gun"] != bugun:
+    sayac_verisi["gunluk_giris"] = 0
+    sayac_verisi["son_gun"] = bugun
 
-# Sadece yeni gelen tekil kullanıcıları saymak için kontrol
-if "ziyaretçi_bilet" not in st.session_state:
-    st.session_state.__class__._get_environ()["bta_toplam_sayac"] += 1
-    st.session_state.__class__._get_environ()["bta_gunluk_sayac"] += 1
-    st.session_state["ziyaretçi_bilet"] = True
+# Sadece yeni gelen tekil oturumları listeye dahil et
+if "ziyaret_kaydi_tamam" not in st.session_state:
+    sayac_verisi["toplam_giris"] += 1
+    sayac_verisi["gunluk_giris"] += 1
+    st.session_state["ziyaret_kaydi_tamam"] = True
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -183,3 +184,10 @@ if tum_hisseler:
                     
                     col1, col2, col3 = st.columns(3)
                     col1.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                    col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                    col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                else:
+                    st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı.")
+            except:
+                st.error("Borsa verisi çekilirken teknik bir sorun oluştu.")
+else:
