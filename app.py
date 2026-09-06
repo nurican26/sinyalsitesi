@@ -54,7 +54,7 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- ÜCRETSİZ İNTERNET TABANLI SAYAÇ API BAĞLANTISI (Kalıcı ve Sıfırlanmaz) ---
+# --- BULUT SAYAÇ API BAĞLANTISI (Asla Sıfırlanmaz) ---
 SAYAC_BULUT_URL = "https://kvjson.com"
 
 def bulut_sayac_oku():
@@ -81,16 +81,14 @@ def bulut_sayac_yaz(veri_dict):
     except:
         return False
 
-# Mevcut sayaç verisini buluttan çekiyoruz
+# Sayaç Senkronizasyonu
 canli_sayac = bulut_sayac_oku()
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 
-# Tarih değiştiyse günlük girişi sıfırla
 if canli_sayac.get("son_gun", "") != bugun:
     canli_sayac["gunluk_giris"] = 0
     canli_sayac["son_gun"] = bugun
 
-# Kullanıcı ilk defa girdiyse veya sayfayı açtıysa sayaçları arttır ve buluta kaydet
 if "ziyaret_onaylandi" not in st.session_state:
     canli_sayac["toplam_giris"] = canli_sayac.get("toplam_giris", 0) + 1
     canli_sayac["gunluk_giris"] = canli_sayac.get("gunluk_giris", 0) + 1
@@ -107,6 +105,21 @@ def formatla_tl(deger):
         return f"{tr_stil} TL"
     except:
         return str(deger)
+
+# Hisseleri Güvenli Çekme Fonksiyonu (Hizalama Hatasını Engelleyen Yapı)
+def hisse_verisi_al(kod):
+    try:
+        h_detay = yf.Ticker(f"{kod}.IS").history(period="2d")
+        if not h_detay.empty:
+            anlik = float(h_detay['Close'].iloc[-1])
+            prev = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik
+            degisim = ((anlik - prev) / prev) * 100
+            yuksek = float(h_detay['High'].iloc[-1])
+            dusuk = float(h_detay['Low'].iloc[-1])
+            return anlik, degisim, yuksek, dusuk
+    except:
+        pass
+    return None
 
 tum_hisseler = []
 
@@ -179,9 +192,8 @@ if os.path.exists(excel_yolu):
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
             tum_hisseler.sort()
-
     except:
-        st.error("Excel verileri okunurken sistemsel bir hata oluştu.")
+        st.error("Excel verileri okunurken bir sorun oluştu.")
 else:
     st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
 
@@ -191,10 +203,3 @@ st.markdown('<div class="arama-baslik">🔍 BIST ANLIK HİSSE ARAMA MOTORU (SADE
 
 if tum_hisseler:
     aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
-    if aranan_hisse != "Seçiniz...":
-        with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
-            try:
-                h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
-                if not h_detay.empty:
-                    anlik_fiyat = float(h_detay['Close'].iloc[-1])
-                    dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
