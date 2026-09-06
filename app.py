@@ -6,12 +6,15 @@ import os
 import json
 import time
 import uuid
+import re
 from streamlit_autorefresh import st_autorefresh
 
+# Sayfa Yapılandırması ve Otomatik Yenileme
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 anim_id = int(time.time())
 
+# CSS Tasarımları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -34,16 +37,29 @@ st.markdown(f'''
 </style>
 ''', unsafe_allow_html=True)
 
+# Logo Alanı
 st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
 
+# Dosya Yolları Tanımlamaları
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
+# Yasaklı Kelime Listesi (Küfür ve Argolar)
+YASAKLI_KELIMELER = ["küfür1", "argo2", "hakaret3", "lan", "salak", "aptal"]
+
+# Oturum Değişkenleri İlklendirme
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
 
+if "sohbet_uyari_sayisi" not in st.session_state:
+    st.session_state.sohbet_uyari_sayisi = 0
+
+if "kullanici_adi" not in st.session_state:
+    st.session_state.kullanici_adi = ""
+
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
+# --- 1. PANEL: EXCEL VE YFINANCE VERİ TABLOLARI ---
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -98,11 +114,10 @@ if os.path.exists(excel_yolu):
 else:
     st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
 
+
+# --- 2. PANEL: CANLI SOHBET ODASI VE FİLTRELEME SİSTEMİ ---
 st.write("---")
 st.header("💬  CANLI SOHBET ODASI")
-
-if "kullanici_adi" not in st.session_state:
-    st.session_state.kullanici_adi = ""
 
 if not st.session_state.kullanici_adi:
     with st.form("giris_formu"):
@@ -114,76 +129,55 @@ if not st.session_state.kullanici_adi:
                 st.rerun()
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
-    with st.form("mesaj_formu", clear_on_submit=True):
-        yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
-        if st.form_submit_button("Gönder 🚀"):
-            if yeni_mesaj_metni.strip():
-                mevcut = []
-                if os.path.exists(sohbet_dosyası):
-                    try:
-                        with open(sohbet_dosyası, "r", encoding="utf-8") as f:
-                            mevcut = json.load(f)
-                    except:
-                        pass
-                mevcut.append({
-                    "mesaj_id": str(uuid.uuid4()),
-                    "cihaz_id": st.session_state.cihaz_id,
-                    "isim": st.session_state.kullanici_adi, 
-                    "mesaj": yeni_mesaj_metni.strip(), 
-                    "zaman": datetime.datetime.now().strftime("%H:%M:%S")
-                })
-                if len(mevcut) > 40:
-                    mevcut = mevcut[-40:]
-                try:
-                    with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                        json.dump(mevcut, f, ensure_ascii=False, indent=4)
-                except:
-                    pass
-                st.rerun()
-
-    with st.expander("🛠️ Admin / Moderatör Paneli"):
-        admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...")
-        if admin_sifre == "3015":
-            if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
-                try:
-                    with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                        json.dump([], f)
-                    st.success("Sohbet odası sıfırlandı!")
-                    time.sleep(1)
-                    st.rerun()
-                except:
-                    pass
-
-    sohbet_gecmisi = []
-    if os.path.exists(sohbet_dosyası):
-        try:
-            with open(sohbet_dosyası, "r", encoding="utf-8") as f:
-                sohbet_gecmisi = json.load(f)
-        except:
-            pass
-
-    if sohbet_gecmisi:
-        for m in reversed(sohbet_gecmisi):
-            col_m, col_s = st.columns([0.85, 0.15])
-            with col_m:
-                st.markdown(f'''
-                <div class="chat-kutusu">
-                    <span class="chat-isim">@{m['isim']}</span>
-                    <span class="chat-zaman">{m['zaman']}</span>
-                    <div class="chat-mesaj">{m['mesaj']}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            with col_s:
-                if m.get("cihaz_id") == st.session_state.cihaz_id:
-                    if st.button("❌ Sil", key=m.get("mesaj_id")):
+    
+    # 3 İhlal Cezası Durumunda Formu Kilitle
+    if st.session_state.sohbet_uyari_sayisi >= 3:
+        st.error("🚫 **CEZA:** Topluluk kurallarını 3 kez ihlal ettiğiniz için bu oturumda mesaj göndermeniz ENGELLENMİŞTİR!")
+    else:
+        with st.form("mesaj_formu", clear_on_submit=True):
+            yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
+            if st.form_submit_button("Gönder 🚀"):
+                if yeni_mesaj_metni.strip():
+                    
+                    # Regex Tabanlı Filtreleme Algoritması
+                    mesaj_temiz_kontrol = yeni_mesaj_metni.lower()
+                    yasakli_bulundu = False
+                    
+                    for kelime in YASAKLI_KELIMELER:
+                        if re.search(r'\b' + re.escape(kelime) + r'\b', mesaj_temiz_kontrol):
+                            yasakli_bulundu = True
+                            break
+                    
+                    if yasakli_bulundu:
+                        # Uyarıyı bir artır ve durumu kaydet
+                        st.session_state.sohbet_uyari_sayisi += 1
+                        if st.session_state.sohbet_uyari_sayisi >= 3:
+                            st.session_state["sohbet_hata_mesaji"] = "❌ 3. İhlal! Kurallara uymadığınız için sohbet odasından uzaklaştırıldınız."
+                        else:
+                            st.session_state["sohbet_hata_mesaji"] = f"⚠️ Yazdığınız mesaj argo/küfür içerdiği için engellendi! (Uyarı: {st.session_state.sohbet_uyari_sayisi}/3)"
+                        st.rerun()
+                    else:
+                        # Temiz mesajı JSON'a kaydetme süreci
+                        mevcut = []
+                        if os.path.exists(sohbet_dosyası):
+                            try:
+                                with open(sohbet_dosyası, "r", encoding="utf-8") as f:
+                                    mevcut = json.load(f)
+                            except:
+                                pass
+                        mevcut.append({
+                            "mesaj_id": str(uuid.uuid4()),
+                            "cihaz_id": st.session_state.cihaz_id,
+                            "isim": st.session_state.kullanici_adi, 
+                            "mesaj": yeni_mesaj_metni.strip(), 
+                            "zaman": datetime.datetime.now().strftime("%H:%M:%S")
+                        })
+                        if len(mevcut) > 40:
+                            mevcut = mevcut[-40:]
                         try:
-                            g_liste = [msg for msg in sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
                             with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                                json.dump(g_liste, f, ensure_ascii=False, indent=4)
-                            st.rerun()
+                                json.dump(mevcut, f, ensure_ascii=False, indent=4)
                         except:
                             pass
-    else:
-        st.info("Sohbet odası şu an sessiz.")
-
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
+                        
+                        # Başarılı gönderimde hata kutusunu sıfırla
