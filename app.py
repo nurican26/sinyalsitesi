@@ -79,61 +79,68 @@ if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
             if len(df_kaynak.columns) > 22:
-                # 📌 Yeni Sütun Eşleşmeleri:
-                # A Sütunu (İndeks 0) = Hisse Kodu
-                hisse_kodu_raw = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else ""
-                
-                # R Sütunu (İndeks 17) = BTA Puanı
-                bta_puan_raw = str(df_kaynak.iloc[idx, 17]).strip() if not pd.isna(df_kaynak.iloc[idx, 17]) else "0"
-                
-                # T Sütunu (İndeks 19) = Excel Maliyet / Fiyatı
+                # Sütun Tanımlamaları
+                bta_puan_r = str(df_kaynak.iloc[idx, 17]).strip() if not pd.isna(df_kaynak.iloc[idx, 17]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
-                
-                # U ve W Sütunları (İndeks 20 ve 22) = Tetikleyici Sinyal Alanları
                 uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 
-                # Sayısal değere dönüştürme işlemi (Virgül -> Nokta temizliği)
+                # T sütunundaki maliyeti sayıya çevir
                 try: 
                     excel_maliyet = float(t_deg.replace(",", ".")) if t_deg else 0.0
                 except: 
                     excel_maliyet = 0.0
 
-                # Sinyal satırında geçerli bir hisse kodu var mı kontrolü
-                if hisse_kodu_raw and hisse_kodu_raw not in ["NAN", "NONE", "HİSSE", "KODU"]:
-                    
-                    # 🟡 AL SAT SİNYAL KONTROLÜ (U SÜTUNU)
-                    if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
-                        cfiy = hızlı_canli_fiyat_bul(hisse_kodu_raw)
-                        kz_oran = 0.0
-                        if excel_maliyet > 0 and cfiy > 0:
-                            kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+                # 🟡 1. TABLO: AL SAT SİNYALLERİ (U Sütunu / 20. İndeks)
+                if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ", "0"]:
+                    h_ara = re.findall(r'[A-Z]+', uv)
+                    if h_ara:
+                        hisse_u = str(h_ara[0]).strip()
+                        if hisse_u not in ["NAN", "NONE"]:
+                            # U sütunundaki kendi puanını ara, yoksa R sütunundakini al
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
+                            bta_puan = p_bul[0] if p_bul else bta_puan_r
+                            if not bta_puan: bta_puan = "0"
+                            
+                            cfiy = hızlı_canli_fiyat_bul(hisse_u)
+                            kz_oran = 0.0
+                            if excel_maliyet > 0 and cfiy > 0:
+                                kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+                            
+                            tablo_alsat.append({
+                                "Hisse Kodu 📈": hisse_u, 
+                                "BTA Puan": bta_puan, 
+                                "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
+                                "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
+                                "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
+                            })
                         
-                        tablo_alsat.append({
-                            "Hisse Kodu 📈": hisse_kodu_raw, 
-                            "BTA Puan": bta_puan_raw, 
-                            "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
-                            "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
-                            "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
-                        })
-                        
-                    # 🟢 BTA SİNYAL MERKEZİ KONTROLÜ (W SÜTUNU)
-                    if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
-                        cfiy = hızlı_canli_fiyat_bul(hisse_kodu_raw)
-                        kz_oran = 0.0
-                        if excel_maliyet > 0 and cfiy > 0:
-                            kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+                # 🟢 2. TABLO: BTA SİNYAL MERKEZİ (W Sütunu / 22. İndeks)
+                if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ", "0"]:
+                    h_ara = re.findall(r'[A-Z]+', wv)
+                    if h_ara:
+                        hisse_w = str(h_ara[0]).strip()
+                        if hisse_w not in ["NAN", "NONE"]:
+                            # W sütunundaki kendi puanını ara, yoksa R sütunundakini al
+                            p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
+                            bta_puan = p_bul[0] if p_bul else bta_puan_r
+                            if not bta_puan: bta_puan = "0"
+                            
+                            cfiy = hızlı_canli_fiyat_bul(hisse_w)
+                            kz_oran = 0.0
+                            if excel_maliyet > 0 and cfiy > 0:
+                                kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
 
-                        if hisse_kodu_raw not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                            st.session_state["ozel_takip_kutusu"][hisse_kodu_raw] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        
-                        tablo_al.append({
-                            "Hisse Kodu 🚀": hisse_kodu_raw, 
-                            "BTA Puan": bta_puan_raw, 
-                            "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
-                            "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
-                            "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
-                        })
+                            if hisse_w not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                                st.session_state["ozel_takip_kutusu"][hisse_w] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                            
+                            tablo_al.append({
+                                "Hisse Kodu 🚀": hisse_w, 
+                                "BTA Puan": bta_puan, 
+                                "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
+                                "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
+                                "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
+                            })
         except: pass
 
 st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
@@ -142,6 +149,3 @@ else: st.write("🔒 Aktif Al sinyali taranıyor...")
 
 st.markdown('<div class="alsat-baslik">🟡  AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
-
-st.markdown('<div class="spk-kutusu">⚠️ <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeler yatırım danışmanlığı kapsamında değildir. Sıra listeler otomatik formüllerle üretilmektedir.</div>', unsafe_allow_html=True)
