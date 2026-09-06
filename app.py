@@ -77,17 +77,16 @@ st.markdown(f'''
         font-size: 1.1rem;
     }} 
     
-    .spk-kutusu-kesin {{
-        background-color: rgba(220, 38, 38, 0.15); 
-        border: 2px solid #dc2626; 
-        padding: 12px; 
-        border-radius: 6px; 
-        color: #fca5a5 !important; 
-        font-size: 0.85rem; 
-        margin-top: 30px; 
-        margin-bottom: 20px; 
-        line-height: 1.4;
-        text-align: justify;
+    /* Sağ Köşedeki Yeni Uyarı Yazısı Tasarımı */
+    .ytd-yazi {{
+        text-align: right;
+        color: #fca5a5 !important;
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin-top: 40px;
+        margin-bottom: 20px;
+        padding-right: 10px;
+        letter-spacing: 0.5px;
     }}
     
     .logo-konteyner {{
@@ -151,33 +150,31 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# 🕒 CANLI SAAT GÖSTERGESİ (Tarih kaldırıldı, sadece saat)
+# 🕒 CANLI SAAT GÖSTERGESİ (Tarih yok)
 guncel_saat = datetime.datetime.now().strftime("%H:%M:%S")
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_saat}</div>', unsafe_allow_html=True)
 
-
 # 🟡 CANLI ALTIN VE BİST 100 MOTORU
 def canli_piyasa_verilerini_hesapla():
+    saf_gram, ceyrek, yarim, tam, bist_fiyat = 3025.00, 4950.00, 9900.00, 19800.00, 14000.00
     try:
         ons_ticker = yf.Ticker("GC=F").history(period="1d")
         usd_ticker = yf.Ticker("USDTRY=X").history(period="1d")
         bist_ticker = yf.Ticker("XU100.IS").history(period="1d")
         
-        # Varsayılan başlangıç fiyat koruması (İnternet koparsa)
-        saf_gram, bist_fiyat = 3025.00, 14000.00
-        
         if not ons_ticker.empty and not usd_ticker.empty:
             ons_fiyat = float(ons_ticker['Close'].iloc[-1])
             usd_fiyat = float(usd_ticker['Close'].iloc[-1])
             saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
+            ceyrek = saf_gram * 1.635
+            yarim = ceyrek * 2
+            tam = ceyrek * 4
             
         if not bist_ticker.empty:
             bist_fiyat = float(bist_ticker['Close'].iloc[-1])
-            
-        ceyrek = saf_gram * 1.635
-        return saf_gram, ceyrek, ceyrek * 2, ceyrek * 4, bist_fiyat
     except:
-        return 3025.00, 4950.00, 9900.00, 19800.00, 14000.00
+        pass
+    return saf_gram, ceyrek, yarim, tam, bist_fiyat
 
 p_gram, p_ceyrek, p_yarim, p_tam, p_bist = canli_piyasa_verilerini_hesapla()
 
@@ -236,12 +233,19 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                try:
+                try: 
                     puan_temiz = f"{float(puan_d):.2f}"
-                except:
+                except: 
                     puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
 
+                canli_fiyat = 0.0
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
                     hist = ticker.history(period="1d")
-                    canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
+                    if not hist.empty:
+                        canli_fiyat = float(hist['Close'].iloc[-1])
+                except:
+                    pass
+                
+                try: 
+                    maliyet = float(alim_c.replace(",", "."))
