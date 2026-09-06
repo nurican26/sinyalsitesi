@@ -12,11 +12,48 @@ st.markdown('<style>.stApp {background: #0f172a!important; padding: 0.5rem;} h1,
 
 # 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir hiçbir şeye dokunmadan kendi kendini yeniler
 st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
+# Her yenilemede animasyonu baştan oynatmak için zaman damgası
+anim_id = int(time.time())
 
-# Saat Göstergesi
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
-
+# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
+st.markdown(f'''
+   /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
+    .logo-konteyner {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 0;
+        margin-bottom: 10px;
+    }}
+    .cember-animasyon-{anim_id} {{
+        width: 120px;
+        height: 120px;
+        border: 4px solid #fff;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: transparent;
+        position: relative;
+        overflow: hidden;
+        animation: 
+            gokkusagiCember 4s linear infinite,
+            yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }}
+    .bta-yazi-{anim_id} {{
+        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
+        font-size: 3.2rem;
+        font-weight: bold;
+        margin: 0;
+        padding: 0;
+        z-index: 2;
+        background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
+        animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }}
 excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
