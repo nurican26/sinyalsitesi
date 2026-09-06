@@ -6,22 +6,18 @@ import os, re
 import time
 import streamlit.components.v1 as components
 
-# 1. Sayfa Yapılandırması ve Neon Tasarım
-st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
+# 📊 SAYFA YAPILANDIRMASI VE KOYU MATRİS TEMA
+st.set_page_config(page_title="BTA Sinyal", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #111827 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #111827 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #111827 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
-ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
-
-MESAJ_DOSYASI = "gelen_mesajlar.txt"
+ZIYARETCI_SIFRESI = "bta3015"
+YONETICI_SIFRESI = "3015"
 DURUM_DOSYASI = "site_durumu.txt"
 
-# 💾 Kalıcı Kilit Durumunu Dosyadan Okuma
 if not os.path.exists(DURUM_DOSYASI):
-    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f:
-        f.write("Açık")
+    with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
 
 with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
     mevcut_kilit = f.read().strip()
@@ -29,16 +25,12 @@ with open(DURUM_DOSYASI, "r", encoding="utf-8") as f:
 # Hafıza Kontrolleri
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
+if "ziyaret_sayaci" not in st.session_state: st.session_state["ziyaret_sayaci"] = 0
 
-for k in ["kisitli_liste", "ziyaret_sayaci"]:
-    if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
-
-# Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
 st.session_state["ziyaret_sayaci"] += 1
 
-
 # 🟢 ZİKZAKLI DOLANAN NEON YEŞİL BTA LOGO ALANI
-bta_bomba_efekti = """
+bta_zikzak_efekti = """
 <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 160px; background: transparent; overflow: hidden; margin-top: 15px; margin-bottom: 15px;">
     <canvas id="btaCanvas" width="800" height="150" style="background: transparent;"></canvas>
 </div>
@@ -51,9 +43,9 @@ let textObj = {
     x: canvas.width / 2,
     y: -30,
     targetY: canvas.height / 2 + 10,
-    speedY: 2.5,
+    speedY: 2.2, // Yavaş süzülme
     angle: 0,
-    amp: 45, 
+    amp: 55, // Zikzak genişliği
     text: "BTA",
     fadedOut: false
 };
@@ -85,7 +77,7 @@ function drawLoop() {
 
     if (!textObj.fadedOut) {
         textObj.y += textObj.speedY;
-        textObj.angle += 0.07; 
+        textObj.angle += 0.06; 
         let currentX = (canvas.width / 2) + Math.sin(textObj.angle) * textObj.amp;
 
         for(let i = 0; i < 5; i++) {
@@ -94,8 +86,8 @@ function drawLoop() {
             ctx.font = "bold 65px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
             
-            let trailX = (canvas.width / 2) + Math.sin(textObj.angle - (i * 0.2)) * textObj.amp;
-            ctx.fillText(textObj.text, trailX, textObj.y - (i * 6));
+            let trailX = (canvas.width / 2) + Math.sin(textObj.angle - (i * 0.25)) * textObj.amp;
+            ctx.fillText(textObj.text, trailX, textObj.y - (i * 5));
         }
 
         if (textObj.y >= textObj.targetY) {
@@ -117,7 +109,7 @@ function drawLoop() {
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.angle);
-                ctx.fillStyle = `rgba(50, 255, ${Math.floor(Math.random() * 100 + 100)}, ${p.alpha})`;
+                ctx.fillStyle = `rgba(50, 255, ${Math.floor(Math.random() * 100 + 150)}, ${p.alpha})`;
                 ctx.font = `bold ${p.size}px Arial`;
                 ctx.textAlign = "center";
                 ctx.fillText(p.char, 0, 0);
@@ -137,33 +129,26 @@ function drawLoop() {
 drawLoop();
 </script>
 """
-components.html(bta_bomba_efekti, height=160)
+components.html(bta_zikzak_efekti, height=160)
 
-
-# 🔐 GİRİŞ KUTUSU
+# 🔐 ERİŞİM KONTROLÜ
 st.markdown("### 🔐 Erişim Paneli")
 girilen_sifre = st.text_input("Sinyal listesini açmak veya yönetici ayarlarını yönetmek için şifrenizi giriniz:", type="password", placeholder="Şifrenizi yazıp Enter'a basın...")
 
-# 🎛️ BAĞIMSIZ YÖNETİCİ ODASI
-is_admin = False
-if girilen_sifre == YONETICI_SIFRESI:
-    is_admin = True
-
+is_admin = (girilen_sifre == YONETICI_SIFRESI)
 if is_admin:
     st.info(f"👑 **Yönetici Girişi Başarılı.** Sitenin Mevcut Durumu: **{mevcut_kilit}**")
     col_ac, col_kilitle = st.columns(2)
-    if col_ac.button("🔓 HERKESE AÇ (Şifre Sorma)"):
+    if col_ac.button("🔓 HERKESE AÇ"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Açık")
         st.rerun()
-    if col_kilitle.button("🔒 SİTEYİ KİLİTLE (Herkes Şifre Girsin)"):
+    if col_kilitle.button("🔒 SİTEYİ KİLİTLE"):
         with open(DURUM_DOSYASI, "w", encoding="utf-8") as f: f.write("Kilitli")
         st.rerun()
 
-# 🛠️ ERİŞİM KONTROL MANTIĞI
-erisim_izni = False
-if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI:
-    erisim_izni = True
-else:
+erisim_izni = (mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sifre == YONETICI_SIFRESI)
+
+if not erisim_izni:
     st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
 
 # 💥 CANLI FİYAT MOTORU
@@ -178,18 +163,21 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
             fiyat = float(data['Close'].iloc[-1])
             st.session_state["fiyat_hafizasi"][hisse_kodu] = (time.time(), fiyat)
             return fiyat
-    except: pass
+    except:
+        pass
     return 0.0
 
-# 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
+# 🟢 VERİ İŞLEME VE TABLOLAR
 if erisim_izni:
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
     excel_yolu = "nurican.xls.xlsm"
     if os.path.exists(excel_yolu):
-        try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
-        except: pass
+        try: 
+            df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
+        except: 
+            pass
 
     tablo_alsat, tablo_al = [], []
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
@@ -205,22 +193,33 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara)
+                            hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                             
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara)
+                            hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
                             tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
-            except: 
+            except:
                 pass
 
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat: 
+        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+
+    st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+    if tablo_al: 
+        st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+    else: 
+        st.write("🔒 Aktif AL sinyali taranıyor...")
