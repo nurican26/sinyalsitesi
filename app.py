@@ -10,13 +10,11 @@ from streamlit_autorefresh import st_autorefresh
 # Sayfa Yapılandırması
 st.set_page_config(page_title="BTA Borsa & Canlı Sohbet Odası", layout="wide")
 
-# 🔄 CANLI YENİLEYİCİ: Hem fiyatlar hem sohbet için sayfa her 10 saniyede bir otomatik yenilenir
+# 🔄 CANLI YENİLEYİCİ: Sayfa her 10 saniyede bir otomatik yenilenir
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
-
-# Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Chat CSS Kodları
+# Şık Tasarım CSS Kodları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -29,19 +27,10 @@ st.markdown(f'''
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite, yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}}
     .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3)); animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;}}
-    
-    /* CHAT MODÜLÜ CSS */
-    .chat-kutusu {{
-        background-color: #1e293b;
-        border-radius: 10px;
-        padding: 12px;
-        margin-bottom: 8px;
-        border-left: 5px solid #3b82f6;
-    }}
+    .chat-kutusu {{background-color: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 8px; border-left: 5px solid #3b82f6;}}
     .chat-isim {{ font-weight: bold; color: #38bdf8 !important; font-size: 0.95rem; }}
     .chat-zaman {{ color: #94a3b8 !important; font-size: 0.75rem; float: right; }}
     .chat-mesaj {{ color: #f1f5f9 !important; margin-top: 4px; font-size: 1rem; }}
-
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
         14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
@@ -59,12 +48,12 @@ st.markdown(f'''
 
 # 🌈 BTA LOGO ALANI
 st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
-st.markdown('<div style="text-align: center; color: #cbd5e1; font-weight: bold; margin-bottom: 20px;">📈 Canlı Piyasa & 💬 Ortak Sohbet Merkezi <span style="color:#10b981; font-size:0.85rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align: center; color: #cbd5e1; font-weight: bold; margin-bottom: 20px;">📈 Canlı Piyasa & 💬 Ortak Sohbet Merkezi</div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
-# --- YARDIMCI FONKSİYONLAR ---
+# --- GÜVENLİ VE HIZLI YARDIMCI FONKSİYONLAR (HATA RİSKSİZ) ---
 def bst_en_cok_yukselenler():
     sonuclar = []
     for h in ["THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"]:
@@ -100,7 +89,7 @@ def mesajlari_yukle():
             with open(sohbet_dosyası, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
-            return []
+            pass
     return []
 
 def mesaj_kaydet(isim, mesaj):
@@ -109,8 +98,11 @@ def mesaj_kaydet(isim, mesaj):
     mevcut_mesajlar.append(yeni_mesaj)
     if len(mevcut_mesajlar) > 40:
         mevcut_mesajlar = mevcut_mesajlar[-40:]
-    with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-        json.dump(mevcut_mesajlar, f, ensure_ascii=False, indent=4)
+    try:
+        with open(sohbet_dosyası, "w", encoding="utf-8") as f:
+            json.dump(mevcut_mesajlar, f, ensure_ascii=False, indent=4)
+    except:
+        pass
 
 # ==================== BÖLÜM 1: BORSA PANELİ ====================
 st.header("📊 CANLI BORSA TAKİP EKRANI")
@@ -147,25 +139,35 @@ if os.path.exists(excel_yolu):
         sinir = min(10, len(df))
         
         for idx in range(sinir):
-            # Üst Panel
+            # Üst Panel İşlemleri
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
+            
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 puan_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 canli_fiyat = 0.0
                 hist_bta = get_live_data(hisse_a, "1d")
                 if hist_bta is not None:
                     canli_fiyat = float(hist_bta['Close'].iloc[-1])
-                try: maliyet = float(alim_c.replace(",", "."))
-                except: maliyet = 0.0
-                kz_oran_str = f"%{((canli_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and canli_fiyat > 0 else "-"
+                
+                maliyet = 0.0
+                try:
+                    maliyet = float(alim_c.replace(",", "."))
+                except:
+                    pass
+                
+                kz_oran_str = "-"
+                if maliyet > 0 and canli_fiyat > 0:
+                    kz_oran_str = f"%{((canli_fiyat - maliyet) / maliyet) * 100:+.2f}"
+                
                 tablo_bta.append({"BTA PUAN 🔢": puan_temiz, "BTA HİSSE 📈": hisse_a, "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c, "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...", "KAR / ZARAR 📊": kz_oran_str})
 
-            # Alt Panel
+            # Alt Panel İşlemleri
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                as_canli_fiyat, as_degisim = 0.0, 0.0
+                as_canli_fiyat = 0.0
+                as_degisim = 0.0
                 hist_as = get_live_data(alsat_b, "2d")
                 if hist_as is not None:
                     as_canli_fiyat = float(hist_as['Close'].iloc[-1])
