@@ -148,7 +148,9 @@ st.markdown(f'<div class="time-text">🕒 Son Güncelleme: {guncel_an} <br><smal
 
 excel_yolu = "nurican.xls.xlsm"
 
-if os.path.exists(excel_yolu):
+if not os.path.exists(excel_yolu):
+    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
+else:
     try:
         # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -263,4 +265,3 @@ if os.path.exists(excel_yolu):
         st.write("")
         st.markdown('<div class="panel-title-blue">💬 BTA SOHBET VE ANALİZ ODASI</div>', unsafe_allow_html=True)
         
-        # Hafızada mesaj geçmişini tutma (Session State)
