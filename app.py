@@ -8,6 +8,7 @@ import time
 import uuid
 from streamlit_autorefresh import st_autorefresh
 
+# Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 anim_id = int(time.time())
@@ -41,7 +42,7 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
-# Yasaklı kelimeler (Küfür, argo ve istenmeyen kelimeleri buraya ekleyebilirsiniz)
+# Küfür ve argo kelime filtresi listesi (İstediğiniz kadar ekleme yapabilirsiniz)
 KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
 
 def sohbet_temizle(metin):
@@ -59,6 +60,7 @@ if "cihaz_id" not in st.session_state:
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
+# Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -150,33 +152,36 @@ if not st.session_state.kullanici_adi:
                 st.rerun()
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
+    
+    # MESAJ GÖNDERME FORMU
     with st.form("mesaj_formu", clear_on_submit=True):
         yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
-        if st.form_submit_button("Gönder 🚀"):
-            if yeni_mesaj_metni.strip():
-                filtrelenmis_mesaj = sohbet_temizle(yeni_mesaj_metni.strip())
-                mevcut = []
-                if os.path.exists(sohbet_dosyası):
-                    try:
-                        with open(sohbet_dosyası, "r", encoding="utf-8") as f:
-                            mevcut = json.load(f)
-                    except:
-                        pass
-                mevcut.append({
-                    "mesaj_id": str(uuid.uuid4()),
-                    "cihaz_id": st.session_state.cihaz_id,
-                    "isim": st.session_state.kullanici_adi, 
-                    "mesaj": filtrelenmis_mesaj, 
-                    "zaman": datetime.datetime.now().strftime("%H:%M:%S")
-                })
-                if len(mevcut) > 40:
-                    mevcut = mevcut[-40:]
+        gonderildi = st.form_submit_button("Gönder 🚀")
+        
+        if gonderildi and yeni_mesaj_metni.strip():
+            filtrelenmis_mesaj = sohbet_temizle(yeni_mesaj_metni.strip())
+            mevcut = []
+            if os.path.exists(sohbet_dosyası):
                 try:
-                    with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                        json.dump(mevcut, f, ensure_ascii=False, indent=4)
+                    with open(sohbet_dosyası, "r", encoding="utf-8") as f:
+                        mevcut = json.load(f)
                 except:
                     pass
-                st.rerun()
+            mevcut.append({
+                "mesaj_id": str(uuid.uuid4()),
+                "cihaz_id": st.session_state.cihaz_id,
+                "isim": st.session_state.kullanici_adi, 
+                "mesaj": filtrelenmis_mesaj, 
+                "zaman": datetime.datetime.now().strftime("%H:%M:%S")
+            })
+            if len(mevcut) > 40:
+                mevcut = mevcut[-40:]
+            try:
+                with open(sohbet_dosyası, "w", encoding="utf-8") as f:
+                    json.dump(mevcut, f, ensure_ascii=False, indent=4)
+            except:
+                pass
+            st.rerun()
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...")
@@ -191,11 +196,7 @@ else:
                 except:
                     pass
 
+    # MESAJLARI LISTELEME ALANI (Bileşen çakışması olmaması için konteynere alındı)
+    chat_alani = st.container()
+    
     sohbet_gecmisi = []
-    if os.path.exists(sohbet_dosyası):
-        try:
-            with open(sohbet_dosyası, "r", encoding="utf-8") as f:
-                sohbet_gecmisi = json.load(f)
-        except:
-            pass
-
