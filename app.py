@@ -8,7 +8,10 @@ from streamlit_autorefresh import st_autorefresh
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-# Şık Neon Tasarım, Yukarıdan Düşen Çember ve Soldan Yavaşça Kayarak Gelen BTA Yazısı CSS Kodları
+# 🔄 CANLI FİYAT VE ANIMASYON KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir ve animasyonlar baştan tetiklenir
+st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
+
+# Şık Neon Tasarım, Her Yenilemede Hareketlenen Gökkuşağı Çember ve Yazı CSS Kodları
 st.markdown('''
 <style>
     .stApp {background: #0f172a!important; padding: 0.5rem;} 
@@ -18,7 +21,7 @@ st.markdown('''
     .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
     .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}
     
-    /* 🟢 ANIMASYONLU FOSFORLU ÇEMBER VE KAYAN BTA LOGO ALANI */
+    /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
     .logo-konteyner {
         display: flex;
         justify-content: center;
@@ -29,62 +32,67 @@ st.markdown('''
     .cember-animasyon {
         width: 110px;
         height: 110px;
-        border: 4px solid #10b981;
+        border: 4px solid #fff;
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
         background: transparent;
         position: relative;
-        box-shadow: 0 0 15px #10b981, inset 0 0 15px #10b981; /* Fosforlu neon parlama */
-        overflow: hidden; /* Yazı kayarken çemberin dışından pürüzsüz girsin */
+        overflow: hidden;
         
-        /* Çemberin yukarıdan düşme animasyonu */
-        animation: yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        /* Gökkuşağı renk geçişi ve yukarıdan düşme animasyonu */
+        animation: 
+            gokkusagiRenk 6s linear infinite,
+            yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
     .bta-yazi {
         font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
         font-size: 2.8rem;
         font-weight: bold;
-        color: #10b981 !important;
-        text-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
         margin: 0;
         padding: 0;
         z-index: 2;
         
-        /* 🎯 YAZININ SOLDAN YAVAŞÇA KAYMA ANIMASYONU */
-        animation: soldanYavascaKay 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        /* Yazının rengi ve soldan yavaşça kayma animasyonu */
+        animation: 
+            gokkusagiYaziRenk 6s linear infinite,
+            soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
     
-    /* Çemberin düşme efekti */
-    @keyframes yukardanDus {
-        0% {
-            transform: translateY(-200px) scale(0.3);
-            opacity: 0;
-        }
-        70% {
-            transform: translateY(10px) scale(1.05);
-            opacity: 1;
-        }
-        100% {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
+    /* 🎯 Gökkuşağı Renk Animasyonları */
+    @keyframes gokkusagiRenk {
+        0% { border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }
+        17% { border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }
+        33% { border-color: #ffff00; box-shadow: 0 0 15px #ffff00, inset 0 0 15px #ffff00; }
+        50% { border-color: #00ff00; box-shadow: 0 0 15px #00ff00, inset 0 0 15px #00ff00; }
+        67% { border-color: #0000ff; box-shadow: 0 0 15px #0000ff, inset 0 0 15px #0000ff; }
+        83% { border-color: #4b0082; box-shadow: 0 0 15px #4b0082, inset 0 0 15px #4b0082; }
+        100% { border-color: #9400d3; box-shadow: 0 0 15px #9400d3, inset 0 0 15px #9400d3; }
     }
 
-    /* 🎯 Yazının soldan sağa yavaş akma efekti */
+    @keyframes gokkusagiYaziRenk {
+        0% { color: #ff0000; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
+        17% { color: #ff7f00; text-shadow: 0 0 10px rgba(255,127,0,0.5); }
+        33% { color: #ffff00; text-shadow: 0 0 10px rgba(255,255,0,0.5); }
+        50% { color: #00ff00; text-shadow: 0 0 10px rgba(0,255,0,0.5); }
+        67% { color: #0000ff; text-shadow: 0 0 10px rgba(0,0,255,0.5); }
+        83% { color: #4b0082; text-shadow: 0 0 10px rgba(75,0,130,0.5); }
+        100% { color: #9400d3; text-shadow: 0 0 10px rgba(148,0,211,0.5); }
+    }
+
+    /* Çemberin düşme efekti */
+    @keyframes yukardanDus {
+        0% { transform: translateY(-200px) scale(0.3); opacity: 0; }
+        70% { transform: translateY(10px) scale(1.05); opacity: 1; }
+        100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    /* Yazının soldan sağa yavaş akma efekti */
     @keyframes soldanYavascaKay {
-        0% {
-            transform: translateX(-120px);
-            opacity: 0;
-        }
-        40% {
-            opacity: 0.3;
-        }
-        100% {
-            transform: translateX(0);
-            opacity: 1;
-        }
+        0% { transform: translateX(-120px); opacity: 0; }
+        40% { opacity: 0.3; }
+        100% { transform: translateX(0); opacity: 1; }
     }
 </style>
 <link href="https://googleapis.com" rel="stylesheet">
@@ -98,9 +106,6 @@ st.markdown('''
     </div>
 </div>
 ''', unsafe_allow_html=True)
-
-# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir
-st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 
 # Saat Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
