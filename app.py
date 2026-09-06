@@ -19,7 +19,7 @@ anim_id = int(time.time())
 # 🔥 FIREBASE REALTIME DATABASE AYARLARI
 FIREBASE_URL = "https://SİZİN_PROJE_://firebaseio.com"
 
-# --- GÜVENLİ VE GİRİNTİSİZ YARDIMCI FONKSİYONLAR (Hataları Önlemek İçin) ---
+# --- GÜVENLİ YARDIMCI FONKSİYONLAR ---
 def güvenli_mesaj_çek(url):
     üye_mesajları = [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
     try:
@@ -179,7 +179,7 @@ if os.path.exists(excel_yolu):
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
 
-            # Üst Panel İşlemleri (Tamamen düz mantık, iç içe try-except yok)
+            # Üst Panel İşlemleri
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 p_temiz = puan_temizle(puan_d)
                 c_fiyat = yfinance_fiyat_al(hisse_a)
@@ -189,3 +189,4 @@ if os.path.exists(excel_yolu):
                 tablo_bta.append({
                     "BTA PUAN 🔢": p_temiz, 
                     "BTA HİSSE 📈": hisse_a,
+                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
