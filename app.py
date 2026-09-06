@@ -94,9 +94,8 @@ st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px
 
 excel_yolu = "nurican.xls.xlsm"
 
-# 🔥 YENİ EKLENTİ: ARACI KURUM TARZI EN ÇOK YÜKSELEN HİSSELER SİSTEMİ
+# 🔥 ARACI KURUM TARZI EN ÇOK YÜKSELEN HİSSELER SİSTEMİ
 def bst_en_cok_yukselenler():
-    # Hızlı tarama için lokomotif büyük BİST hisse havuzu
     ornek_havuz = [
         "THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", 
         "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"
@@ -189,8 +188,10 @@ if os.path.exists(excel_yolu):
                 except:
                     canli_fiyat = 0.0
                 
-                try: maliyet = float(alim_c.replace(",", "."))
-                except: maliyet = 0.0
+                try:
+                    maliyet = float(alim_c.replace(",", "."))
+                except:
+                    maliyet = 0.0
                 
                 kz_oran_str = "-"
                 if maliyet > 0 and canli_fiyat > 0:
