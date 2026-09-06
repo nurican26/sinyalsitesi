@@ -9,23 +9,26 @@ from streamlit_autorefresh import st_autorefresh
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-# 🔄 CANLI FİYAT VE ANIMASYON KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir
+# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir
 st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 
-# Her yenilemede animasyonu baştan oynatmak için zaman damgası
+# Her yenilemede logoyu baştan oynatmak için benzersiz zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Piyasa Kutuları CSS Kodları
+# 📱 TELEFON VE MOBİL UYUMLU ŞIK NEON TASARIM CSS KODLARI
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
     h1,h2,h3,h4,h5,h6,p,span,label {{color: #fff!important;}} 
-    .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
-    .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
     
-    /* 📊 Canlı Piyasa Bilgi Kutuları CSS */
+    .stDataFrame {{
+        width: 100% !important; 
+        border: 1px solid #10b981 !important; 
+        border-radius: 8px;
+        overflow-x: auto !important;
+    }} 
+    
+    /* Canlı Piyasa Bilgi Kutuları CSS */
     .piyasa-kutusu-konteyner {{
         display: flex;
         flex-wrap: wrap;
@@ -54,6 +57,25 @@ st.markdown(f'''
     .piyasa-baslik {{ font-size: 0.85rem; color: #cbd5e1; font-weight: bold; margin-bottom: 4px; }}
     .piyasa-deger {{ font-size: 1.25rem; color: #eab308; font-weight: bold; }}
     .piyasa-deger-bist {{ font-size: 1.25rem; color: #10b981; font-weight: bold; }}
+
+    .alsat-baslik {{
+        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px; 
+        color:#fff;
+        font-size: 1.1rem;
+    }} 
+    .al-baslik {{
+        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px; 
+        color:#fff;
+        font-size: 1.1rem;
+    }} 
     
     /* Sağ Köşedeki Yeni Uyarı Yazısı Tasarımı */
     .ytd-yazi {{
@@ -76,8 +98,8 @@ st.markdown(f'''
         margin-bottom: 10px;
     }}
     .cember-animasyon-{anim_id} {{
-        width: 120px;
-        height: 120px;
+        width: 100px; 
+        height: 100px;
         border: 4px solid #fff;
         border-radius: 50%;
         display: flex;
@@ -92,7 +114,7 @@ st.markdown(f'''
     }}
     .bta-yazi-{anim_id} {{
         font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 3.2rem;
+        font-size: 2.6rem;
         font-weight: bold;
         margin: 0;
         padding: 0;
@@ -101,22 +123,22 @@ st.markdown(f'''
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         display: inline-block;
-        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
+        filter: drop-shadow(0px 2px 6px rgba(255,255,255,0.3));
         animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }}
     
     @keyframes gokkusagiCember {{
-        0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
-        14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
-        28% {{ border-color: #ffff00; box-shadow: 0 0 15px #ffff00, inset 0 0 15px #ffff00; }}
-        42% {{ border-color: #00ff00; box-shadow: 0 0 15px #00ff00, inset 0 0 15px #00ff00; }}
-        56% {{ border-color: #00ffff; box-shadow: 0 0 15px #00ffff, inset 0 0 15px #00ffff; }}
-        70% {{ border-color: #0000ff; box-shadow: 0 0 15px #0000ff, inset 0 0 15px #0000ff; }}
-        84% {{ border-color: #8b00ff; box-shadow: 0 0 15px #8b00ff, inset 0 0 15px #8b00ff; }}
-        100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
+        0% {{ border-color: #ff0000; box-shadow: 0 0 12px #ff0000, inset 0 0 12px #ff0000; }}
+        14% {{ border-color: #ff7f00; box-shadow: 0 0 12px #ff7f00, inset 0 0 12px #ff7f00; }}
+        28% {{ border-color: #ffff00; box-shadow: 0 0 12px #ffff00, inset 0 0 12px #ffff00; }}
+        42% {{ border-color: #00ff00; box-shadow: 0 0 12px #00ff00, inset 0 0 12px #00ff00; }}
+        56% {{ border-color: #00ffff; box-shadow: 0 0 12px #00ffff, inset 0 0 12px #00ffff; }}
+        70% {{ border-color: #0000ff; box-shadow: 0 0 12px #0000ff, inset 0 0 12px #0000ff; }}
+        84% {{ border-color: #8b00ff; box-shadow: 0 0 12px #8b00ff, inset 0 0 12px #8b00ff; }}
+        100% {{ border-color: #ff0000; box-shadow: 0 0 12px #ff0000, inset 0 0 12px #ff0000; }}
     }}
-    @keyframes yukardanDus {{ 0% {{ transform: translateY(-200px) scale(0.3); opacity: 0; }} 70% {{ transform: translateY(10px) scale(1.05); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
-    @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-140px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
+    @keyframes yukardanDus {{ 0% {{ transform: translateY(-150px) scale(0.5); opacity: 0; }} 70% {{ transform: translateY(8px) scale(1.03); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
+    @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-110px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
 </style>
 ''', unsafe_allow_html=True)
 
@@ -129,7 +151,7 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# 🕒 CANLI SAAT GÖSTERGESİ (Tarih tamamen kaldırıldı)
+# 🕒 CANLI SAAT GÖSTERGESİ (Tarih yok)
 guncel_saat = datetime.datetime.now().strftime("%H:%M:%S")
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_saat}</div>', unsafe_allow_html=True)
 
@@ -191,14 +213,31 @@ if os.path.exists(excel_yolu):
                     arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
                     st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
                 else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+                    st.warning("Veri çekilemedi.")
             except:
                 st.error("Veri motoru bağlantı hatası.")
-                
-    except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
+        
+        st.write("---")
 
-# 🎯 SAĞ ALT KÖŞEYE YERLEŞTİRİLEN SADE UYARI YAZISI
-st.markdown('<div class="ytd-yazi">⚠️ KESİNLİKLE YATIRIM TAVSİYESİ DEĞİLDİR.</div>', unsafe_allow_html=True)
+        # ⚡ 6 HİSSEYİ KASMADAN TOPLAYAN VE İNDİREN KESİN ALTYAPI
+        sinir = min(10, len(df))
+        ust_kodlar = []
+        alt_kodlar = []
+        
+        for idx in range(sinir):
+            h_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            h_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            if h_a and h_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                ust_kodlar.append(h_a)
+            if h_b and h_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                alt_kodlar.append(h_b)
+                
+        tum_liste = list(set(ust_kodlar + alt_kodlar))
+        havuz = {}
+        
+        if tum_liste:
+            try:
+                indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
+                toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
+                for k in tum_liste:
+                    is_kodu = f"{k}.IS"
