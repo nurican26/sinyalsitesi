@@ -189,10 +189,9 @@ else:
         if canli_mesajlar:
             for m in reversed(canli_mesajlar):
                 with st.chat_message("user"):
-                    col_m, col_s = st.columns([0.85, 0.15])
-                    with col_m:
-                        st.markdown(f"**@{m['isim']}**  *({m['zaman']})*")
-                        st.write(m['mesaj'])
-                    with col_s:
-                        if m.get("cihaz_id") == st.session_state.cihaz_id:
-                            if st.button("❌ Sil", key=m.get("mesaj_id")):
+                    st.markdown(f"**@{m['isim']}**  *({m['zaman']})*")
+                    st.write(m['mesaj'])
+                    # Hata çıkaran sütun yapısı yerine buton doğrudan alt kısma nizami girintiyle eklendi
+                    if m.get("cihaz_id") == st.session_state.cihaz_id:
+                        if st.button("❌ Sil", key=m.get("mesaj_id")):
+                            g_liste = [msg for msg in canli_mesajlar if msg.get("mesaj_id") != m.get("mesaj_id")]
