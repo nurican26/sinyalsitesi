@@ -4,8 +4,6 @@ import datetime
 import yfinance as yf
 import os
 import time
-import uuid
-import re
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici
@@ -21,6 +19,7 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .arama-baslik {{background: linear-gradient(90deg, #3b82f6 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
+    .sayac-baslik {{background: linear-gradient(90deg, #ec4899 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}}
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:10px; margin-bottom:20px;}}
     
     /* BTA LOGO - Yukarıdan Düşüş ve 30 Saniyede Bir Alev Efekti */
@@ -53,28 +52,29 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# Küfür ve argo kelime filtresi listesi
-KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
-
-def sohbet_temizle(metin):
-    temiz_metin = metin
-    for kelime in KUFUR_LISTESI:
-        if kelime in temiz_metin.lower():
-            sansur = "*" * len(kelime)
-            insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
-            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
-    return temiz_metin
-
-# Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Referans hatasını önlemek için dict yapıldı)
+# --- KÜRESEL ZİYARETÇİ SAYAÇ SİSTEMİ ---
 @st.cache_resource
-def sunucu_canli_havuzunu_getir():
-    return {"liste": []}
+def sunucu_sayacini_getir():
+    return {
+        "toplam_giris": 0,
+        "gunluk_giris": 0,
+        "son_gun": datetime.date.today().strftime("%Y-%m-%d")
+    }
 
-ortak_havuz_veri = sunucu_canli_havuzunu_getir()
-ortak_havuz = ortak_havuz_veri["liste"]
+sayac_verisi = sunucu_sayacini_getir()
 
-if "cihaz_id" not in st.session_state:
-    st.session_state.cihaz_id = str(uuid.uuid4())
+# Gün değiştiyse günlük girişi otomatik sıfırla
+bugun = datetime.date.today().strftime("%Y-%m-%d")
+if sayac_verisi["son_gun"] != bugun:
+    sayac_verisi["gunluk_giris"] = 0
+    sayac_verisi["son_gun"] = bugun
+
+# Bu kullanıcının bu oturumdaki ilk girişi mi kontrol et (F5 atınca sayaç sürekli şişmesin diye)
+if "ziyaret_kayitli" not in st.session_state:
+    sayac_verisi["toplam_giris"] += 1
+    sayac_verisi["gunluk_giris"] += 1
+    st.session_state["ziyaret_kayitli"] = True
+
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -192,5 +192,3 @@ if tum_hisseler:
             except:
                 st.error("Borsa verisi çekilirken bir hata oluştu.")
 else:
-    st.warning("Arama motoru için Excel E sütunundan hisse listesi yüklenemedi.")
-
