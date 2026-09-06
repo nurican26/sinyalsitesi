@@ -28,6 +28,36 @@ st.markdown(f'''
         overflow-x: auto !important;
     }} 
     
+    /* Canlı Piyasa Bilgi Kutuları CSS */
+    .piyasa-kutusu-konteyner {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+        justify-content: center;
+    }}
+    .piyasa-kart {{
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #ca8a04;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        flex: 1 1 180px;
+        max-width: 220px;
+    }}
+    .piyasa-kart-bist {{
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #10b981;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        flex: 1 1 180px;
+        max-width: 220px;
+    }}
+    .piyasa-baslik {{ font-size: 0.85rem; color: #cbd5e1; font-weight: bold; margin-bottom: 4px; }}
+    .piyasa-deger {{ font-size: 1.25rem; color: #eab308; font-weight: bold; }}
+    .piyasa-deger-bist {{ font-size: 1.25rem; color: #10b981; font-weight: bold; }}
+
     .alsat-baslik {{
         background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
         padding: 8px; 
@@ -121,9 +151,47 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Saat Göstergesi
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_an} <br><span style="color:#10b981; font-size:0.85rem;">(10 saniyede bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+# 🕒 CANLI SAAT GÖSTERGESİ (Tarih kaldırıldı, sadece saat)
+guncel_saat = datetime.datetime.now().strftime("%H:%M:%S")
+st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_saat}</div>', unsafe_allow_html=True)
+
+
+# 🟡 CANLI ALTIN VE BİST 100 MOTORU
+def canli_piyasa_verilerini_hesapla():
+    try:
+        ons_ticker = yf.Ticker("GC=F").history(period="1d")
+        usd_ticker = yf.Ticker("USDTRY=X").history(period="1d")
+        bist_ticker = yf.Ticker("XU100.IS").history(period="1d")
+        
+        # Varsayılan başlangıç fiyat koruması (İnternet koparsa)
+        saf_gram, bist_fiyat = 3025.00, 14000.00
+        
+        if not ons_ticker.empty and not usd_ticker.empty:
+            ons_fiyat = float(ons_ticker['Close'].iloc[-1])
+            usd_fiyat = float(usd_ticker['Close'].iloc[-1])
+            saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
+            
+        if not bist_ticker.empty:
+            bist_fiyat = float(bist_ticker['Close'].iloc[-1])
+            
+        ceyrek = saf_gram * 1.635
+        return saf_gram, ceyrek, ceyrek * 2, ceyrek * 4, bist_fiyat
+    except:
+        return 3025.00, 4950.00, 9900.00, 19800.00, 14000.00
+
+p_gram, p_ceyrek, p_yarim, p_tam, p_bist = canli_piyasa_verilerini_hesapla()
+
+# 📊 Canlı Piyasa Panel Çıktısı
+st.markdown(f'''
+<div class="piyasa-kutusu-konteyner">
+    <div class="piyasa-kart"><div class="piyasa-baslik">🔱 GRAM ALTIN</div><div class="piyasa-deger">{p_gram:,.2f} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🪙 ÇEYREK ALTIN</div><div class="piyasa-deger">{p_ceyrek:,.2f} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🥈 YARIM ALTIN</div><div class="piyasa-deger">{p_yarim:,.2f} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🥇 TAM ALTIN</div><div class="piyasa-deger">{p_tam:,.2f} TL</div></div>
+    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{p_bist:,.2f}</div></div>
+</div>
+''', unsafe_allow_html=True)
+st.write("---")
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -177,67 +245,3 @@ if os.path.exists(excel_yolu):
                     ticker = yf.Ticker(f"{hisse_a}.IS")
                     hist = ticker.history(period="1d")
                     canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
-                except:
-                    canli_fiyat = 0.0
-                
-                try:
-                    maliyet = float(alim_c.replace(",", "."))
-                except:
-                    maliyet = 0.0
-                
-                kz_oran_str = "-"
-                if maliyet > 0 and canli_fiyat > 0:
-                    kz = ((canli_fiyat - maliyet) / maliyet) * 100
-                    kz_oran_str = f"%{kz:+.2f}"
-
-                tablo_bta.append({
-                    "BTA PUAN 🔢": puan_temiz,
-                    "BTA HİSSE 📈": hisse_a,
-                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
-                    "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...",
-                    "KAR / ZARAR 📊": kz_oran_str
-                })
-
-            # 2. ALT PANEL VERİLERİ (B Sütunu)
-            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            
-            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                try:
-                    ticker_as = yf.Ticker(f"{alsat_b}.IS")
-                    hist_as = ticker_as.history(period="2d")
-                    as_canli_fiyat = float(hist_as['Close'].iloc[-1]) if not hist_as.empty else 0.0
-                    
-                    if len(hist_as) >= 2:
-                        onceki_kapanis = float(hist_as['Close'].iloc[-2])
-                        as_degisim = ((as_canli_fiyat - onceki_kapanis) / onceki_kapanis) * 100
-                    else:
-                        as_degisim = 0.0
-                except:
-                    as_canli_fiyat, as_degisim = 0.0, 0.0
-
-                tablo_alsat.append({
-                    "GÜNLÜK AL SAT HİSSELERİ ⚡": alsat_b,
-                    "ANLIK VERİ CANLI 📊": f"{as_canli_fiyat:.2f} TL" if as_canli_fiyat > 0 else "Yükleniyor...",
-                    "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"
-                })
-
-        # EKRANA BASMA İŞLEMLERİ
-        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
-        if tablo_bta:
-            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
-        else:
-            st.info("Üst panel verisi işleniyor...")
-
-        st.write("")
-
-        st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
-        if tablo_alsat:
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else:
-            st.info("Alt panel verisi işleniyor...")
-
-    except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası bulunamadı!")
-
