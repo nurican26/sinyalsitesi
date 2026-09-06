@@ -42,7 +42,7 @@ sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
 
-st.header("📊 BTA ALGORİTMİK HİİSE ")
+st.header("📊 BTA ALGORİTMİK HİSSE ")
 
 if os.path.exists(excel_yolu):
     try:
