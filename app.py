@@ -44,6 +44,18 @@ if "cihaz_id" not in st.session_state:
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
+# Finansal sayıları Türkiye formatına (Binlik nokta, Ondalık virgül) çeviren fonksiyon
+def formatla_tl(deger):
+    try:
+        f_deger = float(deger)
+        # Önce İngiliz formatında binlik ayraç ekler (Örn: 3,625.00)
+        ingiliz_stil = f"{f_deger:,.2f}"
+        # İngiliz formatındaki virgül ve noktaları yer değiştirir -> 3.625,00
+        tr_stil = ingiliz_stil.replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"{tr_stil} TL"
+    except:
+        return str(deger)
+
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -66,7 +78,14 @@ if os.path.exists(excel_yolu):
                 except:
                     maliyet = 0.0
                 kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
-                tablo_bta.append({"BTA PUAN 🔢": p_temiz, "BTA HİSSE 📈": ha, "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c, "GÜNCEL FİYAT 💥": f"{c_fiyat:.2f} TL" if c_fiyat > 0 else "Yükleniyor...", "KAR / ZARAR 📊": kz_str})
+                
+                tablo_bta.append({
+                    "BTA PUAN 🔢": p_temiz, 
+                    "BTA HİSSE 📈": ha, 
+                    "BTA ALIM 📥": formatla_tl(maliyet) if maliyet > 0 else alim_c, 
+                    "GÜNCEL FİYAT 💥": formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor...", 
+                    "KAR / ZARAR 📊": kz_str
+                })
         
         st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
         if len(tablo_bta) > 0:
@@ -87,7 +106,12 @@ if os.path.exists(excel_yolu):
                         as_deg = ((as_fiyat - as_prev) / as_prev) * 100
                 except:
                     pass
-                tablo_alsat.append({"GÜNLÜK AL SAT HİSSELERİ ⚡": hb, "ANLIK VERİ CANLI 📊": f"{as_fiyat:.2f} TL" if as_fiyat > 0 else "Yükleniyor...", "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-"})
+                
+                tablo_alsat.append({
+                    "GÜNLÜK AL SAT HİSSELERİ ⚡": hb, 
+                    "ANLIK VERİ CANLI 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...", 
+                    "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-"
+                })
         
         st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
         if len(tablo_alsat) > 0:
@@ -176,14 +200,3 @@ else:
             with col_s:
                 if m.get("cihaz_id") == st.session_state.cihaz_id:
                     if st.button("❌ Sil", key=m.get("mesaj_id")):
-                        try:
-                            g_liste = [msg for msg in sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
-                            with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                                json.dump(g_liste, f, ensure_ascii=False, indent=4)
-                            st.rerun()
-                        except:
-                            pass
-    else:
-        st.info("Sohbet odası şu an sessiz.")
-
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
