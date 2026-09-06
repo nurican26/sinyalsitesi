@@ -150,7 +150,7 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# 🕒 CANLI SAAT GÖSTERGESİ (Tarih yok)
+# 🕒 CANLI SAAT GÖSTERGESİ
 guncel_saat = datetime.datetime.now().strftime("%H:%M:%S")
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_saat}</div>', unsafe_allow_html=True)
 
@@ -158,20 +158,20 @@ st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px
 def canli_piyasa_verilerini_hesapla():
     saf_gram, ceyrek, yarim, tam, bist_fiyat = 3025.00, 4950.00, 9900.00, 19800.00, 14000.00
     try:
-        ons_ticker = yf.Ticker("GC=F").history(period="1d")
-        usd_ticker = yf.Ticker("USDTRY=X").history(period="1d")
-        bist_ticker = yf.Ticker("XU100.IS").history(period="1d")
+        ons_data = yf.download("GC=F USDTRY=X XU100.IS", period="2d", progress=False, group_by="ticker")
         
-        if not ons_ticker.empty and not usd_ticker.empty:
-            ons_fiyat = float(ons_ticker['Close'].iloc[-1])
-            usd_fiyat = float(usd_ticker['Close'].iloc[-1])
+        # Ons & Dolar kontrolü
+        if "GC=F" in ons_data and "USDTRY=X" in ons_data:
+            ons_fiyat = float(ons_data["GC=F"]["Close"].dropna().iloc[-1])
+            usd_fiyat = float(ons_data["USDTRY=X"]["Close"].dropna().iloc[-1])
             saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
             ceyrek = saf_gram * 1.635
             yarim = ceyrek * 2
             tam = ceyrek * 4
             
-        if not bist_ticker.empty:
-            bist_fiyat = float(bist_ticker['Close'].iloc[-1])
+        # BIST kontrolü
+        if "XU100.IS" in ons_data:
+            bist_fiyat = float(ons_data["XU100.IS"]["Close"].dropna().iloc[-1])
     except:
         pass
     return saf_gram, ceyrek, yarim, tam, bist_fiyat
@@ -181,11 +181,11 @@ p_gram, p_ceyrek, p_yarim, p_tam, p_bist = canli_piyasa_verilerini_hesapla()
 # 📊 Canlı Piyasa Panel Çıktısı
 st.markdown(f'''
 <div class="piyasa-kutusu-konteyner">
-    <div class="piyasa-kart"><div class="piyasa-baslik">🔱 GRAM ALTIN</div><div class="piyasa-deger">{{p_gram:,.2f}} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🪙 ÇEYREK ALTIN</div><div class="piyasa-deger">{{p_ceyrek:,.2f}} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🥈 YARIM ALTIN</div><div class="piyasa-deger">{{p_yarim:,.2f}} TL</div></div>
-    <div class="piyasa-kart"><div class="piyasa-baslik">🥇 TAM ALTIN</div><div class="piyasa-deger">{{p_tam:,.2f}} TL</div></div>
-    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{{p_bist:,.2f}}</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🔱 GRAM ALTIN</div><div class="piyasa-deger">{p_gram:,.2f} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🪙 ÇEYREK ALTIN</div><div class="piyasa-deger">{p_ceyrek:,.2f} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🥈 YARIM ALTIN</div><div class="piyasa-deger">{p_yarim:,.2f} TL</div></div>
+    <div class="piyasa-kart"><div class="piyasa-baslik">🥇 TAM ALTIN</div><div class="piyasa-deger">{p_tam:,.2f} TL</div></div>
+    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{p_bist:,.2f}</div></div>
 </div>
 '''.format(p_gram=p_gram, p_ceyrek=p_ceyrek, p_yarim=p_yarim, p_tam=p_tam, p_bist=p_bist), unsafe_allow_html=True)
 st.write("---")
@@ -208,13 +208,12 @@ if os.path.exists(excel_yolu):
         
         if secilen_hisse != "Seçiniz...":
             try:
-                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
-                hist_ara = ticker_ara.history(period="2d")
+                hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
                 if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+                    arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
+                    onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
                     arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    st.success(f"📈 **{{secilen_hisse}}**: **{{arama_canli_fiyat:.2f}} TL** | **%{{arama_degisim:+.2f}}**".format(secilen_hisse=secilen_hisse, arama_canli_fiyat=arama_canli_fiyat, arama_degisim=arama_degisim))
+                    st.success(f"📈 **{secilen_hisse}**: **{arama_canli_fiyat:.2f} TL** | **%{arama_degisim:+.2f}**")
                 else:
                     st.warning("Veri çekilemedi.")
             except:
@@ -222,24 +221,24 @@ if os.path.exists(excel_yolu):
         
         st.write("---")
 
-        tablo_bta = []
-        tablo_alsat = []
+        # ⚡ TOPLU VERİ ÇEKME ALTYAPISI (Hata Veren Döngü Blokları Yerine)
         sinir = min(10, len(df))
+        ust_panel_kodlar = []
+        alt_panel_kodlar = []
         
+        # Önce listedeki tüm hisse kodlarını topluyoruz
         for idx in range(sinir):
-            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-
+            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                # Puanı biçimlendir
-                puan_temiz = ""
-                if pd.notna(puan_d):
-                    if isinstance(puan_d, (int, float)):
-                        puan_temiz = f"{float(puan_d):.2f}"
-                    else:
-                        puan_temiz = str(puan_d).strip()
-
-                # Canlı Fiyat Çekimi
-                canli_fiyat = 0.0
+                ust_panel_kodlar.append(hisse_a)
+            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                alt_panel_kodlar.append(alsat_b)
+                
+        tum_kodlar_listesi = list(set(ust_panel_kodlar + alt_panel_kodlar))
+        canli_fiyat_havuzu = {}
+        
+        # Tüm hisselerin canlı kapanış verilerini TEK SEFERDE internetten toplu indiriyoruz
+        if tum_kodlar_listesi:
+            try:
