@@ -49,12 +49,15 @@ def sohbet_temizle(metin):
             temiz_metin = insens_kelime.sub(sansur, temiz_metin)
     return temiz_metin
 
+# Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Tüm kullanıcılar için ortaktır)
+@st.cache_resource
+def sunucu_canli_havuzunu_getir():
+    return []
+
+ortak_havuz = sunucu_canli_havuzunu_getir()
+
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
-
-# Sunucu genelinde tüm kullanıcılara açık ortak canlı bellek alanı
-if "ortak_canli_havuz" not in st.session_state.__class__._get_environ():
-    st.session_state.__class__._get_environ()["ortak_canli_havuz"] = []
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -156,16 +159,16 @@ else:
         metin = st.session_state.yeni_mesaj_kutusu.strip()
         if metin:
             filtrelenmis_mesaj = sohbet_temizle(metin)
-            havuz = st.session_state.__class__._get_environ()["ortak_canli_havuz"]
-            havuz.append({
+            ortak_havuz.append({
                 "mesaj_id": str(uuid.uuid4()),
                 "cihaz_id": st.session_state.cihaz_id,
                 "isim": st.session_state.kullanici_adi, 
                 "mesaj": filtrelenmis_mesaj, 
                 "zaman": datetime.datetime.now().strftime("%H:%M:%S")
             })
-            if len(havuz) > 40:
-                st.session_state.__class__._get_environ()["ortak_canli_havuz"] = havuz[-40:]
+            if len(ortak_havuz) > 40:
+                # Referansı bozmadan ilk elemanı siler
+                ortak_havuz.pop(0)
             st.session_state.yeni_mesaj_kutusu = "" # Giriş alanını sıfırla
 
     st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_kesin, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
@@ -175,7 +178,7 @@ else:
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...", key="admin_sifre_key")
         if admin_sifre == "3015":
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
-                st.session_state.__class__._get_environ()["ortak_canli_havuz"] = []
+                ortak_havuz.clear()
                 st.success("Sohbet odası sıfırlandı!")
                 time.sleep(1)
                 st.rerun()
@@ -183,15 +186,15 @@ else:
     st.write("")
     chat_alani = st.container()
     
-    canli_mesajlar = st.session_state.__class__._get_environ()["ortak_canli_havuz"]
-    
     with chat_alani:
-        if canli_mesajlar:
-            for m in reversed(canli_mesajlar):
+        if ortak_havuz:
+            for m in reversed(ortak_havuz):
                 with st.chat_message("user"):
                     st.markdown(f"**@{m['isim']}**  *({m['zaman']})*")
                     st.write(m['mesaj'])
-                    # Hata çıkaran sütun yapısı yerine buton doğrudan alt kısma nizami girintiyle eklendi
                     if m.get("cihaz_id") == st.session_state.cihaz_id:
                         if st.button("❌ Sil", key=m.get("mesaj_id")):
-                            g_liste = [msg for msg in canli_mesajlar if msg.get("mesaj_id") != m.get("mesaj_id")]
+                            ortak_havuz.remove(m)
+                            st.rerun()
+        else:
+            st.info("Sohbet odası şu an sessiz.")
