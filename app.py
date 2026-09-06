@@ -77,7 +77,7 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-# HİSSE TABLOLARI ALANI
+# HİSSE TABLOLARI ALANI (Kendi içinde tamamen sınırlandırıldı)
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -177,11 +177,9 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel dosyası bulunamadı!")
 
+# EXCEL BLOKLARINDAN TAMAMEN BAĞIMSIZ SOHBET ODASI
 st.write("---")
-
-# --- CANLI SOHBET ODASI ALANI ---
 st.markdown('<div class="sohbet-baslik">💬 CANLI TOPLULUK SOHBET ODASI</div>', unsafe_allow_html=True)
 
 sohbet_html = '<div class="sohbet-kutusu">'
 for msg in ortak_havuz[-50:]:
-    sohbet_html += '<div class="mesaj-satiri">'
