@@ -247,5 +247,5 @@ if os.path.exists(excel_yolu):
                 except:
                     pass
                 
+                maliyet = 0.0
                 try: 
-                    maliyet = float(alim_c.replace(",", "."))
