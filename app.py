@@ -150,7 +150,7 @@ if os.path.exists(excel_yolu):
     except Exception as e: 
         st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.") 
 
-# --- SİTE EN ALTI SOHBET ODASI ENTEGRASYONU --- 
+# --- SİTE EN ALTI SOHBET ODASI ENTEGRASYONU (HIZALAMA HATASI DÜZELTİLDİ) --- 
 st.markdown("---") 
 st.subheader("💬 Topluluk Sohbet Odası") 
 
