@@ -87,9 +87,9 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Saat Göstergesi
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+# 🕒 CANLI SAAT GÖSTERGESİ (Tarih tamamen silindi, sadece saat ve otomatik yenileme yazısı kalacak)
+guncel_saat = datetime.datetime.now().strftime("%H:%M:%S")
+st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align: center;">🕒 Canlı Saat: {guncel_saat} <span style="color:#10b981; font-size:0.9rem;">(10 saniyede bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -171,7 +171,7 @@ if os.path.exists(excel_yolu):
             # 2. ALT PANEL VERİLERİ (B Sütunu)
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             
-            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE", "BTA"]:
                 try:
                     ticker_as = yf.Ticker(f"{alsat_b}.IS")
                     hist_as = ticker_as.history(period="2d")
@@ -207,7 +207,3 @@ if os.path.exists(excel_yolu):
             st.info("Alt panel için veri işleniyor...")
 
     except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
-
