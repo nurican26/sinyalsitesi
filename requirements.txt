@@ -1,10 +1,4 @@
-
-streamlit
-pandas
-yfinance
-openpyxl
-pyxlsb
-xlrd
-requests
-lxml
 streamlit-autorefresh
+openpyxl
+yfinance
+pandas
