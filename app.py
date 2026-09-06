@@ -130,14 +130,12 @@ if erisim_izni:
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
     else: st.write("🔒 Aktif AL sinyali taranıyor...")
 
-    # 📬 WHATSAPP TARZI ANLIK MESAJ KUTUSU (YAZILDIĞI AN GELİR)
+    # 📬 WHATSAPP TARZI ANLIK MESAJ KUTUSU
     st.markdown("### 💬 Canlı Sohbet Odası")
     
-    # Kullanıcı Rumuz Alanı
     default_ad = "Yönetici" if is_admin else "Ziyaretçi"
     rumuz = st.text_input("Rumuzunuz:", value=default_ad)
     
-    # Geçmiş Mesajları WhatsApp Balonları Şeklinde Okuma
     if os.path.exists(MESAJ_DOSYASI):
         with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
             mesajlar = f.readlines()
@@ -149,3 +147,5 @@ if erisim_izni:
                 if match:
                     zaman, user_name, metin = match.groups()
                     if user_name.upper() == "YÖNETİCİ":
+                        st.markdown(f'<div class="wa-balon-sag"><div class="wa-baslik">👑 {user_name}</div><div>{metin}</div><div class="wa-saat">{zaman}</div></div>', unsafe_allow_html=True)
+                    else:
