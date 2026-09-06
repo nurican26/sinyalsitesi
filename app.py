@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -45,6 +45,31 @@ st.header("📊 CANLI BORSA TAKİP EKRANI")
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        
+        # 🔍 CANLI FİYAT ARAMA MOTORU SİSTEMİ
+        st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
+        hisse_havuzu = []
+        if len(df.columns) >= 5:
+            e_sut = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
+            hisse_havuzu = sorted(list(set([h for h in e_sut if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]])))
+        
+        secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
+        
+        if secilen_hisse != "Seçiniz...":
+            try:
+                t_ara = yf.Ticker(f"{secilen_hisse}.IS")
+                h_ara = t_ara.history(period="2d")
+                if not h_ara.empty:
+                    arama_canli_fiyat = float(h_ara['Close'].iloc[-1])
+                    onceki_kap = float(h_ara['Close'].iloc[-2]) if len(h_ara) >= 2 else arama_canli_fiyat
+                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
+                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
+                else:
+                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+            except:
+                st.error("Veri motoru bağlantı hatası.")
+        
+        st.write("---")
         
         # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
         tablo_bta = []
@@ -154,13 +179,3 @@ else:
     if sohbet_gecmisi:
         for m in reversed(sohbet_gecmisi):
             st.markdown(f'''
-            <div class="chat-kutusu">
-                <span class="chat-isim">@{m['isim']}</span>
-                <span class="chat-zaman">{m['zaman']}</span>
-                <div class="chat-mesaj">{m['mesaj']}</div>
-            </div>
-            ''', unsafe_allow_html=True)
-    else:
-        st.info("Sohbet odası şu an sessiz.")
-
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
