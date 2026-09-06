@@ -8,11 +8,11 @@ import time
 # 1. Sayfa Yapılandırması ve Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .takip-baslik {background: linear-gradient(90deg, #3b82f6 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; margin-top: 20px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 25px; margin-bottom: 35px; width: 100%;} .bta-logo {font-family: "Brush Script MT", "Comic Sans MS", cursive, sans-serif !important; font-weight: bold; font-size: 5rem; padding: 10px 50px; background: transparent; background-image: linear-gradient(45deg, #ff007f, #ff00ff, #8b00ff, #0000ff, #00ffff, #00ff00, #ffff00, #ff7f00, #ff0000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(0, 255, 255, 0.4), 4px 4px 10px rgba(0, 0, 0, 0.8); display: inline-block; text-align: center; letter-spacing: 5px;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} /* WhatsApp Sohbet Stilleri */ .wa-konteyner {background: #0b141a; border-radius: 12px; padding: 15px; max-height: 400px; overflow-y: auto; border: 1px solid #202c33; margin-bottom: 15px;} .wa-mesaj-sol {background: #202c33; border-radius: 0px 8px 8px 8px; padding: 8px 12px; margin: 8px 0; max-width: 75%; width: fit-content; color: #e9edef !important;} .wa-mesaj-sag {background: #005c4b; border-radius: 8px 0px 8px 8px; padding: 8px 12px; margin: 8px 0 8px auto; max-width: 75%; width: fit-content; color: #e9edef !important;} .wa-isim {font-size: 0.8rem; font-weight: bold; color: #00a884 !important; margin-bottom: 2px;} .wa-zaman {font-size: 0.65rem; color: #8696a0 !important; text-align: right; margin-top: 4px;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 25px; margin-bottom: 35px; width: 100%;} .bta-logo {font-family: "Brush Script MT", "Comic Sans MS", cursive, sans-serif !important; font-weight: bold; font-size: 5rem; padding: 10px 50px; background: transparent; background-image: linear-gradient(45deg, #ff007f, #ff00ff, #8b00ff, #0000ff, #00ffff, #00ff00, #ffff00, #ff7f00, #ff0000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(0, 255, 255, 0.4), 4px 4px 10px rgba(0, 0, 0, 0.8); display: inline-block; text-align: center; letter-spacing: 5px;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} /* WhatsApp Sohbet Stilleri */ .wa-konteyner {background: #0b141a; border-radius: 12px; padding: 15px; max-height: 380px; overflow-y: auto; border: 1px solid #202c33; margin-bottom: 10px; display: flex; flex-direction: column;} .wa-mesaj-sol {background: #202c33; border-radius: 0px 8px 8px 8px; padding: 8px 12px; margin: 5px 0; max-width: 75%; width: fit-content; align-self: flex-start; color: #e9edef !important;} .wa-mesaj-sag {background: #005c4b; border-radius: 8px 0px 8px 8px; padding: 8px 12px; margin: 5px 0 5px auto; max-width: 75%; width: fit-content; align-self: flex-end; color: #e9edef !important;} .wa-isim {font-size: 0.8rem; font-weight: bold; color: #00a884 !important; margin-bottom: 2px;} .wa-zaman {font-size: 0.65rem; color: #8696a0 !important; text-align: right; margin-top: 4px;}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
-YONETICI_SIFRESI = "3015"             # Kilitleyip açma (Yönetici) yetkisi
+YONETICI_SIFRESI = "3015"     # Kilitleyip açma (Yönetici) yetkisi
 
 MESAJ_DOSYASI = "gelen_mesajlar.txt"
 DURUM_DOSYASI = "site_durumu.txt"
@@ -32,7 +32,6 @@ if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] 
 for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
-# Giriş sayısı artırımı
 st.session_state["ziyaret_sayaci"] += 1
 
 # BTA LOGO ALANI
@@ -64,7 +63,7 @@ if mevcut_kilit == "Açık" or girilen_sifre == ZIYARETCI_SIFRESI or girilen_sif
 else:
     st.warning("⚠️ Bu içeriği görebilmek için geçerli bir erişim şifresi girmeniz gerekmektedir.")
 
-# 💥 CANLI FİYAT VE GÜNLÜK DEĞİŞİM MOTORU
+# 💥 CANLI FİYAT VE DEĞİŞİM MOTORU
 def hızlı_canli_fiyat_bul(hisse_kodu):
     if hisse_kodu in st.session_state["fiyat_hafizasi"]:
         saved_time, saved_price, saved_change = st.session_state["fiyat_hafizasi"][hisse_kodu]
@@ -106,7 +105,7 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara[0])  # Liste hatası düzeltildi
+                            hisse = str(h_ara[0])
                             cfiy, cdeg = hızlı_canli_fiyat_bul(hisse)
                             tablo_alsat.append({
                                 "Hisse Kodu 📈": hisse, 
@@ -117,7 +116,7 @@ if erisim_izni:
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara[0])  # Liste hatası düzeltildi
+                            hisse = str(h_ara[0])
                             cfiy, cdeg = hızlı_canli_fiyat_bul(hisse)
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
@@ -136,15 +135,20 @@ if erisim_izni:
     if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
     else: st.write("🔒 Aktif AL sinyali taranıyor...")
 
-    # 🔵 2. BLOK: ÖZEL TAKİP KUTUSU VE ANLIK PERFORMANS HESAPLAMA
-    st.markdown('<div class="takip-baslik">🔵 ANLIK SINYAL PERFORMANS TAKİBİ</div>', unsafe_allow_html=True)
-    if st.session_state["ozel_takip_kutusu"]:
-        tablo_takip = []
-        for hisse, bilgi in list(st.session_state["ozel_takip_kutusu"].items()):
-            guncel_fiyat, _ = hızlı_canli_fiyat_bul(hisse)
-            if guncel_fiyat > 0:
-                degisim = ((guncel_fiyat - bilgi["kayit_fiyati"]) / bilgi["kayit_fiyati"]) * 100
-                tablo_takip.append({
-                    "Hisse 📌": hisse,
-                    "Sinyal Giriş Fiyatı": f"{bilgi['kayit_fiyati']:.2f} TL",
-                    "Anlık Canlı Fiyat": f"{guncel_fiyat:.2f} TL",
+    # 📬 2. BLOK: WHATSAPP TARZI ANLIK SOHBET PANELİ
+    st.markdown("### 💬 BTA Canlı Sohbet Odası")
+    
+    # Sohbet Kutusu Görünümü
+    if os.path.exists(MESAJ_DOSYASI):
+        with open(MESAJ_DOSYASI, "r", encoding="utf-8") as f:
+            mesajlar = f.readlines()
+        
+        if mesajlar:
+            st.markdown('<div class="wa-konteyner">', unsafe_allow_html=True)
+            for msg in mesajlar:
+                match = re.match(r'\[(.*?)\] (.*?): (.*)', msg.strip())
+                if match:
+                    zaman, user_name, metin = match.groups()
+                    if user_name.upper() == "YÖNETİCİ" or user_name == "👑 Yönetici":
+                        st.markdown(f'<div class="wa-mesaj-sag"><div class="wa-isim">👑 Yönetici</div><div>{metin}</div><div class="wa-zaman">{zaman}</div></div>', unsafe_allow_html=True)
+                    else:
