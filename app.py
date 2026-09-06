@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os, re
+import os
 import time
 
-# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
+# 1. Sayfa Yapılandırması ve Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
 st.markdown('<link href="https://googleapis.com" rel="stylesheet">', unsafe_allow_html=True)
@@ -71,9 +71,7 @@ st.write("---")
 df_kaynak = None
 excel_yolu = "nurican.xls.xlsm"
 if os.path.exists(excel_yolu):
-    try: 
-        # BTA isimli çalışma sayfasını okumak üzere güncellendi
-        df_kaynak = pd.read_excel(excel_yolu, sheet_name="BTA", header=None, engine="openpyxl")
+    try: df_kaynak = pd.read_excel(excel_yolu, sheet_name="WEB", header=None, engine="openpyxl")
     except:
         try: df_kaynak = pd.read_excel(excel_yolu, header=None, engine="openpyxl")
         except: pass
@@ -81,76 +79,85 @@ if os.path.exists(excel_yolu):
 tablo_alsat, tablo_al = [], []
 
 if df_kaynak is not None:
-    # 🧠 PYTHON İÇİ DÜŞEYARA (VLOOKUP) HAFIZA MOTORU
-    puan_sozlugu = {}
-    maliyet_sozlugu = {}
+    # 🧠 PYTHON İÇİ DÜŞEYARA REHBER MOTORU
+    rehber_puan = {}
+    rehber_maliyet = {}
     
-    # Adım 1: Tüm Excel tablosunu tarayıp anahtar bilgileri sözlüğe alıyoruz
-    for r_idx in range(len(df_kaynak)):
+    # Adım 1: E sütunundaki ana listeyi tarayıp fiyat ve puanları hafızaya alıyoruz
+    for r_idx in range(1, len(df_kaynak)):
         try:
-            h_kod = str(df_kaynak.iloc[r_idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[r_idx, 0]) else ""
-            if h_kod and h_kod not in ["NAN", "NONE", "HİSSE KODU", "HİSSE"]:
-                # R Sütunu (17. İndeks) -> Puan Değeri
-                puan_val = str(df_kaynak.iloc[r_idx, 17]).strip() if not pd.isna(df_kaynak.iloc[r_idx, 17]) else "0"
-                # T Sütunu (19. İndeks) -> Maliyet Değeri
-                maliyet_val = str(df_kaynak.iloc[r_idx, 19]).strip() if not pd.isna(df_kaynak.iloc[r_idx, 19]) else ""
+            if len(df_kaynak.columns) >= 5:
+                # E Sütunu (4. İndeks) = Tüm Hisse Listesi
+                ana_hisse = str(df_kaynak.iloc[r_idx, 4]).strip().upper() if not pd.isna(df_kaynak.iloc[r_idx, 4]) else ""
                 
-                try: maliyet_float = float(maliyet_val.replace(",", ".")) if maliyet_val else 0.0
-                except: maliyet_float = 0.0
-                
-                puan_sozlugu[h_kod] = puan_val
-                maliyet_sozlugu[h_kod] = maliyet_float
+                if ana_hisse and ana_hisse not in ["NAN", "NONE", "HİSSE"]:
+                    # C Sütunu (2. İndeks) = Alım Fiyatı
+                    maliyet_str = str(df_kaynak.iloc[r_idx, 2]).strip() if not pd.isna(df_kaynak.iloc[r_idx, 2]) else ""
+                    # D Sütunu (3. İndeks) = BTA Puanı
+                    puan_str = str(df_kaynak.iloc[r_idx, 3]).strip() if not pd.isna(df_kaynak.iloc[r_idx, 3]) else "0"
+                    
+                    try: m_float = float(maliyet_str.replace(",", ".")) if maliyet_str else 0.0
+                    except: m_float = 0.0
+                    
+                    rehber_puan[ana_hisse] = puan_str
+                    rehber_maliyet[ana_hisse] = m_float
         except: pass
 
-    # Adım 2: Sinyalleri tarayıp hafızadaki düşeyara verileriyle eşleştiriyoruz
-    for idx in range(2, len(df_kaynak)):
+    # Adım 2: A ve B sütunundaki sinyalleri rehberdeki doğru fiyatlarla eşleştiriyoruz
+    for idx in range(1, len(df_kaynak)):
         try:
-            if len(df_kaynak.columns) > 22:
-                uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
-                wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
+            # A Sütunu (0. İndeks) = BTA HİSSE TA
+            hisse_a = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else "0"
+            # B Sütunu (1. İndeks) = BTA AL SAT
+            hisse_b = str(df_kaynak.iloc[idx, 1]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 1]) else "0"
+            
+            # 🟢 1. TABLO: BTA SİNYAL MERKEZİ (A Sütunu)
+            if hisse_a and hisse_a not in ["NAN", "NONE", "0", "0.0"]:
+                # Hafızadan Düşeyara Yapılıyor
+                gercek_puan = rehber_puan.get(hisse_a, "0")
+                excel_maliyet = rehber_maliyet.get(hisse_a, 0.0)
+                
+                cfiy = hızlı_canli_fiyat_bul(hisse_a)
+                kz_oran = 0.0
+                if excel_maliyet > 0 and cfiy > 0:
+                    kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+                
+                if hisse_a not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                    st.session_state["ozel_takip_kutusu"][hisse_a] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                    
+                tablo_al.append({
+                    "Hisse Kodu 🚀": hisse_a, 
+                    "BTA Puan": gercek_puan, 
+                    "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
+                    "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
+                    "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
+                })
+                    
+            # 🟡 2. TABLO: AL SAT SİNYALLERİ (B Sütunu)
+            if hisse_b and hisse_b not in ["NAN", "NONE", "0", "0.0"]:
+                # Hafızadan Düşeyara Yapılıyor
+                gercek_puan = rehber_puan.get(hisse_b, "0")
+                excel_maliyet = rehber_maliyet.get(hisse_b, 0.0)
+                
+                cfiy = hızlı_canli_fiyat_bul(hisse_b)
+                kz_oran = 0.0
+                if excel_maliyet > 0 and cfiy > 0:
+                    kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+                
+                tablo_alsat.append({
+                    "Hisse Kodu 📈": hisse_b, 
+                    "BTA Puan": gercek_puan, 
+                    "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
+                    "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
+                    "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
+                })
+        except: pass
 
-                # 🟡 1. TABLO: AL SAT SİNYALLERİ (U Sütunu)
-                if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ", "0"]:
-                    h_ara = re.findall(r'[A-Z]+', uv)
-                    if h_ara:
-                        hisse_u = str(h_ara[0]).strip()
-                        if hisse_u not in ["NAN", "NONE"]:
-                            # Python Düşeyara Devrede: Sözlükten hisseye ait gerçek puan ve maliyeti çek
-                            gercek_puan = puan_sozlugu.get(hisse_u, "0")
-                            excel_maliyet = maliyet_sozlugu.get(hisse_u, 0.0)
-                            
-                            cfiy = hızlı_canli_fiyat_bul(hisse_u)
-                            kz_oran = 0.0
-                            if excel_maliyet > 0 and cfiy > 0:
-                                kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
-                            
-                            tablo_alsat.append({
-                                "Hisse Kodu 📈": hisse_u, 
-                                "BTA Puan": gercek_puan, 
-                                "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
-                                "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
-                                "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
-                            })
-                        
-                # 🟢 2. TABLO: BTA SİNYAL MERKEZİ (W Sütunu)
-                if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ", "0"]:
-                    h_ara = re.findall(r'[A-Z]+', wv)
-                    if h_ara:
-                        hisse_w = str(h_ara[0]).strip()
-                        if hisse_w not in ["NAN", "NONE"]:
-                            # Python Düşeyara Devrede: Sözlükten hisseye ait gerçek puan ve maliyeti çek
-                            gercek_puan = puan_sozlugu.get(hisse_w, "0")
-                            excel_maliyet = maliyet_sozlugu.get(hisse_w, 0.0)
-                            
-                            cfiy = hızlı_canli_fiyat_bul(hisse_w)
-                            kz_oran = 0.0
-                            if excel_maliyet > 0 and cfiy > 0:
-                                kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+st.markdown('<div class="al-baslik">🟢 BTA SİNYAL MERKEZİ</div>', unsafe_allow_html=True)
+if tablo_al: st.dataframe(pd.DataFrame(tablo_al), use_container_width=True, hide_index=True)
+else: st.write("🔒 Aktif Al sinyali taranıyor...")
 
-                            if hisse_w not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                                st.session_state["ozel_takip_kutusu"][hisse_w] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                            
-                            tablo_al.append({
-                                "Hisse Kodu 🚀": hisse_w, 
-                                "BTA Puan": gercek_puan, 
-                                "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
+st.markdown('<div class="alsat-baslik">🟡  AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+
