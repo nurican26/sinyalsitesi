@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import json
 import time
 import uuid
 from streamlit_autorefresh import st_autorefresh
@@ -40,7 +39,6 @@ st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}
 st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
-sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
 # Küfür ve argo kelime filtresi listesi
 KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
@@ -52,11 +50,15 @@ def sohbet_temizle(metin):
             sansur = "*" * len(kelime)
             import re
             insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
-            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
-    return temiz_metin
+            metin = insens_kelime.sub(sansur, metin)
+    return metin
 
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
+
+# Global mesaj hafızasını başlatma
+if "global_sohbet_gecmisi" not in st.session_state:
+    st.session_state.global_sohbet_gecmisi = []
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -153,47 +155,42 @@ if not st.session_state.kullanici_adi:
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
     
-    # MESAJ GÖNDERME TETİKLEYİCİSİ (Hızlı ve kilitsiz yapı)
-    def mesaj_gonder():
-        metin = st.session_state.yeni_mesaj_girdisi.strip()
+    # Yeni ve Kesintisiz Mesaj Gönderme Fonksiyonu
+    def mesaj_gonder_yeni():
+        metin = st.session_state.yeni_mesaj_kutusu.strip()
         if metin:
             filtrelenmis_mesaj = sohbet_temizle(metin)
-            mevcut = []
-            if os.path.exists(sohbet_dosyası):
-                try:
-                    with open(sohbet_dosyası, "r", encoding="utf-8") as f:
-                        mevcut = json.load(f)
-                except:
-                    pass
-            mevcut.append({
+            st.session_state.global_sohbet_gecmisi.append({
                 "mesaj_id": str(uuid.uuid4()),
                 "cihaz_id": st.session_state.cihaz_id,
                 "isim": st.session_state.kullanici_adi, 
                 "mesaj": filtrelenmis_mesaj, 
                 "zaman": datetime.datetime.now().strftime("%H:%M:%S")
             })
-            if len(mevcut) > 40:
-                mevcut = mevcut[-40:]
-            try:
-                with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                    json.dump(mevcut, f, ensure_ascii=False, indent=4)
-            except:
-                pass
-            st.session_state.yeni_mesaj_girdisi = "" # Kutuyu temizle
+            if len(st.session_state.global_sohbet_gecmisi) > 40:
+                st.session_state.global_sohbet_gecmisi = st.session_state.global_sohbet_gecmisi[-40:]
+            st.session_state.yeni_mesaj_kutusu = "" # Kutuyu boşalt
 
-    # Giriş kutusu (Enter'a basıldığında veya butona tıklandığında anında gönderir)
-    st.text_input("Mesajınızı yazın ve Enter'a basın...", key="yeni_mesaj_girdisi", on_change=mesaj_gonder, placeholder="Buraya yazın...")
-    st.button("Gönder 🚀", on_click=mesaj_gonder)
+    st.text_input("Mesajınızı yazın ve Enter'a basın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_yeni, placeholder="Buraya yazın...")
+    st.button("Gönder 🚀", on_click=mesaj_gonder_yeni)
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...", key="admin_sifre_key")
         if admin_sifre == "3015":
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
-                try:
-                    with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                        json.dump([], f)
-                    st.success("Sohbet odası sıfırlandı!")
-                    time.sleep(1)
-                    st.rerun()
-                except:
-                    pass
+                st.session_state.global_sohbet_gecmisi = []
+                st.success("Sohbet odası sıfırlandı!")
+                time.sleep(1)
+                st.rerun()
+
+    chat_alani = st.container()
+    
+    with chat_alani:
+        if st.session_state.global_sohbet_gecmisi:
+            for m in reversed(st.session_state.global_sohbet_gecmisi):
+                col_m, col_s = st.columns([0.85, 0.15])
+                with col_m:
+                    st.markdown(f'''
+                    <div class="chat-kutusu">
+                        <span class="chat-isim">@{m['isim']}</span>
+                        <span class="chat-zaman">{m['zaman']}</span>
