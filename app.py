@@ -23,7 +23,6 @@ st.markdown(f'''
     .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
     
     /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
     .logo-konteyner {{
@@ -87,7 +86,7 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# 🕒 CANLI SAAT GÖSTERGESİ (Tarih tamamen silindi, sadece saat ve otomatik yenileme yazısı kalacak)
+# 🕒 CANLI SAAT GÖSTERGESİ (Sadece saat ve otomatik yenileme metni)
 guncel_saat = datetime.datetime.now().strftime("%H:%M:%S")
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align: center;">🕒 Canlı Saat: {guncel_saat} <span style="color:#10b981; font-size:0.9rem;">(10 saniyede bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
@@ -95,100 +94,106 @@ excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
+        # 🔍 CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
-        
-        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz
         hisse_havuzu = []
         if len(df.columns) >= 5:
             e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
             hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-            hisse_havuzu = sorted(list(set(hisse_havuzu))) # Benzersiz yap ve sırala
+            hisse_havuzu = sorted(list(set(hisse_havuzu)))
         
-        # Kullanıcıya E sütunundan gelen temiz listeyi seçenek olarak sunuyoruz
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
             try:
-                # Sadece seçilen hisse için internete gidilir (Kasma yapmaz)
-                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
-                hist_ara = ticker_ara.history(period="2d")
+                hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
                 if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+                    arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
+                    onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
                     arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    
-                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
-                else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: {arama_canli_fiyat:.2f} TL | Günlük Değişim: %{arama_degisim:+.2f}")
             except:
-                st.error("Veri motoru bağlantı hatası.")
+                st.error("Arama motoru bağlantı hatası.")
         
         st.write("---")
 
-        tablo_bta = []
-        tablo_alsat = []
+        # ⚡ HAS GÜVENLİ VE HIZLI TOPLU VERİ İNDİRME ADIMI
         sinir = min(10, len(df))
+        ust_kodlar, alt_kodlar = [], []
         
         for idx in range(sinir):
-            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
+            h_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            h_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            if h_a and h_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                ust_kodlar.append(h_a)
+            if h_b and h_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                alt_kodlar.append(h_b)
+                
+        tum_liste = list(set(ust_kodlar + alt_kodlar))
+        canli_havuz = {}
+        
+        if tum_liste:
+            try:
+                indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
+                toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
+                for k in tum_liste:
+                    is_kodu = f"{k}.IS"
+                    if is_kodu in toplu_data:
+                        sub_df = toplu_data[is_kodu].dropna()
+                        if not sub_df.empty:
+                            s_f = float(sub_df["Close"].iloc[-1])
+                            o_f = float(sub_df["Close"].iloc[-2]) if len(sub_df) >= 2 else s_f
+                            canli_havuz[k] = {"son": s_f, "onceki": o_f}
+            except:
+                pass
+
+        tablo_bta = []
+        tablo_alsat = []
+        
+        # Verileri tablolara hatasız ve hızlıca dağıtma
+        for idx in range(sinir):
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                try:
-                    puan_temiz = f"{float(puan_d):.2f}"
-                except:
-                    puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
-
-                try:
-                    ticker = yf.Ticker(f"{hisse_a}.IS")
-                    hist = ticker.history(period="1d")
-                    canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
-                except:
-                    canli_fiyat = 0.0
-                
-                try: maliyet = float(alim_c.replace(",", "."))
-                except: maliyet = 0.0
+                puan_temiz = f"{float(puan_d):.2f}" if pd.notna(puan_d) and isinstance(puan_d, (int, float)) else str(puan_d).strip() if pd.notna(puan_d) else ""
+                canli_fiyat = canli_havuz.get(hisse_a, {}).get("son", 0.0)
                 
                 kz_oran_str = "-"
-                if maliyet > 0 and canli_fiyat > 0:
-                    kz = ((canli_fiyat - maliyet) / maliyet) * 100
+                maliyet_num = 0.0
+                if alim_c and alim_c != "-":
+                    try:
+                        maliyet_num = float(str(alim_c).replace(",", "."))
+                    except:
+                        pass
+                
+                if maliyet_num > 0 and canli_fiyat > 0:
+                    kz = ((canli_fiyat - maliyet_num) / maliyet_num) * 100
                     kz_oran_str = f"%{kz:+.2f}"
 
                 tablo_bta.append({
                     "BTA PUAN 🔢": puan_temiz,
                     "BTA HİSSE 📈": hisse_a,
-                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
+                    "BTA ALIM 📥": alim_c if alim_c else "-",
                     "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...",
                     "KAR / ZARAR 📊": kz_oran_str
                 })
 
-            # 2. ALT PANEL VERİLERİ (B Sütunu)
-            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            
-            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE", "BTA"]:
-                try:
-                    ticker_as = yf.Ticker(f"{alsat_b}.IS")
-                    hist_as = ticker_as.history(period="2d")
-                    as_canli_fiyat = float(hist_as['Close'].iloc[-1]) if not hist_as.empty else 0.0
-                    
-                    if len(hist_as) >= 2:
-                        onceki_kapanis = float(hist_as['Close'].iloc[-2])
-                        as_degisim = ((as_canli_fiyat - onceki_kapanis) / onceki_kapanis) * 100
-                    else:
-                        as_degisim = 0.0
-                except:
-                    as_canli_fiyat, as_degisim = 0.0, 0.0
+            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                as_canli = canli_havuz.get(alsat_b, {}).get("son", 0.0)
+                as_onceki = canli_havuz.get(alsat_b, {}).get("onceki", 0.0)
+                as_degisim = 0.0
+                if as_canli > 0 and as_onceki > 0:
+                    as_degisim = ((as_canli - as_onceki) / as_onceki) * 100
 
                 tablo_alsat.append({
                     "GÜNLÜK AL SAT HİSSELERİ ⚡": alsat_b,
-                    "ANLIK VERİ CANLI 📊": f"{as_canli_fiyat:.2f} TL" if as_canli_fiyat > 0 else "Yükleniyor...",
-                    "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"
+                    "ANLIK VERİ CANLI 📊": f"{as_canli:.2f} TL" if as_canli > 0 else "Yükleniyor...",
+                    "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli > 0 else "-"
                 })
 
         # EKRANA BASMA İŞLEMLERİ
@@ -196,14 +201,9 @@ if os.path.exists(excel_yolu):
         if tablo_bta:
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
         else:
-            st.info("Üst panel için veri işleniyor...")
+            st.info("Üst panel verisi işleniyor...")
 
         st.write("")
 
         st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
         if tablo_alsat:
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else:
-            st.info("Alt panel için veri işleniyor...")
-
-    except Exception as e:
