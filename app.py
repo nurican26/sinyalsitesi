@@ -18,19 +18,16 @@ anim_id = int(time.time())
 # 📱 TELEFON VE MOBİL UYUMLU ŞIK NEON TASARIM CSS KODLARI
 st.markdown(f'''
 <style>
-    /* Genel arka plan */
     .stApp {{background: #0f172a!important; padding: 0.25rem;}} 
     h1,h2,h3,h4,h5,h6,p,span,label {{color: #fff!important;}} 
     
-    /* Mobil uyumlu tablo yapısı */
     .stDataFrame {{
         width: 100% !important; 
         border: 1px solid #10b981 !important; 
         border-radius: 8px;
-        overflow-x: auto !important; /* Telefonda sağa sola kaydırılabilsin */
+        overflow-x: auto !important;
     }} 
     
-    /* Başlıklar */
     .alsat-baslik {{
         background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
         padding: 8px; 
@@ -50,7 +47,6 @@ st.markdown(f'''
         font-size: 1.1rem;
     }} 
     
-    /* Kesinlikle görünen SPK Kutusu */
     .spk-kutusu-kesin {{
         background-color: rgba(220, 38, 38, 0.15); 
         border: 2px solid #dc2626; 
@@ -64,7 +60,6 @@ st.markdown(f'''
         text-align: justify;
     }}
     
-    /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE MOBİL UYUMLU LOGO */
     .logo-konteyner {{
         display: flex;
         justify-content: center;
@@ -73,7 +68,7 @@ st.markdown(f'''
         margin-bottom: 5px;
     }}
     .cember-animasyon-{anim_id} {{
-        width: 100px; /* Mobilde taşmaması için ideal boyuta çekildi */
+        width: 100px; 
         height: 100px;
         border: 4px solid #fff;
         border-radius: 50%;
@@ -89,7 +84,7 @@ st.markdown(f'''
     }}
     .bta-yazi-{anim_id} {{
         font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 2.6rem; /* Mobilde tam otursun */
+        font-size: 2.6rem; 
         font-weight: bold;
         margin: 0;
         padding: 0;
@@ -132,7 +127,6 @@ st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; margin-bottom: 15px; 
 
 excel_yolu = "nurican.xls.xlsm"
 
-# Veri toplama ve tabloların ana mantığı
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -174,8 +168,10 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                try: puan_temiz = f"{float(puan_d):.2f}"
-                except: puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
+                try:
+                    puan_temiz = f"{float(puan_d):.2f}"
+                except:
+                    puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
 
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
@@ -184,8 +180,10 @@ if os.path.exists(excel_yolu):
                 except:
                     canli_fiyat = 0.0
                 
-                try: maliyet = float(alim_c.replace(",", "."))
-                except: maliyet = 0.0
+                try:
+                    maliyet = float(alim_c.replace(",", "."))
+                except:
+                    maliyet = 0.0
                 
                 kz_oran_str = "-"
                 if maliyet > 0 and canli_fiyat > 0:
@@ -234,3 +232,12 @@ if os.path.exists(excel_yolu):
 
         st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
         if tablo_alsat:
+            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+        else:
+            st.info("Alt panel verisi işleniyor...")
+
+    except Exception as e:
+        st.error(f"Excel okunurken bir sorun oluştu: {e}")
+else:
+    st.error("Excel dosyası bulunamadı!")
+
