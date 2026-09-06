@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -36,23 +36,19 @@ st.markdown(f'''
 
 st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
 
-# SPK Uyarısı üst kısma, herkesin görebileceği yere sabitlendi
 st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
-# Küfür ve argo kelime filtresi listesi (Buraya istediğiniz kadar kelime ekleyebilirsiniz)
+# Yasaklı kelimeler (Küfür, argo ve istenmeyen kelimeleri buraya ekleyebilirsiniz)
 KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
 
 def sohbet_temizle(metin):
     temiz_metin = metin
     for kelime in KUFUR_LISTESI:
-        # Büyük/küçük harf duyarlılığını ortadan kaldırarak sansürler
         if kelime in temiz_metin.lower():
-            # Kelimenin uzunluğu kadar yıldız koyar
             sansur = "*" * len(kelime)
-            # Metin içindeki eşleşen kısımları değiştirir
             import re
             insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
             temiz_metin = insens_kelime.sub(sansur, temiz_metin)
@@ -63,7 +59,6 @@ if "cihaz_id" not in st.session_state:
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
-# Finansal sayıları Türkiye formatına (Binlik nokta, Ondalık virgül) çeviren fonksiyon
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -159,9 +154,7 @@ else:
         yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
         if st.form_submit_button("Gönder 🚀"):
             if yeni_mesaj_metni.strip():
-                # Gelen mesajı filtre fonksiyonundan geçiriyoruz
                 filtrelenmis_mesaj = sohbet_temizle(yeni_mesaj_metni.strip())
-                
                 mevcut = []
                 if os.path.exists(sohbet_dosyası):
                     try:
@@ -191,3 +184,18 @@ else:
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
                 try:
                     with open(sohbet_dosyası, "w", encoding="utf-8") as f:
+                        json.dump([], f)
+                    st.success("Sohbet odası sıfırlandı!")
+                    time.sleep(1)
+                    st.rerun()
+                except:
+                    pass
+
+    sohbet_gecmisi = []
+    if os.path.exists(sohbet_dosyası):
+        try:
+            with open(sohbet_dosyası, "r", encoding="utf-8") as f:
+                sohbet_gecmisi = json.load(f)
+        except:
+            pass
+
