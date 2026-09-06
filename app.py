@@ -8,16 +8,16 @@ import time
 # 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-# Google Fonts'tan el yazısı (Caveat) yazı tipi eklendi ve CSS güncellendi
+# Google Fonts'tan şık bir el yazısı (Caveat) yazı tipi eklendi
 st.markdown('<link href="https://googleapis.com" rel="stylesheet">', unsafe_allow_html=True)
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: transparent !important; color: white !important; font-family: "Caveat", cursive !important; font-weight: bold; font-size: 3.5rem; padding: 4px 25px; text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.7), 0 0 15px rgba(16, 185, 129, 0.6); box-shadow: none !important;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} .bta-logo-konteyner {display: flex; align-items: center; margin-top: 15px; margin-bottom: 25px;} .bta-logo {background: transparent !important; color: #10b981 !important; font-family: "Caveat", cursive !important; font-weight: bold; font-size: 4rem; padding: 0px; text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 0 0 20px rgba(16, 185, 129, 0.6); box-shadow: none !important;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;} .piyasa-kutusu {background: rgba(255, 255, 255, 0.05); border: 1px solid #eab308; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;}</style>', unsafe_allow_html=True)
 
 # Hafıza Sabitleme
 if "ozel_takip_kutusu" not in st.session_state: st.session_state["ozel_takip_kutusu"] = {}
 if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] = {}
 
-# LOGO (Şeffaf, El Yazısı ve Gölgeli)
+# LOGO (Şeffaf Arka Plan, El Yazısı, Gölgeli)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
 # 💥 FİYAT VE ALTIN MOTORLARI
@@ -62,6 +62,18 @@ c2.markdown(f'<div class="piyasa-kutusu">🪙 ÇEYREK ALTIN<br><span style="colo
 c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
 c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>'.replace(',', '.').replace('._', ','), unsafe_allow_html=True)
 st.write("")
+
+# 🔍 BİST ARAMA MOTORU SİSTEMİ
+st.markdown("#### 🔍 BİST Canlı Fiyat Arama")
+arama_kodu = st.text_input("Hisse Kodu Giriniz (Örn: THYAO, ASELS):", "").strip().upper()
+if arama_kodu:
+    anlik_fiy = hızlı_canli_fiyat_bul(arama_kodu)
+    if anlik_fiy > 0:
+        st.success(f"📈 {arama_kodu} Güncel Canlı Fiyatı: **{anlik_fiy:.2f} TL**")
+    else:
+        st.error("Hisse bulunamadı veya veri çekilemedi. Lütfen kodu kontrol edin.")
+
+st.write("---")
 
 # 🔍 ARKA PLANDA EXCEL VERİSİNİ OKUMA
 df_kaynak = None
@@ -108,3 +120,6 @@ else: st.write("🔒 Aktif Al sinyali taranıyor...")
 st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
 if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
+
+# Yasal Uyarı Kutusu
+st.markdown('<div class="spk-kutusu">⚠️ <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Sinyaller otomatik formüllerle üretilmektedir.</div>', unsafe_allow_html=True)
