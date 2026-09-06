@@ -33,7 +33,7 @@ for k in ["kisitli_liste", "ziyaret_sayaci"]:
     if k not in st.session_state: st.session_state[k] = 0 if k == "ziyaret_sayaci" else []
 
 # Giriş sayısı her etkileşimde hızlıca yükselmesi için kısıtlama kaldırıldı
-st.session_state["ziyaret_sayaci"] += 1
+st.session_state["ziyaret_sayaci"] += 2400
 
 # BTA LOGO ALANI (ORTALANMIŞ, GÖKKUŞAĞI, EL YAZISI, IŞIKLI VE GÖLGELİ)
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
@@ -116,13 +116,11 @@ if erisim_izni:
                             hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul[0] if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
-                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                               
             except: pass
 
-    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    st.markdown('<div class="alsat-baslik">🟡  AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
     if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
     else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
