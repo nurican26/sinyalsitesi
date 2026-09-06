@@ -8,7 +8,7 @@ from streamlit_autorefresh import st_autorefresh
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-# Şık Neon Tasarım ve Yukarıdan Düşen Fosforlu Çember Logosu CSS Kodları
+# Şık Neon Tasarım, Yukarıdan Düşen Çember ve Soldan Yavaşça Kayarak Gelen BTA Yazısı CSS Kodları
 st.markdown('''
 <style>
     .stApp {background: #0f172a!important; padding: 0.5rem;} 
@@ -18,7 +18,7 @@ st.markdown('''
     .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
     .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}
     
-    /* 🟢 ANIMASYONLU FOSFORLU ÇEMBER VE BTA LOGO ALANI */
+    /* 🟢 ANIMASYONLU FOSFORLU ÇEMBER VE KAYAN BTA LOGO ALANI */
     .logo-konteyner {
         display: flex;
         justify-content: center;
@@ -37,6 +37,7 @@ st.markdown('''
         background: transparent;
         position: relative;
         box-shadow: 0 0 15px #10b981, inset 0 0 15px #10b981; /* Fosforlu neon parlama */
+        overflow: hidden; /* Yazı kayarken çemberin dışından pürüzsüz girsin */
         
         /* Çemberin yukarıdan düşme animasyonu */
         animation: yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -50,13 +51,16 @@ st.markdown('''
         margin: 0;
         padding: 0;
         z-index: 2;
+        
+        /* 🎯 YAZININ SOLDAN YAVAŞÇA KAYMA ANIMASYONU */
+        animation: soldanYavascaKay 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
     
+    /* Çemberin düşme efekti */
     @keyframes yukardanDus {
         0% {
             transform: translateY(-200px) scale(0.3);
             opacity: 0;
-            box-shadow: 0 0 0px transparent;
         }
         70% {
             transform: translateY(10px) scale(1.05);
@@ -67,11 +71,26 @@ st.markdown('''
             opacity: 1;
         }
     }
+
+    /* 🎯 Yazının soldan sağa yavaş akma efekti */
+    @keyframes soldanYavascaKay {
+        0% {
+            transform: translateX(-120px);
+            opacity: 0;
+        }
+        40% {
+            opacity: 0.3;
+        }
+        100% {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 </style>
 <link href="https://googleapis.com" rel="stylesheet">
 ''', unsafe_allow_html=True)
 
-# 🟢 LOGO EKRAN ÇIKTISI (En Üst Kısım)
+# LOGO EKRAN ÇIKTISI
 st.markdown('''
 <div class="logo-konteyner">
     <div class="cember-animasyon">
@@ -91,13 +110,11 @@ excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
         tablo_bta = []
         tablo_alsat = []
 
-        # İlk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
         sinir = min(10, len(df))
         
         for idx in range(sinir):
