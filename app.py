@@ -117,8 +117,7 @@ st.markdown(f'''
     }}
     @keyframes yukardanDus {{ 0% {{ transform: translateY(-200px) scale(0.3); opacity: 0; }} 70% {{ transform: translateY(10px) scale(1.05); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
     @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-140px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
-</style>
-''', unsafe_allow_html=True)
+</style>''', unsafe_allow_html=True)
 
 # 🖥️ SOL MENÜ (SIDEBAR) - CANLI SOHBET ODASI ALANI
 with st.sidebar:
@@ -186,7 +185,7 @@ if os.path.exists(excel_yolu):
                     st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
                 else:
                     st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
-            except:
+            except Exception:
                 st.error("Veri motoru bağlantı hatası.")
         
         st.write("---")
@@ -201,4 +200,3 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                try:
