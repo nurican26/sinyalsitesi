@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os
 import time
-import requests  # 🌐 Firebase REST API iletişimi için eklendi
+import requests
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa Yapılandırması
@@ -17,7 +17,6 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 anim_id = int(time.time())
 
 # 🔥 FIREBASE REALTIME DATABASE AYARLARI
-# Kendi Firebase Realtime Database URL'nizi buraya yapıştırın (Sonundaki '/' işaretini unutmayın)
 FIREBASE_URL = "https://SİZİN_PROJE_://firebaseio.com"
 
 # 📥 Firebase'den Mesajları Çeken Fonksiyon
@@ -28,7 +27,7 @@ def veritabanindan_mesajlari_getir():
             veriler = response.json()
             mesaj_listesi = [veri for veri in veriler.values()]
             mesaj_listesi = sorted(mesaj_listesi, key=lambda x: x.get('timestamp', 0))
-            return mesaj_listesi[-30:] # Sadece son 30 mesajı getir
+            return mesaj_listesi[-30:]
     except Exception:
         pass
     return [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
@@ -48,7 +47,7 @@ def veritabanina_mesaj_gonder(kullanici, mesaj):
     except Exception:
         return False
 
-# Yardımcı Veri İşleme Fonksiyonları (Girinti Hatalarını Engellemek İçin)
+# Yardımcı Veri İşleme Fonksiyonları
 def hisse_fiyati_cek(hisse_kodu, period="1d"):
     try:
         ticker = yf.Ticker(f"{hisse_kodu}.IS")
@@ -60,12 +59,16 @@ def hisse_fiyati_cek(hisse_kodu, period="1d"):
     return None
 
 def temiz_puan(puan_d):
+    if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
+        return ""
     try:
         return f"{float(puan_d):.2f}"
     except Exception:
-        return str(puan_d).strip() if pd.notna(puan_d) else ""
+        return str(puan_d).strip()
 
 def temiz_maliyet(alim_c):
+    if pd.isna(alim_c) or str(alim_c).strip().lower() in ["nan", "none", ""]:
+        return 0.0
     try:
         return float(str(alim_c).replace(",", "."))
     except Exception:
@@ -186,3 +189,4 @@ if os.path.exists(excel_yolu):
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 puan_temiz_veri = temiz_puan(puan_d)
                 hist_bta = hisse_fiyati_cek(hisse_a, period="1d")
+                canli_fiyat = float(hist_bta['Close'].iloc[-1]) if hist_bta is not None else 0.0
