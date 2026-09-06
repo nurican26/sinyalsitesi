@@ -101,7 +101,7 @@ if os.path.exists(excel_yolu):
         # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
         
-        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz, boş olanları ve başlıkları temizliyoruz
+        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz
         hisse_havuzu = []
         if len(df.columns) >= 5:
             e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
@@ -209,3 +209,5 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel okunurken bir sorun oluştu: {e}")
 else:
+    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
+
