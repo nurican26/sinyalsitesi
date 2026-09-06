@@ -2,154 +2,112 @@ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
-import os, re
+import os
 
-# 1. Sayfa Yapılandırması ve Şık Tasarım
+# 1. Sayfa Yapılandırması ve Telefon Uyumlu Şık Neon Tasarım
 st.set_page_config(page_title="Canlı Hisse Takip Programı", page_icon="📈", layout="wide")
 
 st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin-top: 30px; margin-bottom: 20px; color: #fca5a5 !important; font-size: 0.95rem; text-align: justify; line-height: 1.5;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
-# Excel "BTA" Sekmesini Okuma Motoru (Önbellekli)
-@st.cache_data(ttl=15)
+# Excel "BTA" Sekmesini Olduğu Gibi Okuyan Motor
+@st.cache_data(ttl=5)
 def excel_oku(yol):
     if os.path.exists(yol):
         try:
-            return pd.read_excel(yol, sheet_name="BTA", header=0, engine="openpyxl")
+            # Doğrudan "BTA" sayfasını, başlıkları (A, B, C, D) sıfırlamadan düz okur
+            return pd.read_excel(yol, sheet_name="BTA", engine="openpyxl")
         except:
             return None
     return None
 
-# Web'den (Yahoo Finance) Canlı Veri Çeken Motor
-@st.cache_data(ttl=30)
-def webden_canli_veri_topla(hisse_listesi):
-    veriler = {}
-    if not hisse_listesi:
-        return veriler
+# Yahoo Finance Canlı Veri Motoru
+@st.cache_data(ttl=15)
+def tekli_canli_fiyat_bul(hisse_kodu):
+    hisse_kodu = str(hisse_kodu).strip().upper()
+    if not hisse_kodu or hisse_kodu in ["NAN", "NONE", "BTA HİSSE", "BTA AL SAT", "HİSSE"]: 
+        return 0.0, 0.0
     try:
-        ticker_listesi = [f"{h}.IS" for h in hisse_listesi]
-        ticker_string = " ".join(ticker_listesi)
-        
-        data = yf.download(ticker_string, period="5d", progress=False)
-        
-        for h in hisse_listesi:
-            is_kodu = f"{h}.IS"
-            try:
-                if len(hisse_listesi) > 1:
-                    son_fiyat = float(data['Close'][is_kodu].dropna().iloc[-1])
-                    onceki_fiyat = float(data['Close'][is_kodu].dropna().iloc[-2])
-                else:
-                    son_fiyat = float(data['Close'].dropna().iloc[-1])
-                    onceki_fiyat = float(data['Close'].dropna().iloc[-2])
-                
-                degisim = ((son_fiyat - onceki_fiyat) / onceki_fiyat) * 100
-                veriler[h] = {"fiyat": son_fiyat, "degisim": degisim}
-            except:
-                veriler[h] = {"fiyat": 0.0, "degisim": 0.0}
+        ticker = yf.Ticker(f"{hisse_kodu}.IS")
+        data = ticker.history(period="2d")
+        if not data.empty and len(data) >= 1:
+            son_fiyat = float(data['Close'].iloc[-1])
+            onceki_fiyat = float(data['Close'].iloc[-2]) if len(data) >= 2 else son_fiyat
+            degisim = ((son_fiyat - onceki_fiyat) / onceki_fiyat) * 100
+            return son_fiyat, degisim
     except:
         pass
-    return veriler
+    return 0.0, 0.0
 
 # Zaman Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an}</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Güncel Canlı Saat: {guncel_an}</div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
-df_kaynak = excel_oku(excel_yolu)
+df = excel_oku(excel_yolu)
 
-if df_kaynak is not None:
-    _bta_kodlari = []
-    _alsat_kodlari = []
-    
-    tablo_bta_ham = []
-    tablo_alsat_ham = []
+if df is not None:
+    tablo_bta = []
+    tablo_alsat = []
 
-    # Excel satırlarını tek tek tarama
-    for idx in range(len(df_kaynak)):
+    # Excel'in her satırını sırayla, doğrudan okuyoruz
+    for idx in range(len(df)):
         try:
-            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
-            # 0=BTA HİSSE, 2=BTA ALIM FİYATI, 3=BTA PUANI
-            bta_hisse_raw = str(df_kaynak.iloc[idx, 0]).strip().upper() if pd.notna(df_kaynak.iloc[idx, 0]) else ""
-            bta_alim_raw = str(df_kaynak.iloc[idx, 2]).strip() if pd.notna(df_kaynak.iloc[idx, 2]) else ""
-            bta_puan_raw = str(df_kaynak.iloc[idx, 3]).strip() if pd.notna(df_kaynak.iloc[idx, 3]) else ""
+            # 1. ÜST PANEL (A, C, D Sütunları)
+            hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = str(df.iloc[idx, 3]).strip() if pd.notna(df.iloc[idx, 3]) else ""
 
-            # Sadece geçerli, 3-5 harfli borsa kodlarını ve temiz satırları al (ANA, HİSSE vb. elenir)
-            if bta_hisse_raw and bta_hisse_raw not in ["NAN", "NONE", "BTA HİSSE", "HİSSE", "ANA"]:
-                h_ara = re.findall(r'[A-Z]+', bta_hisse_raw)
-                if h_ara and 3 <= len(h_ara[0]) <= 5:
-                    temiz_bta_kod = str(h_ara[0]).strip()  # HATA BURADAYDI, ARTIK LİSTE DEĞİL DÜZ METİN ALIYOR
-                    _bta_kodlari.append(temiz_bta_kod)
-                    
-                    try: maliyet = float(bta_alim_raw.replace(",", "."))
-                    except: maliyet = 0.0
-                    
-                    tablo_bta_ham.append({
-                        "puan": bta_puan_raw, "hisse": temiz_bta_kod, "maliyet": maliyet
-                    })
+            # Eğer A sütunundaki hücre boş değilse ve başlık kelimesi içermiyorsa ekle
+            if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE"]:
+                canli_fiyat, _ = tekli_canli_fiyat_bul(hisse_a)
+                
+                try: maliyet = float(alim_c.replace(",", "."))
+                except: maliyet = 0.0
+                
+                kz_oran_str = "-"
+                if maliyet > 0 and canli_fiyat > 0:
+                    kz = ((canli_fiyat - maliyet) / maliyet) * 100
+                    kz_oran_str = f"%{kz:+.2f}"
 
-            # 2. ALT PANEL VERİLERİ (B Sütunu)
-            # 1=BTA AL SAT
-            alsat_raw = str(df_kaynak.iloc[idx, 1]).strip().upper() if pd.notna(df_kaynak.iloc[idx, 1]) else ""
-            if alsat_raw and alsat_raw not in ["NAN", "NONE", "BTA AL SAT", "AL SAT"]:
-                as_ara = re.findall(r'[A-Z]+', alsat_raw)
-                if as_ara and 3 <= len(as_ara[0]) <= 5:
-                    temiz_alsat_kod = str(as_ara[0]).strip()  # HATA BURADAYDI, DÜZ METİN ALIYOR
-                    _alsat_kodlari.append(temiz_alsat_kod)
-                    tablo_alsat_ham.append({"hisse": temiz_alsat_kod})
+                tablo_bta.append({
+                    "BTA PUAN 🔢": puan_d,
+                    "BTA HİSSE 📈": hisse_a,
+                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
+                    "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...",
+                    "KAR / ZARAR 📊": kz_oran_str
+                })
+
+            # 2. ALT PANEL (B Sütunu)
+            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            
+            # Eğer B sütunundaki hücre boş değilse ve başlık kelimesi içermiyorsa ekle
+            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                as_canli_fiyat, as_degisim = tekli_canli_fiyat_bul(alsat_b)
+                
+                tablo_alsat.append({
+                    "GÜNLÜK AL SAT HİSSELERİ ⚡": alsat_b,
+                    "ANLIK VERİ CANLI 📊": f"{as_canli_fiyat:.2f} TL" if as_canli_fiyat > 0 else "Yükleniyor...",
+                    "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"
+                })
         except:
             pass
 
-    # Web'den Canlı Fiyat Havuzunu Doldurma
-    tum_kodlar = list(set(_bta_kodlari + _alsat_kodlari))
-    canli_havuz = webden_canli_veri_topla(tum_kodlar)
-
-    # Tablo Listelerini Son Biçimine Getirme
-    tablo_bta_final = []
-    tablo_alsat_final = []
-
-    # Üst Tablo Eşleme
-    for item in tablo_bta_ham:
-        c_fiyat = canli_havuz.get(item["hisse"], {}).get("fiyat", 0.0)
-        
-        kz_oran_str = "-"
-        if item["maliyet"] > 0 and c_fiyat > 0:
-            kz = ((c_fiyat - item["maliyet"]) / item["maliyet"]) * 100
-            kz_oran_str = f"%{kz:+.2f}"
-
-        tablo_bta_final.append({
-            "BTA PUAN 🔢": item["puan"],
-            "BTA HİSSE 📈": item["hisse"],
-            "BTA ALIM 📥": f"{item['maliyet']:.2f} TL" if item["maliyet"] > 0 else "-",
-            "GÜNCEL FİYAT 💥": f"{c_fiyat:.2f} TL" if c_fiyat > 0 else "Yükleniyor...",
-            "KAR / ZARAR 📊": kz_oran_str
-        })
-
-    # Alt Tablo Eşleme
-    for item in tablo_alsat_ham:
-        c_fiyat_as = canli_havuz.get(item["hisse"], {}).get("fiyat", 0.0)
-        c_degisim_as = canli_havuz.get(item["hisse"], {}).get("degisim", 0.0)
-
-        tablo_alsat_final.append({
-            "GÜNLÜK AL SAT HİSSELERİ ⚡": item["hisse"],
-            "ANLIK VERİ CANLI 📊": f"{c_fiyat_as:.2f} TL" if c_fiyat_as > 0 else "Yükleniyor...",
-            "YÜKSELİŞ ORANI 📈": f"%{c_degisim_as:+.2f}" if c_fiyat_as > 0 else "-"
-        })
-
-    # 🟢 EKRANA YAZDIRMA PANELİ
+    # 🟢 EKRANA BASMA BÖLÜMÜ
     st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
-    if tablo_bta_final:
-        st.dataframe(pd.DataFrame(tablo_bta_final), use_container_width=True, hide_index=True)
+    if tablo_bta:
+        st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
     else:
-        st.info("BTA sekmesindeki Üst Panel verileri taranıyor...")
+        st.info("Üst panel için Excel'de veri bulunamadı.")
 
     st.write("")
 
     st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
-    if tablo_alsat_final:
-        st.dataframe(pd.DataFrame(tablo_alsat_final), use_container_width=True, hide_index=True)
+    if tablo_alsat:
+        st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
     else:
-        st.info("BTA sekmesindeki Alt Panel verileri taranıyor...")
+        st.info("Alt panel için Excel'de veri bulunamadı.")
 
 else:
-    st.error("Excel dosyasındaki 'BTA' sekmesi okunamadı. Lütfen sekme adını kontrol edin.")
+    st.error("Excel dosyasındaki 'BTA' sayfası okunamadı.")
 
 st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
