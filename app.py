@@ -125,7 +125,7 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Zaman Düzenlemesi (Yenilenme yazısı)
+# Zaman Düzenlemesi (Sizin sildiğiniz temiz düzen)
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align: center;"><span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 # 🟡 CANLI ALTIN VE BİST 100 MOTORU
@@ -169,8 +169,8 @@ st.markdown(f'''
 
 excel_yolu = "nurican.xls.xlsm"
 
+# 🟢 HATA RİSKİ SIFIRLANMIŞ DÜZ VE BAĞIMSIZ BLOK YAPISI
 if os.path.exists(excel_yolu):
-    # Excel okuma işlemi bağımsız ve sade hale getirildi
     df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
     
     # 🔍 CANLI ARAMA MOTORU SİSTEMİ
@@ -193,7 +193,7 @@ if os.path.exists(excel_yolu):
 
     st.write("---")
 
-    # ⚡ TOPLU VERİ İNDİRME SİSTEMİ (Çökmeleri Engelleyen Bağımsız Havuz)
+    # ⚡ TOPLU VERİ İNDİRME ADIMI
     sinir = min(10, len(df))
     ust_kodlar = []
     alt_kodlar = []
