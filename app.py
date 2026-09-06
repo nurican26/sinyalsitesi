@@ -192,8 +192,10 @@ if tum_hisseler:
 else:
     st.warning("Arama motoru için Excel E sütunundan hisse listesi yüklenemedi.")
 
-# --- CANLI SOHBET ODASI (Hatalardan Tamamen Bağımsız Alt Kısım) ---
+# --- CANLI SOHBET ODASI ---
 st.write("---")
 st.header("💬  CANLI SOHBET ODASI")
 
 if "kullanici_adi" not in st.session_state:
+    st.session_state.kullanici_adi = ""
+
