@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -53,35 +53,34 @@ st.markdown('<div style="text-align: center; color: #cbd5e1; font-weight: bold; 
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
-# --- GÜVENLİ FONKSİYONLAR ---
-def bst_en_cok_yukselenler():
-    sonuclar = []
-    for h in ["THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"]:
-        try:
-            t = yf.Ticker(f"{h}.IS")
-            hist = t.history(period="2d")
-            if len(hist) >= 2:
-                canli = float(hist['Close'].iloc[-1])
-                onceki = float(hist['Close'].iloc[-2])
-                degisim = ((canli - onceki) / onceki) * 100
-                sonuclar.append({"HİSSE 🚀": h, "FİYAT 💰": f"{canli:.2f} TL", "DEĞİŞİM 📈": degisim})
-        except:
-            pass
-    if sonuclar:
-        df_yukselen = pd.DataFrame(sonuclar).sort_values(by="DEĞİŞİM 📈", ascending=False).head(5)
-        df_yukselen["DEĞİŞİM 📈"] = df_yukselen["DEĞİŞİM 📈"].map(lambda x: f"%+{x:.2f}")
-        return df_yukselen
-    return pd.DataFrame()
-
-def get_live_data(hisse_kodu, period="2d"):
+# --- TEMİZ VE GÜVENLİ FİYAT MOTORU ---
+def veri_motoru(hisse_adi, periyot="2d"):
+    if not hisse_adi or hisse_adi in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]:
+        return None
     try:
-        ticker = yf.Ticker(f"{hisse_kodu}.IS")
-        hist = ticker.history(period=period)
+        t = yf.Ticker(f"{hisse_adi}.IS")
+        hist = t.history(period=periyot)
         if not hist.empty:
             return hist
     except:
         pass
     return None
+
+def bst_en_cok_yukselenler():
+    sonuclar = []
+    havuz = ["THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"]
+    for h in havuz:
+        hist = veri_motoru(h, "2d")
+        if hist is not None and len(hist) >= 2:
+            canli = float(hist['Close'].iloc[-1])
+            onceki = float(hist['Close'].iloc[-2])
+            degisim = ((canli - onceki) / onceki) * 100
+            sonuclar.append({"HİSSE 🚀": h, "FİYAT 💰": f"{canli:.2f} TL", "DEĞİŞİM 📈": degisim})
+    if sonuclar:
+        df_y = pd.DataFrame(sonuclar).sort_values(by="DEĞİŞİM 📈", ascending=False).head(5)
+        df_y["DEĞİŞİM 📈"] = df_y["DEĞİŞİM 📈"].map(lambda x: f"%+{x:.2f}")
+        return df_y
+    return pd.DataFrame()
 
 def mesajlari_yukle():
     if os.path.exists(sohbet_dosyası):
@@ -93,18 +92,17 @@ def mesajlari_yukle():
     return []
 
 def mesaj_kaydet(isim, mesaj):
-    mevcut_mesajlar = mesajlari_yukle()
-    yeni_mesaj = {"isim": isim, "mesaj": mesaj, "zaman": datetime.datetime.now().strftime("%H:%M:%S")}
-    mevcut_mesajlar.append(yeni_mesaj)
-    if len(mevcut_mesajlar) > 40:
-        mevcut_mesajlar = mevcut_mesajlar[-40:]
+    mevcut = mesajlari_yukle()
+    mevcut.append({"isim": isim, "mesaj": mesaj, "zaman": datetime.datetime.now().strftime("%H:%M:%S")})
+    if len(mevcut) > 40:
+        mevcut = mevcut[-40:]
     try:
         with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-            json.dump(mevcut_mesajlar, f, ensure_ascii=False, indent=4)
+            json.dump(mevcut, f, ensure_ascii=False, indent=4)
     except:
         pass
 
-# ==================== BÖLÜM 1: BORSA PANELİ ====================
+# ==================== BORSA PANELİ ====================
 st.header("📊 CANLI BORSA TAKİP EKRANI")
 
 if os.path.exists(excel_yolu):
@@ -119,17 +117,17 @@ if os.path.exists(excel_yolu):
         st.write("")
         hisse_havuzu = []
         if len(df.columns) >= 5:
-            e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
-            hisse_havuzu = sorted(list(set([h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]])))
+            e_sut = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
+            hisse_havuzu = sorted(list(set([h for h in e_sut if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]])))
         
         secilen_hisse = st.selectbox("🔍 Canlı fiyatını görmek istediğiniz hisseyi havuzdan seçin:", ["Seçiniz..."] + hisse_havuzu)
         if secilen_hisse != "Seçiniz...":
-            hist_ara = get_live_data(secilen_hisse, "2d")
+            hist_ara = veri_motoru(secilen_hisse, "2d")
             if hist_ara is not None:
-                arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-                arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                st.success(f"📈 **{secilen_hisse}** Anlık Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
+                f_canli = float(hist_ara['Close'].iloc[-1])
+                f_once = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else f_canli
+                pct = ((f_canli - f_once) / f_once) * 100
+                st.success(f"📈 **{secilen_hisse}** Anlık Fiyatı: **{f_canli:.2f} TL** | Günlük Değişim: **%{pct:+.2f}**")
 
         st.write("---")
         tablo_bta = []
@@ -137,36 +135,36 @@ if os.path.exists(excel_yolu):
         sinir = min(10, len(df))
         
         for idx in range(sinir):
-            hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            # Üst Panel
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
             
-            if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                puan_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                canli_fiyat = 0.0
-                hist_bta = get_live_data(hisse_a, "1d")
-                if hist_bta is not None:
-                    canli_fiyat = float(hist_bta['Close'].iloc[-1])
-                
-                maliyet = 0.0
-                try:
-                    maliyet = float(alim_c.replace(",", "."))
-                except:
-                    maliyet = 0.0
-                
-                kz_oran_str = "-"
-                if maliyet > 0 and canli_fiyat > 0:
-                    kz_oran_str = f"%{((canli_fiyat - maliyet) / maliyet) * 100:+.2f}"
-                
-                tablo_bta.append({"BTA PUAN 🔢": puan_temiz, "BTA HİSSE 📈": hisse_a, "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c, "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...", "KAR / ZARAR 📊": kz_oran_str})
+            if ha and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                c_fiyat = 0.0
+                h_bta = veri_motoru(ha, "1d")
+                if h_bta is not None:
+                    c_fiyat = float(h_bta['Close'].iloc[-1])
+                try: maliyet = float(alim_c.replace(",", "."))
+                except: maliyet = 0.0
+                kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
+                tablo_bta.append({"BTA PUAN 🔢": p_temiz, "BTA HİSSE 📈": ha, "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c, "GÜNCEL FİYAT 💥": f"{c_fiyat:.2f} TL" if c_fiyat > 0 else "Yükleniyor...", "KAR / ZARAR 📊": kz_str})
 
-            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                as_canli_fiyat = 0.0
-                as_degisim = 0.0
-                hist_as = get_live_data(alsat_b, "2d")
-                if hist_as is not None:
-                    as_canli_fiyat = float(hist_as['Close'].iloc[-1])
-                    onceki_kap_as = float(hist_as['Close'].iloc[-2]) if len(hist_as) >= 2 else as_canli_fiyat
-                    as_degisim = ((as_canli_fiyat - onceki_kap_as) / onceki_kap_as) * 100
-                
+            # Alt Panel
+            hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            if hb and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                as_fiyat = 0.0
+                as_deg = 0.0
+                h_as = veri_motoru(hb, "2d")
+                if h_as is not None:
+                    as_fiyat = float(h_as['Close'].iloc[-1])
+                    as_prev = float(h_as['Close'].iloc[-2]) if len(h_as) >= 2 else as_fiyat
+                    as_deg = ((as_fiyat - as_prev) / as_prev) * 100
+                tablo_alsat.append({"GÜNLÜK AL SAT HİSSELERİ ⚡": hb, "ANLIK VERİ CANLI 📊": f"{as_fiyat:.2f} TL" if as_fiyat > 0 else "Yükleniyor...", "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-"})
+
+        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
+        if tablo_bta: st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
+        
+        st.write("")
+0,
