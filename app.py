@@ -15,27 +15,66 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
+# 📱 TELEFON VE MOBİL UYUMLU ŞIK NEON TASARIM CSS KODLARI
 st.markdown(f'''
 <style>
-    .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
+    /* Genel arka plan */
+    .stApp {{background: #0f172a!important; padding: 0.25rem;}} 
     h1,h2,h3,h4,h5,h6,p,span,label {{color: #fff!important;}} 
-    .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
-    .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top: 30px; margin-bottom: 20px; line-height: 1.5;}}
     
-    /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
+    /* Mobil uyumlu tablo yapısı */
+    .stDataFrame {{
+        width: 100% !important; 
+        border: 1px solid #10b981 !important; 
+        border-radius: 8px;
+        overflow-x: auto !important; /* Telefonda sağa sola kaydırılabilsin */
+    }} 
+    
+    /* Başlıklar */
+    .alsat-baslik {{
+        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px; 
+        color:#fff;
+        font-size: 1.1rem;
+    }} 
+    .al-baslik {{
+        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-bottom: 5px; 
+        color:#fff;
+        font-size: 1.1rem;
+    }} 
+    
+    /* Kesinlikle görünen SPK Kutusu */
+    .spk-kutusu-kesin {{
+        background-color: rgba(220, 38, 38, 0.15); 
+        border: 2px solid #dc2626; 
+        padding: 12px; 
+        border-radius: 6px; 
+        color: #fca5a5 !important; 
+        font-size: 0.85rem; 
+        margin-top: 30px; 
+        margin-bottom: 20px; 
+        line-height: 1.4;
+        text-align: justify;
+    }}
+    
+    /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE MOBİL UYUMLU LOGO */
     .logo-konteyner {{
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 20px 0;
-        margin-bottom: 10px;
+        padding: 15px 0;
+        margin-bottom: 5px;
     }}
     .cember-animasyon-{anim_id} {{
-        width: 120px;
-        height: 120px;
+        width: 100px; /* Mobilde taşmaması için ideal boyuta çekildi */
+        height: 100px;
         border: 4px solid #fff;
         border-radius: 50%;
         display: flex;
@@ -50,7 +89,7 @@ st.markdown(f'''
     }}
     .bta-yazi-{anim_id} {{
         font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 3.2rem;
+        font-size: 2.6rem; /* Mobilde tam otursun */
         font-weight: bold;
         margin: 0;
         padding: 0;
@@ -59,26 +98,26 @@ st.markdown(f'''
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         display: inline-block;
-        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
+        filter: drop-shadow(0px 2px 6px rgba(255,255,255,0.3));
         animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }}
     
     @keyframes gokkusagiCember {{
-        0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
-        14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
-        28% {{ border-color: #ffff00; box-shadow: 0 0 15px #ffff00, inset 0 0 15px #ffff00; }}
-        42% {{ border-color: #00ff00; box-shadow: 0 0 15px #00ff00, inset 0 0 15px #00ff00; }}
-        56% {{ border-color: #00ffff; box-shadow: 0 0 15px #00ffff, inset 0 0 15px #00ffff; }}
-        70% {{ border-color: #0000ff; box-shadow: 0 0 15px #0000ff, inset 0 0 15px #0000ff; }}
-        84% {{ border-color: #8b00ff; box-shadow: 0 0 15px #8b00ff, inset 0 0 15px #8b00ff; }}
-        100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
+        0% {{ border-color: #ff0000; box-shadow: 0 0 12px #ff0000, inset 0 0 12px #ff0000; }}
+        14% {{ border-color: #ff7f00; box-shadow: 0 0 12px #ff7f00, inset 0 0 12px #ff7f00; }}
+        28% {{ border-color: #ffff00; box-shadow: 0 0 12px #ffff00, inset 0 0 12px #ffff00; }}
+        42% {{ border-color: #00ff00; box-shadow: 0 0 12px #00ff00, inset 0 0 12px #00ff00; }}
+        56% {{ border-color: #00ffff; box-shadow: 0 0 12px #00ffff, inset 0 0 12px #00ffff; }}
+        70% {{ border-color: #0000ff; box-shadow: 0 0 12px #0000ff, inset 0 0 12px #0000ff; }}
+        84% {{ border-color: #8b00ff; box-shadow: 0 0 12px #8b00ff, inset 0 0 12px #8b00ff; }}
+        100% {{ border-color: #ff0000; box-shadow: 0 0 12px #ff0000, inset 0 0 12px #ff0000; }}
     }}
-    @keyframes yukardanDus {{ 0% {{ transform: translateY(-200px) scale(0.3); opacity: 0; }} 70% {{ transform: translateY(10px) scale(1.05); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
-    @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-140px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
+    @keyframes yukardanDus {{ 0% {{ transform: translateY(-150px) scale(0.5); opacity: 0; }} 70% {{ transform: translateY(8px) scale(1.03); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
+    @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-110px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
 </style>
 ''', unsafe_allow_html=True)
 
-# LOGO EKRAN ÇIKTISI
+# 🌈 LOGO EKRAN ÇIKTISI
 st.markdown(f'''
 <div class="logo-konteyner">
     <div class="cember-animasyon-{anim_id}">
@@ -89,26 +128,23 @@ st.markdown(f'''
 
 # Saat Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-size: 1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_an} <br><span style="color:#10b981; font-size:0.85rem;">(10 saniyede bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
+# Veri toplama ve tabloların ana mantığı
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
+        # 🔍 CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
-        
-        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz
         hisse_havuzu = []
         if len(df.columns) >= 5:
             e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
             hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
             hisse_havuzu = sorted(list(set(hisse_havuzu)))
         
-        # Seçenek Kutusu
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
@@ -119,11 +155,11 @@ if os.path.exists(excel_yolu):
                     arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
                     onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
                     arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
+                    st.success(f"📈 **{secilen_hisse}**: **{arama_canli_fiyat:.2f} TL** | **%{arama_degisim:+.2f}**")
                 else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+                    st.warning("Veri çekilemedi.")
             except:
-                st.error("Veri motoru bağlantı hatası.")
+                st.error("Bağlantı hatası.")
         
         st.write("---")
 
@@ -192,19 +228,9 @@ if os.path.exists(excel_yolu):
         if tablo_bta:
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
         else:
-            st.info("Üst panel için veri işleniyor...")
+            st.info("Üst panel verisi işleniyor...")
 
         st.write("")
 
         st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
         if tablo_alsat:
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else:
-            st.info("Alt panel için veri işleniyor...")
-
-    except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
-
-# 🎯 EN ALT KISIM: RESMİ SPK YASAL UYARI METNİ
