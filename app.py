@@ -21,13 +21,6 @@ st.markdown(f'''
     .stApp {{background: #0f172a!important; padding: 0.25rem;}} 
     h1,h2,h3,h4,h5,h6,p,span,label {{color: #fff!important;}} 
     
-    .stDataFrame {{
-        width: 100% !important; 
-        border: 1px solid #10b981 !important; 
-        border-radius: 8px;
-        overflow-x: auto !important;
-    }} 
-    
     /* Canlı Piyasa Bilgi Kutuları CSS */
     .piyasa-kutusu-konteyner {{
         display: flex;
@@ -58,25 +51,6 @@ st.markdown(f'''
     .piyasa-deger {{ font-size: 1.25rem; color: #eab308; font-weight: bold; }}
     .piyasa-deger-bist {{ font-size: 1.25rem; color: #10b981; font-weight: bold; }}
 
-    .alsat-baslik {{
-        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
-        padding: 8px; 
-        border-radius: 5px; 
-        font-weight: bold; 
-        margin-bottom: 5px; 
-        color:#fff;
-        font-size: 1.1rem;
-    }} 
-    .al-baslik {{
-        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
-        padding: 8px; 
-        border-radius: 5px; 
-        font-weight: bold; 
-        margin-bottom: 5px; 
-        color:#fff;
-        font-size: 1.1rem;
-    }} 
-    
     /* Sağ Köşedeki Yeni Uyarı Yazısı Tasarımı */
     .ytd-yazi {{
         text-align: right;
@@ -150,95 +124,43 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# 🕒 CANLI SAAT GÖSTERGESİ
+# 🕒 CANLI SAAT GÖSTERGESİ (Tarih tamamen silindi)
 guncel_saat = datetime.datetime.now().strftime("%H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_saat}</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-size: 1.2rem; color: #cbd5e1; margin-bottom: 20px; font-weight: bold; text-align:center;">🕒 Canlı Saat: {guncel_saat}</div>', unsafe_allow_html=True)
 
 # 🟡 CANLI ALTIN VE BİST 100 MOTORU
 def canli_piyasa_verilerini_hesapla():
     saf_gram, ceyrek, yarim, tam, bist_fiyat = 3025.00, 4950.00, 9900.00, 19800.00, 14000.00
     try:
-        ons_data = yf.download("GC=F USDTRY=X XU100.IS", period="2d", progress=False, group_by="ticker")
+        # Altın ons, dolar kuru ve bist 100 endeksi toplu indirilir
+        piyasa_data = yf.download("GC=F USDTRY=X XU100.IS", period="2d", progress=False, group_by="ticker")
         
-        # Ons & Dolar kontrolü
-        if "GC=F" in ons_data and "USDTRY=X" in ons_data:
-            ons_fiyat = float(ons_data["GC=F"]["Close"].dropna().iloc[-1])
-            usd_fiyat = float(ons_data["USDTRY=X"]["Close"].dropna().iloc[-1])
+        if "GC=F" in piyasa_data and "USDTRY=X" in piyasa_data:
+            ons_fiyat = float(piyasa_data["GC=F"]["Close"].dropna().iloc[-1])
+            usd_fiyat = float(piyasa_data["USDTRY=X"]["Close"].dropna().iloc[-1])
             saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
             ceyrek = saf_gram * 1.635
             yarim = ceyrek * 2
             tam = ceyrek * 4
             
-        # BIST kontrolü
-        if "XU100.IS" in ons_data:
-            bist_fiyat = float(ons_data["XU100.IS"]["Close"].dropna().iloc[-1])
+        if "XU100.IS" in piyasa_data:
+            bist_fiyat = float(piyasa_data["XU100.IS"]["Close"].dropna().iloc[-1])
     except:
         pass
     return saf_gram, ceyrek, yarim, tam, bist_fiyat
 
 p_gram, p_ceyrek, p_yarim, p_tam, p_bist = canli_piyasa_verilerini_hesapla()
 
-# 📊 Canlı Piyasa Panel Çıktısı
+# 📊 Canlı Piyasa Panel Çıktısı (Noktalı ve TL Cinsinden)
 st.markdown(f'''
 <div class="piyasa-kutusu-konteyner">
     <div class="piyasa-kart"><div class="piyasa-baslik">🔱 GRAM ALTIN</div><div class="piyasa-deger">{p_gram:,.2f} TL</div></div>
     <div class="piyasa-kart"><div class="piyasa-baslik">🪙 ÇEYREK ALTIN</div><div class="piyasa-deger">{p_ceyrek:,.2f} TL</div></div>
     <div class="piyasa-kart"><div class="piyasa-baslik">🥈 YARIM ALTIN</div><div class="piyasa-deger">{p_yarim:,.2f} TL</div></div>
     <div class="piyasa-kart"><div class="piyasa-baslik">🥇 TAM ALTIN</div><div class="piyasa-deger">{p_tam:,.2f} TL</div></div>
-    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{p_bist:,.2f}</div></div>
+    <div class="piyasa-kart-bist"><div class="piyasa-baslik">📈 BİST 100 ENDEKS</div><div class="piyasa-deger-bist">{p_bist:,.2f} TL</div></div>
 </div>
-'''.format(p_gram=p_gram, p_ceyrek=p_ceyrek, p_yarim=p_yarim, p_tam=p_tam, p_bist=p_bist), unsafe_allow_html=True)
-st.write("---")
+'''.replace(",", "."), unsafe_allow_html=True) # Noktalı formata çevirme kilidi
 
-excel_yolu = "nurican.xls.xlsm"
-
-if os.path.exists(excel_yolu):
-    try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
-        # 🔍 CANLI ARAMA MOTORU SİSTEMİ
-        st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
-        hisse_havuzu = []
-        if len(df.columns) >= 5:
-            e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
-            hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-            hisse_havuzu = sorted(list(set(hisse_havuzu)))
-        
-        secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
-        
-        if secilen_hisse != "Seçiniz...":
-            try:
-                hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
-                if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    st.success(f"📈 **{secilen_hisse}**: **{arama_canli_fiyat:.2f} TL** | **%{arama_degisim:+.2f}**")
-                else:
-                    st.warning("Veri çekilemedi.")
-            except:
-                st.error("Bağlantı hatası.")
-        
-        st.write("---")
-
-        # ⚡ TOPLU VERİ ÇEKME ALTYAPISI (Hata Veren Döngü Blokları Yerine)
-        sinir = min(10, len(df))
-        ust_panel_kodlar = []
-        alt_panel_kodlar = []
-        
-        # Önce listedeki tüm hisse kodlarını topluyoruz
-        for idx in range(sinir):
-            hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            
-            if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                ust_panel_kodlar.append(hisse_a)
-            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                alt_panel_kodlar.append(alsat_b)
-                
-        tum_kodlar_listesi = list(set(ust_panel_kodlar + alt_panel_kodlar))
-        canli_fiyat_havuzu = {}
-        
-        # Tüm hisselerin canlı kapanış verilerini TEK SEFERDE internetten toplu indiriyoruz
-        if tum_kodlar_listesi:
-            try:
+# 🎯 SAĞ ALT KÖŞEYE YERLEŞTİRİLEN SADE UYARI YAZISI
+st.markdown('<div class="ytd-yazi">⚠️ KESİNLİKLE YATIRIM TAVSİYESİ DEĞİLDİR.</div>', unsafe_allow_html=True)
