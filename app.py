@@ -15,7 +15,7 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember, Yazı veinsanların gözünü yormayan Ticker CSS Yapısı
+# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Akar Haber Bülteni CSS Kodları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -169,58 +169,63 @@ st.markdown(f'''
 
 excel_yolu = "nurican.xls.xlsm"
 
-if os.path.exists(excel_yolu):
-    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    
-    # 🔍 CANLI ARAMA MOTORU SİSTEMİ
-    st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
-    hisse_havuzu = []
-    if len(df.columns) >= 5:
-        e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
-        hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-        hisse_havuzu = sorted(list(set(hisse_havuzu)))
-    
-    secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
-    
-    if secilen_hisse != "Seçiniz...":
-        hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
-        if not hist_ara.empty:
-            arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
-            onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-            arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-            st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: {arama_canli_fiyat:.2f} TL | Günlük Değişim: %{arama_degisim:+.2f}")
+# 🛠️ GİRİNTİ KÂBUSUNU BİTİREN MUTLAK EMNİYET KİLİDİ:
+# Excel kontrolünü bağımsız bir bloğa aldık. Dosya yoksa sistem durur, varsa düz bir şekilde akar.
+if not os.path.exists(excel_yolu):
+    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
+    st.stop()
 
-    st.write("---")
+# Dosya varsa kod buradan dümdüz aşağıya sıfır girinti riskiyle akar:
+df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
 
-    # ⚡ TOPLU VERİ İNDİRME ADIMI (Hata riskini sıfırlayan bağımsız blok)
-    sinir = min(10, len(df))
-    ust_kodlar = []
-    alt_kodlar = []
-    
-    for idx in range(sinir):
-        h_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-        h_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-        if h_a and h_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-            ust_kodlar.append(h_a)
-        if h_b and h_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-            alt_kodlar.append(h_b)
-            
-    tum_liste = list(set(ust_kodlar + alt_kodlar))
-    canli_havuz = {}
-    
-    if tum_liste:
-        indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
-        toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
-        for k in tum_liste:
-            is_kodu = f"{k}.IS"
-            if is_kodu in toplu_data:
-                sub_df = toplu_data[is_kodu].dropna()
-                if not sub_df.empty:
-                    s_f = float(sub_df["Close"].iloc[-1])
-                    o_f = float(sub_df["Close"].iloc[-2]) if len(sub_df) >= 2 else s_f
-                    canli_havuz[k] = {"son": s_f, "onceki": o_f}
+# 🔍 CANLI ARAMA MOTORU SİSTEMİ
+st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
+hisse_havuzu = []
+if len(df.columns) >= 5:
+    e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
+    hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
+    hisse_havuzu = sorted(list(set(hisse_havuzu)))
 
-    tablo_bta = []
-    tablo_alsat = []
-    
-    for idx in range(sinir):
+secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
+
+if secilen_hisse != "Seçiniz...":
+    hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
+    if not hist_ara.empty:
+        arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
+        onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+        arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
+        st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: {arama_canli_fiyat:.2f} TL | Günlük Değişim: %{arama_degisim:+.2f}")
+
+st.write("---")
+
+# ⚡ TOPLU VERİ İNDİRME ADIMI
+sinir = min(10, len(df))
+ust_kodlar = []
+alt_kodlar = []
+
+for idx in range(sinir):
+    h_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+    h_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+    if h_a and h_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+        ust_kodlar.append(h_a)
+    if h_b and h_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+        alt_kodlar.append(h_b)
+        
+tum_liste = list(set(ust_kodlar + alt_kodlar))
+canli_havuz = {}
+
+if tum_liste:
+    indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
+    toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
+    for k in tum_liste:
+        is_kodu = f"{k}.IS"
+        if is_kodu in toplu_data:
+            sub_df = toplu_data[is_kodu].dropna()
+            if not sub_df.empty:
+                s_f = float(sub_df["Close"].iloc[-1])
+                o_f = float(sub_df["Close"].iloc[-2]) if len(sub_df) >= 2 else s_f
+                canli_havuz[k] = {"son": s_f, "onceki": o_f}
+
+tablo_bta = []
+tablo_alsat = []
+
