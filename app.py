@@ -15,7 +15,7 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
+# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve WhatsApp Tarzı Sohbet CSS Kodları
 st.markdown(f'''
 <style>
     .logo-container {{
@@ -83,6 +83,53 @@ st.markdown(f'''
         border: 1px solid rgba(255, 0, 0, 0.3);
         margin-top: 40px;
         font-weight: bold;
+    }}
+    
+    /* WhatsApp Sohbet Tasarım Alanı */
+    .chat-container {{
+        background-color: #0b141a;
+        background-image: url('https://githubusercontent.com');
+        background-repeat: repeat;
+        border-radius: 10px;
+        padding: 15px;
+        max-height: 400px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border: 1px solid #222e35;
+        margin-bottom: 15px;
+    }}
+    .msg-box {{
+        max-width: 65%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        position: relative;
+        line-height: 1.4;
+        color: #e9edef;
+    }}
+    .msg-user {{
+        background-color: #005c4b;
+        align-self: flex-end;
+        border-top-right-radius: 0px;
+    }}
+    .msg-other {{
+        background-color: #202c33;
+        align-self: flex-start;
+        border-top-left-radius: 0px;
+    }}
+    .msg-sender {{
+        font-size: 11px;
+        font-weight: bold;
+        color: #00a884;
+        margin-bottom: 3px;
+    }}
+    .msg-time {{
+        font-size: 10px;
+        color: rgba(233, 237, 239, 0.6);
+        text-align: right;
+        margin-top: 4px;
     }}
 </style>
 ''', unsafe_allow_html=True)
@@ -155,7 +202,7 @@ if os.path.exists(excel_yolu):
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
                     hist = ticker.history(period="1d")
-                    canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
+                    canli_fiyat = float(hist['Close'].iloc[-1]) if not font.empty else 0.0
                 except:
                     canli_fiyat = 0.0
                     
@@ -212,10 +259,8 @@ if os.path.exists(excel_yolu):
         else:
             st.info("Alt panel için veri işleniyor...")
             
-        # YASAL UYARI METNİ (YTD)
-        st.markdown('<div class="yasal-uyari">⚠️ YASAL UYARI: Bu uygulamada yer alan tüm bilgiler, tablolar ve analizler sadece takip amaçlıdır. Kesinlikle yatırım tavsiyesi değildir!</div>', unsafe_allow_html=True)
-            
-    except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
+        # 💬 WHATSAPP TARZI SOHBET VE NOT ALANI
+        st.write("")
+        st.markdown('<div class="panel-title-blue">💬 BTA SOHBET VE ANALİZ ODASI</div>', unsafe_allow_html=True)
+        
+        # Hafızada mesaj geçmişini tutma (Session State)
