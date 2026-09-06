@@ -15,7 +15,7 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Akar Haber Bülteni CSS Kodları
+# Şık Neon Tasarım, Gökkuşağı Çember, Yazı veinsanların gözünü yormayan Ticker CSS Yapısı
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -125,7 +125,7 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Zaman Düzenlemesi (Sizin sildiğiniz temiz düzen)
+# Zaman Düzenlemesi (Sizin ellerinizle sildiğiniz temiz düzen)
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align: center;"><span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 # 🟡 CANLI ALTIN VE BİST 100 MOTORU
@@ -154,7 +154,7 @@ yr_txt = f"{p_yarim:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 tm_txt = f"{p_tam:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 bi_txt = f"{p_bist:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# 📺 LOGONUN ALTINDAN GEÇEN NEON AKAR HABER BÜLTENİ BANTI ÇIKTISI
+# 📺 BTA LOGOSUNUN ALTINDAN GEÇEN NEON AKAR HABER BÜLTENİ BANTI ÇIKTISI
 st.markdown(f'''
 <div class="haber-banti-konteyner">
     <div class="haber-akisi">
@@ -169,7 +169,6 @@ st.markdown(f'''
 
 excel_yolu = "nurican.xls.xlsm"
 
-# 🟢 HATA RİSKİ SIFIRLANMIŞ DÜZ VE BAĞIMSIZ BLOK YAPISI
 if os.path.exists(excel_yolu):
     df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
     
@@ -193,7 +192,7 @@ if os.path.exists(excel_yolu):
 
     st.write("---")
 
-    # ⚡ TOPLU VERİ İNDİRME ADIMI
+    # ⚡ TOPLU VERİ İNDİRME ADIMI (Hata riskini sıfırlayan bağımsız blok)
     sinir = min(10, len(df))
     ust_kodlar = []
     alt_kodlar = []
