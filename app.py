@@ -8,63 +8,112 @@ from streamlit_autorefresh import st_autorefresh
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-st.markdown('<style>.stApp {background: #0f172a!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}</style>', unsafe_allow_html=True)
+# CSS ve Özel Animasyonların Entegre Edilmesi
+st.markdown('''
+<style>
+    /* Google Fonts'tan El Yazısı Fontu (Caveat) Yükleme */
+    @import url('https://googleapis.com');
 
-# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir hiçbir şeye dokunmadan kendi kendini yeniler
-st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
-# Her yenilemede animasyonu baştan oynatmak için zaman damgası
-anim_id = int(time.time())
+    .stApp {background: #0f172a!important; padding: 0.5rem;} 
+    h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} 
+    .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} 
+    .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
+    .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} 
+    .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}
 
-# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
-st.markdown(f'''
-   /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
-    .logo-konteyner {{
+    /* --- RGB SALLANAN ÇEMBER VE EL YAZISI ANIMASYONU --- */
+    .animasyon-konteyner {
         display: flex;
         justify-content: center;
         align-items: center;
         padding: 20px 0;
-        margin-bottom: 10px;
-    }}
-    .cember-animasyon-{anim_id} {{
-        width: 120px;
-        height: 120px;
-        border: 4px solid #fff;
+        width: 100%;
+    }
+
+    .neon-circle {
+        width: 180px;
+        height: 180px;
         border-radius: 50%;
+        border: 5px solid #fff;
         display: flex;
         justify-content: center;
         align-items: center;
-        background: transparent;
-        position: relative;
-        overflow: hidden;
-        animation: 
-            gokkusagiCember 4s linear infinite,
-            yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }}
-    .bta-yazi-{anim_id} {{
-        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 3.2rem;
+        text-align: center;
+        padding: 10px;
+        box-sizing: border-box;
+        
+        /* Sallanma ve renk değiştirme animasyonları */
+        animation: swing 3s ease-in-out infinite alternate, rgb-glow 6s linear infinite;
+        transform-origin: top center; /* Üstten asılmış sarkaç efekti */
+    }
+
+    .neon-text {
+        font-family: 'Caveat', cursive; /* İstenen el yazısı fontu */
+        font-size: 22px;
         font-weight: bold;
-        margin: 0;
-        padding: 0;
-        z-index: 2;
-        background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
-        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
-        animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    }}
+        line-height: 1.2;
+        letter-spacing: 1px;
+        word-wrap: break-word;
+        animation: rgb-text 6s linear infinite;
+    }
+
+    /* Sarkaç gibi Sallanma Efekti */
+    @keyframes swing {
+        0% { transform: rotate(-12deg); }
+        100% { transform: rotate(12deg); }
+    }
+
+    /* Çember için RGB Geçiş Efekti */
+    @keyframes rgb-glow {
+        0%, 100% { border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 10px #ff0000; }
+        16% { border-color: #00ff00; box-shadow: 0 0 15px #00ff00, inset 0 0 10px #00ff00; }
+        33% { border-color: #0000ff; box-shadow: 0 0 15px #0000ff, inset 0 0 10px #0000ff; }
+        50% { border-color: #ffff00; box-shadow: 0 0 15px #ffff00, inset 0 0 10px #ffff00; }
+        66% { border-color: #ff00ff; box-shadow: 0 0 15px #ff00ff, inset 0 0 10px #ff00ff; }
+        83% { border-color: #00ffff; box-shadow: 0 0 15px #00ffff, inset 0 0 10px #00ffff; }
+    }
+
+    /* Yazı için RGB Geçiş Efekti */
+    @keyframes rgb-text {
+        0%, 100% { color: #ff0000; text-shadow: 0 0 8px #ff0000; }
+        16% { color: #00ff00; text-shadow: 0 0 8px #00ff00; }
+        33% { color: #0000ff; text-shadow: 0 0 8px #0000ff; }
+        50% { color: #ffff00; text-shadow: 0 0 8px #ffff00; }
+        66% { color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
+        83% { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+    }
+</style>
+''', unsafe_allow_html=True)
+
+# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir kendi kendini yeniler
+st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
+
+# Üst Başlık Düzeni: Sol tarafta saat, sağ tarafta sallanan logomuz
+ust_sol, ust_sag = st.columns([2, 1])
+
+with ust_sol:
+    guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+    st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-top: 40px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;"><br>(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+
+with ust_sag:
+    # İstediğiniz animasyonlu alan
+    st.markdown('''
+    <div class="animasyon-konteyner">
+        <div class="neon-circle">
+            <div class="neon-text">YOLOYACAM<br>KODO<br>BTA</div>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+
 excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
         tablo_bta = []
         tablo_alsat = []
 
-        # İlk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
         sinir = min(10, len(df))
         
         for idx in range(sinir):
@@ -75,7 +124,6 @@ if os.path.exists(excel_yolu):
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 
-                # BTA PUAN YUVARLAMA KONTROLÜ
                 try:
                     puan_temiz = f"{float(puan_d):.2f}"
                 except:
