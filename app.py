@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -46,7 +46,6 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # 🔍 CANLI FİYAT ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
         hisse_havuzu = []
         if len(df.columns) >= 5:
@@ -71,7 +70,6 @@ if os.path.exists(excel_yolu):
         
         st.write("---")
         
-        # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
         tablo_bta = []
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -100,7 +98,6 @@ if os.path.exists(excel_yolu):
         else:
             st.info("Üst panel için veri işleniyor...")
 
-        # 2. ALT PANEL VERİLERİ (B Sütunu)
         st.write("")
         tablo_alsat = []
         for idx in range(min(10, len(df))):
@@ -168,14 +165,11 @@ else:
                     pass
                 st.rerun()
 
-    sohbet_gecmisi = []
-    if os.path.exists(sohbet_dosyası):
-        try:
-            with open(sohbet_dosyası, "r", encoding="utf-8") as f:
-                sohbet_gecmisi = json.load(f)
-        except:
-            pass
-
-    if sohbet_gecmisi:
-        for m in reversed(sohbet_gecmisi):
-            st.markdown(f'''
+    # 🛠️ GİZLİ YÖNETİCİ VE TEMİZLEME PANELİ
+    with st.expander("🛠️ Admin / Moderatör Paneli"):
+        admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...")
+        if admin_sifre == "bta123":
+            if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
+                try:
+                    with open(sohbet_dosyası, "w", encoding="utf-8") as f:
+                        json.dump([], f)
