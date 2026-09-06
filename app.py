@@ -125,10 +125,10 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Sizin sildiğiniz temiz düzen: Sadece otomatik yenilenme yazısı kalacak
+# Zaman Düzenlemesi (Yenilenme yazısı)
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align: center;"><span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
-# 🟡 CANLI ALTIN VE BİST 100 YÖNETİM MOTORU
+# 🟡 CANLI ALTIN VE BİST 100 MOTORU
 def canli_piyasa_verilerini_hesapla():
     saf_gram, ceyrek, yarim, tam, bist_fiyat = 3025.00, 4950.00, 9900.00, 19800.00, 14000.00
     try:
@@ -148,14 +148,13 @@ def canli_piyasa_verilerini_hesapla():
 
 p_gram, p_ceyrek, p_yarim, p_tam, p_bist = canli_piyasa_verilerini_hesapla()
 
-# Fiyat Metinlerini Türkiye Formatına Noktalı/Virgüllü Çevirme Girişi
 sg_txt = f"{p_gram:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 cy_txt = f"{p_ceyrek:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 yr_txt = f"{p_yarim:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 tm_txt = f"{p_tam:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 bi_txt = f"{p_bist:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# 📺 LOGONUN ALTINDAN GEÇEN AKAR HABER BÜLTENİ BANTI ÇIKTISI
+# 📺 LOGONUN ALTINDAN GEÇEN NEON AKAR HABER BÜLTENİ BANTI ÇIKTISI
 st.markdown(f'''
 <div class="haber-banti-konteyner">
     <div class="haber-akisi">
@@ -171,51 +170,58 @@ st.markdown(f'''
 excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
-    try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
-        # 🔍 CANLI ARAMA MOTORU SİSTEMİ
-        st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
-        hisse_havuzu = []
-        if len(df.columns) >= 5:
-            e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
-            hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-            hisse_havuzu = sorted(list(set(hisse_havuzu)))
-        
-        secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
-        
-        if secilen_hisse != "Seçiniz...":
-            try:
-                hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
-                if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: {arama_canli_fiyat:.2f} TL | Günlük Değişim: %{arama_degisim:+.2f}")
-            except:
-                st.error("Veri motoru bağlantı hatası.")
-        
-        st.write("---")
+    # Excel okuma işlemi bağımsız ve sade hale getirildi
+    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+    
+    # 🔍 CANLI ARAMA MOTORU SİSTEMİ
+    st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
+    hisse_havuzu = []
+    if len(df.columns) >= 5:
+        e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
+        hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
+        hisse_havuzu = sorted(list(set(hisse_havuzu)))
+    
+    secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
+    
+    if secilen_hisse != "Seçiniz...":
+        hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
+        if not hist_ara.empty:
+            arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
+            onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+            arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
+            st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: {arama_canli_fiyat:.2f} TL | Günlük Değişim: %{arama_degisim:+.2f}")
 
-        # ⚡ TOPLU VERİ İNDİRME ALTYAPISI (Hata veren tüm döngü içi kodları sıfırlayan emniyet kilidi)
-        sinir = min(10, len(df))
-        ust_kodlar = []
-        alt_kodlar = []
-        
-        for idx in range(sinir):
-            h_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            h_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            if h_a and h_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                ust_kodlar.append(h_a)
-            if h_b and h_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                alt_kodlar.append(h_b)
-                
-        tum_liste = list(set(ust_kodlar + alt_kodlar))
-        canli_havuz = {}
-        
-        if tum_liste:
-            try:
-                indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
-                toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
-                for k in tum_liste:
-                    is_kodu = f"{k}.IS"
+    st.write("---")
+
+    # ⚡ TOPLU VERİ İNDİRME SİSTEMİ (Çökmeleri Engelleyen Bağımsız Havuz)
+    sinir = min(10, len(df))
+    ust_kodlar = []
+    alt_kodlar = []
+    
+    for idx in range(sinir):
+        h_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+        h_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+        if h_a and h_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+            ust_kodlar.append(h_a)
+        if h_b and h_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+            alt_kodlar.append(h_b)
+            
+    tum_liste = list(set(ust_kodlar + alt_kodlar))
+    canli_havuz = {}
+    
+    if tum_liste:
+        indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
+        toplu_data = yf.download(indirme_metni, period="2d", progress=False, group_by="ticker")
+        for k in tum_liste:
+            is_kodu = f"{k}.IS"
+            if is_kodu in toplu_data:
+                sub_df = toplu_data[is_kodu].dropna()
+                if not sub_df.empty:
+                    s_f = float(sub_df["Close"].iloc[-1])
+                    o_f = float(sub_df["Close"].iloc[-2]) if len(sub_df) >= 2 else s_f
+                    canli_havuz[k] = {"son": s_f, "onceki": o_f}
+
+    tablo_bta = []
+    tablo_alsat = []
+    
+    for idx in range(sinir):
