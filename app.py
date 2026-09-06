@@ -27,9 +27,8 @@ def veritabanindan_mesajlari_getir():
         if response.status_code == 200 and response.json():
             veriler = response.json()
             mesaj_listesi = [veri for veri in veriler.values()]
-            # Mesajları zaman damgasına göre sırala
             mesaj_listesi = sorted(mesaj_listesi, key=lambda x: x.get('timestamp', 0))
-            return mesaj_listesi[-30:] # Sadece son 30 mesajı getir (Performans için)
+            return mesaj_listesi[-30:] # Sadece son 30 mesajı getir
     except Exception:
         pass
     return [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
@@ -48,6 +47,29 @@ def veritabanina_mesaj_gonder(kullanici, mesaj):
         return True
     except Exception:
         return False
+
+# Yardımcı Veri İşleme Fonksiyonları (Girinti Hatalarını Engellemek İçin)
+def hisse_fiyati_cek(hisse_kodu, period="1d"):
+    try:
+        ticker = yf.Ticker(f"{hisse_kodu}.IS")
+        hist = ticker.history(period=period)
+        if not hist.empty:
+            return hist
+    except Exception:
+        pass
+    return None
+
+def temiz_puan(puan_d):
+    try:
+        return f"{float(puan_d):.2f}"
+    except Exception:
+        return str(puan_d).strip() if pd.notna(puan_d) else ""
+
+def temiz_maliyet(alim_c):
+    try:
+        return float(str(alim_c).replace(",", "."))
+    except Exception:
+        return 0.0
 
 # Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Sohbet Kutusu CSS Kodları
 st.markdown(f'''
@@ -68,43 +90,16 @@ st.markdown(f'''
     .mesaj-yetkili {{color: #38bdf8 !important; font-weight: bold;}}
     
     /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
-    .logo-konteyner {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px 0;
-        margin-bottom: 10px;
-    }}
+    .logo-konteyner {{ display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px; }}
     .cember-animasyon-{anim_id} {{
-        width: 120px;
-        height: 120px;
-        border: 4px solid #fff;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: transparent;
-        position: relative;
-        overflow: hidden;
-        animation: 
-            gokkusagiCember 4s linear infinite,
-            yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden;
+        animation: gokkusagiCember 4s linear infinite, yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }}
     .bta-yazi-{anim_id} {{
-        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 3.2rem;
-        font-weight: bold;
-        margin: 0;
-        padding: 0;
-        z-index: 2;
-        background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
-        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
-        animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2;
+        background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;
+        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3)); animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }}
-    
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
         14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
@@ -122,7 +117,6 @@ st.markdown(f'''
 # 🖥️ SOL MENÜ (SIDEBAR) - CANLI SOHBET ODASI ALANI
 with st.sidebar:
     st.markdown('<div class="sohbet-baslik">💬 BTA CANLI SOHBET ODASI</div>', unsafe_allow_html=True)
-    
     canli_mesajlar = veritabanindan_mesajlari_getir()
     
     sohbet_html = '<div class="sohbet-kutusu">'
@@ -140,8 +134,7 @@ with st.sidebar:
         gonder_butonu = st.form_submit_form_button("Gönder 📩")
         
         if gonder_butonu and yeni_mesaj.strip():
-            basarili = veritabanina_mesaj_gonder(takma_ad.strip(), yeni_mesaj.strip())
-            if basarili:
+            if veritabanina_mesaj_gonder(takma_ad.strip(), yeni_mesaj.strip()):
                 st.rerun()
 
 # LOGO EKRAN ÇIKTISI
@@ -153,16 +146,11 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Saat Göstergesi
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;"> <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
-
 excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
         
         hisse_havuzu = []
@@ -174,19 +162,14 @@ if os.path.exists(excel_yolu):
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
-            try:
-                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
-                hist_ara = ticker_ara.history(period="2d")
-                if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    
-                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
-                else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
-            except Exception:
-                st.error("Veri motoru bağlantı hatası.")
+            hist_ara = hisse_fiyati_cek(secilen_hisse, period="2d")
+            if hist_ara is not None:
+                arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
+                onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+                arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
+                st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
+            else:
+                st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
         
         st.write("---")
 
@@ -199,4 +182,7 @@ if os.path.exists(excel_yolu):
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
 
+            # Üst Panel Verileri İşleme
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                puan_temiz_veri = temiz_puan(puan_d)
+                hist_bta = hisse_fiyati_cek(hisse_a, period="1d")
