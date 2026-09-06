@@ -185,4 +185,3 @@ else:
                             "zaman": datetime.datetime.now().strftime("%H:%M:%S")
                         })
                         if len(mevcut) > 40:
- 
