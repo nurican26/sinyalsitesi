@@ -8,9 +8,20 @@ import time
 import uuid
 import re  
 
+# st_autorefresh kütüphanesini en güvenli şekilde dahil ediyoruz
+try:
+    from streamlit_autorefresh import st_autorefresh
+except ImportError:
+    st.error("Lütfen projenize 'streamlit-autorefresh' kütüphanesini yükleyin (requirements.txt dosyasına ekleyin).")
+
 # Sayfa Yapılandırması ve Otomatik Yenileme (10 saniyede bir)
 st.set_page_config(page_title="BTA Merkez", layout="wide")
-st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
+
+try:
+    st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
+except NameError:
+    pass
+
 anim_id = int(time.time())
 
 # CSS Tasarımları
@@ -174,11 +185,4 @@ else:
                             "zaman": datetime.datetime.now().strftime("%H:%M:%S")
                         })
                         if len(mevcut) > 40:
-                            mevcut = mevcut[-40:]
-                        try:
-                            with open(sohbet_dosyası, "w", encoding="utf-8") as f:
-                                json.dump(mevcut, f, ensure_ascii=False, indent=4)
-                        except:
-                            pass
-                        
  
