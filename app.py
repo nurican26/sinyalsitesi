@@ -20,6 +20,7 @@ st.markdown(f'''
     .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
+    .arama-baslik {{background: linear-gradient(90deg, #3b82f6 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:10px; margin-bottom:20px;}}
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite;}}
@@ -74,6 +75,8 @@ def formatla_tl(deger):
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        
+        # --- ÜST PANEL (BTA HİSSELERİ) ---
         tablo_bta = []
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -107,6 +110,8 @@ if os.path.exists(excel_yolu):
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
 
         st.write("")
+        
+        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) ---
         tablo_alsat = []
         for idx in range(min(10, len(df))):
             hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
@@ -132,69 +137,45 @@ if os.path.exists(excel_yolu):
         if len(tablo_alsat) > 0:
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
 
-    except:
-        st.error("Excel verileri yüklenirken bir sorun oluştu.")
-else:
-    st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
-
-st.write("---")
-st.header("💬  CANLI SOHBET ODASI")
-
-if "kullanici_adi" not in st.session_state:
-    st.session_state.kullanici_adi = ""
-
-if not st.session_state.kullanici_adi:
-    with st.form("giris_formu"):
-        st.subheader("Sohbete Katılmak İçin Bir İsim Seçin")
-        gecici_isim = st.text_input("Kullanıcı Adınız:", placeholder="Örn: Nuri Can")
-        if st.form_submit_button("Odaya Bağlan"):
-            if gecici_isim.strip():
-                st.session_state.kullanici_adi = gecici_isim.strip()
-                st.rerun()
-else:
-    st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
-    
-    # Ortak Canlı Havuza Kesintisiz Mesaj Ekleme Fonksiyonu
-    def mesaj_gonder_kesin():
-        metin = st.session_state.yeni_mesaj_kutusu.strip()
-        if metin:
-            filtrelenmis_mesaj = sohbet_temizle(metin)
-            ortak_havuz.append({
-                "mesaj_id": str(uuid.uuid4()),
-                "cihaz_id": st.session_state.cihaz_id,
-                "isim": st.session_state.kullanici_adi, 
-                "mesaj": filtrelenmis_mesaj, 
-                "zaman": datetime.datetime.now().strftime("%H:%M:%S")
-            })
-            if len(ortak_havuz) > 40:
-                # Referansı bozmadan ilk elemanı siler
-                ortak_havuz.pop(0)
-            st.session_state.yeni_mesaj_kutusu = "" # Giriş alanını sıfırla
-
-    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_kesin, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
-    st.button("Gönder 🚀", on_click=mesaj_gonder_kesin)
-
-    with st.expander("🛠️ Admin / Moderatör Paneli"):
-        admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...", key="admin_sifre_key")
-        if admin_sifre == "3015":
-            if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
-                ortak_havuz.clear()
-                st.success("Sohbet odası sıfırlandı!")
-                time.sleep(1)
-                st.rerun()
-
-    st.write("")
-    chat_alani = st.container()
-    
-    with chat_alani:
-        if ortak_havuz:
-            for m in reversed(ortak_havuz):
-                with st.chat_message("user"):
-                    st.markdown(f"**@{m['isim']}**  *({m['zaman']})*")
-                    st.write(m['mesaj'])
-                    if m.get("cihaz_id") == st.session_state.cihaz_id:
-                        if st.button("❌ Sil", key=m.get("mesaj_id")):
-                            ortak_havuz.remove(m)
-                            st.rerun()
+        st.write("---")
+        
+        # --- BIST ANLIK ARAMA MOTORU (E SÜTUNU, E2 SATIRINDAN İTİBAREN) ---
+        st.markdown('<div class="arama-baslik">🔍 BIST ANLIK HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
+        
+        # Excel'deki E sütunundaki tüm benzersiz ve boş olmayan hisseleri okur
+        if len(df.columns) >= 5: # E sütunu var mı kontrolü
+            tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
+            # Başlık satırını veya geçersiz verileri temizle
+            tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
+            tum_hisseler.sort()
+            
+            if tum_hisseler:
+                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
+                
+                if aranan_hisse != "Seçiniz...":
+                    with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
+                        try:
+                            h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
+                            if not h_detay.empty:
+                                anlik_fiyat = float(h_detay['Close'].iloc[-1])
+                                dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
+                                gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
+                                gunun_en_yuksek = float(h_detay['High'].iloc[-1])
+                                gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
+                                
+                                # Arama Sonuçlarını Kart Düzeni Şeklinde Göster
+                                col1, col2, col3 = st.columns(3)
+                                col1.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                                col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                                col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                            else:
+                                st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı. Lütfen Excel'deki kodu kontrol edin (Örn: THYAO, EREGL).")
+                        except Exception as e:
+                            st.error("Borsa verisi çekilirken bir hata oluştu.")
+            else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
         else:
-            st.info("Sohbet odası şu an sessiz.")
+            st.error("Excel dosyasında E sütunu bulunamadı!")
+
+    except Exception as e:
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
