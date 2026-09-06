@@ -176,18 +176,22 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                puan_temiz = ""
                 try:
                     puan_temiz = f"{float(puan_d):.2f}"
                 except:
                     puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
 
+                canli_fiyat = 0.0
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
                     hist = ticker.history(period="1d")
-                    canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
+                    if not hist.empty:
+                        canli_fiyat = float(hist['Close'].iloc[-1])
                 except:
                     canli_fiyat = 0.0
                 
+                maliyet = 0.0
                 try:
                     maliyet = float(alim_c.replace(",", "."))
                 except:
@@ -209,5 +213,3 @@ if os.path.exists(excel_yolu):
             # 2. ALT PANEL VERİLERİ (B Sütunu)
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             
-            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                try:
