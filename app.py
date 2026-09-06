@@ -16,7 +16,9 @@ st.markdown(f'''
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
     h1,h2,h3,h4,h5,h6,p,span,label {{color: #fff!important;}} 
     .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
+    .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
+    .yukselen-baslik {{background: linear-gradient(90deg, #2563eb 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:20px;}}
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite, yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}}
@@ -33,10 +35,77 @@ st.markdown(f'''
 ''', unsafe_allow_html=True)
 
 st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align: center; color: #cbd5e1; font-weight: bold; margin-bottom: 20px;">📈 Canlı Piyasa & 💬 Ortak Sohbet Merkezi</div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
+st.header("📊 CANLI BORSA TAKİP EKRANI")
+
+if os.path.exists(excel_yolu):
+    try:
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        
+        # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
+        tablo_bta = []
+        for idx in range(min(10, len(df))):
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                c_fiyat = 0.0
+                try:
+                    t_bta = yf.Ticker(f"{ha}.IS")
+                    h_bta = t_bta.history(period="1d")
+                    if not h_bta.empty:
+                        c_fiyat = float(h_bta['Close'].iloc[-1])
+                except:
+                    pass
+                try:
+                    maliyet = float(alim_c.replace(",", "."))
+                except:
+                    maliyet = 0.0
+                kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
+                tablo_bta.append({"BTA PUAN 🔢": p_temiz, "BTA HİSSE 📈": ha, "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c, "GÜNCEL FİYAT 💥": f"{c_fiyat:.2f} TL" if c_fiyat > 0 else "Yükleniyor...", "KAR / ZARAR 📊": kz_str})
+        
+        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
+        if len(tablo_bta) > 0:
+            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
+        else:
+            st.info("Üst panel için veri işleniyor...")
+
+        # 2. ALT PANEL VERİLERİ (B Sütunu)
+        st.write("")
+        tablo_alsat = []
+        for idx in range(min(10, len(df))):
+            hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            if hb != "" and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                as_fiyat = 0.0
+                as_deg = 0.0
+                try:
+                    t_as = yf.Ticker(f"{hb}.IS")
+                    h_as = t_as.history(period="2d")
+                    if not h_as.empty:
+                        as_fiyat = float(h_as['Close'].iloc[-1])
+                        as_prev = float(h_as['Close'].iloc[-2]) if len(h_as) >= 2 else as_fiyat
+                        as_deg = ((as_fiyat - as_prev) / as_prev) * 100
+                except:
+                    pass
+                tablo_alsat.append({"GÜNLÜK AL SAT HİSSELERİ ⚡": hb, "ANLIK VERİ CANLI 📊": f"{as_fiyat:.2f} TL" if as_fiyat > 0 else "Yükleniyor...", "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-"})
+        
+        st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
+        if len(tablo_alsat) > 0:
+            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+        else:
+            st.info("Alt panel için veri işleniyor...")
+
+    except Exception as e:
+        st.error(f"Excel tabloları yüklenirken bir veri hatası oluştu: {e}")
+else:
+    st.error(f"'{excel_yolu}' dosyası sistemde bulunamadı!")
+
+st.write("---")
 st.header("💬 BTA ORTAK CANLI SOHBET ODASI")
 
 if "kullanici_adi" not in st.session_state:
@@ -95,4 +164,3 @@ else:
         st.info("Sohbet odası şu an sessiz.")
 
 st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
- 
