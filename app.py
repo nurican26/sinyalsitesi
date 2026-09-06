@@ -53,7 +53,7 @@ st.markdown('<div style="text-align: center; color: #cbd5e1; font-weight: bold; 
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
-# --- GÜVENLİ VE HIZLI YARDIMCI FONKSİYONLAR (HATA RİSKSİZ) ---
+# --- GÜVENLİ FONKSİYONLAR ---
 def bst_en_cok_yukselenler():
     sonuclar = []
     for h in ["THYAO", "ASELS", "GARAN", "AKBNK", "EREGL", "TUPRS", "ISCTR", "KCHOL", "SAHOL", "YKBNK", "BIMAS", "SISE", "PGSUS", "EKGYO", "DOHOL", "PETKM", "ALARK", "ODAS"]:
@@ -111,13 +111,11 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # Günün En Çok Yükselenleri
         st.markdown('<div class="yukselen-baslik">🔥 ARACI KURUM: GÜNÜN EN ÇOK YÜKSELEN HİSSELERİ (CANLI)</div>', unsafe_allow_html=True)
         yukselen_df = bst_en_cok_yukselenler()
         if not yukselen_df.empty:
             st.dataframe(yukselen_df, use_container_width=True, hide_index=True)
         
-        # Arama Motoru
         st.write("")
         hisse_havuzu = []
         if len(df.columns) >= 5:
@@ -139,7 +137,6 @@ if os.path.exists(excel_yolu):
         sinir = min(10, len(df))
         
         for idx in range(sinir):
-            # Üst Panel İşlemleri
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
@@ -155,7 +152,7 @@ if os.path.exists(excel_yolu):
                 try:
                     maliyet = float(alim_c.replace(",", "."))
                 except:
-                    pass
+                    maliyet = 0.0
                 
                 kz_oran_str = "-"
                 if maliyet > 0 and canli_fiyat > 0:
@@ -163,7 +160,6 @@ if os.path.exists(excel_yolu):
                 
                 tablo_bta.append({"BTA PUAN 🔢": puan_temiz, "BTA HİSSE 📈": hisse_a, "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c, "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...", "KAR / ZARAR 📊": kz_oran_str})
 
-            # Alt Panel İşlemleri
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
                 as_canli_fiyat = 0.0
@@ -172,3 +168,5 @@ if os.path.exists(excel_yolu):
                 if hist_as is not None:
                     as_canli_fiyat = float(hist_as['Close'].iloc[-1])
                     onceki_kap_as = float(hist_as['Close'].iloc[-2]) if len(hist_as) >= 2 else as_canli_fiyat
+                    as_degisim = ((as_canli_fiyat - onceki_kap_as) / onceki_kap_as) * 100
+                
