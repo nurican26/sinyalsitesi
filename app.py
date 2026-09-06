@@ -25,7 +25,6 @@ st.markdown('''
         border-radius: 6px !important;
         font-weight: bold;
     }
-    /* Siber VIP Kontrol Paneli Kartı */
     .cyber-panel {
         background: rgba(15, 23, 42, 0.6);
         border: 1px solid rgba(16, 185, 129, 0.2);
@@ -43,7 +42,6 @@ st.markdown('''
         padding-top: 1rem; 
         padding-bottom: 0.5rem;
     }
-    /* Sinyal Kategorileri Renk Şeritleri */
     .alsat-baslik {
         background: linear-gradient(90deg, #ca8a04 0%, #060913 100%); 
         padding: 12px; 
@@ -65,7 +63,6 @@ st.markdown('''
         font-weight: bold !important; 
         color: #ffffff !important;
     }
-    /* Işıklı Neon Butonlar */
     div[data-testid="stButton"] button {
         background: rgba(16, 185, 129, 0.05) !important;
         color: #10b981 !important;
@@ -203,7 +200,7 @@ drawLoop();
 """
 components.html(bta_zikzak_efekti, height=160)
 
-# 🔐 ERİŞİM VE YÖNETİM ALANI (Cam Panel Girişi)
+# 🔐 ERİŞİM VE YÖNETİM ALANI
 st.markdown('<div class="cyber-panel">', unsafe_allow_html=True)
 st.markdown("### 🔐 Erişim ve Güvenlik Duvarı")
 girilen_sifre = st.text_input("Sinyal verilerine erişmek veya panel durumunu değiştirmek için şifre giriniz:", type="password", placeholder="Şifrenizi yazıp Enter tuşuna basın...")
@@ -226,27 +223,20 @@ if not erisim_izni:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # 💥 YENİ NESİL CANLI FİYAT VE TREND OKUYUCU
-def canlı_fiyat_ve_trend_bul(hisse_adı):
-    if hisse_adı in st.session_state["fiyat_hafizasi"]:
-        kayit_zamani, kayit_fiyati, trend_oku = st.session_state["fiyat_hafizasi"][hisse_adı]
+def canlı_fiyat_ve_trend_bul(hisse_adi):
+    if hisse_adi in st.session_state["fiyat_hafizasi"]:
+        kayit_zamani, kayit_fiyati, trend_oku = st.session_state["fiyat_hafizasi"][hisse_adi]
         if time.time() - kayit_zamani < 300:
             return kayit_fiyati, trend_oku
             
     try:
-        ticker = yf.Ticker(f"{hisse_adı}.IS")
+        ticker = yf.Ticker(f"{hisse_adi}.IS")
         data = ticker.history(period="2d")
         if len(data) >= 2:
             bugun = float(data['Close'].iloc[-1])
             dun = float(data['Close'].iloc[-2])
-            
-            if bugun > dun:
-                trend = " ▲"
-            elif bugun < dun:
-                trend = " ▼"
-            else:
-                trend = " ▬"
-                
-            st.session_state["fiyat_hafizasi"][hisse_adı] = (time.time(), bugun, trend)
+            trend = " ▲" if bugun > dun else (" ▼" if bugun < dun else " ▬")
+            st.session_state["fiyat_hafizasi"][hisse_adi] = (time.time(), bugun, trend)
             return bugun, trend
     except:
         pass
@@ -265,7 +255,8 @@ if erisim_izni:
         except:
             pass
 
-    tablo_alsat, tablo_al = [], []
+    tablo_alsat = []
+    tablo_al = []
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 
     if df_kaynak is not None:
@@ -280,7 +271,12 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            h_kod = str(h_ara[0]) # Güvenli string ayıklama
+                            h_kod = str(h_ara[0])
                             fiyat, trend = canlı_fiyat_ve_trend_bul(h_kod)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
                             puan = p_bul[0] if p_bul else t_deg
+                            
+                            satir = {
+                                "Hisse Kodu 📈": h_kod,
+                                "BTA Puan": puan,
+                                "💥 İnternet Canlı": f"{fiyat:.2f} TL{trend}" if fiyat > 0 else "Yükleniyor..."
