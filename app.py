@@ -3,9 +3,11 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import json
 import time
 import uuid
 import re
+import urllib.request
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici
@@ -37,9 +39,30 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# Bulut sunucusunun ortak RAM belleğinde kalıcı havuz oluşturma (Dosya yazma kilitlerini kırar)
-if "SUNUCU_HAFIZASI" not in globals():
-    globals()["SUNUCU_HAFIZASI"] = []
+# Ücretsiz Bulut Veritabanı API Fonksiyonları (Mesajları tüm internetteki cihazlar için ortak havuzda eşitler)
+BTA_BULUT_URL = "https://kvjson.com"
+
+def bulut_mesajlari_cek():
+    try:
+        req = urllib.request.Request(BTA_BULUT_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            veri = json.loads(response.read().decode('utf-8'))
+            return veri.get("value", []) if isinstance(veri, dict) else []
+    except:
+        return []
+
+def bulut_mesajlari_kaydet(mesaj_listesi):
+    try:
+        req = urllib.request.Request(
+            BTA_BULUT_URL, 
+            data=json.dumps({"value": mesaj_listesi}).encode('utf-8'),
+            headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            return True
+    except:
+        return False
 
 # Küfür ve argo kelime filtresi listesi
 KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
@@ -151,50 +174,34 @@ if not st.session_state.kullanici_adi:
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
     
-    # Sunucu Belleğine Doğrudan Kayıt Tetikleyicisi
-    def mesaj_gonder_global():
+    # Yeni İnternet Tabanlı Ortak Havuza Gönderme Fonksiyonu
+    def mesaj_gonder_bulut():
         metin = st.session_state.yeni_mesaj_kutusu.strip()
         if metin:
             filtrelenmis_mesaj = sohbet_temizle(metin)
-            globals()["SUNUCU_HAFIZASI"].append({
+            mevcut_mesajlar = bulut_mesajlari_cek()
+            
+            mevcut_mesajlar.append({
                 "mesaj_id": str(uuid.uuid4()),
                 "cihaz_id": st.session_state.cihaz_id,
                 "isim": st.session_state.kullanici_adi, 
                 "mesaj": filtrelenmis_mesaj, 
                 "zaman": datetime.datetime.now().strftime("%H:%M:%S")
             })
+            
             # Son 40 mesajı sınırla
-            if len(globals()["SUNUCU_HAFIZASI"]) > 40:
-                globals()["SUNUCU_HAFIZASI"] = globals()["SUNUCU_HAFIZASI"][-40:]
+            if len(mevcut_mesajlar) > 40:
+                mevcut_mesajlar = mevcut_mesajlar[-40:]
+                
+            bulut_mesajlari_kaydet(mevcut_mesajlar)
             st.session_state.yeni_mesaj_kutusu = "" # Kutuyu boşalt
 
-    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_global, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
-    st.button("Gönder 🚀", on_click=mesaj_gonder_global)
+    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_bulut, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
+    st.button("Gönder 🚀", on_click=mesaj_gonder_bulut)
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...", key="admin_sifre_key")
         if admin_sifre == "3015":
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
-                globals()["SUNUCU_HAFIZASI"] = []
+                bulut_mesajlari_kaydet([])
                 st.success("Sohbet odası sıfırlandı!")
-                time.sleep(1)
-                st.rerun()
-
-    st.write("")
-    chat_alani = st.container()
-    
-    with chat_alani:
-        if globals()["SUNUCU_HAFIZASI"]:
-            for m in reversed(globals()["SUNUCU_HAFIZASI"]):
-                with st.chat_message("user"):
-                    col_m, col_s = st.columns([0.85, 0.15])
-                    with col_m:
-                        st.markdown(f"**@{m['isim']}**  *({m['zaman']})*")
-                        st.write(m['mesaj'])
-                    with col_s:
-                        if m.get("cihaz_id") == st.session_state.cihaz_id:
-                            if st.button("❌ Sil", key=m.get("mesaj_id")):
-                                globals()["SUNUCU_HAFIZASI"] = [msg for msg in globals()["SUNUCU_HAFIZASI"] if msg.get("mesaj_id") != m.get("mesaj_id")]
-                                st.rerun()
-        else:
-            st.info("Sohbet odası şu an sessiz.")
