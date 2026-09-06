@@ -37,13 +37,6 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-# Streamlit Sunucu Kalbinde Ortak Hafıza Alanı (Tüm kullanıcılara ortak yayın yapar)
-@st.cache_resource
-def sunucu_ortak_havuzu_kur():
-    return {"mesajlar": []}
-
-ortak_havuz = sunucu_ortak_havuzu_kur()
-
 # Küfür ve argo kelime filtresi listesi
 KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
 
@@ -58,6 +51,10 @@ def sohbet_temizle(metin):
 
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
+
+# Sunucu genelinde tüm kullanıcılara açık ortak canlı bellek alanı
+if "ortak_canli_havuz" not in st.session_state.__class__._get_environ():
+    st.session_state.__class__._get_environ()["ortak_canli_havuz"] = []
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
@@ -154,31 +151,31 @@ if not st.session_state.kullanici_adi:
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
     
-    # Sunucu Önbelleğine Güvenli Mesaj Ekleme Fonksiyonu
-    def mesaj_gonder_onbellek():
+    # Ortak Canlı Havuza Kesintisiz Mesaj Ekleme Fonksiyonu
+    def mesaj_gonder_kesin():
         metin = st.session_state.yeni_mesaj_kutusu.strip()
         if metin:
             filtrelenmis_mesaj = sohbet_temizle(metin)
-            ortak_havuz["mesajlar"].append({
+            havuz = st.session_state.__class__._get_environ()["ortak_canli_havuz"]
+            havuz.append({
                 "mesaj_id": str(uuid.uuid4()),
                 "cihaz_id": st.session_state.cihaz_id,
                 "isim": st.session_state.kullanici_adi, 
                 "mesaj": filtrelenmis_mesaj, 
                 "zaman": datetime.datetime.now().strftime("%H:%M:%S")
             })
-            # Son 40 mesaj sınırlandırması
-            if len(ortak_havuz["mesajlar"]) > 40:
-                ortak_havuz["mesajlar"] = ortak_havuz["mesajlar"][-40:]
-            st.session_state.yeni_mesaj_kutusu = "" # Giriş alanını temizle
+            if len(havuz) > 40:
+                st.session_state.__class__._get_environ()["ortak_canli_havuz"] = havuz[-40:]
+            st.session_state.yeni_mesaj_kutusu = "" # Giriş alanını sıfırla
 
-    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_onbellek, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
-    st.button("Gönder 🚀", on_click=mesaj_gonder_onbellek)
+    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_kesin, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
+    st.button("Gönder 🚀", on_click=mesaj_gonder_kesin)
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...", key="admin_sifre_key")
         if admin_sifre == "3015":
             if st.button("🚨 Tüm Sohbet Geçmişini Sıfırla"):
-                ortak_havuz["mesajlar"] = []
+                st.session_state.__class__._get_environ()["ortak_canli_havuz"] = []
                 st.success("Sohbet odası sıfırlandı!")
                 time.sleep(1)
                 st.rerun()
@@ -186,9 +183,11 @@ else:
     st.write("")
     chat_alani = st.container()
     
+    canli_mesajlar = st.session_state.__class__._get_environ()["ortak_canli_havuz"]
+    
     with chat_alani:
-        if ortak_havuz["mesajlar"]:
-            for m in reversed(ortak_havuz["mesajlar"]):
+        if canli_mesajlar:
+            for m in reversed(canli_mesajlar):
                 with st.chat_message("user"):
                     col_m, col_s = st.columns([0.85, 0.15])
                     with col_m:
@@ -197,6 +196,3 @@ else:
                     with col_s:
                         if m.get("cihaz_id") == st.session_state.cihaz_id:
                             if st.button("❌ Sil", key=m.get("mesaj_id")):
-                                ortak_havuz["mesajlar"] = [msg for msg in ortak_havuz["mesajlar"] if msg.get("mesaj_id") != m.get("mesaj_id")]
-                                st.rerun()
-        else:
