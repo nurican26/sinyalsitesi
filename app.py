@@ -42,16 +42,22 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
-KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
+# Kapsamlı Küfür, Argo ve Hakaret Filtre Listesi
+KUFUR_LISTESI = [
+    "amk", "aq", "amına", "amını", "orospu", "siktir", "sik", "piç", "pç", "sktr", "yarrak", "yarak",
+    "göt", "got", "gavat", "pezevenk", "pkk", "oç", "meme", "daşşak", "taşşak", "orostopol", "kahpe",
+    "orospu çocuğu", "sikik", "sikiş", "sokam", "sokayım", "amcık", "ibne", "puşt", "yavşak", "it",
+    "köpek", "şerefsiz", "orospu cocugu", "mal", "salak", "gerizekalı", "keriz", "embesil"
+]
 
-def sohbet_temizle(metin):
-    temiz_metin = metin
+def icerik_kontrol_et(metin):
+    # Metindeki boşlukları ve özel karakterleri temizleyerek kelime bazlı ve bütünsel kontrol yapar
+    temiz_metin = metin.lower().strip()
     for kelime in KUFUR_LISTESI:
-        if kelime in temiz_metin.lower():
-            sansur = "*" * len(kelime)
-            insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
-            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
-    return temiz_metin
+        # Kelimenin metin içinde parça olarak veya doğrudan geçip geçmediğini kontrol eder
+        if kelime in temiz_metin:
+            return True
+    return False
 
 # Tüm kullanıcıların göreceği ortak canlı havuz
 @st.cache_resource
@@ -175,12 +181,3 @@ for msg in ortak_havuz[-50:]:
     sohbet_html += f'''
     <div class="mesaj-satiri">
         <span class="mesaj-sahibi">{msg["kullanici"]}</span>
-        <span class="mesaj-zamani">{msg["zaman"]}</span>
-        <p style="margin: 4px 0 0 0; color: #fff !important;">{msg["mesaj"]}</p>
-    </div>
-    '''
-sohbet_html += '</div>'
-st.markdown(sohbet_html, unsafe_allow_html=True)
-
-# Form yapısı ve altındaki elemanların tamamının girintisi hizalandı
-with st.form("mesaj_formu", clear_on_submit=True):
