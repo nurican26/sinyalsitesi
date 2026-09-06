@@ -93,14 +93,15 @@ ust_sol, ust_sag = st.columns([2, 1])
 
 with ust_sol:
     guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-    st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-top: 40px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;"><br>(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-top: 40px; font-weight: bold;"> <span style="color:#10b981; font-size:0.9rem;"><br>(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 with ust_sag:
     # İstediğiniz animasyonlu alan
     st.markdown('''
     <div class="animasyon-konteyner">
         <div class="neon-circle">
-            <div class="neon-text"><br>BTA</div>
+           with ust_sag: # İstediğiniz animasyonlu alan
+    st.markdown(''' <div class="neon-text" style="font-size: 70px;"><br>BTA</div> ''', unsafe_allow_html=True)
         </div>
     </div>
     ''', unsafe_allow_html=True)
