@@ -23,10 +23,6 @@ st.markdown(f'''
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite;}}
     .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));}}
-    .chat-kutusu {{background-color: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 8px; border-left: 5px solid #3b82f6; position: relative;}}
-    .chat-isim {{ font-weight: bold; color: #38bdf8 !important; font-size: 0.95rem; }}
-    .chat-zaman {{ color: #94a3b8 !important; font-size: 0.75rem; float: right; margin-right: 10px; }}
-    .chat-mesaj {{ color: #f1f5f9 !important; margin-top: 4px; font-size: 1rem; }}
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
         100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
@@ -50,8 +46,8 @@ def sohbet_temizle(metin):
             sansur = "*" * len(kelime)
             import re
             insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
-            metin = insens_kelime.sub(sansur, metin)
-    return metin
+            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
+    return temiz_metin
 
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
@@ -155,7 +151,7 @@ if not st.session_state.kullanici_adi:
 else:
     st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
     
-    # Yeni ve Kesintisiz Mesaj Gönderme Fonksiyonu
+    # Hızlı Mesaj Gönderme Tetikleyicisi
     def mesaj_gonder_yeni():
         metin = st.session_state.yeni_mesaj_kutusu.strip()
         if metin:
@@ -171,7 +167,7 @@ else:
                 st.session_state.global_sohbet_gecmisi = st.session_state.global_sohbet_gecmisi[-40:]
             st.session_state.yeni_mesaj_kutusu = "" # Kutuyu boşalt
 
-    st.text_input("Mesajınızı yazın ve Enter'a basın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_yeni, placeholder="Buraya yazın...")
+    st.text_input("Mesajınızı yazın...", key="yeni_mesaj_kutusu", on_change=mesaj_gonder_yeni, placeholder="Mesajınızı buraya yazıp Enter'a basın...")
     st.button("Gönder 🚀", on_click=mesaj_gonder_yeni)
 
     with st.expander("🛠️ Admin / Moderatör Paneli"):
@@ -183,14 +179,19 @@ else:
                 time.sleep(1)
                 st.rerun()
 
+    st.write("")
     chat_alani = st.container()
     
     with chat_alani:
         if st.session_state.global_sohbet_gecmisi:
             for m in reversed(st.session_state.global_sohbet_gecmisi):
-                col_m, col_s = st.columns([0.85, 0.15])
-                with col_m:
-                    st.markdown(f'''
-                    <div class="chat-kutusu">
-                        <span class="chat-isim">@{m['isim']}</span>
-                        <span class="chat-zaman">{m['zaman']}</span>
+                # Streamlit'in kendi yerel ve hatasız chat baloncuğu kullanıldı
+                with st.chat_message("user"):
+                    col_m, col_s = st.columns([0.85, 0.15])
+                    with col_m:
+                        st.markdown(f"**@{m['isim']}**  *({m['zaman']})*")
+                        st.write(m['mesaj'])
+                    with col_s:
+                        if m.get("cihaz_id") == st.session_state.cihaz_id:
+                            if st.button("❌ Sil", key=m.get("mesaj_id")):
+                                st.session_state.global_sohbet_gecmisi = [msg for msg in st.session_state.global_sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
