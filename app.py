@@ -24,7 +24,7 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     
-    /* 📊 Canlı Piyasa Bilgi Kutuları CSS */
+    /* Canlı Piyasa Bilgi Kutuları CSS */
     .piyasa-kutusu-konteyner {{
         display: flex;
         flex-wrap: wrap;
@@ -75,8 +75,8 @@ st.markdown(f'''
         margin-bottom: 10px;
     }}
     .cember-animasyon-{anim_id} {{
-        width: 120px;
-        height: 120px;
+        width: 100px; 
+        height: 100px;
         border: 4px solid #fff;
         border-radius: 50%;
         display: flex;
@@ -91,7 +91,7 @@ st.markdown(f'''
     }}
     .bta-yazi-{anim_id} {{
         font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 3.2rem;
+        font-size: 2.6rem;
         font-weight: bold;
         margin: 0;
         padding: 0;
@@ -100,22 +100,22 @@ st.markdown(f'''
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         display: inline-block;
-        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
+        filter: drop-shadow(0px 2px 6px rgba(255,255,255,0.3));
         animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }}
     
     @keyframes gokkusagiCember {{
-        0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
-        14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
-        28% {{ border-color: #ffff00; box-shadow: 0 0 15px #ffff00, inset 0 0 15px #ffff00; }}
-        42% {{ border-color: #00ff00; box-shadow: 0 0 15px #00ff00, inset 0 0 15px #00ff00; }}
-        56% {{ border-color: #00ffff; box-shadow: 0 0 15px #00ffff, inset 0 0 15px #00ffff; }}
-        70% {{ border-color: #0000ff; box-shadow: 0 0 15px #0000ff, inset 0 0 15px #0000ff; }}
-        84% {{ border-color: #8b00ff; box-shadow: 0 0 15px #8b00ff, inset 0 0 15px #8b00ff; }}
-        100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
+        0% {{ border-color: #ff0000; box-shadow: 0 0 12px #ff0000, inset 0 0 12px #ff0000; }}
+        14% {{ border-color: #ff7f00; box-shadow: 0 0 12px #ff7f00, inset 0 0 12px #ff7f00; }}
+        28% {{ border-color: #ffff00; box-shadow: 0 0 12px #ffff00, inset 0 0 12px #ffff00; }}
+        42% {{ border-color: #00ff00; box-shadow: 0 0 12px #00ff00, inset 0 0 12px #00ff00; }}
+        56% {{ border-color: #00ffff; box-shadow: 0 0 12px #00ffff, inset 0 0 12px #00ffff; }}
+        70% {{ border-color: #0000ff; box-shadow: 0 0 12px #0000ff, inset 0 0 12px #0000ff; }}
+        84% {{ border-color: #8b00ff; box-shadow: 0 0 12px #8b00ff, inset 0 0 12px #8b00ff; }}
+        100% {{ border-color: #ff0000; box-shadow: 0 0 12px #ff0000, inset 0 0 12px #ff0000; }}
     }}
-    @keyframes yukardanDus {{ 0% {{ transform: translateY(-200px) scale(0.3); opacity: 0; }} 70% {{ transform: translateY(10px) scale(1.05); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
-    @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-140px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
+    @keyframes yukardanDus {{ 0% {{ transform: translateY(-150px) scale(0.5); opacity: 0; }} 70% {{ transform: translateY(8px) scale(1.03); opacity: 1; }} 100% {{ transform: translateY(0) scale(1); opacity: 1; }} }}
+    @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-110px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
 </style>
 ''', unsafe_allow_html=True)
 
@@ -128,10 +128,10 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Sadece Yenilenme Yazısı Göstergesi (Tarih ve Saat sizin sildiğiniz gibi kalktı)
+# Sizin sildiğiniz temiz düzen: Sadece otomatik yenilenme yazısı kalacak
 st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align: center;"><span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
-# 🟡 CANLI ALTIN VE BİST 100 YÖNETİM PANELİ
+# 🟡 CANLI ALTIN VE BİST 100 YÖNETİM MOTORU
 def canli_piyasa_verilerini_hesapla():
     saf_gram, ceyrek, yarim, tam, bist_fiyat = 3025.00, 4950.00, 9900.00, 19800.00, 14000.00
     try:
@@ -174,45 +174,47 @@ excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
+        # 🔍 CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
-        
-        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz
         hisse_havuzu = []
         if len(df.columns) >= 5:
             e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
             hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-            hisse_havuzu = sorted(list(set(hisse_havuzu))) # Benzersiz yap ve sırala
+            hisse_havuzu = sorted(list(set(hisse_havuzu)))
         
-        # Kullanıcıya E sütunundan gelen temiz listeyi seçenek olarak sunuyoruz
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
             try:
-                # Sadece seçilen hisse için internete gidilir (Kasma yapmaz)
-                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
-                hist_ara = ticker_ara.history(period="2d")
+                hist_ara = yf.download(f"{secilen_hisse}.IS", period="2d", progress=False)
                 if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+                    arama_canli_fiyat = float(hist_ara['Close'].dropna().iloc[-1])
+                    onceki_kap = float(hist_ara['Close'].dropna().iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
                     arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    
-                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
-                else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: {arama_canli_fiyat:.2f} TL | Günlük Değişim: %{arama_degisim:+.2f}")
             except:
                 st.error("Veri motoru bağlantı hatası.")
         
         st.write("---")
 
-        tablo_bta = []
-        tablo_alsat = []
+        # ⚡ TOPLU VERİ İNDİRME ALTYAPISI
         sinir = min(10, len(df))
+        ust_kodlar = []
+        alt_kodlar = []
         
         for idx in range(sinir):
-            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
-            hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            h_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            h_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            if h_a and h_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                ust_kodlar.append(h_a)
+            if h_b and h_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                alt_kodlar.append(h_b)
+                
+        tum_liste = list(set(ust_kodlar + alt_kodlar))
+        canli_havuz = {}
+        
+        if tum_liste:
+            try:
+                indirme_metni = " ".join([f"{k}.IS" for k in tum_liste])
