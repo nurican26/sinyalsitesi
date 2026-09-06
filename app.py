@@ -86,7 +86,7 @@ st.markdown(f'''
 
 # Saat Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div class="time-text">(10sn de bir otomatik yenileniyor)</small></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="time-text">🕒 Son Güncelleme: {guncel_an} <br><small>(10sn de bir otomatik yenileniyor)</small></div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
