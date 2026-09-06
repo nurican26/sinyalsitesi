@@ -16,57 +16,42 @@ if "fiyat_hafizasi" not in st.session_state: st.session_state["fiyat_hafizasi"] 
 # LOGO
 st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA</div></div>', unsafe_allow_html=True)
 
-# 💥 CANLI FİYAT MOTORU
-def hızlı_canli_fiyat_bul(hisse_kodu):
+# 💥 CANLI FİYAT VE ORAN MOTORU
+def canli_veri_ve_degisim_bul(hisse_kodu):
     hisse_kodu = str(hisse_kodu).strip().upper()
-    if not hisse_kodu or hisse_kodu in ["NAN", "NONE", ""]: return 0.0
+    if not hisse_kodu or hisse_kodu in ["NAN", "NONE", ""]: return 0.0, 0.0
     
-    # Sadece harflerden oluşan borsa kodunu temizle (Örn: ALCAR)
     h_ara = re.findall(r'[A-Z]+', hisse_kodu)
-    if not h_ara: return 0.0
+    if not h_ara: return 0.0, 0.0
     temiz_kod = h_ara[0]
 
+    # Hafıza kontrolü (5 dakika geçerli)
     if temiz_kod in st.session_state["fiyat_hafizasi"]:
-        saved_time, saved_price = st.session_state["fiyat_hafizasi"][temiz_kod]
-        if time.time() - saved_time < 300: return saved_price
+        saved_time, saved_price, saved_change = st.session_state["fiyat_hafizasi"][temiz_kod]
+        if time.time() - saved_time < 300: return saved_price, saved_change
     try:
         ticker = yf.Ticker(f"{temiz_kod}.IS")
-        data = ticker.history(period="1d")
-        if not data.empty and not pd.isna(data['Close'].iloc[-1]):
+        data = ticker.history(period="2d") # Günlük değişim için 2 günlük veri çekiyoruz
+        if not data.empty and len(data) >= 1:
             fiyat = float(data['Close'].iloc[-1])
-            st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat)
-            return fiyat
+            
+            # Günlük Yükseliş Oranı Hesaplama
+            if 'Regular Market Change Percent' in ticker.info:
+                degisim = float(ticker.info['Regular Market Change Percent'])
+            elif len(data) >= 2:
+                onceki_kapanis = float(data['Close'].iloc[-2])
+                degisim = ((fiyat - onceki_kapanis) / onceki_kapanis) * 100
+            else:
+                degisim = 0.0
+                
+            st.session_state["fiyat_hafizasi"][temiz_kod] = (time.time(), fiyat, degisim)
+            return fiyat, degisim
     except: pass
-    return 0.0
-
-def canli_altin_fiyatlarini_hesapla():
-    try:
-        ons_ticker = yf.Ticker("GC=F").history(period="5d")
-        usd_ticker = yf.Ticker("USDTRY=X").history(period="5d")
-        if not ons_ticker.empty and not usd_ticker.empty:
-            ons_fiyat = float(ons_ticker['Close'].iloc[-1])
-            usd_fiyat = float(usd_ticker['Close'].iloc[-1])
-            if ons_fiyat > 500 and usd_fiyat > 5:
-                saf_gram = (ons_fiyat / 31.10347) * usd_fiyat
-                ceyrek_fiyat = saf_gram * 1.635
-                return saf_gram, ceyrek_fiyat, ceyrek_fiyat * 2, ceyrek_fiyat * 4
-    except: pass
-    return 3020.50, 4950.00, 9900.00, 19800.00 
+    return 0.0, 0.0
 
 # Zaman Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
 st.markdown(f'<div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 15px;">🕒 {guncel_an}</div>', unsafe_allow_html=True)
-
-# ALTIN PANELİ
-st.markdown("#### 🟡 Canlı Altın Fiyatları")
-p_gram, p_ceyrek, p_yarim, p_tam = canli_altin_fiyatlarini_hesapla()
-c1, c2, c3, c4 = st.columns(4)
-c1.markdown(f'<div class="piyasa-kutusu">🔱 GRAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_gram:,.2f} TL</span></div>', unsafe_allow_html=True)
-c2.markdown(f'<div class="piyasa-kutusu">🪙 ÇEYREK ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_ceyrek:,.2f} TL</span></div>', unsafe_allow_html=True)
-c3.markdown(f'<div class="piyasa-kutusu">🥈 YARIM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_yarim:,.2f} TL</span></div>', unsafe_allow_html=True)
-c4.markdown(f'<div class="piyasa-kutusu">🥇 TAM ALTIN<br><span style="color:#eab308; font-size:1.4rem;">{p_tam:,.2f} TL</span></div>', unsafe_allow_html=True)
-
-st.write("---")
 
 # 🔍 ARKA PLANDA EXCEL VERİSİNİ OKUMA
 df_kaynak = None
@@ -82,49 +67,64 @@ tablo_bta_hisseleri = []
 tablo_gunluk_alsat = []
 
 if df_kaynak is not None:
-    for idx in range(1, len(df_kaynak)):
+    for idx in range(0, len(df_kaynak)):
         try:
-            # Excel sütun uzunluğu kontrolü (En az 18 sütun olmalı: R sütunu için)
-            if len(df_kaynak.columns) >= 18:
-                
-                # -------------------------------------------------------------
-                # Kağıttaki ÜST PANEL Yapısı:
-                # BTA PUAN  -> R Sütunu (İndeks 17)
-                # BTA HİSSE -> A Sütunu (İndeks 0)
-                # BTA ALIM  -> C Sütunu (İndeks 2)
-                # -------------------------------------------------------------
-                bta_puan_raw = str(df_kaynak.iloc[idx, 17]).strip() if not pd.isna(df_kaynak.iloc[idx, 17]) else ""
+            # -------------------------------------------------------------
+            # 1. ÜST PANEL: BTA HİSSELERİ (A, C, D Sütunları)
+            # A Sütunu (İndeks 0) -> BTA HİSSE
+            # C Sütunu (İndeks 2) -> BTA ALIM
+            # D Sütunu (İndeks 3) -> BTA PUAN
+            # -------------------------------------------------------------
+            if len(df_kaynak.columns) >= 4:
                 bta_hisse_raw = str(df_kaynak.iloc[idx, 0]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 0]) else ""
                 bta_alim_raw = str(df_kaynak.iloc[idx, 2]).strip() if not pd.isna(df_kaynak.iloc[idx, 2]) else ""
+                bta_puan_raw = str(df_kaynak.iloc[idx, 3]).strip() if not pd.isna(df_kaynak.iloc[idx, 3]) else ""
 
-                if bta_hisse_raw and bta_hisse_raw not in ["NAN", "NONE", "HİSSE", "BTA HİSSE", ""]:
+                # Filtreleme: "UCUZ KALANLAR", "ANA" gibi temizlenecek kelimeleri eliyoruz
+                if bta_hisse_raw and bta_hisse_raw not in ["NAN", "NONE", "HİSSE", "BTA HİSSE", "UCUZ KALANLAR", "ANA", "AL_SAT SİNYALİ"]:
                     hisse_kodlari = re.findall(r'[A-Z]+', bta_hisse_raw)
                     if hisse_kodlari:
                         hisse = hisse_kodlari[0]
-                        # Canlı Güncel Fiyatı internetten çekiyoruz (Kağıtta belirtildiği gibi)
-                        anlik_fiyat = hızlı_canli_fiyat_bul(hisse)
+                        
+                        # İnternetten Canlı Veri Çekme
+                        anlik_fiyat, _ = canli_veri_ve_degisim_bul(hisse)
+                        
+                        # Kar/Zarar Oranı Hesaplama
+                        try:
+                            maliyet = float(str(bta_alim_raw).replace(",", "."))
+                        except:
+                            maliyet = 0.0
+                            
+                        kz_oran_str = "-"
+                        if maliyet > 0 and anlik_fiyat > 0:
+                            kz_oran = ((anlik_fiyat - maliyet) / maliyet) * 100
+                            kz_oran_str = f"%{kz_oran:+.2f}"
                         
                         tablo_bta_hisseleri.append({
                             "BTA PUAN 🔢": bta_puan_raw,
                             "BTA HİSSE 📈": hisse,
-                            "BTA ALIM 📥": bta_alim_raw if bta_alim_raw else "300- Sabit kalacak",
-                            "GÜNCEL FİYAT 💥": f"{anlik_fiyat:.2f} TL" if anlik_fiyat > 0 else "İnternetten..."
+                            "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else bta_alim_raw,
+                            "GÜNCEL FİYAT 💥": f"{anlik_fiyat:.2f} TL" if anlik_fiyat > 0 else "Yükleniyor...",
+                            "KAR / ZARAR 📊": kz_oran_str
                         })
 
-                # -------------------------------------------------------------
-                # Kağıttaki ALT PANEL Yapısı: Günlük Al-Sat Hisseleri
-                # Excel'deki Günlük Al-Sat hisseleri hangi sütundaysa aşağıdaki indeksi değiştirin.
-                # Örn: Eğer Günlük Al-Sat da yine A sütununda veya alt satırlardaysa ona göre listelenir.
-                # Şimdilik kağıttaki şablonun alt kısmını bağımsız filtreliyoruz.
-                # -------------------------------------------------------------
-                # Kağıttaki örnek 'ALCAR' hissesi gibi alt bölümü doğrudan dinamik takip ediyoruz.
-                # Excel'deki alt listenizin sütun numarasını (Örn: A sütunundaki belirli satırlar ise) buraya bağlayabilirsiniz.
-                if bta_hisse_raw == "ALCAR" or "ALCAR" in bta_hisse_raw:
-                    as_anlik_fiyat = hızlı_canli_fiyat_bul("ALCAR")
-                    if not any(d['GÜNLÜK BTA AL SAT ⚡'] == 'ALCAR' for d in tablo_gunluk_alsat):
+            # -------------------------------------------------------------
+            # 2. ALT PANEL: GÜNLÜK AL SAT HİSSELERİ (B Sütunu)
+            # B Sütunu (İndeks 1) -> GÜNLÜK AL SAT HİSSELERİ
+            # -------------------------------------------------------------
+            if len(df_kaynak.columns) >= 2:
+                alsat_hisse_raw = str(df_kaynak.iloc[idx, 1]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 1]) else ""
+                
+                if alsat_hisse_raw and alsat_hisse_raw not in ["NAN", "NONE", "HİSSE", "UCUZ KALANLAR", "ANA", "BTA ALIMI"]:
+                    alsat_kodlari = re.findall(r'[A-Z]+', alsat_hisse_raw)
+                    if alsat_kodlari:
+                        as_hisse = alsat_kodlari[0]
+                        as_anlik_fiyat, as_degisim = canli_veri_ve_degisim_bul(as_hisse)
+                        
                         tablo_gunluk_alsat.append({
-                            "GÜNLÜK BTA AL SAT ⚡": "ALCAR",
-                            "ANLIK VERİ CANLI 📊": f"{as_anlik_fiyat:.2f} TL" if as_anlik_fiyat > 0 else "Yükleniyor..."
+                            "GÜNLÜK BTA AL SAT ⚡": as_hisse,
+                            "ANLIK VERİ CANLI 📊": f"{as_anlik_fiyat:.2f} TL" if as_anlik_fiyat > 0 else "Yükleniyor...",
+                            "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_anlik_fiyat > 0 else "..."
                         })
         except:
             pass
@@ -137,7 +137,7 @@ if tablo_bta_hisseleri:
     df_bta = pd.DataFrame(tablo_bta_hisseleri)
     st.dataframe(df_bta, use_container_width=True, hide_index=True)
 else:
-    st.info("Excel dosyanızda (A, C ve R) sütunlarında veri taranıyor...")
+    st.info("Excel dosyanızda uygun formatta BTA hisse verisi (A, C, D sütunları) taranıyor...")
 
 st.write("")
 
@@ -147,10 +147,7 @@ if tablo_gunluk_alsat:
     df_alsat = pd.DataFrame(tablo_gunluk_alsat)
     st.dataframe(df_alsat, use_container_width=True, hide_index=True)
 else:
-    # Excel'de henüz yoksa kağıtta çizdiğiniz ALCAR örneğini otomatik canlı çalıştırır
-    test_alcar_fiyat = hızlı_canli_fiyat_bul("ALCAR")
-    test_veri = [{"GÜNLÜK BTA AL SAT ⚡": "ALCAR", "ANLIK VERİ CANLI 📊": f"{test_alcar_fiyat:.2f} TL" if test_alcar_fiyat > 0 else "Yükleniyor..."}]
-    st.dataframe(pd.DataFrame(test_veri), use_container_width=True, hide_index=True)
+    st.info("Excel dosyanızın B sütununda günlük al-sat verisi taranıyor...")
 
 # ⚠️ SPK UYARI KUTUSU
 st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
