@@ -210,4 +210,6 @@ if os.path.exists(excel_yolu):
         st.error(f"Excel okunurken bir sorun oluştu: {e}")
 else:
     st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
+    
+st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
 
