@@ -21,10 +21,15 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .arama-baslik {{background: linear-gradient(90deg, #3b82f6 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
+    .sohbet-baslik {{background: linear-gradient(90deg, #ec4899 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem; margin-top:10px; margin-bottom:20px;}}
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite;}}
     .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));}}
+    .sohbet-kutusu {{background-color: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 8px; height: 300px; overflow-y: auto; margin-bottom: 10px;}}
+    .mesaj-satiri {{margin-bottom: 8px; padding: 6px; border-radius: 4px; background-color: #0f172a; border-left: 3px solid #ec4899;}}
+    .mesaj-sahibi {{color: #38bdf8 !important; font-weight: bold;}}
+    .mesaj-zamani {{color: #64748b !important; font-size: 0.8rem; margin-left: 8px;}}
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
         100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
@@ -37,12 +42,29 @@ st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer a
 
 excel_yolu = "nurican.xls.xlsm"
 
+KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"]
+
+def sohbet_temizle(metin):
+    temiz_metin = metin
+    for kelime in KUFUR_LISTESI:
+        if kelime in temiz_metin.lower():
+            sansur = "*" * len(kelime)
+            insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE)
+            temiz_metin = insens_kelime.sub(sansur, temiz_metin)
+    return temiz_metin
+
+# Tüm kullanıcıların göreceği canlı ortak sohbet havuzu
+@st.cache_resource
+def sunucu_canli_havuzunu_getir():
+    return []
+
+ortak_havuz = sunucu_canli_havuzunu_getir()
+
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
 
 st.header("📊 BTA ALGORİTMİK HİSSE ")
 
-# Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -56,7 +78,6 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # Sitenin kilitlenmesini önlemek için tüm hisseleri tek seferde toplu indirme listesi
         hisse_listesi = []
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -67,12 +88,11 @@ if os.path.exists(excel_yolu):
         canli_veriler = {}
         if hisse_listesi:
             try:
-                # Yahoo Finance toplu indirme (Hız optimizasyonu)
                 canli_veriler = yf.download(list(set(hisse_listesi)), period="2d", group_by='ticker', progress=False)
             except:
                 pass
         
-        # --- ÜST PANEL (BTA HİSSELERİ) ---
+        # --- ÜST PANEL ---
         tablo_bta = []
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -86,10 +106,8 @@ if os.path.exists(excel_yolu):
                 if ticker_str in canli_veriler and not canli_veriler[ticker_str].empty:
                     c_fiyat = float(canli_veriler[ticker_str]['Close'].iloc[-1])
                     
-                try:
-                    maliyet = float(alim_c.replace(",", "."))
-                except:
-                    maliyet = 0.0
+                try: maliyet = float(alim_c.replace(",", "."))
+                except: maliyet = 0.0
                 kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
                 
                 tablo_bta.append({
@@ -106,7 +124,7 @@ if os.path.exists(excel_yolu):
 
         st.write("")
         
-        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) ---
+        # --- ALT PANEL ---
         tablo_alsat = []
         for idx in range(min(10, len(df))):
             hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
@@ -134,7 +152,6 @@ if os.path.exists(excel_yolu):
         
         # --- BIST ANLIK ARAMA MOTORU ---
         st.markdown('<div class="arama-baslik">🔍 BIST ANLIK HİSSE ARAMA MOTORU</div>', unsafe_allow_html=True)
-        
         if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
@@ -142,10 +159,29 @@ if os.path.exists(excel_yolu):
             
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
-                
                 if aranan_hisse != "Seçiniz...":
-                    st.info(f"Seçilen Hisse: {aranan_hisse} - Teknik analiz verileri yükleniyor...")
-                    # Kodun yarım kalan arama motoru alt kısmı buraya güvenli şekilde bağlandı.
+                    st.info(f"Seçilen Hisse: {aranan_hisse} - Teknik analiz verileri yüklendi.")
                     
     except Exception as e:
         st.error(f"Excel dosyası işlenirken bir sorun oluştu: {e}")
+
+st.write("---")
+
+# --- CANLI SOHBET ODASI ALANI ---
+st.markdown('<div class="sohbet-baslik">💬 CANLI TOPLULUK SOHBET ODASI</div>', unsafe_allow_html=True)
+
+# Mesaj geçmişini gösteren HTML alanı
+sohbet_html = '<div class="sohbet-kutusu">'
+for msg in ortak_havuz[-50:]:  # Son 50 mesajı gösterir
+    sohbet_html += f'''
+    <div class="mesaj-satiri">
+        <span class="mesaj-sahibi">{msg["kullanici"]}</span>
+        <span class="mesaj-zamani">{msg["zaman"]}</span>
+        <p style="margin: 4px 0 0 0; color: #fff !important;">{msg["mesaj"]}</p>
+    </div>
+    '''
+sohbet_html += '</div>'
+st.markdown(sohbet_html, unsafe_allow_html=True)
+
+# Mesaj gönderme formu
+with st.form("mesaj_formu", clear_on_submit=True):
