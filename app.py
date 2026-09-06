@@ -217,4 +217,3 @@ if os.path.exists(excel_yolu):
                 
                 if hist_as is not None:
                     as_canli_fiyat = float(hist_as['Close'].iloc[-1])
-                    if len(hist_as) >= 2:
