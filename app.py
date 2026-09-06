@@ -149,33 +149,3 @@ if os.path.exists(excel_yolu):
             st.error("Excel dosyasında E sütunu bulunamadı!") 
     except Exception as e: 
         st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.") 
-
-# --- SİTE EN ALTI SOHBET ODASI ENTEGRASYONU (HIZALAMA HATASI DÜZELTİLDİ) --- 
-st.markdown("---") 
-st.subheader("💬 Topluluk Sohbet Odası") 
-
-sohbet_html_kodu = """
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; }
-        .chat-card { width: 100%; max-width: 450px; height: 550px; background: #fff; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; margin: 10px auto; }
-        .header { background: #075e54; color: white; padding: 15px; text-align: center; font-size: 1.2rem; font-weight: bold; }
-        .login-screen { padding: 30px; display: flex; flex-direction: column; justify-content: center; height: 100%; text-align: center; }
-        .login-screen input { padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; outline: none; }
-        .login-screen button { padding: 12px; background: #128c7e; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; }
-        .chat-screen { display: none; flex-direction: column; height: 100%; }
-        .messages-area { flex: 1; padding: 15px; overflow-y: auto; background: #efeae2; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 75%; padding: 10px 14px; border-radius: 10px; font-size: 0.95rem; word-wrap: break-word; }
-        .msg.incoming { background: white; align-self: flex-start; }
-        .msg.outgoing { background: #d9fdd3; align-self: flex-end; }
-        .msg .username { font-size: 0.75rem; color: #128c7e; font-weight: bold; display: block; }
-        .input-area { padding: 10px; background: #f0f2f5; display: flex; gap: 10px; }
-        .input-area input { flex: 1; padding: 12px; border: none; border-radius: 20px; outline: none; }
-        .input-area button { background: #128c7e; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
-    </style>
-    <script src="https://gstatic.com"></script>
