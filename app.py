@@ -183,11 +183,12 @@ if tum_hisseler:
                     gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
                     
                     col1, col2, col3 = st.columns(3)
-                    col1.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
-                    col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
-                    col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                    with col1:
+                        st.metric(label="Anlık Canlı Fiyat 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                    with col2:
+                        st.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                    with col3:
+                        st.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
                 else:
                     st.warning(f"{aranan_hisse} koduna ait anlık veri bulunamadı.")
             except:
-                st.error("Borsa verisi çekilirken teknik bir sorun oluştu.")
-else:
