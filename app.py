@@ -17,24 +17,32 @@ excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
-        # 🎯 HATA BURADAYDI: Doğrudan sizin hazırladığınız "WEB" isimli sayfayı okuyoruz
+        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
         tablo_bta = []
         tablo_alsat = []
 
-        # Sadece ilk 10 satırı kontrol et, binlerce boş satırda dönüp sayfayı kasma!
+        # Sadece ilk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
         sinir = min(10, len(df))
         
         for idx in range(sinir):
             # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
             hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = str(df.iloc[idx, 3]).strip() if pd.notna(df.iloc[idx, 3]) else ""
+            puan_d = df.iloc[idx, 3] # Hücre değerini sayısal olarak korumak için doğrudan alıyoruz
 
-            # Hücrelerin boş olmadığını ve başlık satırı olmadığını doğrula
+            # Başlık satırlarını ve boşlukları süzüyoruz
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                # Başlığın altındaki gerçek veriyse (Örn: GUNDG, ALCAR, SONME) canlı fiyat çek
+                
+                # 🎯 BTA PUAN YUVARLAMA KONTROLÜ
+                try:
+                    # Hücre sayısal bir değerse virgülden sonra 2 basamağa yuvarla ve string yap
+                    puan_temiz = f"{float(puan_d):.2f}"
+                except:
+                    # Eğer sayısal değilse (metin vb.) Excel'de ne yazıyorsa bozmadan göster
+                    puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
+
                 try:
                     ticker = yf.Ticker(f"{hisse_a}.IS")
                     hist = ticker.history(period="1d")
@@ -51,7 +59,7 @@ if os.path.exists(excel_yolu):
                     kz_oran_str = f"%{kz:+.2f}"
 
                 tablo_bta.append({
-                    "BTA PUAN 🔢": puan_d,
+                    "BTA PUAN 🔢": puan_temiz,
                     "BTA HİSSE 📈": hisse_a,
                     "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
                     "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...",
@@ -81,12 +89,12 @@ if os.path.exists(excel_yolu):
                     "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"
                 })
 
-        # EKRANA YAZDIRMA
+        # EKRANA BASMA İŞLEMLERİ
         st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
         if tablo_bta:
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
         else:
-            st.info("Üst panel için Excel'deki 'WEB' sayfasında veri aranıyor...")
+            st.info("Üst panel için veri işleniyor...")
 
         st.write("")
 
@@ -94,7 +102,7 @@ if os.path.exists(excel_yolu):
         if tablo_alsat:
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
         else:
-            st.info("Alt panel için Excel'deki 'WEB' sayfasında veri aranıyor...")
+            st.info("Alt panel için veri işleniyor...")
 
     except Exception as e:
         st.error(f"Excel okunurken bir sorun oluştu: {e}")
