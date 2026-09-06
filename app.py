@@ -4,7 +4,7 @@ import datetime
 import yfinance as yf
 import os, re
 import time
-import streamlit.components.v1 as components  # <--- Hatanın kesin çözümü için bu satır en üste eklendi
+import streamlit.components.v1 as components
 
 # 1. Sayfa Yapılandırması ve Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
@@ -37,7 +37,7 @@ for k in ["kisitli_liste", "ziyaret_sayaci"]:
 st.session_state["ziyaret_sayaci"] += 1
 
 
-# 🟢 ZİKZAKLI DOLANAN NEON YEŞİL BTA LOGO ALANI (BOMBA DEĞİL)
+# 🟢 ZİKZAKLI DOLANAN NEON YEŞİL BTA LOGO ALANI
 bta_bomba_efekti = """
 <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 160px; background: transparent; overflow: hidden; margin-top: 15px; margin-bottom: 15px;">
     <canvas id="btaCanvas" width="800" height="150" style="background: transparent;"></canvas>
@@ -53,7 +53,7 @@ let textObj = {
     targetY: canvas.height / 2 + 10,
     speedY: 2.5,
     angle: 0,
-    amp: 45, // Zikzak genişliği
+    amp: 45, 
     text: "BTA",
     fadedOut: false
 };
@@ -64,7 +64,7 @@ const letters = ["B", "T", "A"];
 function createParticles(x, y) {
     for (let i = 0; i < 60; i++) {
         let angle = Math.random() * Math.PI * 2;
-        let speed = Math.random() * 2 + 0.5; // Yumuşak dağılma hızı
+        let speed = Math.random() * 2 + 0.5; 
         particles.push({
             x: x,
             y: y,
@@ -90,7 +90,7 @@ function drawLoop() {
 
         for(let i = 0; i < 5; i++) {
             let trailAlpha = 0.9 - (i * 0.18);
-            ctx.fillStyle = `rgba(0, 255, 127, ${trailAlpha})`; // Neon Yeşil tonları
+            ctx.fillStyle = `rgba(0, 255, 127, ${trailAlpha})`; 
             ctx.font = "bold 65px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
             
@@ -205,18 +205,20 @@ if erisim_izni:
                     if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', uv)
                         if h_ara:
-                            hisse = str(h_ara)
+                            hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
                             
                     if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                         h_ara = re.findall(r'[A-Z]+', wv)
                         if h_ara:
-                            hisse = str(h_ara)
+                            hisse = str(h_ara[0])
                             cfiy = hızlı_canli_fiyat_bul(hisse)
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                            bta_puan = p_bul if p_bul else t_deg
+                            bta_puan = p_bul[0] if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                                 st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+            except: 
