@@ -39,7 +39,6 @@ st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
 
-# Kullanıcıya benzersiz bir cihaz ID'si atıyoruz (Session bazlı)
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
 
@@ -48,8 +47,6 @@ st.header("📊 CANLI BORSA TAKİP EKRANI")
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
-        # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
         tablo_bta = []
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -75,7 +72,6 @@ if os.path.exists(excel_yolu):
         if len(tablo_bta) > 0:
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
 
-        # 2. ALT PANEL VERİLERİ (B Sütunu)
         st.write("")
         tablo_alsat = []
         for idx in range(min(10, len(df))):
@@ -117,8 +113,7 @@ if not st.session_state.kullanici_adi:
                 st.session_state.kullanici_adi = gecici_isim.strip()
                 st.rerun()
 else:
-    st.write(f"👤 Aktif Profil: **@{st.session_state.kullanici_adi}**")
-    
+    st.write(f"👤 Profil: **@{st.session_state.kullanici_adi}**")
     with st.form("mesaj_formu", clear_on_submit=True):
         yeni_mesaj_metni = st.text_input("Mesajınızı yazın...", placeholder="Buraya yazın...")
         if st.form_submit_button("Gönder 🚀"):
@@ -130,7 +125,6 @@ else:
                             mevcut = json.load(f)
                     except:
                         pass
-                # Mesajı kaydederken benzersiz bir mesaj_id ve yazan cihaz_id ekliyoruz
                 mevcut.append({
                     "mesaj_id": str(uuid.uuid4()),
                     "cihaz_id": st.session_state.cihaz_id,
@@ -147,7 +141,6 @@ else:
                     pass
                 st.rerun()
 
-    # 🛠️ GİZLİ YÖNETİCİ PANELİ
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...")
         if admin_sifre == "bta123":
@@ -155,7 +148,7 @@ else:
                 try:
                     with open(sohbet_dosyası, "w", encoding="utf-8") as f:
                         json.dump([], f)
-                    st.success("Sohbet odası başarıyla sıfırlandı!")
+                    st.success("Sohbet odası sıfırlandı!")
                     time.sleep(1)
                     st.rerun()
                 except:
@@ -171,10 +164,8 @@ else:
 
     if sohbet_gecmisi:
         for m in reversed(sohbet_gecmisi):
-            # İki parçalı tasarım yapıyoruz: Sol tarafta mesaj metni, sağ tarafta silme butonu
-            col_mesaj, col_sil = st.columns([9, 1])
-            
-            with col_mesaj:
+            col_m, col_s = st.columns([0.85, 0.15])
+            with col_m:
                 st.markdown(f'''
                 <div class="chat-kutusu">
                     <span class="chat-isim">@{m['isim']}</span>
@@ -182,10 +173,17 @@ else:
                     <div class="chat-mesaj">{m['mesaj']}</div>
                 </div>
                 ''', unsafe_allow_html=True)
-                
-            with col_sil:
-                # Eğer mesajı yazan kişinin cihaz_id'si ile aktif kullanıcınınki eşleşirse buton görünür
+            with col_s:
                 if m.get("cihaz_id") == st.session_state.cihaz_id:
                     if st.button("❌ Sil", key=m.get("mesaj_id")):
                         try:
-                            # Tıklanan mesajı listeden süzüp çıkartıyoruz
+                            g_liste = [msg for msg in sohbet_gecmisi if msg.get("mesaj_id") != m.get("mesaj_id")]
+                            with open(sohbet_dosyası, "w", encoding="utf-8") as f:
+                                json.dump(g_liste, f, ensure_ascii=False, indent=4)
+                            st.rerun()
+                        except:
+                            pass
+    else:
+        st.info("Sohbet odası şu an sessiz.")
+
+st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
