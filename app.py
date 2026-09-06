@@ -6,10 +6,10 @@ import os
 import json
 import time
 import uuid
-import re
+import re  # Regex modülü eklendi
 from streamlit_autorefresh import st_autorefresh
 
-# Sayfa Yapılandırması ve Otomatik Yenileme
+# Sayfa Yapılandırması ve Otomatik Yenileme (10 saniyede bir)
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 anim_id = int(time.time())
@@ -155,6 +155,7 @@ else:
                             st.session_state["sohbet_hata_mesaji"] = "❌ 3. İhlal! Kurallara uymadığınız için sohbet odasından uzaklaştırıldınız."
                         else:
                             st.session_state["sohbet_hata_mesaji"] = f"⚠️ Yazdığınız mesaj argo/küfür içerdiği için engellendi! (Uyarı: {st.session_state.sohbet_uyari_sayisi}/3)"
+                        time.sleep(0.1)
                         st.rerun()
                     else:
                         # Temiz mesajı JSON'a kaydetme süreci
@@ -180,4 +181,3 @@ else:
                         except:
                             pass
                         
-                        # Başarılı gönderimde hata kutusunu sıfırla
