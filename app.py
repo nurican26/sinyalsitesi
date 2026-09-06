@@ -73,6 +73,17 @@ st.markdown(f'''
         margin-top: 25px;
         margin-bottom: 15px;
     }}
+    .yasal-uyari {{
+        text-align: center;
+        font-size: 13px;
+        color: #aaaaaa;
+        background-color: rgba(255, 0, 0, 0.1);
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid rgba(255, 0, 0, 0.3);
+        margin-top: 40px;
+        font-weight: bold;
+    }}
 </style>
 ''', unsafe_allow_html=True)
 
@@ -200,6 +211,9 @@ if os.path.exists(excel_yolu):
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
         else:
             st.info("Alt panel için veri işleniyor...")
+            
+        # YASAL UYARI METNİ (YTD)
+        st.markdown('<div class="yasal-uyari">⚠️ YASAL UYARI: Bu uygulamada yer alan tüm bilgiler, tablolar ve analizler sadece takip amaçlıdır. Kesinlikle yatırım tavsiyesi değildir!</div>', unsafe_allow_html=True)
             
     except Exception as e:
         st.error(f"Excel okunurken bir sorun oluştu: {e}")
