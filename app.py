@@ -86,30 +86,58 @@ tablo_alsat, tablo_al = [], []
 if df_kaynak is not None:
     for idx in range(2, len(df_kaynak)):
         try:
+            # Excel yapısının yeterli sütuna sahip olduğundan emin oluyoruz
             if len(df_kaynak.columns) > 22:
+                # Sütun İndeksleri: R=17, T=19, U=20, W=22
+                bta_puan_raw = str(df_kaynak.iloc[idx, 17]).strip() if not pd.isna(df_kaynak.iloc[idx, 17]) else "0"
                 uv = str(df_kaynak.iloc[idx, 20]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 20]) else ""
                 wv = str(df_kaynak.iloc[idx, 22]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 22]) else ""
                 t_deg = str(df_kaynak.iloc[idx, 19]).strip().upper() if not pd.isna(df_kaynak.iloc[idx, 19]) else ""
                 
+                # Kar-Zarar hesaplaması için Excel'deki T sütununu (19. indeks) maliyet/anlık fiyat kabul ediyoruz
+                try: excel_maliyet = float(t_deg.replace(",", ".")) if t_deg else 0.0
+                except: excel_maliyet = 0.0
+
                 if uv and uv not in ["NAN", "NONE", "AL_SAT SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', uv)
                     if h_ara:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', uv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
-                        tablo_alsat.append({"Hisse Kodu 📈": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                        
+                        # Kar/Zarar Oranı Hesaplama
+                        kz_oran = 0.0
+                        if excel_maliyet > 0 and cfiy > 0:
+                            kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+                        
+                        tablo_alsat.append({
+                            "Hisse Kodu 📈": hisse, 
+                            "BTA Puan": bta_puan_raw, 
+                            "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
+                            "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
+                            "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
+                        })
                         
                 if wv and wv not in ["NAN", "NONE", "AL", "SİNYALİ"]:
                     h_ara = re.findall(r'[A-Z]+', wv)
                     if h_ara:
                         hisse = str(h_ara[0]).strip()
                         cfiy = hızlı_canli_fiyat_bul(hisse)
-                        p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
-                        bta_puan = p_bul[0] if p_bul else t_deg
+                        
+                        # Kar/Zarar Oranı Hesaplama
+                        kz_oran = 0.0
+                        if excel_maliyet > 0 and cfiy > 0:
+                            kz_oran = ((cfiy - excel_maliyet) / excel_maliyet) * 100
+
                         if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
                             st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
-                        tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+                        
+                        tablo_al.append({
+                            "Hisse Kodu 🚀": hisse, 
+                            "BTA Puan": bta_puan_raw, 
+                            "💵 Excel Maliyet": f"{excel_maliyet:.2f} TL" if excel_maliyet > 0 else "-",
+                            "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor...",
+                            "📊 Kar/Zarar (%)": f"%{kz_oran:+.2f}" if excel_maliyet > 0 and cfiy > 0 else "-"
+                        })
         except: pass
 
 # 🟢 BTA SİNYAL MERKEZİ EN ÜSTE LİSTELENİR
@@ -122,4 +150,4 @@ if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True
 else: st.write("🔒 Aktif AL SAT sinyali taranıyor...")
 
 # Yasal Uyarı Kutusu
-st.markdown('<div class="spk-kutusu">⚠️ <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Sinyaller otomatik formüllerle üretilmektedir.</div>', unsafe_allow_html=True)
+st.markdown('<div class="spk-kutusu">⚠️ <b>YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeler yatırım danışmanlığı kapsamında değildir. Sıra listeler otomatik formüllerle üretilmektedir.</div>', unsafe_allow_html=True)
