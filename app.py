@@ -4,12 +4,12 @@ import datetime
 import yfinance as yf
 import os, re
 import time
-import streamlit.components.v1 as components  # Efekt için gerekli kütüphane
+import streamlit.components.v1 as components
 
 # 1. Sayfa Yapılandırması ve Neon Tasarım
 st.set_page_config(page_title="BTA", page_icon="📈", layout="wide")
 
-st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .bta-logo-konteyner {display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 5px; width: 100%; height: 180px; position: relative;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important; font-family: "Segoe UI", sans-serif;} input {color: #000!important; background-color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} div.block-container {padding-top: 1rem; padding-bottom: 0.5rem;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.1); border: 1px solid #dc2626; padding: 8px; border-radius: 6px; margin-top: 25px; margin-bottom: 10px; color: #fca5a5 !important; font-size: 0.8rem; text-align: justify;} .kilit-uyari {background: rgba(255, 255, 255, 0.05); border-left: 4px solid #ca8a04; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 1.1rem;} div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {font-size: 1.25rem !important; font-weight: bold !important; color: #ffffff !important;}</style>', unsafe_allow_html=True)
 
 # 🔑 GÜVENLİ ÇİFT ŞİFRE PARAMETRELERİ
 ZIYARETCI_SIFRESI = "bta3015"         # Sadece hisseleri görme yetkisi
@@ -37,10 +37,10 @@ for k in ["kisitli_liste", "ziyaret_sayaci"]:
 st.session_state["ziyaret_sayaci"] += 1
 
 
-# 🔥 BTA BOMBA DÜŞME VE DAĞILMA ANİMASYONU MOTORU (HTML5 CANVAS)
+# 🔥 SADECE DEĞİŞTİRİLEN BTA LOGO ALANI (BOMBA VE DÖNGÜ EFEKTİ)
 bta_bomba_efekti = """
-<div style="display: flex; justify-content: center; align-items: center; width: 100%; background: transparent; overflow: hidden;">
-    <canvas id="btaCanvas" width="900" height="180" style="background: transparent;"></canvas>
+<div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 160px; background: transparent; overflow: hidden; margin-top: 15px; margin-bottom: 15px;">
+    <canvas id="btaCanvas" width="800" height="150" style="background: transparent;"></canvas>
 </div>
 
 <script>
@@ -50,8 +50,8 @@ const ctx = canvas.getContext('2d');
 let bomb = {
     x: canvas.width / 2,
     y: -50,
-    targetY: canvas.height / 2 + 20,
-    speed: 6,
+    targetY: canvas.height / 2 + 10,
+    speed: 8,
     text: "BTA",
     exploded: false
 };
@@ -60,19 +60,19 @@ let particles = [];
 const letters = ["B", "T", "A"];
 
 function createParticles(x, y) {
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 80; i++) {
         let angle = Math.random() * Math.PI * 2;
-        let speed = Math.random() * 6 + 2;
+        let speed = Math.random() * 7 + 3;
         particles.push({
             x: x,
             y: y,
             char: letters[Math.floor(Math.random() * letters.length)],
             vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - Math.random() * 2,
+            vy: Math.sin(angle) * speed - Math.random() * 3,
             alpha: 1,
-            fade: Math.random() * 0.02 + 0.015,
-            size: Math.random() * 12 + 16,
-            angle: 0,
+            fade: Math.random() * 0.025 + 0.015,
+            size: Math.random() * 10 + 18,
+            angle: Math.random() * 360,
             rotSpeed: Math.random() * 0.2 - 0.1
         });
     }
@@ -82,24 +82,21 @@ function drawLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!bomb.exploded) {
-        // Bomba Aşağı Düşüyor
         bomb.y += bomb.speed;
         
-        // Düşerken arkada bıraktığı kuyruk izi efekti
+        // Düşerken parlayan iz efekti
         for(let i = 0; i < 4; i++) {
-            ctx.fillStyle = `rgba(255, 0, 255, ${0.8 - (i * 0.2)})`;
-            ctx.font = "bold 65px 'Brush Script MT', 'Comic Sans MS', cursive, sans-serif";
+            ctx.fillStyle = `rgba(255, 0, 127, ${0.9 - (i * 0.25)})`;
+            ctx.font = "bold 65px 'Segoe UI', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(bomb.text, bomb.x, bomb.y - (i * 10));
+            ctx.fillText(bomb.text, bomb.x, bomb.y - (i * 8));
         }
 
-        // Çarpma/Patlama Kontrolü
         if (bomb.y >= bomb.targetY) {
             bomb.exploded = true;
             createParticles(bomb.x, bomb.y);
         }
     } else {
-        // Harflerin Dağılma ve Yerçekimi Mekaniği
         let activeParticles = 0;
         
         particles.forEach((p) => {
@@ -107,15 +104,14 @@ function drawLoop() {
                 activeParticles++;
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.12; // Yerçekimi ivmesi
+                p.vy += 0.15; // Yerçekimi
                 p.alpha -= p.fade;
                 p.angle += p.rotSpeed;
 
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.angle);
-                // Matris yeşili ile neon pembe/turuncu arası geçişli renk yapısı
-                ctx.fillStyle = `rgba(${Math.floor(p.alpha * 255)}, ${Math.floor(Math.random() * 200 + 55)}, 255, ${p.alpha})`;
+                ctx.fillStyle = `rgba(255, ${Math.floor(Math.random() * 150)}, 255, ${p.alpha})`;
                 ctx.font = `bold ${p.size}px Arial`;
                 ctx.textAlign = "center";
                 ctx.fillText(p.char, 0, 0);
@@ -123,7 +119,6 @@ function drawLoop() {
             }
         });
 
-        // Tüm harfler dağılıp bittiğinde döngüyü yeniden başlat (RESET)
         if (activeParticles === 0) {
             bomb.y = -50;
             bomb.exploded = false;
@@ -135,9 +130,7 @@ function drawLoop() {
 drawLoop();
 </script>
 """
-
-# Eski statik logonun yerine dinamik bomba animasyonunu çağırıyoruz
-components.html(bta_bomba_efekti, height=180)
+components.html(bta_bomba_efekti, height=160)
 
 
 # 🔐 GİRİŞ KUTUSU
@@ -183,6 +176,7 @@ def hızlı_canli_fiyat_bul(hisse_kodu):
 
 # 🟢 1. BLOK: ERİŞİM İZNİ VARSA SİTE DETAYLARI VE HİSSELER SORUNSUZ YÜKLENİR
 if erisim_izni:
+    # Sadece Giriş Sayısı Bırakıldı (Puan, Oy, Tarih/Saat tamamen temizlendi)
     st.markdown(f'<div style="font-size: 1rem; color: #a5f3fc; margin-bottom: 20px; font-weight: bold;">🚪 Giriş Sayısı: {st.session_state["ziyaret_sayaci"]}</div>', unsafe_allow_html=True)
 
     df_kaynak = None
@@ -219,3 +213,9 @@ if erisim_izni:
                             p_bul = re.findall(r'[-+]?\d*,\d+|[-+]?\d*\.\d+|\d+', wv)
                             bta_puan = p_bul[0] if p_bul else t_deg
                             if hisse not in st.session_state["ozel_takip_kutusu"] and cfiy > 0:
+                                st.session_state["ozel_takip_kutusu"][hisse] = {"kayit_fiyati": cfiy, "kayit_zamani": guncel_an}
+                            tablo_al.append({"Hisse Kodu 🚀": hisse, "BTA Puan": bta_puan, "💥 İnternet Canlı": f"{cfiy:.2f} TL" if cfiy > 0 else "Yükleniyor..."})
+            except: pass
+
+    st.markdown('<div class="alsat-baslik">🟡 DÖNEMSEL AL SAT SİNYALLERİ</div>', unsafe_allow_html=True)
+    if tablo_alsat: st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
