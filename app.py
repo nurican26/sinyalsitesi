@@ -15,7 +15,7 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
+# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve WhatsApp Sohbet Kutusu CSS Kodları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -63,6 +63,32 @@ st.markdown(f'''
         animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }}
     
+    /* 💬 WHATSAPP STİLİ SOHBET PANELİ CSS */
+    .chat-konteyner {{
+        background: #1e293b;
+        border-radius: 12px;
+        padding: 15px;
+        margin-top: 30px;
+        border: 1px solid #334155;
+    }}
+    .chat-mesaj-sol {{
+        background: #334155;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 0px 12px 12px 12px;
+        margin-bottom: 10px;
+        max-width: 75%;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }}
+    .chat-zaman {{
+        font-size: 0.75rem;
+        color: #94a3b8;
+        display: block;
+        margin-top: 4px;
+        text-align: right;
+    }}
+    
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
         14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
@@ -87,9 +113,8 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# Saat Göstergesi
-guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
-st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
+# Sizin ellerinizle sildiğiniz temiz düzen: Sadece yenilenme yazısı kalacak
+st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold; text-align: center;"><span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -168,7 +193,7 @@ if os.path.exists(excel_yolu):
                     "KAR / ZARAR 📊": kz_oran_str
                 })
 
-            # 2. ALT PANEL VERİLERİ (B Sütunu)
+            # 2. ALT PANEL VERİLERİ (B Sütunu) - Gönderdiğiniz gibi milimetrik tamamlandı
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             
             if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
@@ -192,22 +217,3 @@ if os.path.exists(excel_yolu):
                 })
 
         # EKRANA BASMA İŞLEMLERİ
-        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
-        if tablo_bta:
-            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
-        else:
-            st.info("Üst panel için veri işleniyor...")
-
-        st.write("")
-
-        st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
-        if tablo_alsat:
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else:
-            st.info("Alt panel için veri işleniyor...")
-
-    except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
-
