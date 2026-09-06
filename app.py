@@ -3,109 +3,15 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import time
 from streamlit_autorefresh import st_autorefresh
 
 # Sayfa Yapılandırması
 st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-# 🔄 CANLI FİYAT VE ANIMASYON KİLİDİ: Sayfa her 10 saniyede bir otomatik yenilenir
+st.markdown('<style>.stApp {background: #0f172a!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}</style>', unsafe_allow_html=True)
+
+# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir hiçbir şeye dokunmadan kendi kendini yeniler
 st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
-
-# Her yenilemede animasyonu zorla baştan oynatmak için benzersiz zaman damgası
-anim_id = int(time.time())
-
-# Şık Neon Tasarım, Gökkuşağı Yazı ve Her Yenilemede Çalışan Kesin Animasyon CSS Kodları
-st.markdown(f'''
-<style>
-    .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
-    h1,h2,h3,h4,h5,h6,p,span,label {{color: #fff!important;}} 
-    .stDataFrame {{width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;}} 
-    .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
-    .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
-    
-    /* 🌈 GERÇEK GÖKKUŞAĞI VE HER SEFERİNDE TETİKLENEN ANIMASYON ALANI */
-    .logo-konteyner {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px 0;
-        margin-bottom: 10px;
-    }}
-    .cember-animasyon-{anim_id} {{
-        width: 120px;
-        height: 120px;
-        border: 4px solid #fff;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: transparent;
-        position: relative;
-        overflow: hidden;
-        
-        /* Gökkuşağı parlaması ve yukarıdan düşme animasyonu */
-        animation: 
-            gokkusagiCember 4s linear infinite,
-            yukardanDus 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }}
-    .bta-yazi-{anim_id} {{
-        font-family: 'Caveat', 'Segoe UI', cursive, sans-serif;
-        font-size: 3.2rem;
-        font-weight: bold;
-        margin: 0;
-        padding: 0;
-        z-index: 2;
-        
-        /* 🌈 Gerçek Gökkuşağı Metin Rengi Geçişi */
-        background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
-        filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));
-        
-        /* Soldan yavaşça kayma animasyonu */
-        animation: soldanYavascaKay 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    }
-    
-    /* Çember İçin Fosforlu Gökkuşağı Geçişi */
-    @keyframes gokkusagiCember {{
-        0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
-        14% {{ border-color: #ff7f00; box-shadow: 0 0 15px #ff7f00, inset 0 0 15px #ff7f00; }}
-        28% {{ border-color: #ffff00; box-shadow: 0 0 15px #ffff00, inset 0 0 15px #ffff00; }}
-        42% {{ border-color: #00ff00; box-shadow: 0 0 15px #00ff00, inset 0 0 15px #00ff00; }}
-        56% {{ border-color: #00ffff; box-shadow: 0 0 15px #00ffff, inset 0 0 15px #00ffff; }}
-        70% {{ border-color: #0000ff; box-shadow: 0 0 15px #0000ff, inset 0 0 15px #0000ff; }}
-        84% {{ border-color: #8b00ff; box-shadow: 0 0 15px #8b00ff, inset 0 0 15px #8b00ff; }}
-        100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
-    }
-
-    /* Yukarıdan düşme efekti */
-    @keyframes yukardanDus {{
-        0% {{ transform: translateY(-200px) scale(0.3); opacity: 0; }}
-        70% {{ transform: translateY(10px) scale(1.05); opacity: 1; }}
-        100% {{ transform: translateY(0) scale(1); opacity: 1; }}
-    }}
-
-    /* Soldan sağa yavaş akma efekti */
-    @keyframes soldanYavascaKay {{
-        0% {{ transform: translateX(-140px); opacity: 0; }}
-        30% {{ opacity: 0.5; }}
-        100% {{ transform: translateX(0); opacity: 1; }}
-    }}
-</style>
-<link href="https://googleapis.com" rel="stylesheet">
-''', unsafe_allow_html=True)
-
-# 🌈 DİNAMİK LOGO EKRAN ÇIKTISI
-st.markdown(f'''
-<div class="logo-konteyner">
-    <div class="cember-animasyon-{anim_id}">
-        <span class="bta-yazi-{anim_id}">BTA</span>
-    </div>
-</div>
-''', unsafe_allow_html=True)
 
 # Saat Göstergesi
 guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
@@ -115,11 +21,13 @@ excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
+        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
         tablo_bta = []
         tablo_alsat = []
 
+        # İlk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
         sinir = min(10, len(df))
         
         for idx in range(sinir):
