@@ -26,14 +26,12 @@ def veritabanindan_mesajlari_getir():
         response = requests.get(FIREBASE_URL, timeout=3)
         if response.status_code == 200 and response.json():
             veriler = response.json()
-            # Firebase verileri benzersiz key'ler ile tutar, onları listeye çeviriyoruz
             mesaj_listesi = [veri for veri in veriler.values()]
             # Mesajları zaman damgasına göre sırala
             mesaj_listesi = sorted(mesaj_listesi, key=lambda x: x.get('timestamp', 0))
             return mesaj_listesi[-30:] # Sadece son 30 mesajı getir (Performans için)
     except Exception:
         pass
-    # Hata durumunda veya veritabanı boşsa varsayılan mesaj döner
     return [{"kullanici": "Sistem", "mesaj": "Canlı sohbet odasına hoş geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}]
 
 # 📤 Firebase'e Yeni Mesaj Gönderen Fonksiyon
@@ -126,10 +124,8 @@ st.markdown(f'''
 with st.sidebar:
     st.markdown('<div class="sohbet-baslik">💬 BTA CANLI SOHBET ODASI</div>', unsafe_allow_html=True)
     
-    # Mesajları veritabanından anlık çekiyoruz
     canli_mesajlar = veritabanindan_mesajlari_getir()
     
-    # Mesajları Ekrana Basma Döngüsü
     sohbet_html = '<div class="sohbet-kutusu">'
     for m in canli_mesajlar:
         if m.get("kullanici") == "Sistem":
@@ -139,14 +135,12 @@ with st.sidebar:
     sohbet_html += '</div>'
     st.markdown(sohbet_html, unsafe_allow_html=True)
     
-    # Mesaj Gönderme Formu
     with st.form(key="sohbet_formu", clear_on_submit=True):
         takma_ad = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=15)
         yeni_mesaj = st.text_input("Mesajınız:", max_chars=100, placeholder="Hisseler hakkında konuşun...")
         gonder_butonu = st.form_submit_form_button("Gönder 📩")
         
         if gonder_butonu and yeni_mesaj.strip():
-            # Veritabanına kaydet
             basarili = veritabanina_mesaj_gonder(takma_ad.strip(), yeni_mesaj.strip())
             if basarili:
                 st.rerun()
@@ -168,25 +162,20 @@ excel_yolu = "nurican.xls.xlsm"
 
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan "WEB" isimli sayfayı okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
         
-        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz
         hisse_havuzu = []
         if len(df.columns) >= 5:
             e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
             hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-            hisse_havuzu = sorted(list(set(hisse_havuzu))) # Benzersiz yap ve sırala
+            hisse_havuzu = sorted(list(set(hisse_havuzu)))
         
-        # Kullanıcıya E sütunundan gelen temiz listeyi seçenek olarak sunuyoruz
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
             try:
-                # Sadece seçilen hisse için internete gidilir (Kasma yapmaz)
                 ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
                 hist_ara = ticker_ara.history(period="2d")
                 if not hist_ara.empty:
@@ -196,3 +185,20 @@ if os.path.exists(excel_yolu):
                     
                     st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
                 else:
+                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
+            except:
+                st.error("Veri motoru bağlantı hatası.")
+        
+        st.write("---")
+
+        tablo_bta = []
+        tablo_alsat = []
+        sinir = min(10, len(df))
+        
+        for idx in range(sinir):
+            hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+
+            if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                try:
