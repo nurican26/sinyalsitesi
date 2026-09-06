@@ -15,7 +15,13 @@ st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 # Her yenilemede animasyonu baştan oynatmak için zaman damgası
 anim_id = int(time.time())
 
-# Şık Neon Tasarım, Gökkuşağı Çember ve Yazı CSS Kodları
+# 💬 CANLI SOHBET ODASI HAFIZASI (Session State)
+if "sohbet_gecmisi" not in st.session_state:
+    st.session_state["sohbet_gecmisi"] = [
+        {"kullanici": "Sistem", "mesaj": "BTA Canlı Sohbet Odasına Hoş Geldiniz! 🚀", "zaman": datetime.datetime.now().strftime("%H:%M")}
+    ]
+
+# Şık Neon Tasarım, Gökkuşağı Çember, Yazı ve Sohbet Kutusu CSS Kodları
 st.markdown(f'''
 <style>
     .stApp {{background: #0f172a!important; padding: 0.5rem;}} 
@@ -24,6 +30,14 @@ st.markdown(f'''
     .alsat-baslik {{background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .al-baslik {{background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;}} 
     .spk-kutusu {{background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}}
+    
+    /* 💬 SOHBET ODASI ÖZEL STİLLERİ */
+    .sohbet-baslik {{background: linear-gradient(90deg, #0284c7 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 10px; color:#fff; font-size:1.1rem; text-align:center;}}
+    .sohbet-kutusu {{background-color: #1e293b; border: 1px solid #38bdf8; border-radius: 8px; padding: 10px; max-height: 350px; overflow-y: auto; margin-bottom: 10px;}}
+    .mesaj-satiri {{margin-bottom: 8px; padding: 6px; border-radius: 4px; background-color: #334155; font-size: 0.9rem;}}
+    .mesaj-sistem {{background-color: rgba(14, 165, 233, 0.2); border-left: 3px solid #0ea5e9;}}
+    .mesaj-zaman {{font-size: 0.75rem; color: #94a3b8; float: right; margin-top: 2px;}}
+    .mesaj-yetkili {{color: #38bdf8 !important; font-weight: bold;}}
     
     /* 🌈 ANIMASYONLU GÖKKUŞAĞI ÇEMBER VE KAYAN BTA LOGO ALANI */
     .logo-konteyner {{
@@ -77,6 +91,38 @@ st.markdown(f'''
     @keyframes soldanYavascaKay {{ 0% {{ transform: translateX(-140px); opacity: 0; }} 30% {{ opacity: 0.5; }} 100% {{ transform: translateX(0); opacity: 1; }} }}
 </style>
 ''', unsafe_allow_html=True)
+
+# 🖥️ SOL MENÜ (SIDEBAR) - CANLI SOHBET ODASI ALANI
+with st.sidebar:
+    st.markdown('<div class="sohbet-baslik">💬 BTA CANLI SOHBET ODASI</div>', unsafe_allow_html=True)
+    
+    # Mesajları Ekrana Basma Döngüsü
+    sohbet_html = '<div class="sohbet-kutusu">'
+    for m in st.session_state["sohbet_gecmisi"]:
+        if m["kullanici"] == "Sistem":
+            sohbet_html += f'<div class="mesaj-satiri mesaj-sistem">🤖 <b>{m["kullanici"]}:</b> {m["mesaj"]}<span class="mesaj-zaman">{m["zaman"]}</span></div>'
+        else:
+            sohbet_html += f'<div class="mesaj-satiri">👤 <span class="mesaj-yetkili">{m["kullanici"]}:</span> {m["mesaj"]}<span class="mesaj-zaman">{m["zaman"]}</span></div>'
+    sohbet_html += '</div>'
+    st.markdown(sohbet_html, unsafe_allow_html=True)
+    
+    # Mesaj Gönderme Formu
+    with st.form(key="sohbet_formu", clear_on_submit=True):
+        takma_ad = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=15)
+        yeni_mesaj = st.text_input("Mesajınız:", max_chars=100, placeholder="Hisseler hakkında konuşun...")
+        gonder_butonu = st.form_submit_form_button("Gönder 📩")
+        
+        if gonder_butonu and yeni_mesaj.strip():
+            su_an = datetime.datetime.now().strftime("%H:%M")
+            st.session_state["sohbet_gecmisi"].append({
+                "kullanici": takma_ad.strip(),
+                "mesaj": yeni_mesaj.strip(),
+                "zaman": su_an
+            })
+            # Son 50 mesajı hafızada tut, şişmeyi önle
+            if len(st.session_state["sohbet_gecmisi"]) > 50:
+                st.session_state["sohbet_gecmisi"].pop(1)
+            st.rerun()
 
 # LOGO EKRAN ÇIKTISI
 st.markdown(f'''
@@ -151,65 +197,3 @@ if os.path.exists(excel_yolu):
                     canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
                 except:
                     canli_fiyat = 0.0
-                
-                try: maliyet = float(alim_c.replace(",", "."))
-                except: maliyet = 0.0
-                
-                kz_oran_str = "-"
-                if maliyet > 0 and canli_fiyat > 0:
-                    kz = ((canli_fiyat - maliyet) / maliyet) * 100
-                    kz_oran_str = f"%{kz:+.2f}"
-
-                tablo_bta.append({
-                    "BTA PUAN 🔢": puan_temiz,
-                    "BTA HİSSE 📈": hisse_a,
-                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
-                    "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...",
-                    "KAR / ZARAR 📊": kz_oran_str
-                })
-
-            # 2. ALT PANEL VERİLERİ (B Sütunu)
-            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            
-            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                try:
-                    ticker_as = yf.Ticker(f"{alsat_b}.IS")
-                    hist_as = ticker_as.history(period="2d")
-                    as_canli_fiyat = float(hist_as['Close'].iloc[-1]) if not hist_as.empty else 0.0
-                    
-                    if len(hist_as) >= 2:
-                        onceki_kapanis = float(hist_as['Close'].iloc[-2])
-                        as_degisim = ((as_canli_fiyat - onceki_kapanis) / onceki_kapanis) * 100
-                    else:
-                        as_degisim = 0.0
-                except:
-                    as_canli_fiyat, as_degisim = 0.0, 0.0
-
-                tablo_alsat.append({
-                    "GÜNLÜK AL SAT HİSSELERİ ⚡": alsat_b,
-                    "ANLIK VERİ CANLI 📊": f"{as_canli_fiyat:.2f} TL" if as_canli_fiyat > 0 else "Yükleniyor...",
-                    "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"
-                })
-
-        # EKRANA BASMA İŞLEMLERİ
-        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
-        if tablo_bta:
-            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
-        else:
-            st.info("Üst panel için veri işleniyor...")
-
-        st.write("")
-
-        st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
-        if tablo_alsat:
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        else:
-            st.info("Alt panel için veri işleniyor...")
-
-    except Exception as e:
-        st.error(f"Excel okunurken bir sorun oluştu: {e}")
-else:
-    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
-    
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
-
