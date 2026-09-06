@@ -53,7 +53,7 @@ def sohbet_temizle(metin):
             temiz_metin = insens_kelime.sub(sansur, temiz_metin)
     return temiz_metin
 
-# Tüm kullanıcıların göreceği canlı ortak sohbet havuzu
+# Tüm kullanıcıların göreceği ortak canlı havuz
 @st.cache_resource
 def sunucu_canli_havuzunu_getir():
     return []
@@ -170,9 +170,8 @@ st.write("---")
 # --- CANLI SOHBET ODASI ALANI ---
 st.markdown('<div class="sohbet-baslik">💬 CANLI TOPLULUK SOHBET ODASI</div>', unsafe_allow_html=True)
 
-# Mesaj geçmişini gösteren HTML alanı
 sohbet_html = '<div class="sohbet-kutusu">'
-for msg in ortak_havuz[-50:]:  # Son 50 mesajı gösterir
+for msg in ortak_havuz[-50:]:
     sohbet_html += f'''
     <div class="mesaj-satiri">
         <span class="mesaj-sahibi">{msg["kullanici"]}</span>
@@ -183,5 +182,5 @@ for msg in ortak_havuz[-50:]:  # Son 50 mesajı gösterir
 sohbet_html += '</div>'
 st.markdown(sohbet_html, unsafe_allow_html=True)
 
-# Mesaj gönderme formu
+# Form yapısı ve altındaki elemanların tamamının girintisi hizalandı
 with st.form("mesaj_formu", clear_on_submit=True):
