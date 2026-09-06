@@ -119,6 +119,17 @@ def bst_en_cok_yukselenler():
         return df_yukselen
     return pd.DataFrame()
 
+# Güvenli Canlı Fiyat Çekme Yardımcı Fonksiyonu
+def get_live_data(hisse_kodu, period="2d"):
+    try:
+        ticker = yf.Ticker(f"{hisse_kodu}.IS")
+        hist = ticker.history(period=period)
+        if not hist.empty:
+            return hist
+    except:
+        pass
+    return None
+
 if os.path.exists(excel_yolu):
     try:
         # Doğrudan "WEB" isimli sayfayı okuyoruz
@@ -137,31 +148,23 @@ if os.path.exists(excel_yolu):
         # 🔍 KASMAYI ENGELLEYEN CANLI ARAMA MOTORU SİSTEMİ
         st.markdown("#### 🔍 BİST Canlı Fiyat Arama Motoru")
         
-        # Excel'deki E sütunundaki (5. sütun) hisseleri alıyoruz
         hisse_havuzu = []
         if len(df.columns) >= 5:
             e_sutunu_temiz = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
             hisse_havuzu = [h for h in e_sutunu_temiz if h not in ["", "NAN", "NONE", "HİSSE", "BTA HİSSE"]]
-            hisse_havuzu = sorted(list(set(hisse_havuzu))) # Benzersiz yap ve sırala
+            hisse_havuzu = sorted(list(set(hisse_havuzu)))
         
-        # Kullanıcıya E sütunundan gelen temiz listeyi seçenek olarak sunuyoruz
         secilen_hisse = st.selectbox("Canlı verisini görmek istediğiniz hisseyi seçin:", ["Seçiniz..."] + hisse_havuzu)
         
         if secilen_hisse != "Seçiniz...":
-            try:
-                # Sadece seçilen hisse için internete gidilir (Kasma yapmaz)
-                ticker_ara = yf.Ticker(f"{secilen_hisse}.IS")
-                hist_ara = ticker_ara.history(period="2d")
-                if not hist_ara.empty:
-                    arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
-                    onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
-                    arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
-                    
-                    st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
-                else:
-                    st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
-            except:
-                st.error("Veri motoru bağlantı hatası.")
+            hist_ara = get_live_data(secilen_hisse, "2d")
+            if hist_ara is not None:
+                arama_canli_fiyat = float(hist_ara['Close'].iloc[-1])
+                onceki_kap = float(hist_ara['Close'].iloc[-2]) if len(hist_ara) >= 2 else arama_canli_fiyat
+                arama_degisim = ((arama_canli_fiyat - onceki_kap) / onceki_kap) * 100
+                st.success(f"📈 **{secilen_hisse}** Anlık Canlı Fiyatı: **{arama_canli_fiyat:.2f} TL** | Günlük Değişim: **%{arama_degisim:+.2f}**")
+            else:
+                st.warning("Seçilen hisse için canlı veri şu an çekilemedi.")
         
         st.write("---")
 
@@ -176,22 +179,16 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
 
             if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                puan_temiz = ""
                 try:
                     puan_temiz = f"{float(puan_d):.2f}"
                 except:
                     puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
 
                 canli_fiyat = 0.0
-                try:
-                    ticker = yf.Ticker(f"{hisse_a}.IS")
-                    hist = ticker.history(period="1d")
-                    if not hist.empty:
-                        canli_fiyat = float(hist['Close'].iloc[-1])
-                except:
-                    canli_fiyat = 0.0
+                hist_bta = get_live_data(hisse_a, "1d")
+                if hist_bta is not None:
+                    canli_fiyat = float(hist_bta['Close'].iloc[-1])
                 
-                maliyet = 0.0
                 try:
                     maliyet = float(alim_c.replace(",", "."))
                 except:
@@ -213,3 +210,11 @@ if os.path.exists(excel_yolu):
             # 2. ALT PANEL VERİLERİ (B Sütunu)
             alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
             
+            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                as_canli_fiyat = 0.0
+                as_degisim = 0.0
+                hist_as = get_live_data(alsat_b, "2d")
+                
+                if hist_as is not None:
+                    as_canli_fiyat = float(hist_as['Close'].iloc[-1])
+                    if len(hist_as) >= 2:
