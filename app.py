@@ -1,10 +1,11 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
 import os
 import json
 import time
+import uuid
 from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="BTA Merkez", layout="wide")
@@ -22,9 +23,9 @@ st.markdown(f'''
     .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px;}}
     .cember-animasyon-{anim_id} {{width: 120px; height: 120px; border: 4px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: transparent; position: relative; overflow: hidden; animation: gokkusagiCember 4s linear infinite;}}
     .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));}}
-    .chat-kutusu {{background-color: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 8px; border-left: 5px solid #3b82f6;}}
+    .chat-kutusu {{background-color: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 8px; border-left: 5px solid #3b82f6; position: relative;}}
     .chat-isim {{ font-weight: bold; color: #38bdf8 !important; font-size: 0.95rem; }}
-    .chat-zaman {{ color: #94a3b8 !important; font-size: 0.75rem; float: right; }}
+    .chat-zaman {{ color: #94a3b8 !important; font-size: 0.75rem; float: right; margin-right: 10px; }}
     .chat-mesaj {{ color: #f1f5f9 !important; margin-top: 4px; font-size: 1rem; }}
     @keyframes gokkusagiCember {{
         0% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
@@ -37,6 +38,10 @@ st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}
 
 excel_yolu = "nurican.xls.xlsm"
 sohbet_dosyası = "nurican_sohbet_gecmisi.json"
+
+# Kullanıcıya benzersiz bir cihaz ID'si atıyoruz (Session bazlı)
+if "cihaz_id" not in st.session_state:
+    st.session_state.cihaz_id = str(uuid.uuid4())
 
 st.header("📊 CANLI BORSA TAKİP EKRANI")
 
@@ -125,7 +130,14 @@ else:
                             mevcut = json.load(f)
                     except:
                         pass
-                mevcut.append({"isim": st.session_state.kullanici_adi, "mesaj": yeni_mesaj_metni.strip(), "zaman": datetime.datetime.now().strftime("%H:%M:%S")})
+                # Mesajı kaydederken benzersiz bir mesaj_id ve yazan cihaz_id ekliyoruz
+                mevcut.append({
+                    "mesaj_id": str(uuid.uuid4()),
+                    "cihaz_id": st.session_state.cihaz_id,
+                    "isim": st.session_state.kullanici_adi, 
+                    "mesaj": yeni_mesaj_metni.strip(), 
+                    "zaman": datetime.datetime.now().strftime("%H:%M:%S")
+                })
                 if len(mevcut) > 40:
                     mevcut = mevcut[-40:]
                 try:
@@ -135,7 +147,7 @@ else:
                     pass
                 st.rerun()
 
-    # 🛠️ GİZLİ YÖNETİCİ PANELİ (GİRİNTİSİZ GÜVENLİ TASARIM)
+    # 🛠️ GİZLİ YÖNETİCİ PANELİ
     with st.expander("🛠️ Admin / Moderatör Paneli"):
         admin_sifre = st.text_input("Yönetici Şifresi:", type="password", placeholder="Şifreyi girin...")
         if admin_sifre == "bta123":
@@ -159,15 +171,21 @@ else:
 
     if sohbet_gecmisi:
         for m in reversed(sohbet_gecmisi):
-            st.markdown(f'''
-            <div class="chat-kutusu">
-                <span class="chat-isim">@{m['isim']}</span>
-                <span class="chat-zaman">{m['zaman']}</span>
-                <div class="chat-mesaj">{m['mesaj']}</div>
-            </div>
-            ''', unsafe_allow_html=True)
-    else:
-        st.info("Sohbet odası şu an sessiz.")
-
-st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
- 
+            # İki parçalı tasarım yapıyoruz: Sol tarafta mesaj metni, sağ tarafta silme butonu
+            col_mesaj, col_sil = st.columns([9, 1])
+            
+            with col_mesaj:
+                st.markdown(f'''
+                <div class="chat-kutusu">
+                    <span class="chat-isim">@{m['isim']}</span>
+                    <span class="chat-zaman">{m['zaman']}</span>
+                    <div class="chat-mesaj">{m['mesaj']}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+            with col_sil:
+                # Eğer mesajı yazan kişinin cihaz_id'si ile aktif kullanıcınınki eşleşirse buton görünür
+                if m.get("cihaz_id") == st.session_state.cihaz_id:
+                    if st.button("❌ Sil", key=m.get("mesaj_id")):
+                        try:
+                            # Tıklanan mesajı listeden süzüp çıkartıyoruz
