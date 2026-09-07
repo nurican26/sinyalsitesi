@@ -11,7 +11,7 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# Telefon ve Bilgisayar arasındaki sohbeti 5 saniyede bir otomatik eşitler
+# Sohbeti 5 saniyede bir otomatik eşitler
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize")
 
 # --- IŞIKLI, GÖLGELİ VE KAYAN BTA LOGOSU ---
@@ -185,7 +185,7 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. TEK SIRA YILDIZLI VE GELİŞMİŞ SOHBET PANELİ (SIFIR GIRINTI RISKLI SÜRÜM)
+# 4. YORUMLAR VE SOHBET AKIŞ PANELİ (SIFIR GİRİNTİ RİSKLİ YENİ TASARIM)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI AKIŞ</p>', unsafe_allow_html=True)
@@ -200,16 +200,14 @@ if "sohbet_hafizasi" not in st.session_state:
         {"isim": "Elif K.", "saat": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# Yasaklı Argo/Küfür Kelime Filtresi (Buraya istediğiniz kelimeleri ekleyebilirsiniz)
-yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç"]
+# Yasaklı Argo/Küfür Kelime Filtresi (Küfür Engelleme)
+yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç", "oç", "oc"]
 
-# Arayüz İki Büyük Kolona Bölünüyor
-sol_taraf, sag_taraf = st.columns([1, 1.2])
+# Puanlama Butonları (Hata riski yaratan alt sütun with yapıları tamamen kaldırıldı)
+st.write("**Paneli Puanlayın:**")
+if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="s5_btn", use_container_width=True):
+    st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
 
-with sol_taraf:
-    st.write("**Paneli Puanlayın:**")
-    
-    # Yıldızlar hata vermeyecek şekilde yan yana 3 bağımsız parça olarak tek satırda dizildi
-    yc1, yc2, yc3 = st.columns(3)
-    if yc1.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star_5_btn", use_container_width=True):
-        st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
+if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="s4_btn", use_container_width=True):
+    st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
+
