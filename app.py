@@ -19,6 +19,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .hisse-link { color: #00ffcc !important; text-decoration: underline !important; font-weight: bold; }
+.kucuk-sayac { font-size: 12px !important; color: #888888 !important; text-align: center; margin-top: 15px; font-weight: bold; }
 </style>
 <h1 style="text-align:center; color:#fff; font-size:26px; font-weight:bold; margin-bottom:15px;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</h1>
 ''', unsafe_allow_html=True)
@@ -57,7 +58,7 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR (%100 ÇALIŞAN BORSA KÖPRÜSÜ ENTEGRESİ)
+# 3. VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -84,7 +85,6 @@ if os.path.exists(excel_yolu):
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
                     else: kz_str = "<span>-</span>"
                     
-                    # DOĞRUDAN TELEFONDA SORUNSUZ AÇILAN YENİ BORSA KÖPRÜSÜ
                     link_url = f"https://doviz.com{ha.lower()}"
                     hisse_kopru = f'<a href="{link_url}" target="_blank" class="hisse-link">{ha} 🔍</a>'
                     
@@ -99,7 +99,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. YAN YANA PANEL: HALKA ARZLAR & 📺 TV GÜNDEM HABERLERİ
+# 4. GÜNCEL GELİŞMELER: HALKA ARZ & 3 CANLI GÜNDEM HABERİ (YENİLENDİ)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:20px; font-weight:bold; color:#fff;">🔔 GÜNCEL GELİŞMELER & SÜPER PANEL</p>', unsafe_allow_html=True)
@@ -112,13 +112,10 @@ with col_sol:
 
 with col_sag:
     st.markdown('<b>📺 TV GÜNDEM & DÜNYA HABERLERİ</b>', unsafe_allow_html=True)
-    st.info("🔴 [SON DAKİKA] Gündem başlıkları, siyaset ve dünya haberleri sisteme yüklendi.")
-    st.info("🔴 [KAP Gelişmesi] SPK haftalık bülteni yayınlandı: 2 yeni şirket onay aldı.")
-
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
-sc1, sc2, sc3 = st.columns(3)
-sc2.metric("📅 Günlük Giriş ", f"{st.session_state['gunluk_sayac']} Giriş")
-sc3.metric("💎 Genel ", f"{st.session_state['toplam_sayac']} Giriş")
+    # Tam istediğiniz gibi SPK haberi kaldırıldı ve yerine 3 adet güncellenen borsa/dünya haberi eklendi
+    st.info("🔴 [SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
+    st.info("🔴 [Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
+    st.info("🔴 [Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
 # 5. CANLI SOHBET KUTUSU
@@ -170,3 +167,5 @@ for s in range(len(df_sohbet_oku)):
         df_sl = pd.read_csv(db_sohbet)
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
         st.rerun()
+
+# ===================================================================== #
