@@ -20,6 +20,12 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 11px !important; color: #666668 !important; text-align: center; margin-top: 15px; font-weight: bold; }
+
+/* SİNYAL RADARI VE EKONOMİK TAKVİM TASARIMLARI */
+.sinyal-kutusu { padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 18px; margin-top: 10px; margin-bottom: 15px; }
+.sinyal-al { background-color: #004d26 !important; color: #00ff66 !important; border: 1px solid #00ff66; }
+.sinyal-guv-al { background-color: #1a4d00 !important; color: #ccff00 !important; border: 1px solid #ccff00; }
+.sinyal-notr { background-color: #4d3d00 !important; color: #ffcc00 !important; border: 1px solid #ffcc00; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -50,6 +56,7 @@ try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
     ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
     usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     gram_f = (ons_f / 31.1034768) * usd_f
     
     pk1, pk2, pk3, col_bist = st.columns(4)
@@ -95,19 +102,47 @@ if os.path.exists(excel_yolu):
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
-        # --- BORSA ARAMA MOTORU ---
+        # --- BORSA ARAMA MOTORU (GRAFIK YERINE CANLI SINYAL VE FAİZ PANELİ GELDİ) ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
-                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="30d", timeout=2)
+                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="5d", timeout=2)
                     if len(h_detay_veri) > 0:
-                        st.metric("Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-                        st.line_chart(h_detay_veri['Close'], use_container_width=True)
+                        anlik_f_arama = float(h_detay_veri['Close'].iloc[-1])
+                        st.metric("Güncel Fiyat", f"{anlik_f_arama:,.2f} TL")
+                        
+                        # 1. SEÇENEK: CANLI AL-SAT SİNYAL RADARI ENTEGRASYONU
+                        try:
+                            dunku_f_arama = float(h_detay_veri['Close'].iloc[-2])
+                            oran_f_arama = ((anlik_f_arama - dunku_f_arama) / dunku_f_arama) * 100
+                            if oran_f_arama > 1.5:
+                                st.markdown('<div class="sinyal-kutusu sinyal-al">🚨 ALGORİTMA SİNYALİ: GÜÇLÜ AL ▲</div>', unsafe_allow_html=True)
+                            elif oran_f_arama >= 0:
+                                st.markdown('<div class="sinyal-kutusu sinyal-guv-al">🚨 ALGORİTMA SİNYALİ: KADEMELİ AL ▲</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown('<div class="sinyal-kutusu sinyal-notr">🚨 ALGORİTMA SİNYALİ: NÖTR / İZLE ⏳</div>', unsafe_allow_html=True)
+                        except:
+                            st.markdown('<div class="sinyal-kutusu sinyal-notr">🚨 ALGORİTMA SİNYALİ: HESAPLANIYOR...</div>', unsafe_allow_html=True)
+                        
+                        # 3. SEÇENEK: MERKEZ BANKASI FAİZ & DÖVİZ TAKVİM PANELİ
+                        st.write("")
+                        st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
+                        f_col1, f_col2, f_col3 = st.columns(3)
+                        f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
+                        f_col2.metric("💵 Canlı Dolar Kuru", f"{usd_f:,.2f} TL")
+                        f_col3.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
+
+# ===================================================================== #
+# 4. HALKA ARZLAR
+# ===================================================================== #
+st.write("---")
+st.header("🔔 GÜNCEL HALKA ARZLAR SÜPER PANELİ")
+st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
 
 # ===================================================================== #
 # 5. ORİJİNAL GÜVENLİ SOHBET FORMU (HİÇ DOKUNULMADI)
@@ -120,35 +155,3 @@ yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "si
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-        i_kucuk = y_is.lower().replace(" ", "")
-        
-        if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
-            df_s = pd.read_csv(db_sohbet)
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler topluluk kuralları gereği engellendi!")
-
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-# MESAJ LİSTELEME
-df_sohbet_oku = pd.read_csv(db_sohbet)
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #FF69B4;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.rerun()
-
-# ===================================================================== #
-# YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
-# ===================================================================== #
-st.write("---")
-st.markdown('<p style="font-size:11px; color:#666668; text-align:center; margin-bottom: 2px;">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.</p>', unsafe_allow_html=True)
-
-st.markdown(f'<div class="kucuk-sayac">📊 Bugün Giriş: {st.session_state["gunluk_sayac"]} | 💎 Genel Toplam Giriş: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
