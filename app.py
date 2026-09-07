@@ -6,7 +6,7 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. BORSA TEMASI VE STİLLER (CSS)
+# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -20,6 +20,8 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 13px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
+/* Halka arz paneli için özel küçültülmüş yazı boyutları */
+.kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -96,7 +98,7 @@ if os.path.exists(excel_yolu):
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
-        # --- BORSA ARAMA MOTORU (DOLAR KALDIRILDI) ---
+        # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
@@ -111,19 +113,20 @@ if os.path.exists(excel_yolu):
                         st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
                         f_col1, f_col2 = st.columns(2)
                         f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
-                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL") # Sadece Euro ve Faiz kaldı
+                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR
+# 4. HALKA ARZLAR (ZİL, SÜPER VE PANEL YAZISI SİLİNDİ, FONT KÜÇÜLTÜLDÜ)
 # ===================================================================== #
 st.write("---")
-st.header("🔔 GÜNCEL HALKA ARZLAR SÜPER PANELİ")
+# İstediğiniz gibi zil emojisi ve kaba başlıklar silinerek sadece küçük ve temiz yazı bırakıldı
+st.markdown('<div class="kucuk-baslik">Halka Arz Hisseleri</div>', unsafe_allow_html=True)
 st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
 
 # ===================================================================== #
-# 5. ORİJİNAL GÜVENLİ SOHBET FORMU (HİÇ DOKUNULMADI)
+# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:22px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
@@ -143,7 +146,7 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+            st.error("⚠ Argo/Küfür içerikli kelimeler topluluk kuralları gereği engellendi!")
 
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
@@ -159,6 +162,3 @@ for s in range(len(df_sohbet_oku)):
         st.rerun()
 
 # ===================================================================== #
-# YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
-# ===================================================================== #
-st.write("---")
