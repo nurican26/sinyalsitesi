@@ -140,137 +140,149 @@ def formatla_tl(deger):
 # ===================================================================== #
 # 2. PANELİNİZİN VERİ TABLOLARI VE MOTORU                               #
 # ===================================================================== #
+df = None
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+    except Exception as e:
+        st.error("Excel verileri yüklenirken bir sorun oluştu.")
+else:
+    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
+
+if df is not None:
+    # --- ÜST PANEL (BTA HİSSELERİ) ---
+    html_bta = '''
+    <table class="borsa-tablo">
+        <thead>
+            <tr>
+                <th>BTA PUAN 🔢</th>
+                <th>BTA HİSSE 📈</th>
+                <th>BTA ALIM 📥</th>
+                <th>GÜNCEL FİYAT 💥</th>
+                <th>KAR / ZARAR 📊</th>
+            </tr>
+        </thead>
+        <tbody>
+    '''
+    
+    has_bta_data = False
+    for idx in range(min(10, len(df))):
+        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+        puan_d = df.iloc[idx, 3]
         
-        # --- ÜST PANEL (BTA HİSSELERİ) ---
-        html_bta = '''
-        <table class="borsa-tablo">
-            <thead>
-                <tr>
-                    <th>BTA PUAN 🔢</th>
-                    <th>BTA HİSSE 📈</th>
-                    <th>BTA ALIM 📥</th>
-                    <th>GÜNCEL FİYAT 💥</th>
-                    <th>KAR / ZARAR 📊</th>
-                </tr>
-            </thead>
-            <tbody>
-        '''
-        
-        has_bta_data = False
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
+        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+            has_bta_data = True
+            p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
+            c_fiyat = 0.0
+            try:
+                h_bta = yf.Ticker(f"{ha}.IS").history(period="1d")
+                if not h_bta.empty:
+                    c_fiyat = float(h_bta['Close'].iloc[-1])
+            except:
+                pass
             
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                has_bta_data = True
-                p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                c_fiyat = 0.0
-                try:
-                    h_bta = yf.Ticker(f"{ha}.IS").history(period="1d")
-                    if not h_bta.empty:
-                        c_fiyat = float(h_bta['Close'].iloc[-1])
-                except:
-                    pass
-                
-                try:
-                    maliyet = float(alim_c.replace(",", "."))
-                except:
-                    maliyet = 0.0
-                
-                # Borsa usulü dinamik ok ve renk sınıfı belirleme
-                if maliyet > 0 and c_fiyat > 0:
-                    oran = ((c_fiyat - maliyet) / maliyet) * 100
-                    if oran > 0:
-                        kz_str = f'<span class="yukselis">▲ %{oran:+.2f}</span>'
-                    elif oran < 0:
-                        kz_str = f'<span class="dusus">▼ %{oran:+.2f}</span>'
-                    else:
-                        kz_str = '<span class="notr">▬ %0,00</span>'
-                else:
-                    kz_str = '<span class="notr">-</span>'
-                
-                guncel_fiyat_str = formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor..."
-                
-                html_bta += f'''
-                <tr>
-                    <td>{p_temiz}</td>
-                    <td class="hisse-kod">{ha}</td>
-                    <td>{formatla_tl(maliyet) if maliyet > 0 else alim_c}</td>
-                    <td>{guncel_fiyat_str}</td>
-                    <td>{kz_str}</td>
-                </tr>
-                '''
-        
-        html_bta += "</tbody></table>"
-        
-        st.markdown('<p class="ust-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
-        if has_bta_data:
-            st.markdown(html_bta, unsafe_allow_html=True)
-        st.write("")
-        
-        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) ---
-        html_alsat = '''
-        <table class="borsa-tablo">
-            <thead>
-                <tr>
-                    <th>GÜNLÜK AL SAT HİSSELERİ ⚡</th>
-                    <th>GECİKMELİ VERİ 📊</th>
-                    <th>YÜKSELİŞ ORANI 📈</th>
-                </tr>
-            </thead>
-            <tbody>
-        '''
-        
-        has_alsat_data = False
-        for idx in range(min(10, len(df))):
-            hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            if hb != "" and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                has_alsat_data = True
-                as_fiyat = 0.0
-                as_deg = 0.0
-                try:
-                    h_as = yf.Ticker(f"{hb}.IS").history(period="2d")
-                    if not h_as.empty:
-                        as_fiyat = float(h_as['Close'].iloc[-1])
-                        as_prev = float(h_as['Close'].iloc[-2]) if len(h_as) >= 2 else as_fiyat
-                        as_deg = ((as_fiyat - as_prev) / as_prev) * 100
-                except:
-                    pass
-                
-                # Borsa usulü günlük değişim okları
-                if as_fiyat > 0:
-                    if as_deg > 0:
-                        degisim_str = f'<span class="yukselis">▲ %{as_deg:+.2f}</span>'
-                    elif as_deg < 0:
-                        degisim_str = f'<span class="dusus">▼ %{as_deg:+.2f}</span>'
-                    else:
-                        degisim_str = '<span class="notr">▬ %0,00</span>'
-                else:
-                    degisim_str = '<span class="notr">-</span>'
-                
-                gecikmeli_veri_str = formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor..."
-                
-                html_alsat += f'''
-                <tr>
-                    <td class="hisse-kod">{hb}</td>
-                    <td>{gecikmeli_veri_str}</td>
-                    <td>{degisim_str}</td>
-                </tr>
-                '''
-                
-        html_alsat += "</tbody></table>"
-        
-        st.markdown('<p class="alt-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True)
-        if has_alsat_data:
-            st.markdown(html_alsat, unsafe_allow_html=True)
+            try:
+                maliyet = float(alim_c.replace(",", "."))
+            except:
+                maliyet = 0.0
             
-        st.write("---")
+            # Borsa usulü dinamik ok ve renk sınıfı belirleme
+            if maliyet > 0 and c_fiyat > 0:
+                oran = ((c_fiyat - maliyet) / maliyet) * 100
+                if oran > 0:
+                    kz_str = f'<span class="yukselis">▲ %{oran:+.2f}</span>'
+                elif oran < 0:
+                    kz_str = f'<span class="dusus">▼ %{oran:+.2f}</span>'
+                else:
+                    kz_str = '<span class="notr">▬ %0,00</span>'
+            else:
+                kz_str = '<span class="notr">-</span>'
+            
+            guncel_fiyat_str = formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor..."
+            
+            html_bta += f'''
+            <tr>
+                <td>{p_temiz}</td>
+                <td class="hisse-kod">{ha}</td>
+                <td>{formatla_tl(maliyet) if maliyet > 0 else alim_c}</td>
+                <td>{guncel_fiyat_str}</td>
+                <td>{kz_str}</td>
+            </tr>
+            '''
+    
+    html_bta += "</tbody></table>"
+    
+    st.markdown('<p class="ust-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
+    if has_bta_data:
+        st.markdown(html_bta, unsafe_allow_html=True)
+    st.write("")
+    
+    # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) ---
+    html_alsat = '''
+    <table class="borsa-tablo">
+        <thead>
+            <tr>
+                <th>GÜNLÜK AL SAT HİSSELERİ ⚡</th>
+                <th>GECİKMELİ VERİ 📊</th>
+                <th>YÜKSELİŞ ORANI 📈</th>
+            </tr>
+        </thead>
+        <tbody>
+    '''
+    
+    has_alsat_data = False
+    for idx in range(min(10, len(df))):
+        hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+        if hb != "" and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+            has_alsat_data = True
+            as_fiyat = 0.0
+            as_deg = 0.0
+            try:
+                h_as = yf.Ticker(f"{hb}.IS").history(period="2d")
+                if not h_as.empty:
+                    as_fiyat = float(h_as['Close'].iloc[-1])
+                    as_prev = float(h_as['Close'].iloc[-2]) if len(h_as) >= 2 else as_fiyat
+                    as_deg = ((as_fiyat - as_prev) / as_prev) * 100
+            except:
+                pass
+            
+            # Borsa usulü günlük değişim okları
+            if as_fiyat > 0:
+                if as_deg > 0:
+                    degisim_str = f'<span class="yukselis">▲ %{as_deg:+.2f}</span>'
+                elif as_deg < 0:
+                    degisim_str = f'<span class="dusus">▼ %{as_deg:+.2f}</span>'
+                else:
+                    degisim_str = '<span class="notr">▬ %0,00</span>'
+            else:
+                degisim_str = '<span class="notr">-</span>'
+            
+            gecikmeli_veri_str = formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor..."
+            
+            html_alsat += f'''
+            <tr>
+                <td class="hisse-kod">{hb}</td>
+                <td>{gecikmeli_veri_str}</td>
+                <td>{degisim_str}</td>
+            </tr>
+            '''
+            
+    html_alsat += "</tbody></table>"
+    
+    st.markdown('<p class="alt-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True)
+    if has_alsat_data:
+        st.markdown(html_alsat, unsafe_allow_html=True)
         
-        # --- BIST ANLIK ARAMA MOTORU ---
-        st.markdown('<p class="ust-baslik">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        if len(df.columns) >= 5:
-            tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
+    st.write("---")
+    
+    # --- BIST ANLIK ARAMA MOTORU ---
+    st.markdown('<p class="ust-baslik">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+    if len(df.columns) >= 5:
+        tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
+        tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
+        tum_hisseler.sort()
+        if tum_hisseler:
+            aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
+            if aranan_hisse != "Seçiniz...":
+                with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
