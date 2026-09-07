@@ -64,7 +64,7 @@ input, textarea, select, div[data-baseweb="select"] {
     width: 100%;
     border-collapse: collapse;
     margin: 15px 0;
-    font-size: 18px; /* Yazı boyutu büyütüldü */
+    font-size: 18px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #121d33;
     border-radius: 12px;
@@ -84,18 +84,18 @@ input, textarea, select, div[data-baseweb="select"] {
     padding: 14px 18px;
     color: #ffffff;
     border-bottom: 1px solid #1e2e4d;
-    font-weight: bold; /* Yazılar kalınlaştırıldı */
+    font-weight: bold;
 }
 .borsa-tablo tr:last-child td {
     border-bottom: none;
 }
 .pozitif-degisim {
-    color: #00ff66 !important; /* Parlak Borsa Yeşili */
+    color: #00ff66 !important;
     font-weight: bold;
     font-size: 19px;
 }
 .negatif-degisim {
-    color: #ff3344 !important; /* Canlı Borsa Kırmızısı */
+    color: #ff3344 !important;
     font-weight: bold;
     font-size: 19px;
 }
@@ -131,7 +131,7 @@ excel_yolu = "nurican.xls.xlsm"
 
 # --- GÜVENLİ SAYAÇ MİMARİSİ ---
 if "toplam_sayac" not in st.session_state:
-    st.session_state["topham_sayac"] = 1450
+    st.session_state["toplam_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state:
     st.session_state["gunluk_sayac"] = 120
 
@@ -187,7 +187,6 @@ if os.path.exists(excel_yolu):
                 except:
                     maliyet = 0.0
                 
-                # Kar/Zarar durumuna göre dinamik renk ve işaret ataması
                 if maliyet > 0 and c_fiyat > 0:
                     degisim_oran = ((c_fiyat - maliyet) / maliyet) * 100
                     if degisim_oran >= 0:
@@ -243,3 +242,9 @@ if os.path.exists(excel_yolu):
             st.error("Excel dosyasında E sütunu bulunamadı!")
             
     except Exception as e:
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
+else:
+    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
+
+st.write("---")
+
