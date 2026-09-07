@@ -58,12 +58,13 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR
+# 3. VERİ MOTORU VE TABLOLAR (SÜTUN BAŞLIĞI KISALTILDI VE DARALTILDI)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        tablo_html = '<table class="borsa-tablo"><tr><th>PUAN</th><th>HİSSE (HABER/GRAFİK) 🔗</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
+        # İstediğiniz gibi başlık milimetrik olarak sadece 'HİSSE 🔗' şeklinde kısaltıldı
+        tablo_html = '<table class="borsa-tablo"><tr><th>PUAN</th><th>HİSSE 🔗</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
         for idx in range(min(10, len(df))):
@@ -85,8 +86,9 @@ if os.path.exists(excel_yolu):
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
                     else: kz_str = "<span>-</span>"
                     
+                    # Mercek işareti sola alındı, link yapısı daraltıldı
                     link_url = f"https://doviz.com{ha.lower()}"
-                    hisse_kopru = f'<a href="{link_url}" target="_blank" class="hisse-link">{ha} 🔍</a>'
+                    hisse_kopru = f'<a href="{link_url}" target="_blank" class="hisse-link">🔍 {ha}</a>'
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{hisse_kopru}</td><td>{maliyet:,.1f} TL</td><td>{c_fiyat:,.1f} TL</td><td>{kz_str}</td></tr>'
             except: continue
@@ -99,7 +101,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜNCEL GELİŞMELER: HALKA ARZ & 3 CANLI GÜNDEM HABERİ (YENİLENDİ)
+# 4. GÜNCEL GELİŞMELER: HALKA ARZ & 3 CANLI GÜNDEM HABERİ
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:20px; font-weight:bold; color:#fff;">🔔 GÜNCEL GELİŞMELER & SÜPER PANEL</p>', unsafe_allow_html=True)
@@ -112,7 +114,6 @@ with col_sol:
 
 with col_sag:
     st.markdown('<b>📺 TV GÜNDEM & DÜNYA HABERLERİ</b>', unsafe_allow_html=True)
-    # Tam istediğiniz gibi SPK haberi kaldırıldı ve yerine 3 adet güncellenen borsa/dünya haberi eklendi
     st.info("🔴 [SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
     st.info("🔴 [Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
     st.info("🔴 [Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
@@ -168,4 +169,3 @@ for s in range(len(df_sohbet_oku)):
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
         st.rerun()
 
-# ===================================================================== #
