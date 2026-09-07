@@ -8,18 +8,76 @@ import requests
 from bs4 import BeautifulSoup
 from streamlit_autorefresh import st_autorefresh
 
-# =====================================================================
-# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ (Mevcut yapınız korundu)
-# =====================================================================
+# ===================================================================== #
+# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ
+# ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
+
 # 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 
-# --- HAREKETLİ BTA LOGOSU VE STYLES ---
+# --- YENİLENEN ALEVLİ, EL YAZILI, RENKLİ BTA LOGO PANELİ ---
 st.markdown('''
-<div class="bta-logo">BTA</div>
-''', unsafe_allow_html=True)
+<style>
+@keyframes rgbGlow {
+    0% { color: #ff3333; text-shadow: 0 0 10px #ff3333, -15px 0 15px #ff5500, 15px 0 15px #ff5500; }
+    25% { color: #33ff33; text-shadow: 0 0 10px #33ff33, -15px 0 20px #00ffcc, 15px 0 20px #00ffcc; }
+    50% { color: #3333ff; text-shadow: 0 0 10px #3333ff, -15px 0 15px #9900ff, 15px 0 15px #9900ff; }
+    75% { color: #ffff33; text-shadow: 0 0 10px #ffff33, -15px 0 20px #ffaa00, 15px 0 20px #ffaa00; }
+    100% { color: #ff3333; text-shadow: 0 0 10px #ff3333, -15px 0 15px #ff5500, 15px 0 15px #ff5500; }
+}
+@keyframes flameLeft {
+    0%, 100% { transform: scale(1) rotate(-5deg); filter: hue-rotate(0deg); }
+    50% { transform: scale(1.15) rotate(-15deg); filter: hue-rotate(30deg); }
+}
+@keyframes flameRight {
+    0%, 100% { transform: scale(1) rotate(5deg); filter: hue-rotate(0deg); }
+    50% { transform: scale(1.15) rotate(15deg); filter: hue-rotate(30deg); }
+}
+.bta-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px auto 25px auto;
+    width: fit-content;
+    position: relative;
+    background: #0e1117;
+    padding: 10px 40px;
+    border-radius: 15px;
+}
+.bta-logo-custom {
+    font-family: 'Brush Script MT', 'cursive', sans-serif;
+    font-size: 42px; /* Orta boy panel boyutu */
+    font-weight: bold;
+    animation: rgbGlow 6s infinite linear;
+    letter-spacing: 4px;
+    position: relative;
+    z-index: 2;
+    padding: 0 10px;
+}
+.flame {
+    font-size: 36px;
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+    user-select: none;
+}
+.flame-left {
+    animation: flameLeft 0.6s infinite alternate ease-in-out;
+    margin-right: 15px;
+}
+.flame-right {
+    animation: flameRight 0.6s infinite alternate ease-in-out;
+    margin-left: 15px;
+}
+</style>
 
+<div class="bta-container">
+    <span class="flame flame-left">🔥</span>
+    <div class="bta-logo-custom">BTA</div>
+    <span class="flame flame-right">🔥</span>
+</div>
+''', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -57,9 +115,9 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-# =====================================================================
+# ===================================================================== #
 # 2. ESKİ PANELİNİZİN ORİJİNAL VERİ TABLOLARI VE MOTORU
-# =====================================================================
+# ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -73,6 +131,7 @@ if os.path.exists(excel_yolu):
             
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                
                 c_fiyat = 0.0
                 try:
                     h_bta = yf.Ticker(f"{ha}.IS").history(period="1d")
@@ -85,7 +144,7 @@ if os.path.exists(excel_yolu):
                     maliyet = float(alim_c.replace(",", "."))
                 except:
                     maliyet = 0.0
-                    
+                
                 kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
                 
                 tablo_bta.append({
@@ -95,8 +154,8 @@ if os.path.exists(excel_yolu):
                     "GÜNCEL FİYAT 💥": formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor...",
                     "KAR / ZARAR 📊": kz_str
                 })
-                
-        st.markdown('<p class="section-title">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
+        
+        st.markdown('<p style="font-weight:bold; font-size:18px;">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
         if len(tablo_bta) > 0:
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
         st.write("")
@@ -122,14 +181,15 @@ if os.path.exists(excel_yolu):
                     "GECİKMELİ VERİ 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...",
                     "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-"
                 })
-                
-        st.markdown('<p class="section-title">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True)
+        
+        st.markdown('<p style="font-weight:bold; font-size:18px;">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True)
         if len(tablo_alsat) > 0:
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+            
         st.write("---")
         
         # --- BIST ANLIK ARAMA MOTORU ---
-        st.markdown('<p class="section-title">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-weight:bold; font-size:18px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
@@ -168,39 +228,5 @@ else:
 
 st.write("---")
 
-# =====================================================================
+# ===================================================================== #
 # 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI
-# =====================================================================
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')} (Her 10 dakikada bir otomatik güncellenir)*")
-
-col_arz, col_haber = st.columns(2)
-
-with col_arz:
-    st.subheader("🚀 Yeni Halka Arz Listesi")
-    # Örnek güncel halka arz verisi
-    df_arz = pd.DataFrame({
-        "Hisse Kodu 📈": ["XYZEN", "ABCDE"],
-        "Şirket Adı 🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"],
-        "Durum 📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]
-    })
-    st.dataframe(df_arz, use_container_width=True, hide_index=True)
-
-with col_haber:
-    st.subheader("📰 Son Dakika Gelişmeler / KAP")
-    st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
-    st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.")
-
-st.write("---")
-
-# --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ ---
-st.markdown('<p class="section-title">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
-sc1, sc2, sc3 = st.columns(3)
-sc2.metric(label="📅 Günlük Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş")
-sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
-
-# --- 15 DAKİKA GECİKMELİ VERİ UYARISI VE YASAL UYARI ---
-st.markdown('<p class="warning-text">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
-st.markdown('''
-<p class="spk-text">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</p>
-''', unsafe_allow_html=True)
