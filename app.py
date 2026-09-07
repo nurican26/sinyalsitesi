@@ -43,13 +43,14 @@ def formatla_tl(deger):
     except: return str(deger)
 
 # ===================================================================== #
-# 2. CANLI BIST 100 PİYASA ALANI (ALTIN KALDIRILDI)
+# 2. CANLI BIST 100 PİYASA ALANI (KUTU BOYUTU KISALTILDI)
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
     eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     
-    col_bist = st.columns(1)[0] # Altınlar kalktığı için tek sütun olarak BIST yerleştirildi
+    # 4 sütun oluşturup sadece ilkini kullanarak BIST kutusunun uzamasını engelledik
+    col_bist, _, _, _ = st.columns(4)
     col_bist.metric("BIST 100", f"{bist_f:,.1f}")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
@@ -145,7 +146,7 @@ with st.expander("🛠 Yönetici"):
 df_sohbet_oku = pd.read_csv(db_sohbet)
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unresolved_allow_html=True)
+    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
     if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
         df_sl = pd.read_csv(db_sohbet)
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
