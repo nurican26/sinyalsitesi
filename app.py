@@ -11,6 +11,11 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st.title("✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨")
 
 excel_yolu = "nurican.xls.xlsm"
+db_sohbet = "bta_sohbet_kalici.csv"
+
+# KALICI SOHBET VERİTABANI BAŞLATMA (KASMA YAPMAZ HAFİF SÜRÜM)
+if not os.path.exists(db_sohbet):
+    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
 # --- HAFİF SAYAÇ MİMARİSİ ---
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
@@ -81,7 +86,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜNCEL GELİŞMELER (KASAN TÜM RENKLER VE ARKA FONLAR SİLİNDİ)
+# 4. GÜNCEL GELİŞMELER
 # ===================================================================== #
 st.write("---")
 st.subheader("🔔 GÜNCEL GELİŞMELER & SÜPER PANEL")
@@ -94,31 +99,46 @@ with col_sol:
 
 with col_sag:
     st.write("**📺 TV GÜNDEM & DÜNYA HABERLERİ**")
-    # Kasma yapmayan tamamen ham ve hafif düz yazılı sisteme geçildi
     st.write("🔴 [SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
     st.write("🔴 [Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
     st.write("🔴 [Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. CANLI SOHBET KUTUSU (KİLİTLENME ÇÖZÜLDÜĞÜ İÇİN ARTIK KESİN GÖRÜNÜR)
+# 5. KALICI CANLI SOHBET KUTUSU VE YÖNETİCİ GİRİŞİ (GERİ GELDİ)
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
-
-if "sohbet_hafizasi" not in st.session_state: 
-    st.session_state["sohbet_hafizasi"] = [{"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları harika."}]
 
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
     if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
         m_kucuk = y_me.lower().replace(" ", "")
-        if not any(z in m_kucuk for z in ["küfür1", "siktir", "piç", "salak"]):
-            st.session_state["sohbet_hafizasi"].insert(0, {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()})
+        if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
+            # Kalıcı CSV Veritabanına Yazma
+            df_s = pd.read_csv(db_sohbet)
+            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
+            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
+        else:
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
-for s, sh in enumerate(st.session_state["sohbet_hafizasi"]):
+# YÖNETİCİ KONTROL ALANI (GERİ GELDİ)
+with st.expander("🛠 Yönetici Girişi"):
+    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
+    if adm_mod:
+        st.success("🔓 Silme yetkisi aktif!")
+
+# MESAJLARI KALICI METİNDEN OKUYUP BASMA
+df_sohbet_oku = pd.read_csv(db_sohbet)
+for s in range(len(df_sohbet_oku)):
+    sh = df_sohbet_oku.iloc[s]
     st.write(f"👤 **{sh['isim']}** ({sh['saat']}): {sh['yorum']}")
+    if adm_mod:
+        if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+            df_sl = pd.read_csv(db_sohbet)
+            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+            st.rerun()
 
 # ===================================================================== #
 # YASAL UYARI VE EN ALTA YERLEŞEN GİRİŞ SAYAÇLARI
