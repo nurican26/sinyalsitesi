@@ -239,6 +239,7 @@ if os.path.exists(excel_yolu):
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist() 
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
             tum_hisseler.sort() 
-            if tum_hisseler: 
+            
+            if len(tum_hisseler) > 0: 
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler) 
                 if aranan_hisse != "Seçiniz...": 
