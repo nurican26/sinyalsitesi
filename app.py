@@ -138,7 +138,7 @@ def formatla_tl(deger):
         return str(deger)
 
 # ===================================================================== #
-# 2. PANELİNİZİN VERİ TABLOLARI VE MOTORU (DÜZELTİLMİŞ BLOKLAR)         #
+# 2. PANELİNİZİN VERİ TABLOLARI VE MOTORU                               #
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
