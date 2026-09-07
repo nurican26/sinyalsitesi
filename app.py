@@ -24,13 +24,13 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# EKSİK OLAN HAYATİ MOTOR: Sohbeti ve borsa ekranını 5 saniyede bir otomatik eşitler ve yeniler!
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
 
-# KALICI SOHBET VERİTABANI BAŞLATMA (ORİJİNAL YAPINIZ)
+# KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
@@ -52,9 +52,10 @@ try:
     usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     gram_f = (ons_f / 31.1034768) * usd_f
     
-    pk1, pk2, col_bist = st.columns(3)
+    pk1, pk2, pk3, col_bist = st.columns(4)
     pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
     pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
+    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.1f} TL")
     col_bist.metric("BIST 100", f"{bist_f:,.1f}")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
@@ -109,23 +110,6 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR VE HABERLER
-# ===================================================================== #
-st.write("---")
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-
-c_sol, c_sag = st.columns(2)
-with c_sol:
-    st.write("**🚀 Yeni Halka Arz Listesi**")
-    st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
-
-with c_sag:
-    st.write("**📺 TV GÜNDEM & DÜNYA HABERLERİ**")
-    st.write("[SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
-    st.write("[Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
-    st.write("[Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
-
-# ===================================================================== #
 # 5. ORİJİNAL GÜVENLİ SOHBET FORMU (HİÇ DOKUNULMADI)
 # ===================================================================== #
 st.write("---")
@@ -165,3 +149,6 @@ for s in range(len(df_sohbet_oku)):
 # YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
 # ===================================================================== #
 st.write("---")
+st.markdown('<p style="font-size:11px; color:#666668; text-align:center; margin-bottom: 2px;">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.</p>', unsafe_allow_html=True)
+
+st.markdown(f'<div class="kucuk-sayac">📊 Bugün Giriş: {st.session_state["gunluk_sayac"]} | 💎 Genel Toplam Giriş: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
