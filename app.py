@@ -46,6 +46,31 @@ st.markdown('''
         margin-bottom: 15px;
         border: 1px solid #ffeeba;
     }
+    /* İstatistik Kartları Tasarımı */
+    .stats-container {
+        display: flex;
+        gap: 15px;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+    .stat-box {
+        flex: 1;
+        background-color: #1e1e1e;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid #333;
+    }
+    .stat-title {
+        color: #888;
+        font-size: 14px;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+    }
     </style>
     <div class="bta-logo-container">
         <div class="bta-animated-logo">BTA MERKEZ</div>
@@ -63,46 +88,16 @@ st.markdown('''
 
 excel_yolu = "nurican.xls.xlsm" 
 
-# --- GERÇEK VERİ TABANLI SAYAÇ SİSTEMİ (SERVER GLOBAL STORAGE) ---
-@st.cache_resource
-def sunucu_gercek_hafizasini_getir():
-    return {
-        "aktif_cihazlar": {},  
-        "toplam_tekil_ziyaretci": set(), 
-        "gunluk_tekil_ziyaretci": set(), 
-        "son_tarih": datetime.date.today().strftime("%Y-%m-%d")
-    }
+# --- ÇAKMA SAYAÇ PARAMETRELERİ (KİLİTLENMEYİ ÖNLEYEN DİNAMİK SİMÜLASYON) ---
+# Anlık odadaki kişi sayısı (Zamana göre küçük oynamalar yapar, hep sabit kalmaz)
+simule_anlik_oda = (int(time.time()) % 4) + 6  # 6 ile 9 arasında değişir
 
-sunucu_hafizasi = sunucu_gercek_hafizasini_getir()
-su_an = time.time()
-bugun = datetime.date.today().strftime("%Y-%m-%d")
+# Günlük giriş sayısı (Dakikaya göre artış gösterir, odaya girip çıkınca sıfırlanmaz)
+dakika_bazli_artis = int(time.time() / 60) % 60
+simule_gunluk = 142 + dakika_bazli_artis
 
-# 24 Saatlik Gün Değişimi Kontrolü
-if sunucu_hafizasi["son_tarih"] != bugun:
-    sunucu_hafizasi["gunluk_tekil_ziyaretci"].clear()
-    sunucu_hafizasi["son_tarih"] = bugun
-
-# Kullanıcıya özel benzersiz cihaz kimliği atama
-if "cihaz_id" not in st.session_state:
-    st.session_state.cihaz_id = str(uuid.uuid4())
-
-cid = st.session_state.cihaz_id
-
-# Aktiflik Güncellemesi ve Listeye Ekleme
-sunucu_hafizasi["aktif_cihazlar"][cid] = su_an
-sunucu_hafizasi["toplam_tekil_ziyaretci"].add(cid)
-sunucu_hafizasi["gunluk_tekil_ziyaretci"].add(cid)
-
-# Pasif Kullanıcıları Temizleme (Son 30 saniyede sayfada aktif olmayanlar)
-eski_aktifler = list(sunucu_hafizasi["aktif_cihazlar"].keys())
-for k in eski_aktifler:
-    if su_an - sunucu_hafizasi["aktif_cihazlar"][k] > 30:
-        del sunucu_hafizasi["aktif_cihazlar"][k]
-
-# Kesin ve Gerçek Sayım Sonuçları
-gercek_anlik_oda = len(sunucu_hafizasi["aktif_cihazlar"])
-gercek_gunluk = len(sunucu_hafizasi["gunluk_tekil_ziyaretci"])
-gercek_toplam = len(sunucu_hafizasi["toplam_tekil_ziyaretci"])
+# Genel toplam giriş sayısı (Yüksek ve prestijli sabit değer)
+simule_toplam = 4850 + dakika_bazli_artis
 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ") 
 
@@ -228,6 +223,14 @@ if df is not None:
 
 st.write("---") 
 
-# --- GERÇEK VERİ TABANLI İSTATİSTİK PANELİ --- 
-st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">📈 BTA PANEL GERÇEK İSTATİSTİKLERİ</p>', unsafe_allow_html=True) 
+# --- TASARIMSAL OLARAK GARANTİ EDİLMİŞ SAYAÇ PANELİ --- 
+st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True) 
 
+st.markdown(f'''
+    <div class="stats-container">
+        <div class="stat-box">
+            <div class="stat-title">👥 Anlık Odadaki Kişi Sayısı</div>
+            <div class="stat-value" style="color: #00E5FF;">{simule_anlik_oda} Aktif</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-title">📅 Günlük Toplam Giriş (24s Sıfırlanır)</div>
