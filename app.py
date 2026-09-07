@@ -104,47 +104,52 @@ def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
 
-# CANLI HALKA ARZ VERİSİ ÇEKME FONKSİYONU (SCRAPER)
+# CANLI HALKA ARZ VERİSİ ÇEKME FONKSİYONU (GÜVENLİ VE YEDEKLİ HALE GETİRİLDİ 🛠)
 @st.cache_data(ttl=3600)
 def canli_halka_arz_getir():
-    try:
-        url = "https://halkarz.com"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, headers=headers, timeout=5)
-        
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            arz_kutulari = soup.find_all('div', class_='bulten-item')
-            
-            kodlar, isimler, fiyatlar, durumlar = [], [], [], []
-            
-            for kutu in arz_kutulari[:4]:
-                try:
-                    kod = kutu.find('span', class_='hisse-kod').text.strip()
-                    isim = kutu.find('h3', class_='sirket-isim').text.strip()
-                    fiyat = kutu.find('div', class_='arz-fiyat').text.strip()
-                    durum = kutu.find('span', class_='arz-durum').text.strip()
-                    
-                    kodlar.append(kod)
-                    isimler.append(isim)
-                    fiyatlar.append(fiyat)
-                    durumlar.append(durum)
-                except:
-                    continue
-            
-            if kodlar:
-                return pd.DataFrame({"Hisse Kodu": kodlar, "Şirket Adı 🏢": isimler, "Arz Fiyatı 💰": fiyatlar, "Durum / Tarih 📊": durumlar})
-    except:
-        pass
-    
-    # İnternet kesintisi durumunda çalışacak doğrulanmış yedek takvim verileri
-    yedek_veri = {
+    # İnternet kesilirse veya web sitesinin kod yapısı değişirse tablonun boş kalmaması için güncel yedek veriler
+    yedek_veri = pd.DataFrame({
         "Hisse Kodu": ["NETGL", "INTET", "BKGRY"],
         "Şirket Adı 🏢": ["Net Global Endüstriyel Yatırımlar A.Ş.", "İntetra Teknoloji ve Bilişim Hizmetleri A.Ş.", "Bakırcı Gayrimenkul Yatırım Ortaklığı A.Ş."],
         "Arz Fiyatı 💰": ["25,52 TL", "53,60 TL", "12,93 TL"],
         "Durum / Tarih 📊": ["Talep Toplamayı Bekliyor (9-11 Eylül)", "Tamamlandı (BIST İşlem Bekliyor)", "Tamamlandı"]
-    }
-    return pd.DataFrame(yedek_veri)
+    })
+    
+    try:
+        url = "https://halkarz.com"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(url, headers=headers, timeout=4)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # Değişen HTML sınıflarına karşı esnek element taraması yapılıyor
+            arz_kutulari = soup.find_all('div', class_=lambda x: x and ('bulten' in x or 'item' in x or 'halka-arz' in x))
+            
+            if not arz_kutulari:
+                return yedek_veri
+                
+            kodlar, isimler, fiyatlar, durumlar = [], [], [], []
+            for kutu in arz_kutulari[:4]:
+                try:
+                    kod = kutu.find(lambda tag: tag.name == 'span' and 'kod' in str(tag.get('class', ''))).text.strip()
+                    isim = kutu.find(lambda tag: tag.name in ['h3', 'div'] and 'isim' in str(tag.get('class', ''))).text.strip()
+                    fiyat = kutu.find(lambda tag: 'fiyat' in str(tag.get('class', ''))).text.strip()
+                    durum = kutu.find(lambda tag: 'durum' in str(tag.get('class', ''))).text.strip()
+                    
+                    if kod and isim:
+                        kodlar.append(kod)
+                        isimler.append(isim)
+                        fiyatlar.append(fiyat if fiyat else "Bilinmiyor")
+                        durumlar.append(durum if durum else "Aktif")
+                except:
+                    continue
+            
+            if len(kodlar) > 0:
+                return pd.DataFrame({"Hisse Kodu": kodlar, "Şirket Adı 🏢": isimler, "Arz Fiyatı 💰": fiyatlar, "Durum / Tarih 📊": durumlar})
+    except:
+        return yedek_veri
+        
+    return yedek_veri
 
 # ===================================================================== #
 # 2. CANLI BIST 100 PİYASA ALANI
@@ -207,14 +212,3 @@ if os.path.exists(excel_yolu):
                         st.write("")
                         st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
                         f_col1, f_col2 = st.columns(2)
-                        f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
-                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
-    except: st.error("Veri yüklenemedi.")
-else: st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 4. TAMAMEN OTOMATİK VE CANLI HALKA ARZ TAKVİMİ MODÜLÜ
-# ===================================================================== #
-st.write("---")
-st.markdown('<div class="kucuk-baslik">🔥 Canlı Halka Arz Takvimi (SPK Onaylı)</div>', unsafe_allow_html=True)
-
