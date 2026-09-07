@@ -22,7 +22,10 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
-<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
+<!-- BTA BAŞLIĞI KAYAN YAZI OLARAK GÜNCELLENDİ -->
+<marquee behavior="scroll" direction="left" scrollamount="7">
+    <h1 style="color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px; display:inline;">BTA</h1>
+</marquee>
 ''', unsafe_allow_html=True)
 
 # Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
@@ -110,11 +113,8 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR
+# 4. HALKA ARZLAR (TALEBİNİZ ÜZERİNE BU BÖLÜM KALDIRILDI)
 # ===================================================================== #
-st.write("---")
-st.markdown('<div class="kucuk-baslik">Halka Arz Hisseleri</div>', unsafe_allow_html=True)
-st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
 
 # ===================================================================== #
 # 5. ORİJİNAL GÜVENLİ SOHBET FORMU
