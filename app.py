@@ -50,7 +50,7 @@ st.markdown('''
 
 .bta-logo-custom {
     font-family: 'Brush Script MT', 'cursive', sans-serif;
-    font-size: 72px; /* Yazının büyük boyutu korundu */
+    font-size: 72px;
     font-weight: bold;
     animation: rgbText 8s infinite linear;
     letter-spacing: 6px;
@@ -60,7 +60,6 @@ st.markdown('''
     text-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
-/* Ateşlerin Boyutları Küçültüldü (60px -> 35px) */
 .fire-effect {
     position: absolute;
     width: 35px;
@@ -84,7 +83,6 @@ st.markdown('''
     box-shadow: 0 0 15px #ff5500, 0 0 25px #ff0000;
 }
 
-/* İç Çekirdek Küçültüldü */
 .fire-core {
     position: absolute;
     width: 14px;
@@ -213,14 +211,19 @@ if os.path.exists(excel_yolu):
             
         st.write("---")
         
-        # --- BIST ANLIK ARAMA MOTORU ---
+        # --- BIST ANLIK ARAMA MOTORU (Hizalama ve Blok Yapısı Tamamen Düzeltildi) ---
         st.markdown('<p style="font-weight:bold; font-size:18px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        if len(df.columns) >= 5:
+        
+        if len(df.columns) < 5:
+            st.error("Excel dosyasında E sütunu bulunamadı!")
+        else:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
             tum_hisseler.sort()
             
-            if tum_hisseler:
+            if not tum_hisseler:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+            else:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
                     with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
@@ -241,11 +244,11 @@ if os.path.exists(excel_yolu):
                                 st.warning(f"{aranan_hisse} koduna ait veri bulunamadı.")
                         except Exception as e:
                             st.error("Borsa verisi çekilirken bir hata oluştu.")
-            else:
-                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
-        else:
-            st.error("Excel dosyasında E sütunu bulunamadı!")
             
     except Exception as e:
         st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
 else:
+    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
+
+st.write("---")
+
