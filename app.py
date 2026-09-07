@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. PREMIUM BORSA TERMİNALİ TEMASI VE GÖRSEL STİLLER (YENİLENDİ 🚀)
+# 1. PREMIUM BORSA TERMİNALİ TEMASI VE GÖRSEL STİLLER
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -147,7 +147,7 @@ def canli_halka_arz_getir():
     return pd.DataFrame(yedek_veri)
 
 # ===================================================================== #
-# 2. CANLI BIST 100 PİYASA ALANI (KUTU BOYUTU KISALTILDI)
+# 2. CANLI BIST 100 PİYASA ALANI
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
@@ -216,3 +216,5 @@ else: st.error("Excel bulunamadı.")
 # 4. TAMAMEN OTOMATİK VE CANLI HALKA ARZ TAKVİMİ MODÜLÜ
 # ===================================================================== #
 st.write("---")
+st.markdown('<div class="kucuk-baslik">🔥 Canlı Halka Arz Takvimi (SPK Onaylı)</div>', unsafe_allow_html=True)
+
