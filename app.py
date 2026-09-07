@@ -20,7 +20,6 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 13px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
-/* Halka arz paneli için özel küçültülmüş yazı boyutları */
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
@@ -118,18 +117,18 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR (ZİL, SÜPER VE PANEL YAZISI SİLİNDİ, FONT KÜÇÜLTÜLDÜ)
+# 4. HALKA ARZLAR
 # ===================================================================== #
 st.write("---")
-# İstediğiniz gibi zil emojisi ve kaba başlıklar silinerek sadece küçük ve temiz yazı bırakıldı
 st.markdown('<div class="kucuk-baslik">Halka Arz Hisseleri</div>', unsafe_allow_html=True)
 st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
 
 # ===================================================================== #
-# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
+# 5. ORİJİNAL GÜVENLİ SOHBET FORMU (PEMBE RENK VE FAZLALIKLAR SİLİNDİ)
 # ===================================================================== #
 st.write("---")
-st.markdown('<p style="font-size:22px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
+# İstediğiniz gibi pembe renkli büyük başlık ve emoji silinerek sadece düz zarif 'Sohbet' yazıldı
+st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
@@ -155,10 +154,13 @@ with st.expander("🛠 Yönetici"):
 df_sohbet_oku = pd.read_csv(db_sohbet)
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #FF69B4;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
     if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
         df_sl = pd.read_csv(db_sohbet)
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
         st.rerun()
 
 # ===================================================================== #
+# YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
+# ===================================================================== #
+st.write("---")
