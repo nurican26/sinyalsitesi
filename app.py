@@ -17,7 +17,7 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st.markdown("""
     <style>
         .stApp {
-            background: linear-gradient(20deg, #2a0000 0%, #003d19 10%) !important;
+            background: linear-gradient(300deg, #25a0000 0%, #003d19 125%) !important;
             background-attachment: fixed !important;
         }
         header, [data-testid="stHeader"] {
@@ -194,9 +194,3 @@ with col_haber:
     st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.") 
     st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.") 
 st.write("---") 
-# ===================================================================== 
-# 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI 
-# ===================================================================== 
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER") 
-st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')} (Her 10 dakikada bir otomatik güncellenir)*") 
-col_arz, col_haber = st.columns(2) 
