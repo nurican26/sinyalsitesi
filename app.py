@@ -38,6 +38,40 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
+# --- YENİ: GİRİŞ VE ODA KİLİTLEME SİSTEMİ ---
+# Odanın varsayılan şifresi (İstediğiniz gibi değiştirebilirsiniz)
+ODA_SIFRESI = "bta123"
+
+if "oda_kilitli" not in st.session_state:
+    st.session_state["oda_kilitli"] = True  # İlk girişte oda kilitli başlar
+
+# Eğer oda kilitliyse giriş ekranını göster
+if st.session_state["oda_kilitli"]:
+    st.markdown('<p style="font-size:24px; font-weight:bold; color:#ff3344; text-align:center;">🔒 BU ODA ŞİFRELİDİR</p>', unsafe_allow_html=True)
+    
+    with st.form(key="giris_formu"):
+        girilen_sifre = st.text_input("Giriş Şifresini Giriniz:", type="password")
+        giriş_butonu = st.form_submit_button("Odaya Giriş Yap 🔓", use_container_width=True)
+        
+        if giriş_butonu:
+            if girilen_sifre == ODA_SIFRESI:
+                st.session_state["oda_kilitli"] = False
+                st.success("Giriş başarılı! Oda açılıyor...")
+                st.rerun()
+            else:
+                st.error("❌ Hatalı şifre girdiniz!")
+                
+    # Kilitli ekrandayken uygulamanın geri kalanını çalıştırma (Bloke et)
+    st.stop()
+
+# --- YENİ: ODAYI GERİ KİLİTLEME BUTONU ---
+# Kullanıcı odaya girdiğinde en üstte "Odayı Kilitle" butonu görünür
+col_kilit_sol, col_kilit_sag = st.columns([5, 1])
+with col_kilit_sag:
+    if st.button("Odayı Kilitle 🔒", use_container_width=True):
+        st.session_state["oda_kilitli"] = True
+        st.rerun()
+
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
@@ -139,26 +173,3 @@ with st.form(key="s_frm", clear_on_submit=True):
         if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
             df_s = pd.read_csv(db_sohbet)
             y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-# MESAJ LİSTELEME
-df_sohbet_oku = pd.read_csv(db_sohbet)
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.rerun()
-
-# ===================================================================== #
-# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI (EN ALTA TAM İSTEDİĞİNİZ GİBİ ÇIKAR)
-# ===================================================================== #
-st.write("---")
-st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
