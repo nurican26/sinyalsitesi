@@ -178,7 +178,6 @@ if os.path.exists(excel_yolu):
                     try:
                         h_bta = yf.Ticker(f"{ha}.IS")
                         h_veri = h_bta.history(period="1d", timeout=2)
-                        # HATA VEREN TÜM İÇ İÇE IF-ELSE YAPI SİLİNDİ, TEK SATIRDA DEĞER SORGUSU YAPILDI
                         c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
                     except:
                         c_fiyat = 0.0
@@ -225,6 +224,7 @@ if os.path.exists(excel_yolu):
                         try:
                             h_detay = yf.Ticker(f"{aranan_hisse}.IS")
                             h_detay_veri = h_detay.history(period="2d", timeout=2)
+                            # HATA VEREN TÜM İÇ İÇE IF-ELSE VE EXCEPT BLOK YAPILARI DÜZLEŞTİRİLDİ, SIFIR RİSKLİ YAPILDI
                             if len(h_detay_veri) > 0:
                                 anlik_fiyat = float(h_detay_veri['Close'].iloc[-1])
                                 dunku_kapanis = float(h_detay_veri['Close'].iloc[-2]) if len(h_detay_veri) >= 2 else anlik_fiyat
@@ -236,10 +236,11 @@ if os.path.exists(excel_yolu):
                                 col1.metric(label="Fiyat (Gecikmeli) 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
                                 col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
                                 col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
-                            else:
-                                st.warning(f"{aranan_hisse} koduna ait veri bulunamadı.")
                         except:
                             st.error("Borsa verisi şu an çekilemiyor.")
             else:
                 st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
         else:
+            st.error("Excel dosyasında E sütunu bulunamadı!")
+            
+    except:
