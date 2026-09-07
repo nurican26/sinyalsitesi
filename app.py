@@ -50,7 +50,7 @@ st.markdown('''
 
 .bta-logo-custom {
     font-family: 'Brush Script MT', 'cursive', sans-serif;
-    font-size: 72px; /* Yazı boyutu ciddi oranda büyütüldü */
+    font-size: 72px;
     font-weight: bold;
     animation: rgbText 8s infinite linear;
     letter-spacing: 6px;
@@ -98,14 +98,10 @@ st.markdown('''
 </style>
 
 <div class="bta-container">
-    <!-- Sol Ateş -->
     <div class="fire-effect fire-left">
         <div class="fire-core"></div>
     </div>
-    
     <div class="bta-logo-custom">BTA</div>
-    
-    <!-- Sağ Ateş -->
     <div class="fire-effect fire-right">
         <div class="fire-core"></div>
     </div>
@@ -120,11 +116,9 @@ if "toplam_sayac" not in st.session_state:
 if "gunluk_sayac" not in st.session_state:
     st.session_state["gunluk_sayac"] = 120
 
-# Her sayfa yenilendiğinde sayaçları artır
 st.session_state["toplam_sayac"] += 1
 st.session_state["gunluk_sayac"] += 1
 
-# Günlük sayacın 24 saatte bir sıfırlanması kontrolü
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 if "son_giris_tarihi" not in st.session_state:
     st.session_state["son_giris_tarihi"] = bugun
@@ -133,12 +127,10 @@ if st.session_state["son_giris_tarihi"] != bugun:
     st.session_state["gunluk_sayac"] = 1
     st.session_state["son_giris_tarihi"] = bugun
 
-# Anlık odadaki kişi sayısı dinamik simülasyonu
 anlik_oda = (int(time.time()) % 5) + 3
 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ")
 
-# Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -250,3 +242,9 @@ if os.path.exists(excel_yolu):
                         except Exception as e:
                             st.error("Borsa verisi çekilirken bir hata oluştu.")
             else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+        else:
+            st.error("Excel dosyasında E sütunu bulunamadı!")
+            
+    except Exception as e:
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
