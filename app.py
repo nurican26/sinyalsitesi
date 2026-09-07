@@ -11,10 +11,10 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# Sitenin arka planını ve kutularını tamamen finans dünyasına uyarlayan özel borsa tasarımı
+# Sitenin arka planını, tablolarını ve font boyutlarını borsa ekranına uyarlayan özel CSS
 st.markdown('''
 <style>
-/* Derin Gece Mavisi Borsa Arka Planı ve Grafik Çizgileri */
+/* Deep Gece Mavisi Borsa Arka Planı ve Grafik Çizgileri */
 .stApp {
     background-color: #0b111e !important;
     background-image: 
@@ -25,8 +25,8 @@ st.markdown('''
     background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
 }
 
-/* Veri Tabloları ve Metrik Kartlarının Tasarımı */
-div[data-testid="stMetric"], .stDataFrame, div[data-testid="stForm"] {
+/* Veri Tabloları, Kartlar ve Form Alanları */
+div[data-testid="stMetric"], div[data-testid="stForm"] {
     background-color: #121d33 !important;
     border: 1px solid #1e2e4d !important;
     border-radius: 12px !important;
@@ -34,7 +34,7 @@ div[data-testid="stMetric"], .stDataFrame, div[data-testid="stForm"] {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Giriş Kutularının (Input) Finansal Matrix Tasarımı */
+/* Giriş Kutuları ve Seçim Alanları */
 input, textarea, select, div[data-baseweb="select"] {
     background-color: #090f1a !important;
     color: #00ffcc !important;
@@ -42,7 +42,7 @@ input, textarea, select, div[data-baseweb="select"] {
     border-radius: 8px !important;
 }
 
-/* Butonların Siber Yeşil / Borsa Canlılığı Buton Tasarımı */
+/* Buton Tasarımları */
 .stButton>button {
     background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important;
     color: #ffffff !important;
@@ -57,6 +57,47 @@ input, textarea, select, div[data-baseweb="select"] {
     color: #0b111e !important;
     box-shadow: 0 0 20px rgba(0, 255, 204, 0.6) !important;
     transform: scale(1.02);
+}
+
+/* Tablo Verilerinin Telefonda Büyük ve Net Görünmesi İçin Ek CSS */
+.borsa-tablo {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 18px; /* Yazı boyutu büyütüldü */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121d33;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.borsa-tablo th {
+    background-color: #1e2e4d;
+    color: #00ffcc;
+    text-align: left;
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 2px solid #1e3a5f;
+}
+.borsa-tablo td {
+    padding: 14px 18px;
+    color: #ffffff;
+    border-bottom: 1px solid #1e2e4d;
+    font-weight: bold; /* Yazılar kalınlaştırıldı */
+}
+.borsa-tablo tr:last-child td {
+    border-bottom: none;
+}
+.pozitif-degisim {
+    color: #00ff66 !important; /* Parlak Borsa Yeşili */
+    font-weight: bold;
+    font-size: 19px;
+}
+.negatif-degisim {
+    color: #ff3344 !important; /* Canlı Borsa Kırmızısı */
+    font-weight: bold;
+    font-size: 19px;
 }
 </style>
 ''', unsafe_allow_html=True)
@@ -90,7 +131,7 @@ excel_yolu = "nurican.xls.xlsm"
 
 # --- GÜVENLİ SAYAÇ MİMARİSİ ---
 if "toplam_sayac" not in st.session_state:
-    st.session_state["toplam_sayac"] = 1450
+    st.session_state["topham_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state:
     st.session_state["gunluk_sayac"] = 120
 
@@ -121,13 +162,16 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        tablo_bta = []
+        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUAN 🔢</th><th>BTA HİSSE 📈</th><th>BTA ALIM 📥</th><th>GÜNCEL FİYAT 💥</th><th>KAR / ZARAR 📊</th></tr>'
+        veri_var_mi = False
+        
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
             
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
                 p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 
                 c_fiyat = 0.0
@@ -143,19 +187,26 @@ if os.path.exists(excel_yolu):
                 except:
                     maliyet = 0.0
                 
-                kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
+                # Kar/Zarar durumuna göre dinamik renk ve işaret ataması
+                if maliyet > 0 and c_fiyat > 0:
+                    degisim_oran = ((c_fiyat - maliyet) / maliyet) * 100
+                    if degisim_oran >= 0:
+                        kz_str = f'<span class="pozitif-degisim">▲ %{degisim_oran:.2f}</span>'
+                    else:
+                        kz_str = f'<span class="negatif-degisim">▼ %{degisim_oran:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
                 
-                tablo_bta.append({
-                    "BTA PUAN 🔢": p_temiz,
-                    "BTA HİSSE 📈": ha,
-                    "BTA ALIM 📥": formatla_tl(maliyet) if maliyet > 0 else alim_c,
-                    "GÜNCEL FİYAT 💥": formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor...",
-                    "KAR / ZARAR 📊": kz_str
-                })
+                fiyat_gosterim = formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor..."
+                maliyet_gosterim = formatla_tl(maliyet) if maliyet > 0 else alim_c
+                
+                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet_gosterim}</td><td>{fiyat_gosterim}</td><td>{kz_str}</td></tr>'
+        
+        tablo_html += '</table>'
         
         st.markdown('<p style="font-size:20px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        if len(tablo_bta) > 0:
-            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
+        if veri_var_mi:
+            st.markdown(tablo_html, unsafe_allow_html=True)
         
         st.write("")
 
@@ -192,37 +243,3 @@ if os.path.exists(excel_yolu):
             st.error("Excel dosyasında E sütunu bulunamadı!")
             
     except Exception as e:
-        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
-else:
-    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
-
-st.write("---")
-
-# ===================================================================== #
-# 3. HALKA ARZ VE HABER ALANI
-# ===================================================================== #
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')}*")
-
-col_arz, col_haber = st.columns(2)
-with col_arz:
-    st.subheader("🚀 Yeni Halka Arz Listesi")
-    df_arz = pd.DataFrame({
-        "Hisse Kodu 📈": ["XYZEN", "ABCDE"],
-        "Şirket Adı 🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"],
-        "Durum 📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]
-    })
-    st.dataframe(df_arz, use_container_width=True, hide_index=True)
-
-with col_haber:
-    st.subheader("📰 Son Dakika Gelişmeler / KAP")
-    st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
-    st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.")
-
-st.write("---")
-
-st.markdown('<p style="font-size:20px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
-sc1, sc2, sc3 = st.columns(3)
-sc2.metric(label="📅 Günlük Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş")
-sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
-
