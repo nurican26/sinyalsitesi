@@ -152,7 +152,7 @@ if os.path.exists(excel_yolu):
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
             tum_hisseler.sort() 
             if tum_hisseler: 
-                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler) 
+                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin :", ["Seçiniz..."] + tum_hisseler) 
                 if aranan_hisse != "Seçiniz...": 
                     with st.spinner(f"{aranan_hisse} verileri çekiliyor..."): 
                         try: 
