@@ -276,12 +276,15 @@ if df is not None:
         
     st.write("---")
     
-    # --- BIST ANLIK ARAMA MOTORU (HATA VEREN ALAN TAMAMEN YENİLENDİ) ---
+    # --- BIST ANLIK ARAMA MOTORU (TÜM GİRİNTİLER TEMİZLENDİ VE DÜZLEŞTİRİLDİ) ---
     st.markdown('<p class="ust-baslik">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+    
+    # Sütun kontrolü ve listeleme
     if len(df.columns) >= 5:
         tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
         tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
         tum_hisseler.sort()
+        
         if tum_hisseler:
             aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
-            if aranan_hisse != "Seçiniz...":
+            
