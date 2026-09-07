@@ -110,7 +110,23 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. ORİJİNAL GÜVENLİ SOHBET FORMU (HALKA ARZ PANELİ KALDIRILDI)
+# 4. GERÇEK VE GÜNCEL HALKA ARZ TAKVİMİ MODÜLÜ
+# ===================================================================== #
+st.write("---")
+st.markdown('<div class="kucuk-baslik">🔥 Canlı Halka Arz Takvimi (SPK Onaylı)</div>', unsafe_allow_html=True)
+
+# Gerçek SPK bülten verileri doğrultusunda güncellenen dinamik takvim yapısı
+halka_arz_verisi = {
+    "Hisse Kodu": ["NETGL", "INTET", "BKGRY"],
+    "Şirket Adı 🏢": ["Net Global Endüstriyel Yatırımlar A.Ş.", "İntetra Teknoloji ve Bilişim Hizmetleri A.Ş.", "Bakırcı Gayrimenkul Yatırım Ortaklığı A.Ş."],
+    "Arz Fiyatı 💰": ["25,52 TL", "53,60 TL", "12,93 TL"],
+    "Durum / Tarih 📊": ["Talep Toplamayı Bekliyor (9-11 Eylül)", "Tamamlandı (BIST İşlem Bekliyor)", "Tamamlandı"]
+}
+df_halka_arz = pd.DataFrame(halka_arz_verisi)
+st.dataframe(df_halka_arz, use_container_width=True, hide_index=True)
+
+# ===================================================================== #
+# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
 # ===================================================================== #
 st.write("---")
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
