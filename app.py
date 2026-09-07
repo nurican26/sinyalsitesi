@@ -56,6 +56,7 @@ st.markdown('''
         border-bottom: 1px solid #2A2A2A;
         font-size: 20px !important; /* RAKAMLARI BÜYÜTEN AYAR */
         font-weight: 600;
+        color: #E0E0E0;
     }
     .borsa-tablo tr:hover {
         background-color: #262626;
@@ -65,7 +66,7 @@ st.markdown('''
     .hisse-kod {
         font-size: 22px !important;
         font-weight: bold !important;
-        color: #FFFFFF;
+        color: #FFFFFF !important;
     }
     
     /* Borsa Renk Kodları */
@@ -215,6 +216,7 @@ if df is not None:
     
     st.markdown('<p class="ust-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
     if has_bta_data:
+        # Kodun ham metin olarak kalmasını önleyen kritik düzeltme:
         st.markdown(html_bta, unsafe_allow_html=True)
     st.write("")
     
@@ -276,10 +278,9 @@ if df is not None:
         
     st.write("---")
     
-    # --- BIST ANLIK ARAMA MOTORU (TÜM GİRİNTİLER TEMİZLENDİ VE DÜZLEŞTİRİLDİ) ---
+    # --- BIST ANLIK ARAMA MOTORU ---
     st.markdown('<p class="ust-baslik">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
     
-    # Sütun kontrolü ve listeleme
     if len(df.columns) >= 5:
         tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
         tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
