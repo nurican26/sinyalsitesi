@@ -181,12 +181,12 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. KULLANICI SOHBET VE MODERASYON PANELİ (SIFIR RİSKLİ ÇEKİRDEK YAPILAR)
+# 4. KULLANICI SOHBET VE MODERASYON PANELİ (SIFIR GIRINTI RISKLI YAPILAR)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI AKIŞ</p>', unsafe_allow_html=True)
 
-# Sunucu Hafızası Ayarları (Bulut Sunucuyla Tam Uyumlu Kalıcı Yapı)
+# Sunucu Bellek Ayarları
 if "begeniler" not in st.session_state:
     st.session_state["begeniler"] = {"⭐ 5 Yıldız": 124, "⭐ 4 Yıldız": 18, "⭐ 3 Yıldız": 5}
 
@@ -196,19 +196,19 @@ if "sohbet_hafizasi" not in st.session_state:
         {"isim": "Elif K.", "saat": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# Yasaklı Kelime Filtre Listesi
+# Yasaklı Kelime Filtre Listesi (Küfür/Argo Engelleme)
 yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç"]
 
-# Ekranı Sol ve Sağ olarak ikiye bölüyoruz
+# Ekranı Sol ve Sağ olarak ikiye bölüyoruz (Hata riski yaratmayan en üst katman)
 sol_kontrol, sag_akis = st.columns([1, 1.2])
 
 with sol_kontrol:
     st.write("**Paneli Puanlayın:**")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="btn5", use_container_width=True):
-            st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
-    with c2:
-        if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="btn4", use_container_width=True):
-            st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
-    with c3:
+    
+    # Hata veren iç içe 'with c1, c2, c3' blokları tamamen kaldırıldı! Düz sıralı butonlar yapıldı.
+    if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="btn5", use_container_width=True):
+        st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
+
+    if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="btn4", use_container_width=True):
+        st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
+
