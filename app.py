@@ -181,37 +181,35 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ (KARANLIK MOD UYUMLU, ASLA GİZLENEMEZ SÜRÜM)
+# 4. CANLI SOHBET VE ETKİLEŞİM PANELİ (GARANTİLİ CHAT BOX)
 # ===================================================================== #
 st.write("---")
-st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 CANLI SOHBET VE ETKİLEŞİM PANELİ</p>', unsafe_allow_html=True)
 
-if "begeniler" not in st.session_state:
-    st.session_state["begeniler"] = {"⭐ 5 Yıldız": 124, "⭐ 4 Yıldız": 18, "⭐ 3 Yıldız": 5}
-
-if "yorumlar_listesi" not in st.session_state:
-    st.session_state["yorumlar_listesi"] = [
-        {"isim": "Ahmet Y.", "zaman": "12:15", "yorum": "Algoritma puanlamaları gerçekten çok başarılı çalışıyor, elinize sağlık."},
-        {"isim": "Elif K.", "zaman": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
+# Sohbet geçmişi belleği hazırlığı
+if "chat_gecmisi" not in st.session_state:
+    st.session_state["chat_gecmisi"] = [
+        {"isim": "Sistem", "mesaj": "BTA Canlı Sohbet Alanına Hoş Geldiniz! Düşüncelerinizi paylaşabilirsiniz.", "saat": "12:00"},
+        {"isim": "Ahmet Y.", "mesaj": "Hisse analiz motoru çok akıcı çalışıyor.", "saat": "14:15"}
     ]
 
-# Ekranı tamamen yan yana iki büyük ana bloka bölüyoruz
-sol_taraf, sag_taraf = st.columns([1, 1.2])
+# Ekranı tamamen yan yana iki ana bloka bölüyoruz
+sol_sohbet, sag_reaksiyon = st.columns([1.3, 0.9])
 
-with sol_taraf:
-    st.write("**Paneli Puanlayın:**")
+with sol_sohbet:
+    st.markdown('<p style="font-size:16px; font-weight:bold; color:#FFFFFF;">✍️ Mesaj Gönder</p>', unsafe_allow_html=True)
     
-    # Yıldız butonları yan yana şık yerleşim
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star5", use_container_width=True):
-            st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
-    with c2:
-        if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="star4", use_container_width=True):
-            st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
-    with c3:
-        if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="star3", use_container_width=True):
-            st.session_state["begeniler"]["⭐ 3 Yıldız"] += 1
-            
-    st.write("---")
+    # Bembeyaz, karanlık modda kaybolmayan yüksek kontrastlı metin alanları
+    c_isim = st.text_input("Adınız / Rumuzunuz:", placeholder="Örn: Nurican K.", max_chars=20, key="chat_isim_kutusu")
+    c_mesaj = st.text_area("Mesajınız:", placeholder="Sohbete katılmak için bir şeyler yazın...", max_chars=250, height=80, key="chat_mesaj_kutusu")
+    c_gonder = st.button("Sohbete Gönder 📨", use_container_width=True, key="chat_gonder_butonu")
     
+    if c_gonder:
+        if c_isim.strip() == "" or c_mesaj.strip() == "":
+            st.error("❌ İsim veya mesaj alanı boş bırakılamaz.")
+        else:
+            yeni_mesaj = {
+                "isim": c_isim.strip(),
+                "mesaj": c_mesaj.strip(),
+                "saat": datetime.datetime.now().strftime("%H:%M")
+            }
