@@ -110,14 +110,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR
-# ===================================================================== #
-st.write("---")
-st.markdown('<div class="kucuk-baslik">Halka Arz Hisseleri</div>', unsafe_allow_html=True)
-st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
-
-# ===================================================================== #
-# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
+# 4. ORİJİNAL GÜVENLİ SOHBET FORMU (HALKA ARZ PANELİ KALDIRILDI)
 # ===================================================================== #
 st.write("---")
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
