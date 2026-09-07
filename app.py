@@ -7,7 +7,7 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. SAYFA YAPILANDIRMASI VE GELİŞMİŞ BORSA TEMASI (CSS)
+# 1. SAYFA YAPILANDIRMASI VE BORSA TASARIMI (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -211,9 +211,36 @@ if os.path.exists(excel_yolu):
         
         st.write("")
 
-        # HATA VEREN ARAMA MOTORUNUN İÇİ TAMAMEN SİLİNDİ, SIFIR RISK YAPILDI
+        # SIFIR GİRİNTİ RİSKLİ YENİ BIST HİSSE ARAMA MOTORU
         st.markdown('<p style="font-size:20px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        st.info("Hisse arama motoru optimizasyon çalışması nedeniyle geçici olarak bakımdadır.")
+        if len(df.columns) >= 5:
+            tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
+            tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
+            tum_hisseler.sort()
+            
+            if len(tum_hisseler) > 0:
+                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin ", ["Seçiniz..."] + tum_hisseler)
+                if aranan_hisse != "Seçiniz...":
+                    try:
+                        h_detay = yf.Ticker(f"{aranan_hisse}.IS")
+                        h_detay_veri = h_detay.history(period="2d", timeout=2)
+                        if len(h_detay_veri) > 0:
+                            anlik_fiyat = float(h_detay_veri['Close'].iloc[-1])
+                            dunku_kapanis = float(h_detay_veri['Close'].iloc[-2]) if len(h_detay_veri) >= 2 else anlik_fiyat
+                            gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
+                            gunun_en_yuksek = float(h_detay_veri['High'].iloc[-1])
+                            gunun_en_dusuk = float(h_detay_veri['Low'].iloc[-1])
+                            
+                            col1, col2, col3 = st.columns(3)
+                            col1.metric(label="Fiyat (Gecikmeli) 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                            col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                            col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                    except:
+                        st.error("Borsa verisi şu an çekilemiyor.")
+            else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+        else:
+            st.error("Excel dosyasında E sütunu bulunamadı!")
             
     except:
         st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
@@ -223,38 +250,3 @@ else:
 st.write("---")
 
 # ===================================================================== #
-# 3. HALKA ARZ VE HABER ALANI
-# ===================================================================== #
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')}*")
-
-col_arz, col_haber = st.columns(2)
-with col_arz:
-    st.subheader("🚀 Yeni Halka Arz Listesi")
-    df_arz = pd.DataFrame({
-        "Hisse Kodu 📈": ["XYZEN", "ABCDE"],
-        "Şirket Adı 🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"],
-        "Durum 📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]
-    })
-    st.dataframe(df_arz, use_container_width=True, hide_index=True)
-
-with col_haber:
-    st.subheader("📰 Son Dakika Gelişmeler / KAP")
-    st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
-    st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.")
-
-st.write("---")
-
-st.markdown('<p style="font-size:20px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
-sc1, sc2, sc3 = st.columns(3)
-sc2.metric(label="📅 Günlük Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş")
-sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
-
-st.markdown('<p style="font-size:14px; color:#FF4500; font-weight:bold;">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
-st.markdown('''
-<p style="font-size:12px; color:#888888;">
-⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
-</p>
-''', unsafe_allow_html=True)
-
-
