@@ -28,7 +28,7 @@ st.markdown('''
     }
 }
 .neon-marquee {
-    font-size: 55px;
+    font-size: 65px;
     font-weight: bold;
     font-family: 'Arial Black', sans-serif;
     color: #ffffff;
