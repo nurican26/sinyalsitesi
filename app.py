@@ -4,7 +4,6 @@ import datetime
 import yfinance as yf
 import os
 import time
-from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
 # 1. SAYFA YAPILANDIRMASI VE BORSA TASARIMI (CSS)
@@ -58,7 +57,7 @@ input, textarea, select, div[data-baseweb="select"] {
     transform: scale(1.02);
 }
 
-/* Tablo Verilerinin Telefonda Büyük ve Net Görünmesi İçin Ek CSS */
+/* Tablo Verilerinin Net Görünmesi İçin CSS */
 .borsa-tablo {
     width: 100%;
     border-collapse: collapse;
@@ -100,9 +99,6 @@ input, textarea, select, div[data-baseweb="select"] {
 }
 </style>
 ''', unsafe_allow_html=True)
-
-# Sohbeti ve verileri 5 saniyede bir otomatik eşitler
-st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize")
 
 # --- IŞIKLI, GÖLGELİ VE KAYAN BTA LOGOSU ---
 st.markdown('''
@@ -250,3 +246,6 @@ else:
 st.write("---")
 
 # ===================================================================== #
+# 3. HALKA ARZ VE HABER ALANI
+# ===================================================================== #
+st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
