@@ -8,18 +8,39 @@ import requests
 from bs4 import BeautifulSoup
 from streamlit_autorefresh import st_autorefresh
 
-# =====================================================================
-# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ (Mevcut yapınız korundu)
-# =====================================================================
+# ===================================================================== #
+# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ
+# ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
+
 # 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 
-# --- HAREKETLİ BTA LOGOSU VE STYLES ---
+# --- IŞIKLI, GÖLGELİ VE KAYAN BTA LOGOSU ---
 st.markdown('''
-<div class="bta-logo">BTA</div>
+<style>
+@keyframes neon-glow {
+    0%, 100% {
+        text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055, 0 0 40px #ff0055;
+    }
+    50% {
+        text-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 60px #00ffcc;
+    }
+}
+.neon-marquee {
+    font-size: 55px;
+    font-weight: bold;
+    font-family: 'Arial Black', sans-serif;
+    color: #ffffff;
+    animation: neon-glow 3s infinite alternate;
+    white-space: nowrap;
+    margin: 10px 0;
+}
+</style>
+<marquee scrollamount="8" behavior="scroll" direction="left">
+    <span class="neon-marquee">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</span>
+</marquee>
 ''', unsafe_allow_html=True)
-
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -57,9 +78,9 @@ def formatla_tl(deger):
     except:
         return str(deger)
 
-# =====================================================================
-# 2. ESKİ PANELİNİZİN ORİJİNAL VERİ TABLOLARI VE MOTORU
-# =====================================================================
+# ===================================================================== #
+# 2. OORİJİNAL VERİ TABLOLARI VE MOTORU (AL-SAT PANELİ KALDIRILDI)
+# ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -73,6 +94,7 @@ if os.path.exists(excel_yolu):
             
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                
                 c_fiyat = 0.0
                 try:
                     h_bta = yf.Ticker(f"{ha}.IS").history(period="1d")
@@ -85,7 +107,7 @@ if os.path.exists(excel_yolu):
                     maliyet = float(alim_c.replace(",", "."))
                 except:
                     maliyet = 0.0
-                    
+                
                 kz_str = f"%{((c_fiyat - maliyet) / maliyet) * 100:+.2f}" if maliyet > 0 and c_fiyat > 0 else "-"
                 
                 tablo_bta.append({
@@ -95,41 +117,15 @@ if os.path.exists(excel_yolu):
                     "GÜNCEL FİYAT 💥": formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor...",
                     "KAR / ZARAR 📊": kz_str
                 })
-                
-        st.markdown('<p class="section-title">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
+        
+        st.markdown('<p style="font-size:20px; font-weight:bold; color:#1E90FF;">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
         if len(tablo_bta) > 0:
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
+        
         st.write("")
-        
-        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) ---
-        tablo_alsat = []
-        for idx in range(min(10, len(df))):
-            hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
-            if hb != "" and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
-                as_fiyat = 0.0
-                as_deg = 0.0
-                try:
-                    h_as = yf.Ticker(f"{hb}.IS").history(period="2d")
-                    if not h_as.empty:
-                        as_fiyat = float(h_as['Close'].iloc[-1])
-                        as_prev = float(h_as['Close'].iloc[-2]) if len(h_as) >= 2 else as_fiyat
-                        as_deg = ((as_fiyat - as_prev) / as_prev) * 100
-                except:
-                    pass
-                
-                tablo_alsat.append({
-                    "GÜNLÜK AL SAT HİSSELERİ ⚡": hb,
-                    "GECİKMELİ VERİ 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...",
-                    "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-"
-                })
-                
-        st.markdown('<p class="section-title">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True)
-        if len(tablo_alsat) > 0:
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
-        st.write("---")
-        
+
         # --- BIST ANLIK ARAMA MOTORU ---
-        st.markdown('<p class="section-title">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:20px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
@@ -168,17 +164,15 @@ else:
 
 st.write("---")
 
-# =====================================================================
-# 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI
-# =====================================================================
+# ===================================================================== #
+# 3. HALKA ARZ VE HABER ALANI
+# ===================================================================== #
 st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
 st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')} (Her 10 dakikada bir otomatik güncellenir)*")
 
 col_arz, col_haber = st.columns(2)
-
 with col_arz:
     st.subheader("🚀 Yeni Halka Arz Listesi")
-    # Örnek güncel halka arz verisi
     df_arz = pd.DataFrame({
         "Hisse Kodu 📈": ["XYZEN", "ABCDE"],
         "Şirket Adı 🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"],
@@ -194,13 +188,15 @@ with col_haber:
 st.write("---")
 
 # --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ ---
-st.markdown('<p class="section-title">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:20px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
 sc1, sc2, sc3 = st.columns(3)
 sc2.metric(label="📅 Günlük Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş")
 sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
 
 # --- 15 DAKİKA GECİKMELİ VERİ UYARISI VE YASAL UYARI ---
-st.markdown('<p class="warning-text">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:14px; color:#FF4500; font-weight:bold;">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
 st.markdown('''
-<p class="spk-text">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</p>
+<p style="font-size:12px; color:#888888;">
+⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
+</p>
 ''', unsafe_allow_html=True)
