@@ -200,20 +200,19 @@ st.markdown('''
 ''', unsafe_allow_html=True)
 
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ (YENİ EKLENEN ALAN)
+# 4. YORUMLAR VE BEĞENİ PANELİ (GÖRSEL OLARAK GELİŞTİRİLDİ)
 # ===================================================================== #
 st.write("---")
-st.markdown('<p style="font-size:20px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
 
-# Session State Hazırlığı (Sayfa yenilendiğinde verilerin uçmaması için)
+# Hafıza (Session State) Hazırlığı
 if "begeniler" not in st.session_state:
-    st.session_state["begeniler"] = {"👍 Faydalı": 42, "🔥 Harika": 28, "🚀 Roket": 35}
+    st.session_state["begeniler"] = {"⭐ 5 Yıldız": 124, "⭐ 4 Yıldız": 18, "⭐ 3 Yıldız": 5}
 
 if "yorumlar_listesi" not in st.session_state:
     st.session_state["yorumlar_listesi"] = [
-        {"isim": "Ahmet Y.", "zaman": "12:15", "yorum": "Algoritma puanlamaları gerçekten çok başarılı çalışıyor."},
+        {"isim": "Ahmet Y.", "zaman": "12:15", "yorum": "Algoritma puanlamaları gerçekten çok başarılı çalışıyor, elinize sağlık."},
         {"isim": "Elif K.", "zaman": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# --- BEĞENİ REAKSİYON BUTONLARI ---
-st.write("**Bu paneli nasıl buldunuz?**")
+# Sol tarafta Yorum Yazma Formu ve Yıldızlar, Sağ tarafta güncel yorumlar akacak şekilde 2 kolon yapıyoruz
