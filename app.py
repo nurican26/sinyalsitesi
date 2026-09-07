@@ -181,35 +181,46 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. CANLI SOHBET VE ETKİLEŞİM PANELİ (GARANTİLİ CHAT BOX)
+# 4. KALICI, KÜFÜR FİLTRELİ VE EDİTÖRLÜ KULLANICI YORUM PANELİ
 # ===================================================================== #
 st.write("---")
-st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 CANLI SOHBET VE ETKİLEŞİM PANELİ</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
 
-# Sohbet geçmişi belleği hazırlığı
-if "chat_gecmisi" not in st.session_state:
-    st.session_state["chat_gecmisi"] = [
-        {"isim": "Sistem", "mesaj": "BTA Canlı Sohbet Alanına Hoş Geldiniz! Düşüncelerinizi paylaşabilirsiniz.", "saat": "12:00"},
-        {"isim": "Ahmet Y.", "mesaj": "Hisse analiz motoru çok akıcı çalışıyor.", "saat": "14:15"}
-    ]
+# GİZLİ VERİTABANI DOSYA YOLU (Tüm mesajları kalıcı kaydeder)
+db_dosyasi = "sohbet_verileri.csv"
 
-# Ekranı tamamen yan yana iki ana bloka bölüyoruz
-sol_sohbet, sag_reaksiyon = st.columns([1.3, 0.9])
+# Yasaklı Kelime Filtre Listesi (Buraya istediğiniz kadar kelime ekleyebilirsiniz)
+yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "pç", "orospu", "gerizekalı", "salak"]
 
-with sol_sohbet:
-    st.markdown('<p style="font-size:16px; font-weight:bold; color:#FFFFFF;">✍️ Mesaj Gönder</p>', unsafe_allow_html=True)
-    
-    # Bembeyaz, karanlık modda kaybolmayan yüksek kontrastlı metin alanları
-    c_isim = st.text_input("Adınız / Rumuzunuz:", placeholder="Örn: Nurican K.", max_chars=20, key="chat_isim_kutusu")
-    c_mesaj = st.text_area("Mesajınız:", placeholder="Sohbete katılmak için bir şeyler yazın...", max_chars=250, height=80, key="chat_mesaj_kutusu")
-    c_gonder = st.button("Sohbete Gönder 📨", use_container_width=True, key="chat_gonder_butonu")
-    
-    if c_gonder:
-        if c_isim.strip() == "" or c_mesaj.strip() == "":
-            st.error("❌ İsim veya mesaj alanı boş bırakılamaz.")
-        else:
-            yeni_mesaj = {
-                "isim": c_isim.strip(),
-                "mesaj": c_mesaj.strip(),
-                "saat": datetime.datetime.now().strftime("%H:%M")
-            }
+# Veritabanı Dosyası Yoksa Sıfırdan Oluşturma Mantığı
+if not os.path.exists(db_dosyasi):
+    df_db = pd.DataFrame(columns=["isim", "mesaj", "saat"])
+    df_db.to_csv(db_dosyasi, index=False)
+
+# Mesajları Veritabanından Okuma Fonksiyonu
+def yorumlari_getir():
+    try:
+        return pd.read_csv(db_dosyasi).to_dict(orient="records")
+    except:
+        return []
+
+# Yeni Mesaj Yazma Fonksiyonu
+def yorum_kaydet(isim, mesaj):
+    yeni_satir = pd.DataFrame([{"isim": isim, "mesaj": mesaj, "saat": datetime.datetime.now().strftime("%H:%M")}])
+    try:
+        df_eski = pd.read_csv(db_dosyasi)
+        df_yeni = pd.concat([yeni_satir, df_eski], ignore_index=True)
+        df_yeni.to_csv(db_dosyasi, index=False)
+    except:
+        yeni_satir.to_csv(db_dosyasi, index=False)
+
+# Mesaj Silme Fonksiyonu (Sadece Yönetici Kullanır)
+def yorum_sil(index_no):
+    try:
+        df_sil = pd.read_csv(db_dosyasi)
+        df_sil = df_sil.drop(index_no).reset_index(drop=True)
+        df_sil.to_csv(db_dosyasi, index=False)
+    except:
+        pass
+
+# Ekranı Sol (Form) ve Sağ (Yorumlar) olarak ikiye bölüyoruz
