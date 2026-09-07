@@ -4,11 +4,15 @@ import datetime
 import yfinance as yf
 import os
 import time
+from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. SAYFA YAPILANDIRMASI
+# 1. SAYFA YAPILANDIRMASI VE OTOMATİK CANLI TAZELEYİCİ
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
+
+# Telefon ve Bilgisayar arasındaki sohbeti 5 saniyede bir otomatik eşitler
+st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize")
 
 # --- IŞIKLI, GÖLGELİ VE KAYAN BTA LOGOSU ---
 st.markdown('''
@@ -181,12 +185,12 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. KULLANICI SOHBET VE MODERASYON PANELİ (SIFIR GIRINTI RISKLI YAPILAR)
+# 4. TEK SIRA YILDIZLI VE GELİŞMİŞ SOHBET PANELİ (KÜFÜR KORUMALI & EDİTÖRLÜ)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI AKIŞ</p>', unsafe_allow_html=True)
 
-# Sunucu Bellek Ayarları
+# Sunucu Bellek Hafızası Ayarları
 if "begeniler" not in st.session_state:
     st.session_state["begeniler"] = {"⭐ 5 Yıldız": 124, "⭐ 4 Yıldız": 18, "⭐ 3 Yıldız": 5}
 
@@ -196,19 +200,15 @@ if "sohbet_hafizasi" not in st.session_state:
         {"isim": "Elif K.", "saat": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# Yasaklı Kelime Filtre Listesi (Küfür/Argo Engelleme)
+# Yasaklı Argo/Küfür Kelime Filtresi (Buraya istediğiniz kelimeleri ekleyebilirsiniz)
 yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç"]
 
-# Ekranı Sol ve Sağ olarak ikiye bölüyoruz (Hata riski yaratmayan en üst katman)
-sol_kontrol, sag_akis = st.columns([1, 1.2])
+# Arayüz İki Büyük Kolona Bölünüyor
+sol_taraf, sag_taraf = st.columns([1, 1.2])
 
-with sol_kontrol:
+with sol_taraf:
     st.write("**Paneli Puanlayın:**")
     
-    # Hata veren iç içe 'with c1, c2, c3' blokları tamamen kaldırıldı! Düz sıralı butonlar yapıldı.
-    if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="btn5", use_container_width=True):
-        st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
-
-    if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="btn4", use_container_width=True):
-        st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
-
+    # Yıldızlar tek sıra halinde yan yana dizildi (with kaldırıldı, girinti hatası imkansız)
+    yildiz_sutunlari = st.columns(3)
+    if yildiz_sutunlari[0].button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star_5_btn", use_container_width=True):
