@@ -136,11 +136,11 @@ if os.path.exists(excel_yolu):
                 except: 
                     pass 
                 tablo_alsat.append({ 
-                    "GÜNLÜK AL SAT HİSSELERİ ⚡": hb, 
+                    "GÜNLÜK HİSSELERİ ⚡": hb, 
                     "GECİKMELİ VERİ 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...", 
                     "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-" 
                 }) 
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK AL SAT HİSSELERİ )</p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK HİSSELER)</p>', unsafe_allow_html=True) 
         if len(tablo_alsat) > 0: 
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True) 
         st.write("---") 
