@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 
 # Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici 
 st.set_page_config(page_title="BTA Merkez", layout="wide") 
-st_autorefresh(interval=10 * 1000, key="bta yenileyici") 
+st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici") 
 
 # --- HAREKETLİ BTA LOGOSU VE STYLES ---
 st.markdown('''
@@ -27,8 +27,8 @@ st.markdown('''
         margin-bottom: 10px;
     }
     .bta-animated-logo {
-        font-size: 70px;
-        font-weight: 950;
+        font-size: 55px;
+        font-weight: 900;
         letter-spacing: 5px;
         background: linear-gradient(45deg, #00E5FF, #00E676);
         -webkit-background-clip: text;
@@ -38,7 +38,7 @@ st.markdown('''
     }
     .warning-banner {
         background-color: #fff3cd;
-        color: #856208;
+        color: #856404;
         padding: 12px;
         border-radius: 8px;
         text-align: center;
@@ -48,7 +48,7 @@ st.markdown('''
     }
     </style>
     <div class="bta-logo-container">
-        <div class="bta-animated-logo">BTA MERKEZ</div>
+        <div class="bta-animated-logo">BTA</div>
     </div>
 ''', unsafe_allow_html=True)
 
@@ -211,6 +211,5 @@ st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">📈 BT
 
 # Streamlit'in yerleşik alt kolon mimarisi ile HTML bağımlılığı olmadan sayaç çizimi
 sc1, sc2, sc3 = st.columns(3) 
-sc1.metric(label="👥 Anlık Odadaki Kişi Sayısı", value=f"{anlik_oda} Aktif") 
 sc2.metric(label="📅 Günlük Toplam Giriş (24s Sıfırlanır)", value=f"{st.session_state['gunluk_sayac']} Giriş") 
 sc3.metric(label="💎 Genel Toplam Giriş (Hiç Sıfırlanmaz)", value=f"{st.session_state['toplam_sayac']} Giriş")
