@@ -27,7 +27,7 @@ st.markdown('''
         margin-bottom: 10px;
     }
     .bta-animated-logo {
-        font-size: 55px;
+        font-size: 65px;
         font-weight: 900;
         letter-spacing: 5px;
         background: linear-gradient(45deg, #00E5FF, #00E676);
