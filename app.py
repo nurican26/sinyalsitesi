@@ -3,133 +3,111 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+from streamlit_autorefresh import st_autorefresh
 
-# 1. SAYFA YAPILANDIRMASI VE TELEFON UYUMLU SÜPER NEON TASARIM
-st.set_page_config(page_title="BTA Canlı Piyasalar", page_icon="📈", layout="wide")
+# Sayfa Yapılandırması
+st.set_page_config(page_title="Canlı Hisse Takip Programı", layout="wide")
 
-st.markdown("""
-<style>
-    @import url('https://googleapis.com');
-    @keyframes rainbowNeon {
-        0% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f; }
-        50% { color: #00f2fe !important; text-shadow: 0 0 15px #00f2fe; }
-        100% { color: #ff007f !important; text-shadow: 0 0 15px #ff007f; }
-    }
-    @keyframes marquee {
-        0% { transform: translateX(100%); }
-        100% { transform: translateX(-100%); }
-    }
-    .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important; 
-    } 
-    h1, h2, h3, p, span, label {
-        color: #fff !important; 
-        font-family: "Segoe UI", sans-serif;
-    } 
-    input {
-        color: #000 !important; 
-        background-color: #fff !important;
-    }
-    .alsat-baslik {
-        background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); 
-        padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 10px;
-    } 
-    .al-baslik {
-        background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); 
-        padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 10px;
-    } 
-    .bta-logo-konteyner {
-        width: 100%; overflow: hidden; white-space: nowrap;
-        margin: 15px 0; padding: 10px 0; background: rgba(255, 255, 255, 0.02); border-radius: 8px;
-    } 
-    .bta-logo {
-        display: inline-block; font-family: 'Segoe UI', sans-serif; font-style: italic;
-        font-weight: bold; font-size: 4rem; padding-left: 100%; 
-        animation: marquee 20s infinite linear, rainbowNeon 6s infinite linear; 
-    } 
-    .spk-kutusu {
-        background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444;
-        padding: 15px; border-radius: 8px; margin-bottom: 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.markdown('<style>.stApp {background: #0f172a!important; padding: 0.5rem;} h1,h2,h3,h4,h5,h6,p,span,label {color: #fff!important;} .stDataFrame {width: 100% !important; border: 1px solid #10b981 !important; border-radius: 8px;} .alsat-baslik {background: linear-gradient(90deg, #ca8a04 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .al-baslik {background: linear-gradient(90deg, #16a34a 0%, #1e1b4b 100%); padding: 8px; border-radius: 5px; font-weight: bold; margin-bottom: 5px; color:#fff;} .spk-kutusu {background-color: rgba(220, 38, 38, 0.15); border: 2px solid #dc2626; padding: 15px; border-radius: 6px; color: #fca5a5 !important; font-size: 0.95rem;}</style>', unsafe_allow_html=True)
 
-# 🔑 PARAMETRELER
-YONETICI_SIFRESI = "bta2026"
+# 🔄 CANLI FİYAT KİLİDİ: Sayfa her 10 saniyede bir hiçbir şeye dokunmadan kendi kendini yeniler
+st_autorefresh(interval=10 * 1000, key="hisse_canli_yenileyici")
 
-if "oda_kilitli_mi" not in st.session_state:
-    st.session_state["oda_kilitli_mi"] = False
-if "sohbet_gecmisi" not in st.session_state:
-    st.session_state["sohbet_gecmisi"] = []
+# Saat Göstergesi
+guncel_an = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+st.markdown(f'<div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 15px; font-weight: bold;">🕒 Canlı Veri Saati: {guncel_an} <span style="color:#10b981; font-size:0.9rem;">(10sn de bir otomatik yenileniyor)</span></div>', unsafe_allow_html=True)
 
-# LOGO VE SPK UYARISI
-st.markdown('<div class="bta-logo-konteyner"><div class="bta-logo">BTA TRADING</div></div>', unsafe_allow_html=True)
-st.markdown("""
-<div class="spk-kutusu">
-    <h4 style="color:#ef4444 !important; margin-top:0;">⚠️ SPK YASAL UYARI</h4>
-    <p style="font-size:0.9rem; color:#cbd5e1 !important; margin-bottom:0;">
-        Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-        Burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.
-    </p>
-</div>
-""", unsafe_allow_html=True)
+excel_yolu = "nurican.xls.xlsm"
 
-# YÖNETİCİ PANELİ (SOL YAN MENÜ)
-st.sidebar.markdown("### 🛠️ Oda Yönetim Merkezi")
-admin_sifre = st.sidebar.text_input("Yönetici Şifresi:", type="password", placeholder="Ayarlar için...")
+if os.path.exists(excel_yolu):
+    try:
+        # Doğrudan "WEB" isimli sayfayı okuyoruz
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        
+        tablo_bta = []
+        tablo_alsat = []
 
-if admin_sifre == YONETICI_SIFRESI:
-    st.sidebar.success("⚡ Yönetici Yetkisi Aktif")
-    if st.sidebar.button("🔓 Odadaki Kilidi Kaldır / Kilitle", use_container_width=True):
-        st.session_state["oda_kilitli_mi"] = not st.session_state["oda_kilitli_mi"]
-        st.rerun()
+        # İlk 10 satırı kontrol ederek gereksiz sayfa kasmalarını önlüyoruz
+        sinir = min(10, len(df))
+        
+        for idx in range(sinir):
+            # 1. ÜST PANEL VERİLERİ (A, C, D Sütunları)
+            hisse_a = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
 
-# KİLİT KONTROLÜ
-if st.session_state["oda_kilitli_mi"] and admin_sifre != YONETICI_SIFRESI:
-    st.markdown('<div style="background:rgba(255,255,255,0.05); border-left:4px solid #ca8a04; padding:15px; border-radius:6px;">🔒 <b>BTA Sinyal Odası Geçici Olarak Kilitlenmiştir!</b><br>Sistem verileri güncelleniyor. Lütfen daha sonra tekrar deneyiniz.</div>', unsafe_allow_html=True)
-    st.stop()
+            if hisse_a and hisse_a not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                
+                # BTA PUAN YUVARLAMA KONTROLÜ
+                try:
+                    puan_temiz = f"{float(puan_d):.2f}"
+                except:
+                    puan_temiz = str(puan_d).strip() if pd.notna(puan_d) else ""
 
-# ÜST PANEL SEKMELERİ
-sekme_arama, sekme_altin, sekme_sohbet = st.tabs(["🔎 TÜM BIST ARAMA MOTORU", "🪙 Canlı Altın Takibi", "💬 Sohbet & Not Alanı"])
+                try:
+                    ticker = yf.Ticker(f"{hisse_a}.IS")
+                    hist = ticker.history(period="1d")
+                    canli_fiyat = float(hist['Close'].iloc[-1]) if not hist.empty else 0.0
+                except:
+                    canli_fiyat = 0.0
+                
+                try: maliyet = float(alim_c.replace(",", "."))
+                except: maliyet = 0.0
+                
+                kz_oran_str = "-"
+                if maliyet > 0 and canli_fiyat > 0:
+                    kz = ((canli_fiyat - maliyet) / maliyet) * 100
+                    kz_oran_str = f"%{kz:+.2f}"
 
-# 🎯 TÜM AKTİF BIST HİSSE LİSTESİ HAFIZASI
-bist_all = [
-    "A1CAP", "ACSEL", "ADEL", "ADESE", "AGHOL", "AGROT", "AHGAZ", "AKBNK", "AKCNS", "AKENR", "AKFGY", "AKFYE", "AKGRT", "AKMGY", "AKSA", "AKSEN", "AKSGY", "ALARK", "ALBRK", "ALCAR", "ALCTL", "ALFAS", "ALGGY", "ALKA", "ALKIM", "ALTNY", "ALVES", "ANELE", "ANGEN", "ANHYT", "ANSGR", "ARASE", "ARCLK", "ARDYZ", "ARENA", "ARSAN", "ARTMS", "ASCEG", "ASELS", "ASGYO", "ASTOR", "ASUZU", "ATAGY", "ATAKP", "ATATP", "ATEKS", "ATLAS", "ATSYH", "AVGYO", "AVHOL", "AVOD", "AVTUR", "AYCES", "AYDEM", "AYEN", "AYGAZ", "AZTEK", "BAGFS", "BAKAB", "BALAT", "BANVT", "BARMA", "BASCM", "BASGZ", "BATIS", "BAYRK", "BEGYO", "BERA", "BEYAZ", "BFREN", "BIENY", "BIGCH", "BIMAS", "BIOEN", "BIZIM", "BJKAS", "BLCYT", "BMSCH", "BMSTR", "BOBET", "BORLE", "BORSK", "BOSSA", "BRISA", "BRKVY", "BRMEN", "BRSAN", "BRYAT", "BSOKE", "BTCIM", "BUCIM", "BURCE", "BURVA", "BVSAN", "BYDNR", "CATES", "CCOLA", "CELHA", "CEMAS", "CEMTS", "CEOEM", "CIMSA", "CLEBI", "CMBTN", "CMENT", "CONSE", "COSMO", "CRDFA", "CUSAN", "CVKMD", "CWENE", "DAGHL", "DAGI", "DAPGM", "DARDL", "DGATE", "DGGYO", "DGNMO", "DIRIT", "DITAS", "DMSAS", "DNISI", "DOAS", "DOCO", "DOGUB", "DOHOL", "DOKTA", "DURDO", "DYOBY", "DZGYO", "EBEBK", "ECILC", "ECZYT", "EDATA", "EDIP", "EGEEN", "EGEPO", "EGGUB", "EGPRO", "EGSER", "EKGYO", "EKIZ", "EKLOS", "EKOS", "ELITE", "EMKEL", "ENERY", "ENJSA", "ENKAI", "EPLAS", "ERBOS", "EREGL", "ERSU", "ESCAR", "ESCOM", "ESEN", "ETILR", "EUPWR", "EUREK", "EYGYO", "FADE", "FENER", "FLAP", "FMIZP", "FONET", "FORMT", "FRIGO", "FROTO", "FZLGY", "GARAN", "GENTS", "GEREL", "GESAN", "GIPTA", "GLBMD", "GLCVY", "GLRYH", "GLYHO", "GMTTR", "GNEV", "GOLTS", "GOODY", "GOZDE", "GRNYO", "GSDHO", "GSDDE", "GSRAY", "GUBRF", "GWIND", "GZNMI", "HATEK", "HEDEF", "HEKTS", "HKTM", "HLGYO", "HTTBT", "HUBVC", "HUNER", "HURGZ", "ICBCT", "ICKU", "IDGYO", "IEYHO", "IHAAS", "IHEVA", "IHGZT", "IHLAL", "IHLAS", "IHMAD", "IKND", "IMAGE", "INGRM", "INTEM", "INVEST", "ISATR", "ISBTR", "ISCTR", "ISDMR", "ISFIN", "ISGSY", "ISGYO", "ISKPL", "ISMEN", "ISYAT", "ITTFH", "IZENR", "IZFAS", "IZMDC", "JANTS", "KAPLM", "KAREL", "KARSN", "KARTN", "KARYE", "KATMR", "KAYSE", "KBTX", "KBUTY", "KCAER", "KCHOL", "KENT", "KERVN", "KERVT", "KFEIN", "KGYO", "KIMMR", "KLGYO", "KLMSN", "KLNMA", "KLRGY", "KLSYN", "KLSYS", "KMELE", "KMPUR", "KNFRT", "KOBIL", "KONFG", "KONTR", "KONYA", "KORDS", "KOZAA", "KOZAL", "KPLN", "KPTL", "KRALS", "KRTEK", "KRVGD", "KSTUR", "KTLEV", "KTSKR", "KUTPO", "KUVVA", "KVAZ", "LIDER", "LIDFA", "LINK", "LMKDC", "LOGO", "LRSHO", "LUKSK", "MAALT", "MACKO", "MAGEN", "MAKIM", "MAKTK", "MANAS", "MARKA", "MARTI", "MAVI", "MEDTR", "MEGAP", "MEGMT", "MEPET", "MERCN", "MERIT", "MERKO", "METUR", "METRO", "MGROS", "MIPAZ", "MIATK", "MMCAS", "MNDRS", "MNDTR", "MOBTL", "MOGAN", "MPARK", "MRGYO", "MRSHL", "MSGYO", "MTRKS", "MTRYO", "MZHLD", "NATEN", "NETAS", "NIBAS", "NTGAZ", "NUGYO", "NUHCM", "OBAMS", "ODAS", "ODINE", "ONCSM", "ORCA", "ORGE", "ORMA", "OSMEN", "OSTIM", "OTKAR", "OYAKC", "OYAYO", "OYLUM", "OYYAT", "OZATD", "OZGYO", "OZKGY", "OZSUB", "OZUCP", "PAGYO", "PAMEL", "PAPIL", "PARSN", "PASEU", "PATRK", "PCILT", "PEGYO", "PEKGY", "PENGD", "PENTA", "PETKM", "PETUN", "PGSUS", "PINSU", "PKENT", "PKART", "PLTUR", "PNLSN", "PNSUT", "POLHO", "POLTK", "PRKAB", "PRKME", "PRMA", "PRZMA", "PSDTC", "PSGYO", "QNBFB", "QNBFL", "QUAGR", "RALYH", "RAYSG", "REEDR", "RNPOL", "RODRG", "ROYAL", "RYSAS", "RYGYO", "SAFKR", "SAHOL", "SAMAT", "SANEL", "SANFM", "SANKO", "SARKY", "SASA", "SAYAS", "SDTTR", "SEKFA", "SEKO", "SELEC", "SELVA", "SEYKM", "SILVR", "SIMART", "SINKO", "SNGYO", "SNTRA", "SOKMD", "SONME", "SRVGY", "SUWEN", "TABGD", "TAFEX", "TARKM", "TATEN", "TATGD", "TAVHL", "TBORG", "TCELL", "TDGYO", "TEKTU", "TEZOL", "TGSAS", "THYAO", "TLMAN", "TMPOL", "TMSN", "TNZTP", "TOASO", "TORUN", "TSKB", "TSPOR", "TTKOM", "TTRAK", "TUCLK", "TUKAS", "TUPRS", "TUREX", "TURGG", "TURSG", "UFUK", "ULAS", "ULFA", "ULKER", "ULUSE", "UNLU", "USAK", "VAKFN", "VAKKO", "VAKMY", "VALF", "VANET", "VBTYZ", "VERTU", "VESTL", "VKFYO", "VKGYO", "VKING", "YAPRK", "YATAS", "YAYLA", "YBCLK", "YEOTK", "YGGYO", "YGYO", "YKBNK", "YLTEK", "YONGA", "YOTK", "YUNSA", "YYLGD", "ZEDUR", "ZRGYO"
-]
+                tablo_bta.append({
+                    "BTA PUAN 🔢": puan_temiz,
+                    "BTA HİSSE 📈": hisse_a,
+                    "BTA ALIM 📥": f"{maliyet:.2f} TL" if maliyet > 0 else alim_c,
+                    "GÜNCEL FİYAT 💥": f"{canli_fiyat:.2f} TL" if canli_fiyat > 0 else "Yükleniyor...",
+                    "KAR / ZARAR 📊": kz_oran_str
+                })
 
-with sekme_arama:
-    st.markdown("### 🔎 Canlı BIST Tüm Hisse Arama Motoru")
-    arama_girdisi = st.text_input("Bulmak istediğiniz hisse kodunu yazın (Örn: THYAO, ASELS, EREGL):", "").strip().upper()
-    
-    if arama_girdisi in bist_all:
-        h_data = yf.download(f"{arama_girdisi}.IS", period="1d", progress=False)
-        if not h_data.empty:
-            st.success(f"📈 **{arama_girdisi}** Hissesi Başarıyla Bulundu!")
-            st.metric(label="Dünkü Kapanış Fiyatı (TL)", value=f"{float(h_data.iloc[-1].iloc[0]):,.2f} TL")
-    elif arama_girdisi:
-        benzerler = [h for h in bist_all if arama_girdisi in h]
-        if benzerler:
-            st.info(f"Aradığınız koda benzer {len(benzerler)} hisse bulundu: " + ", ".join(benzerler))
+            # 2. ALT PANEL VERİLERİ (B Sütunu)
+            alsat_b = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""
+            
+            if alsat_b and alsat_b not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]:
+                try:
+                    ticker_as = yf.Ticker(f"{alsat_b}.IS")
+                    hist_as = ticker_as.history(period="2d")
+                    as_canli_fiyat = float(hist_as['Close'].iloc[-1]) if not hist_as.empty else 0.0
+                    
+                    if len(hist_as) >= 2:
+                        onceki_kapanis = float(hist_as['Close'].iloc[-2])
+                        as_degisim = ((as_canli_fiyat - onceki_kapanis) / onceki_kapanis) * 100
+                    else:
+                        as_degisim = 0.0
+                except:
+                    as_canli_fiyat, as_degisim = 0.0, 0.0
+
+                tablo_alsat.append({
+                    "GÜNLÜK AL SAT HİSSELERİ ⚡": alsat_b,
+                    "ANLIK VERİ CANLI 📊": f"{as_canli_fiyat:.2f} TL" if as_canli_fiyat > 0 else "Yükleniyor...",
+                    "YÜKSELİŞ ORANI 📈": f"%{as_degisim:+.2f}" if as_canli_fiyat > 0 else "-"
+                })
+
+        # EKRANA BASMA İŞLEMLERİ
+        st.markdown('<div class="al-baslik">📈 BTA HİSSELERİ (ÜST PANEL)</div>', unsafe_allow_html=True)
+        if tablo_bta:
+            st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
         else:
-            st.error("Borsa İstanbul listesinde böyle bir hisse kodu bulunamadı!")
+            st.info("Üst panel için veri işleniyor...")
 
-with sekme_altin:
-    st.markdown("### 🪙 Canlı Altın Piyasası Takibi")
-    altin_df_data = pd.DataFrame({"Altın Türü": ["Veri Alınamadı"], "Fiyat (TL)": ["0.00"]})
-    altin_download = yf.download(["GC=F", "TRY=X"], period="1d", progress=False)
-    if not altin_download.empty:
-        ons_v = float(altin_download.iloc[-1].iloc[0])
-        usd_v = float(altin_download.iloc[-1].iloc[1])
-        g_altin = (ons_v / 31.1034768) * usd_v
-        altin_df_data = pd.DataFrame({
-            "Altın Türü 🪙": ["Gram Altın", "Çeyrek Altın", "Yarım Altın", "Tam Altın"],
-            "Fiyat (TL) 💰": [f"{g_altin:,.2f}", f"{g_altin*1.75:,.2f}", f"{g_altin*3.5:,.2f}", f"{g_altin*7.01:,.2f}"]
-        })
-    st.table(altin_df_data)
+        st.write("")
 
-with sekme_sohbet:
-    st.markdown("### 💬 Bilgi Paylaşım & Analiz Notları")
-    s_isim = st.text_input("Kullanıcı Adınız:", value="Yatırımcı")
-    s_mesaj = st.text_input("Mesaj içeriği:", placeholder="Notunuzu buraya ekleyin...")
-    if st.button("✉️ Mesajı İlet") and s_mesaj.strip():
-        saat = datetime.datetime.now().strftime("%H:%M:%S")
+        st.markdown('<div class="alsat-baslik">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</div>', unsafe_allow_html=True)
+        if tablo_alsat:
+            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True)
+        else:
+            st.info("Alt panel için veri işleniyor...")
+
+    except Exception as e:
+        st.error(f"Excel okunurken bir sorun oluştu: {e}")
+else:
+    st.error("Excel dosyası 'nurican.xls.xlsm' bulunamadı!")
+
+st.markdown('<div class="spk-kutusu">⚠️ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir.</div>', unsafe_allow_html=True)
