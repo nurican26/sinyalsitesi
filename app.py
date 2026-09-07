@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
 # 1. BORSA TEMASI VE STİLLER (CSS)
@@ -22,6 +23,9 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
+
+# EKSİK OLAN HAYATİ MOTOR: Sohbeti ve borsa ekranını 5 saniyede bir otomatik eşitler ve yeniler!
+st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
@@ -161,5 +165,3 @@ for s in range(len(df_sohbet_oku)):
 # YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
 # ===================================================================== #
 st.write("---")
-st.markdown('<p style="font-size:11px; color:#666668; text-align:center; margin-bottom: 2px;">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.</p>', unsafe_allow_html=True)
-
