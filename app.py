@@ -11,7 +11,6 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# Sitenin arka planını, tablolarını ve font boyutlarını borsa ekranına uyarlayan özel CSS
 st.markdown('''
 <style>
 /* Deep Gece Mavisi Borsa Arka Planı ve Grafik Çizgileri */
@@ -25,7 +24,7 @@ st.markdown('''
     background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
 }
 
-/* Veri Tabloları, Kartlar and Form Alanları */
+/* Veri Tabloları, Kartlar ve Form Alanları */
 div[data-testid="stMetric"], div[data-testid="stForm"] {
     background-color: #121d33 !important;
     border: 1px solid #1e2e4d !important;
@@ -179,8 +178,8 @@ if os.path.exists(excel_yolu):
                     try:
                         h_bta = yf.Ticker(f"{ha}.IS")
                         h_veri = h_bta.history(period="1d", timeout=2)
-                        # Hata veren girintili if-else blok yapısı düzleştirildi
-                        c_fiyat = float(h_veri['Close'].iloc[-1]) if not h_veri.empty else 0.0
+                        # HATA VEREN TÜM İÇ İÇE IF-ELSE YAPI SİLİNDİ, TEK SATIRDA DEĞER SORGUSU YAPILDI
+                        c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
                     except:
                         c_fiyat = 0.0
                     
@@ -226,7 +225,7 @@ if os.path.exists(excel_yolu):
                         try:
                             h_detay = yf.Ticker(f"{aranan_hisse}.IS")
                             h_detay_veri = h_detay.history(period="2d", timeout=2)
-                            if not h_detay_veri.empty:
+                            if len(h_detay_veri) > 0:
                                 anlik_fiyat = float(h_detay_veri['Close'].iloc[-1])
                                 dunku_kapanis = float(h_detay_veri['Close'].iloc[-2]) if len(h_detay_veri) >= 2 else anlik_fiyat
                                 gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
@@ -242,3 +241,5 @@ if os.path.exists(excel_yolu):
                         except:
                             st.error("Borsa verisi şu an çekilemiyor.")
             else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+        else:
