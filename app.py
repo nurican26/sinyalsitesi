@@ -201,7 +201,7 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ
+# 4. YORUMLAR VE BEĞENİ PANELİ (GİRİNTİ HATASI VERMEYEN DÜZLEŞTİRİLMİŞ YENİ SÜRÜM)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
@@ -215,9 +215,6 @@ if "yorumlar_listesi" not in st.session_state:
         {"isim": "Elif K.", "zaman": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
+# Ekranı sol ve sağ olarak iki kolona bölüyoruz
 sol_blok, sag_blok = st.columns([1, 1.2])
 
-with sol_blok:
-    st.write("**Paneli Puanlayın:**")
-    yb1, yb2, yb3 = st.columns(3)
-    with yb1:
