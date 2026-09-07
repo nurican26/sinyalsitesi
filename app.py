@@ -5,7 +5,7 @@ import yfinance as yf
 import os
 
 # ===================================================================== #
-# 1. BORSA TEMASI VE STİLLER (CSS)
+# 1. BORSA TEMASI VE OKUNABİLİRLİK OPTİMİZASYONU (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -20,6 +20,34 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .hisse-link { color: #00ffcc !important; text-decoration: underline !important; font-weight: bold; }
 .kucuk-sayac { font-size: 12px !important; color: #888888 !important; text-align: center; margin-top: 15px; font-weight: bold; }
+
+/* TELEFONDA ULTRA OKUNAKLI GECE MODU HABER KUTULARI */
+.gece-haber { 
+    background-color: #070c16 !important; 
+    border-left: 5px solid #ff3344; 
+    padding: 12px !important; 
+    margin-bottom: 8px !important; 
+    border-radius: 6px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+}
+.haber-metni { 
+    color: #ffffff !important; 
+    font-size: 15px !important; 
+    font-weight: bold !important; 
+    line-height: 1.5 !important;
+}
+
+/* YAN YANA PARLAYAN ŞIK YILDIZ BUTONLARI */
+.yildiz-btn>button {
+    background: transparent !important;
+    border: none !important;
+    font-size: 24px !important;
+    padding: 0px !important;
+    margin: 0px !important;
+    box-shadow: none !important;
+    transition: transform 0.2s;
+}
+.yildiz-btn>button:hover { transform: scale(1.3); }
 </style>
 <h1 style="text-align:center; color:#fff; font-size:26px; font-weight:bold; margin-bottom:15px;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</h1>
 ''', unsafe_allow_html=True)
@@ -58,7 +86,7 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR (%100 DOĞRU KÖPRÜ LİNK AYARI YAPILDI)
+# 3. VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -85,7 +113,6 @@ if os.path.exists(excel_yolu):
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
                     else: kz_str = "<span>-</span>"
                     
-                    # HATASIZ BORSA KÖPRÜSÜ: Adres yapısı eğik çizgilerle tam kilitlendi
                     link_url = f"https://doviz.com{ha.lower()}"
                     hisse_kopru = f'<a href="{link_url}" target="_blank" class="hisse-link">🔍 {ha}</a>'
                     
@@ -100,7 +127,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜNCEL GELİŞMELER: HALKA ARZ & 3 CANLI GÜNDEM HABERİ
+# 4. GÜNCEL GELİŞMELER: HALKA ARZ & HIGH-CONTRAST OKUNAKLI HABERLER
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:20px; font-weight:bold; color:#fff;">🔔 GÜNCEL GELİŞMELER & SÜPER PANEL</p>', unsafe_allow_html=True)
@@ -113,60 +140,51 @@ with col_sol:
 
 with col_sag:
     st.markdown('<b>📺 TV GÜNDEM & DÜNYA HABERLERİ</b>', unsafe_allow_html=True)
-    st.info("🔴 [SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
-    st.info("🔴 [Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
-    st.info("🔴 [Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
+    # Tam istediğiniz gibi arka fonu kömür karası, yazıları kalın ve okunaklı yüksek kontrastlı hale getirdim
+    st.markdown('''
+    <div class="gece-haber">
+        <span class="haber-metni"><span style="color:#ff3344;">🔴 [SON DAKİKA]</span> Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.</span>
+    </div>
+    <div class="gece-haber" style="border-left-color:#00ff66;">
+        <span class="haber-metni"><span style="color:#00ff66;">🟢 [Gündem]</span> İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.</span>
+    </div>
+    <div class="gece-haber" style="border-left-color:#00bfff;">
+        <span class="haber-metni"><span style="color:#00bfff;">🔵 [Dünya]</span> Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.</span>
+    </div>
+    ''', unsafe_allow_html=True)
 
 # ===================================================================== #
-# 5. CANLI SOHBET KUTUSU
+# 5. CANLI SOHBET KUTUSU (GÖRSEL SARI ALTIN YILDIZ ENTEGRESİ)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:22px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
-if "sohbet_hafizasi" not in st.session_state: st.session_state["sohbet_hafizasi"] = [{"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları harika."}]
 
 df_y = pd.read_csv(db_yildiz)
-st.write("**Paneli Puanlayın:**")
-b1, b2, b3 = st.columns(3)
-if b1.button(f"🤩 5 Yıldız ({df_y.loc[0, 's5']})", key="b5"):
-    df_y.loc[0, "s5"] += 1
-    df_y.to_csv(db_yildiz, index=False)
-    st.rerun()
-if b2.button(f"🙂 4 Yıldız ({df_y.loc[0, 's4']})", key="b4"):
-    df_y.loc[0, "s4"] += 1
-    df_y.to_csv(db_yildiz, index=False)
-    st.rerun()
-if b3.button(f"😐 3 Yıldız ({df_y.loc[0, 's3']})", key="b3"):
-    df_y.loc[0, "s3"] += 1
-    df_y.to_csv(db_yildiz, index=False)
-    st.rerun()
+st.write("**Paneli Puanlayın (Altın Yıldızlar):**")
 
-st.write("---")
-yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
-
-with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-        i_kucuk = y_is.lower().replace(" ", "")
-        if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
-            df_s = pd.read_csv(db_sohbet)
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else: st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-df_sohbet_oku = pd.read_csv(db_sohbet)
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #FF69B4;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+# Yan yana dizilmiş 5 parıl parıl parlayan altın yıldız simgeleri
+y_col1, y_col2, y_col3, y_col4, y_col5 = st.columns([1,1,1,1,1])
+with y_col1:
+    st.markdown('<div class="yildiz-btn">', unsafe_allow_html=True)
+    if st.button(f"⭐ ({df_y.loc[0, 's5']})", key="star5"):
+        df_y.loc[0, "s5"] += 1
+        df_y.to_csv(db_yildiz, index=False)
         st.rerun()
-
-# ===================================================================== #
-# GİZLİ, ULTRA KÜÇÜK YASAL UYARI VE GİRİŞ SAYAÇLARI
+    st.markdown('</div>', unsafe_allow_html=True)
+with y_col2:
+    st.markdown('<div class="yildiz-btn">', unsafe_allow_html=True)
+    if st.button(f"⭐ ({df_y.loc[0, 's4']})", key="star4"):
+        df_y.loc[0, "s4"] += 1
+        df_y.to_csv(db_yildiz, index=False)
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+with y_col3:
+    st.markdown('<div class="yildiz-btn">', unsafe_allow_html=True)
+    if st.button(f"⭐ ({df_y.loc[0, 's3']})", key="star3"):
+        df_y.loc[0, "s3"] += 1
+        df_y.to_csv(db_yildiz, index=False)
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+with y_col4:
+    st.markdown('<div class="yildiz-btn">', unsafe_allow_html=True)
+    if st.button("⭐", key="star2"): st.toast("Geri bildiriminiz için teşekkürler!")
