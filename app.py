@@ -78,9 +78,11 @@ def sohbet_temizle(metin):
 # Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Tüm kullanıcılar için ortaktır) 
 @st.cache_resource 
 def sunucu_canli_havuzunu_getir(): 
-    return [] 
+    # Streamlit'in takibini kolaylaştırmak için listeyi bir dict içinde sarmalıyoruz
+    return {"mesajlar": []} 
 
-ortak_havuz = sunucu_canli_havuzunu_getir() 
+ortak_havuz_dict = sunucu_canli_havuzunu_getir() 
+ortak_havuz = ortak_havuz_dict["mesajlar"]
 
 if "cihaz_id" not in st.session_state: 
     st.session_state.cihaz_id = str(uuid.uuid4()) 
@@ -209,11 +211,7 @@ st.write("---")
 # --- SOHBET ALANI PANELİ ---
 st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">💬 CANLI SOHBET ODASI</p>', unsafe_allow_html=True)
 
-# Yeni mesaj gönderme formu
-with st.form(key="mesaj_formu", clear_on_submit=True):
-    kullanici_adi = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=20)
-    mesaj_metni = st.text_input("Mesajınız:", max_chars=150)
-    gonder_butonu = st.form_submit_button(label="Gönder")
+# Form yapısından bağımsız state yönetimi ile veriyi yakalama
+kullanici_adi = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=20, key="chat_user")
+mesaj_metni = st.text_input("Mesajınız:", max_chars=150, key="chat_message")
 
-    if gonder_butonu and mesaj_metni.strip() != "":
-        temiz_mesaj = sohbet_temizle(mesaj_metni)
