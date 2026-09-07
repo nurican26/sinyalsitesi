@@ -65,7 +65,6 @@ st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 # ===================================================================== 
 # CANLI ÜST VERİ PANELİ MOTORU (BIST 100 & ALTIN FİYATLARI)
 # ===================================================================== 
-# Sayıları TR formatına (Noktalı binlik, virgüllü kuruş) çevirme fonksiyonu
 def formatla_tr_stil(deger):
     try:
         f_deger = float(deger)
@@ -75,28 +74,33 @@ def formatla_tr_stil(deger):
     except:
         return str(deger)
 
-# En güncel canlı verilerin çekilmesi
+# Canlı verilerin Yahoo Finance üzerinden çekilmesi
 try:
-    # BIST 100 verisi (Yahoo Finance)
     bist_data = yf.Ticker("^XU100").history(period="1d")
     bist_100 = bist_data['Close'].iloc[-1] if not bist_data.empty else 14109.75
     
-    # Gram Altın verisi (Yahoo Finance - ALTIN/TL karşılığı)
-    gram_data = yf.Ticker("GC=F").history(period="1d") # Ons bazlı kontrol alternatifi veya serbest piyasa proxy
-    # Güncel canlı piyasa basamak verileri (7 Eylül 2026 referanslı)
-    gram_altin = 6839.47 
-    ceyrek_altin = 11184.17
-    yarim_altin = 22368.34
-    tam_altin = 44459.00
+    # Ons altın verisi çekilerek tahmini Gram ve diğer altın hesaplamaları yapılır
+    ons_data = yf.Ticker("GC=F").history(period="1d")
+    ons_fiyat = ons_data['Close'].iloc[-1] if not ons_data.empty else 2500.0
+    
+    # Dolar kuru tahmini çekimi
+    try:
+        usd_data = yf.Ticker("TRY=X").history(period="1d")
+        usd_try = usd_data['Close'].iloc[-1] if not usd_data.empty else 34.20
+    except:
+        usd_try = 34.20
+        
+    gram_altin = (ons_fiyat / 31.10347) * usd_try
+    ceyrek_altin = gram_altin * 1.635
+    yarim_altin = gram_altin * 3.27
+    tam_altin = gram_altin * 6.54
 except:
-    # Veri bağlantısı anlık aksarsa güncel baz değerler (Noktalı TR formatı için)
     bist_100 = 14109.75
     gram_altin = 6839.47
     ceyrek_altin = 11184.17
     yarim_altin = 22368.34
     tam_altin = 44459.00
 
-# HTML Ticker panelinin ekrana basılması
 st.markdown(f"""
     <div class="live-ticker-container">
         <div class="ticker-item">
@@ -145,11 +149,9 @@ if "toplam_sayac" not in st.session_state:
 if "gunluk_sayac" not in st.session_state: 
     st.session_state["gunluk_sayac"] = 120 
 
-# Her sayfa yenilendiğinde sayaçları artır 
 st.session_state["toplam_sayac"] += 1 
 st.session_state["gunluk_sayac"] += 1 
 
-# Günlük sayacın 24 saatte bir sıfırlanması kontrolü 
 bugun = datetime.date.today().strftime("%Y-%m-%d") 
 if "son_giris_tarihi" not in st.session_state: 
     st.session_state["son_giris_tarihi"] = bugun 
@@ -157,11 +159,9 @@ if st.session_state["son_giris_tarihi"] != bugun:
     st.session_state["gunluk_sayac"] = 1 
     st.session_state["son_giris_tarihi"] = bugun 
 
-# Anlık odadaki kişi sayısı dinamik simülasyonu 
 anlik_oda = (int(time.time()) % 5) + 3 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ") 
 
-# Sayıları TR formatına çevirme fonksiyonu 
 def formatla_tl(deger): 
     try: 
         f_deger = float(deger) 
@@ -177,6 +177,7 @@ def formatla_tl(deger):
 if os.path.exists(excel_yolu): 
     try: 
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl") 
+        
         # --- ÜST PANEL (BTA HİSSELERİ) --- 
         tablo_bta = [] 
         for idx in range(min(10, len(df))): 
@@ -238,3 +239,6 @@ if os.path.exists(excel_yolu):
         st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True) 
         if len(df.columns) >= 5: 
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist() 
+            tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
+            tum_hisseler.sort() 
+            if tum_hisseler: 
