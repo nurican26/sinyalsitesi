@@ -7,14 +7,14 @@ import os
 # Sayfa Yapılandırması
 st.set_page_config(page_title="BTA", layout="wide")
 
-# En tepedeki kaba başlık kaldırıldı, yerine sadece el yazısı stilinde sade BTA yazıldı
+# En tepede el yazısı logomuz
 st.markdown('<h1 style="font-family: \'Brush Script MT\', cursive, sans-serif; font-size: 50px; color: #00ffcc; text-align: center; margin-bottom: 5px;">BTA</h1>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- KOTA DOSTU SOHBET BELLEĞİ ---
-if "sohbet_odasi" not in st.session_state:
-    st.session_state["sohbet_odasi"] = [
+# --- KASMAYAN GÜVENLİ SOHBET HAFIZASI ---
+if "bta_sohbet_odasi_yedek" not in st.session_state:
+    st.session_state["bta_sohbet_odasi_yedek"] = [
         {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Sistem harika çalışıyor, elinize sağlık."},
         {"isim": "Sistem", "saat": "10:00", "yorum": "Sohbet alanı aktif."}
     ]
@@ -88,7 +88,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜNCEL GELİŞMELER & SÜPER PANEL (KIRMIZI NOKTALAR TAMAMEN SİLİNDİ)
+# 4. GÜNCEL GELİŞMELER & SÜPER PANEL
 # ===================================================================== #
 st.write("---")
 st.subheader("🔔 GÜNCEL GELİŞMELER & SÜPER PANEL")
@@ -101,32 +101,34 @@ with col_sol:
 
 with col_sag:
     st.write("**📺 TV GÜNDEM & DÜNYA HABERLERİ**")
-    # İstediğiniz gibi kırmızı noktalar tamamen kaldırıldı
     st.write("[SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
     st.write("[Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
     st.write("[Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. DÜZELTİLMİŞ DOĞRUDAN CANLI SOHBET ALANI
+# 5. GARANTİLİ MESAJ GÖNDEREN YENİ SOHBET TASARIMI (FORM ENTEGRE EDİLDİ)
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
 
-# Formsuz, doğrudan çalışan kilitlenmeyen giriş kutuları
-y_is = st.text_input("Adınız:", max_chars=25, key="ad_kutusu")
-y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="mesaj_kutusu")
-
-if st.button("Mesajı Yayınla 📨", use_container_width=True):
-    if y_is.strip() and y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "")
-        if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
-            y_satir = {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}
-            st.session_state["sohbet_odasi"].insert(0, y_satir)
-            st.rerun()
+# Düğmeye basıldığında verinin havada kaybolmasını engelleyen garantili form yapısı
+with st.form(key="bta_garanti_sohbet_formu", clear_on_submit=True):
+    y_is = st.text_input("Adınız:", max_chars=25)
+    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
+    bta_gonder_btn = st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True)
+    
+    if bta_gonder_btn:
+        if y_is.strip() and y_me.strip():
+            m_kucuk = y_me.lower().replace(" ", "")
+            if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
+                # Mesajı kalıcı bellek listesinin en başına ekler
+                y_satir = {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}
+                st.session_state["bta_sohbet_odasi_yedek"].insert(0, y_satir)
+                st.rerun()
+            else:
+                st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
         else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-    else:
-        st.error("❌ Lütfen hem adınızı hem de mesajınızı doldurun.")
+            st.error("❌ Lütfen hem adınızı hem de mesajınızı doldurun.")
 
 # YÖNETİCİ KONTROL ALANI
 with st.expander("🛠 Yönetici Girişi"):
@@ -135,11 +137,11 @@ with st.expander("🛠 Yönetici Girişi"):
         st.success("🔓 Silme yetkisi aktif!")
 
 # MESAJ LİSTELEME
-for s, sh in enumerate(st.session_state["sohbet_odasi"]):
+for s, sh in enumerate(st.session_state["bta_sohbet_odasi_yedek"]):
     st.write(f"👤 **{sh['isim']}** ({sh['saat']}): {sh['yorum']}")
     if adm_mod:
         if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-            st.session_state["sohbet_odasi"].pop(s)
+            st.session_state["bta_sohbet_odasi_yedek"].pop(s)
             st.rerun()
 
 # ===================================================================== #
