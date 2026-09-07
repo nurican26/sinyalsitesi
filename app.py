@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -7,132 +7,106 @@ import time
 import requests
 from bs4 import BeautifulSoup
 from streamlit_autorefresh import st_autorefresh
+import streamlit.components.v1 as components
 
 # =====================================================================
-# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ (MUTLAKA İLK SIRADA OLMALI)
+# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ
 # =====================================================================
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 # 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 
-# =====================================================================
-# 2. KUSURSUZ MERKEZLENMİŞ BTA PANELİ (HATA DÜZELTME)
-# =====================================================================
-st.markdown('''
-<style>
-/* Streamlit genel arka planı */
-.stApp {
-    background-color: #0f1115 !important;
-}
+# Arka plan rengini sabitlemek için en güvenli arka plan CSS'i
+st.markdown('<style>.stApp { background-color: #0f1115 !important; }</style>', unsafe_allow_html=True)
 
-/* Tüm elemanları kapsayan ve ortalayan ana panel */
-.bta-main-wrapper {
+# =====================================================================
+# 2. İZOLE EDİLMİŞ ŞEFFAF BTA LOGO VE ANIMASYON PANELİ (GÜVENLİ MİMARİ)
+# =====================================================================
+logo_html = """
+<div style="
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin: 30px 0;
-}
-
-/* Şeffaf, cam efektli merkezi panel */
-.bta-container {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 35px;
-    background: rgba(255, 255, 255, 0.03) !important;
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    border-radius: 20px !important;
-    padding: 25px 45px !important;
-    box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5),
-                inset 0 0 20px rgba(255, 255, 255, 0.02) !important;
-}
-
-/* Renkli, El Yazısı ve Hafif Gölgeli BTA Logosu */
-.bta-logo {
-    font-family: 'Brush Script MT', 'Dancing Script', 'Segoe Script', cursive !important;
-    font-size: 64px !important;
-    font-weight: bold !important;
-    background: linear-gradient(45deg, #00d2ff, #3a7bd5) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    filter: drop-shadow(2px 4px 8px rgba(0, 0, 0, 0.7))
-            drop-shadow(0 0 15px rgba(0, 210, 255, 0.3)) !important;
-    line-height: 1 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Sağ taraftaki borsa alanı */
-.bta-borsa-box {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    border-left: 2px solid rgba(255, 255, 255, 0.1) !important;
-    padding-left: 25px !important;
-}
-
-.bta-ticker {
-    font-family: 'Courier New', monospace !important;
-    font-size: 18px !important;
-    color: #00e676 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    font-weight: bold !important;
-    margin: 0 0 5px 0 !important;
-}
-
-/* Nabız gibi hafifçe atan borsa oku */
-.bta-arrow {
-    display: inline-block !important;
-    animation: pulseArrow 2s infinite ease-in-out !important;
-}
-
-/* Canlı akan grafik çizgisi */
-.bta-chart-line {
-    width: 100px !important;
-    height: 30px !important;
-}
-
-.bta-chart-path {
-    stroke-dasharray: 100;
-    stroke-dashoffset: 100;
-    animation: drawLine 3s infinite linear !important;
-}
-
-@keyframes pulseArrow {
-    0%, 100% { transform: translateY(0); opacity: 0.8; }
-    50% { transform: translateY(-3px); opacity: 1; filter: drop-shadow(0 0 4px #00e676); }
-}
-
-@keyframes drawLine {
-    to { stroke-dashoffset: 0; }
-}
-</style>
-
-<div class="bta-main-wrapper">
-    <div class="bta-container">
-        <!-- Sol Taraf: BTA Logosu -->
-        <h1 class="bta-logo">BTA</h1>
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+">
+    <!-- Merkezi Şeffaf Cam Panel -->
+    <div style="
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 20px;
+        padding: 20px 40px;
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.01);
+    ">
+        <!-- Sol Taraf: El Yazısı, Gölgeli BTA Logosu -->
+        <h1 style="
+            font-family: 'Brush Script MT', 'Dancing Script', 'Segoe Script', cursive;
+            font-size: 56px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px rgba(0, 210, 255, 0.25));
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+        ">BTA</h1>
         
-        <!-- Sağ Taraf: Borsa Kutusu -->
-        <div class="bta-borsa-box">
-            <div class="bta-ticker">
-                BIST100 <span class="bta-arrow">▲</span> <span style="font-size:14px; font-weight:normal; color:#aaa;">%1.45</span>
+        <!-- Sağ Taraf: Animasyonlu Borsa Kutusu -->
+        <div style="
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+            padding-left: 25px;
+        ">
+            <div style="
+                font-family: 'Courier New', monospace;
+                font-size: 17px;
+                color: #00e676;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: bold;
+                margin: 0 0 5px 0;
+            ">
+                BIST100 
+                <span style="
+                    display: inline-block;
+                    animation: pulseArrow 2s infinite ease-in-out;
+                ">▲</span> 
+                <span style="font-size: 13px; font-weight: normal; color: #aaa;">%1.45</span>
             </div>
-            <svg class="bta-chart-line" viewBox="0 0 100 30" fill="none" xmlns="http://w3.org">
-                <path class="bta-chart-path" d="M0,25 Q15,5 30,20 T60,10 T90,5 L100,8" stroke="#00e676" stroke-width="2.5" stroke-linecap="round"/>
+            
+            <!-- Canlı Akan Grafik Çizgisi -->
+            <svg style="width: 100px; height: 25px;" viewBox="0 0 100 30" fill="none" xmlns="http://w3.org">
+                <path d="M0,25 Q15,5 30,20 T60,10 T90,5 L100,8" stroke="#00e676" stroke-width="2.5" stroke-linecap="round" 
+                      style="stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawLine 3s infinite linear;"/>
             </svg>
         </div>
     </div>
 </div>
-''', unsafe_allow_html=True)
 
-# =====================================================================
-# 3. YASAL UYARILAR VE MOTOR ALANI (Kodunuz buradan aşağıya aynen devam ediyor)
-# =====================================================================
-st.markdown('<p style="color:#ffaa00; font-weight:bold;">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
+<style>
+@keyframes pulseArrow {
+    0%, 100% { transform: translateY(0); opacity: 0.8; }
+    50% { transform: translateY(-3px); opacity: 1; filter: drop-shadow(0 0 3px #00e676); }
+}
+@keyframes drawLine {
+    to { stroke-dashoffset: 0; }
+}
+</style>
+"""
+
+# HTML bileşenini güvenli bir şekilde ekrana basıyoruz (Yüksekliği panel kadar ayarlandı)
+components.html(logo_html, height=140)
+
+# --- 15 DAKİKA GECİKMELİ VERİ UYARISI VE YASAL UYARI ---
+st.markdown('<p style="color:#ffaa00; font-weight:bold; margin-top:20px;">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
