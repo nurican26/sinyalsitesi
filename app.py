@@ -11,11 +11,11 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st.title("✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨")
 
 excel_yolu = "nurican.xls.xlsm"
-db_sohbet = "bta_sohbet_kalici.csv"
+db_sohbet_kalici = "bta_sohbet_kalici.csv"
 
 # KALICI SOHBET VERİTABANI BAŞLATMA (KASMA YAPMAZ HAFİF SÜRÜM)
-if not os.path.exists(db_sohbet):
-    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
+if not os.path.exists(db_sohbet_kalici):
+    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet_kalici, index=False)
 
 # --- HAFİF SAYAÇ MİMARİSİ ---
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
@@ -104,7 +104,7 @@ with col_sag:
     st.write("🔴 [Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. KALICI CANLI SOHBET KUTUSU VE YÖNETİCİ GİRİŞİ (GERİ GELDİ)
+# 5. KALICI CANLI SOHBET KUTUSU VE YÖNETİCİ GİRİŞİ (TAMİR EDİLDİ)
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
@@ -115,29 +115,29 @@ with st.form(key="s_frm", clear_on_submit=True):
     if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
         m_kucuk = y_me.lower().replace(" ", "")
         if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
-            # Kalıcı CSV Veritabanına Yazma
-            df_s = pd.read_csv(db_sohbet)
+            # İsim çakışması hatası alan satır db_sohbet_kalici olarak tamir edildi
+            df_s = pd.read_csv(db_sohbet_kalici)
             y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet_kalici, index=False)
             st.rerun()
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
-# YÖNETİCİ KONTROL ALANI (GERİ GELDİ)
+# YÖNETİCİ KONTROL ALANI
 with st.expander("🛠 Yönetici Girişi"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
     if adm_mod:
         st.success("🔓 Silme yetkisi aktif!")
 
 # MESAJLARI KALICI METİNDEN OKUYUP BASMA
-df_sohbet_oku = pd.read_csv(db_sohbet)
+df_sohbet_oku = pd.read_csv(db_sohbet_kalici)
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
     st.write(f"👤 **{sh['isim']}** ({sh['saat']}): {sh['yorum']}")
     if adm_mod:
         if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-            df_sl = pd.read_csv(db_sohbet)
-            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+            df_sl = pd.read_csv(db_sohbet_kalici)
+            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet_kalici, index=False)
             st.rerun()
 
 # ===================================================================== #
