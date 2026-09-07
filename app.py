@@ -129,7 +129,7 @@ st.markdown('''
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- GÜVENLİ SAYAÇ MİMARİSİ ---
+# --- GÜVENLİ SAYAÇ MİMARİSİ (YAZIM HATASI DÜZELTİLDİ) ---
 if "toplam_sayac" not in st.session_state:
     st.session_state["toplam_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state:
