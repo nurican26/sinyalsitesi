@@ -14,12 +14,8 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st.markdown('''
 <style>
 @keyframes neon-glow {
-    0%, 100% {
-        text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055, 0 0 40px #ff0055;
-    }
-    50% {
-        text-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 60px #00ffcc;
-    }
+    0%, 100% { text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055, 0 0 40px #ff0055; }
+    50% { text-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 60px #00ffcc; }
 }
 .neon-marquee {
     font-size: 45px;
@@ -185,7 +181,7 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ (%100 GARANTİLİ YALIN SÜRÜM)
+# 4. YORUMLAR VE BEĞENİ PANELİ (YENİLENMİŞ VE HATALARDAN ARNDIRILMIŞ YAPILAR)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
@@ -199,23 +195,21 @@ if "yorumlar_listesi" not in st.session_state:
         {"isim": "Elif K.", "zaman": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# Sol tarafa giriş alanları, sağ tarafa yorum listesi
-sol_blok, sag_blok = st.columns([1, 1.2])
+# Ekranı tamamen yan yana iki büyük ana bloka bölüyoruz
+sol_taraf, sag_taraf = st.columns([1, 1.2])
 
-with sol_blok:
+with sol_taraf:
     st.write("**Paneli Puanlayın:**")
     
-    # Butonlar alt alta sıralı düz yapıya getirildi, hata riski sıfırlandı
-    if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="str_5", use_container_width=True):
-        st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
-        st.toggle("yenile_1")
-
-    if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="str_4", use_container_width=True):
-        st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
-        st.toggle("yenile_2")
-
-    if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="str_3", use_container_width=True):
-        st.session_state["begeniler"]["⭐ 3 Yıldız"] += 1
-        st.toggle("yenile_3")
-            
-    st.write("---")
+    # Yıldız butonlarını tamamen yan yana hizalayan 3 bağımsız sütun açıyoruz
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star5", use_container_width=True):
+            st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
+            st.experimental_rerun()
+    with c2:
+        if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="star4", use_container_width=True):
+            st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
+            st.experimental_rerun()
+    with c3:
+        if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="star3", use_container_width=True):
