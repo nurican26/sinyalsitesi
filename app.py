@@ -211,5 +211,5 @@ st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">📈 BT
 
 # Streamlit'in yerleşik alt kolon mimarisi ile HTML bağımlılığı olmadan sayaç çizimi
 sc1, sc2, sc3 = st.columns(3) 
-sc2.metric(label="📅 Günlük  Giriş ()", value=f"{st.session_state['gunluk_sayac']} Giriş") 
-sc3.metric(label="💎 Genel  (Hiç Sıfırlanmaz)", value=f"{st.session_state['toplam_sayac']} Giriş")
+sc2.metric(label="📅 Günlük  Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş") 
+sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
