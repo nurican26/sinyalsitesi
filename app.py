@@ -88,7 +88,7 @@ if "cihaz_id" not in st.session_state:
 
 cid = st.session_state.cihaz_id
 
-# Aktiflik Güncellemesi adolescent Listeye Ekleme
+# Aktiflik Güncellemesi ve Listeye Ekleme
 sunucu_hafizasi["aktif_cihazlar"][cid] = su_an
 sunucu_hafizasi["toplam_tekil_ziyaretci"].add(cid)
 sunucu_hafizasi["gunluk_tekil_ziyaretci"].add(cid)
