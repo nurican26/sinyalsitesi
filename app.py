@@ -62,29 +62,55 @@ st.markdown('''
 ''', unsafe_allow_html=True) 
 
 excel_yolu = "nurican.xls.xlsm" 
+sayac_dosyasi = "bta_sayac_verileri.txt"
 
-# Küfür ve argo kelime filtresi listesi 
-KUFUR_LISTESI = ["küfür1", "küfür2", "argo1", "piç", "siktir", "orospu", "pç", "sktr", "yarrak", "amk", "aq"] 
+# --- KALICI SAYAÇ YÖNETİMİ (KAYBOLMAYAN VERİLER) ---
+@st.cache_resource
+def sunucu_sayacini_getir():
+    # Günlük ve Toplam sayıları dosya tabanlı saklayarak sıfırlanmayı önlüyoruz
+    bugun = datetime.date.today().strftime("%Y-%m-%d")
+    toplam_ziyaret = 0
+    gunluk_ziyaret = 0
+    son_tarih = bugun
 
-def sohbet_temizle(metin): 
-    temiz_metin = metin 
-    for kelime in KUFUR_LISTESI: 
-        if kelime in temiz_metin.lower(): 
-            sansur = "*" * len(kelime) 
-            insens_kelime = re.compile(re.escape(kelime), re.IGNORECASE) 
-            temiz_metin = insens_kelime.sub(sansur, temiz_metin) 
-    return temiz_metin 
+    if os.path.exists(sayac_dosyasi):
+        try:
+            with open(sayac_dosyasi, "r") as f:
+                satirlar = f.read().splitlines()
+                if len(satirlar) >= 3:
+                    toplam_ziyaret = int(satirlar[0])
+                    gunluk_ziyaret = int(satirlar[1])
+                    son_tarih = satirlar[2]
+        except:
+            pass
 
-# Sunucu genelinde tek bir ortak havuz oluşturma
-@st.cache_resource 
-def sunucu_canli_havuzunu_getir(): 
-    return {"mesajlar": []} 
+    # Eğer gün değiştiyse günlük sayacı 24 saat kuralına göre sıfırla
+    if son_tarih != bugun:
+        gunluk_ziyaret = 0
+        son_tarih = bugun
 
-ortak_havuz_dict = sunucu_canli_havuzunu_getir() 
-ortak_havuz = ortak_havuz_dict["mesajlar"]
+    return {"toplam": toplam_ziyaret, "gunluk": gunluk_ziyaret, "tarih": son_tarih, "aktif_cihazlar": set()}
 
+sayac_verisi = sunucu_sayacini_getir()
+
+# Kullanıcı ilk kez girdiyse veya sayfa yenilendiyse sayaçları artır
 if "cihaz_id" not in st.session_state: 
     st.session_state.cihaz_id = str(uuid.uuid4()) 
+    
+    # Kalıcı olarak sayıları artır
+    sayac_verisi["toplam"] += 1
+    sayac_verisi["gunluk"] += 1
+    
+    # Dosyaya kaydet (Sunucu kapansa bile kaybolmaz)
+    try:
+        with open(sayac_dosyasi, "w") as f:
+            f.write(f"{sayac_verisi['toplam']}\n{sayac_verisi['gunluk']}\n{sayac_verisi['tarih']}")
+    except:
+        pass
+
+# Anlık odadaki aktif cihazı takip et (Yenileme süresine göre temizlenir)
+sayac_verisi["aktif_cihazlar"].add(st.session_state.cihaz_id)
+aktif_oda_sayisi = len(sayac_verisi["aktif_cihazlar"])
 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ") 
 
@@ -196,22 +222,3 @@ if os.path.exists(excel_yolu):
                         except Exception as e: 
                             st.error("Borsa verisi çekilirken bir hata oluştu.") 
             else: 
-                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.") 
-        else: 
-            st.error("Excel dosyasında E sütunu bulunamadı!") 
-            
-    except Exception as e: 
-        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.") 
-else: 
-    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
-
-st.write("---")
-
-# --- SOHBET ALANI PANELİ (KAYBOLMAYA KARŞI TAM GÜVENLİ FORM YAPISI) ---
-st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">💬 CANLI SOHBET ODASI</p>', unsafe_allow_html=True)
-
-# Streamlit'in en güvenli mesaj temizleme ve yakalama yöntemi (Form Yapısı)
-with st.form(key="bta_sohbet_formu", clear_on_submit=True):
-    kullanici_adi = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=20)
-    mesaj_metni = st.text_input("Mesajınız (Göndermek için Enter'a basın veya butona tıklayın):", max_chars=150)
-    
