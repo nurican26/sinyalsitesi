@@ -24,84 +24,22 @@ st.markdown('<style>.stApp { background-color: #0f1115 !important; }</style>', u
 # 2. İZOLE EDİLMİŞ ŞEFFAF BTA LOGO VE ANIMASYON PANELİ (GÜVENLİ MİMARİ)
 # =====================================================================
 logo_html = """
-<div style="
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-">
-    <!-- Merkezi Şeffaf Cam Panel -->
-    <div style="
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 30px;
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 20px;
-        padding: 20px 40px;
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.01);
-    ">
-        <!-- Sol Taraf: El Yazısı, Gölgeli BTA Logosu -->
-        <h1 style="
-            font-family: 'Brush Script MT', 'Dancing Script', 'Segoe Script', cursive;
-            font-size: 56px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px rgba(0, 210, 255, 0.25));
-            margin: 0;
-            padding: 0;
-            line-height: 1;
-        ">BTA</h1>
-        
-        <!-- Sağ Taraf: Animasyonlu Borsa Kutusu -->
-        <div style="
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border-left: 2px solid rgba(255, 255, 255, 0.1);
-            padding-left: 25px;
-        ">
-            <div style="
-                font-family: 'Courier New', monospace;
-                font-size: 17px;
-                color: #00e676;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-weight: bold;
-                margin: 0 0 5px 0;
-            ">
-                BIST100 
-                <span style="
-                    display: inline-block;
-                    animation: pulseArrow 2s infinite ease-in-out;
-                ">▲</span> 
-                <span style="font-size: 13px; font-weight: normal; color: #aaa;">%1.45</span>
+<div style="display: flex; justify-content: center; align-items: center; width: 100%; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+    <div style="display: inline-flex; align-items: center; justify-content: center; gap: 30px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 20px 40px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);">
+        <h1 style="font-family: 'Brush Script MT', 'Dancing Script', cursive; font-size: 56px; font-weight: bold; background: linear-gradient(45deg, #00d2ff, #3a7bd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px rgba(0, 210, 255, 0.25)); margin: 0; padding: 0; line-height: 1;">BTA</h1>
+        <div style="display: flex; flex-direction: column; justify-content: center; border-left: 2px solid rgba(255, 255, 255, 0.1); padding-left: 25px;">
+            <div style="font-family: 'Courier New', monospace; font-size: 17px; color: #00e676; display: flex; align-items: center; gap: 8px; font-weight: bold; margin: 0 0 5px 0;">
+                BIST100 <span style="display: inline-block; animation: pulseArrow 2s infinite ease-in-out;">▲</span> <span style="font-size: 13px; font-weight: normal; color: #aaa;">%1.45</span>
             </div>
-            
-            <!-- Canlı Akan Grafik Çizgisi -->
             <svg style="width: 100px; height: 25px;" viewBox="0 0 100 30" fill="none" xmlns="http://w3.org">
-                <path d="M0,25 Q15,5 30,20 T60,10 T90,5 L100,8" stroke="#00e676" stroke-width="2.5" stroke-linecap="round" 
-                      style="stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawLine 3s infinite linear;"/>
+                <path d="M0,25 Q15,5 30,20 T60,10 T90,5 L100,8" stroke="#00e676" stroke-width="2.5" stroke-linecap="round" style="stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawLine 3s infinite linear;"/>
             </svg>
         </div>
     </div>
 </div>
-
 <style>
-@keyframes pulseArrow {
-    0%, 100% { transform: translateY(0); opacity: 0.8; }
-    50% { transform: translateY(-3px); opacity: 1; filter: drop-shadow(0 0 3px #00e676); }
-}
-@keyframes drawLine {
-    to { stroke-dashoffset: 0; }
-}
+@keyframes pulseArrow { 0%, 100% { transform: translateY(0); opacity: 0.8; } 50% { transform: translateY(-3px); opacity: 1; filter: drop-shadow(0 0 3px #00e676); } }
+@keyframes drawLine { to { stroke-dashoffset: 0; } }
 </style>
 """
 
@@ -229,4 +167,14 @@ if os.path.exists(excel_yolu):
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
- 
+                    with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
+                        try:
+                            h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
+                            if not h_detay.empty:
+                                anlik_fiyat = float(h_detay['Close'].iloc[-1])
+                                dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
+                                gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
+                                gunun_en_yuksek = float(h_detay['High'].iloc[-1])
+                                gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
+                                
+                                col1, col2, col3 = st.columns(3)
