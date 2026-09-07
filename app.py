@@ -13,25 +13,18 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== 
 st.set_page_config(page_title="BTA Merkez", layout="wide") 
 
-# --- 🎨 ARKA PANEL VE TEMA RENKLERİ CSS DÜZENLEMESİ ---
-# Eğer rengi değiştirmek isterseniz aşağıdaki background-color kodunu (#0e1117 vb.) değiştirebilirsiniz.
+# --- 🎨 KIRMIZIDAN YEŞİLE KADEMELİ ARKA PANEL ---
 st.markdown("""
     <style>
-        /* Ana arka plan rengi */
         .stApp {
-            background-color: #0e1117 !important;
-            color: #ffffff !important;
+            background: linear-gradient(135deg, #7a0000 0%, #003d19 100%) !important;
+            background-attachment: fixed !important;
         }
-        /* Üst bar ve menü arka planları */
         header, [data-testid="stHeader"] {
-            background-color: #0e1117 !important;
+            background-color: transparent !important;
         }
-        /* Başlıklar ve metinlerin kontrastı */
-        h1, h2, h3, h4, h5, h6, p, span {
-            color: #ffffff !important;
-        }
-        /* Selectbox (Seçim kutusu) etiket rengi */
-        .stSelectbox label {
+        /* Yazılarınızın koyu arka planda tamamen okunabilir kalması için */
+        h1, h2, h3, h4, h5, h6, p, span, label {
             color: #ffffff !important;
         }
     </style>
@@ -122,7 +115,7 @@ if os.path.exists(excel_yolu):
                     "GÜNCEL FİYAT 💥": formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor...", 
                     "KAR / ZARAR 📊": kz_str 
                 }) 
-        st.markdown('<p style="font-size:20px; font-weight:bold; color:#ffdd57;">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True) 
         if len(tablo_bta) > 0: 
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True) 
         st.write("") 
@@ -147,13 +140,13 @@ if os.path.exists(excel_yolu):
                     "GECİKMELİ VERİ 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...", 
                     "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-" 
                 }) 
-        st.markdown('<p style="font-size:20px; font-weight:bold; color:#ffdd57;">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True) 
         if len(tablo_alsat) > 0: 
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True) 
         st.write("---") 
 
         # --- BIST ANLIK ARAMA MOTORU --- 
-        st.markdown('<p style="font-size:20px; font-weight:bold; color:#ffdd57;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True) 
         if len(df.columns) >= 5: 
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist() 
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
@@ -206,3 +199,6 @@ with col_haber:
     st.subheader("📰 Son Dakika Gelişmeler / KAP") 
     st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.") 
     st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.") 
+st.write("---") 
+
+# --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ --- 
