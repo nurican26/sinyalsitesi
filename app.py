@@ -115,7 +115,7 @@ if os.path.exists(excel_yolu):
                     "GÜNCEL FİYAT 💥": formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor...", 
                     "KAR / ZARAR 📊": kz_str 
                 }) 
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">📈 BTA HİSSELERİ </p>', unsafe_allow_html=True) 
         if len(tablo_bta) > 0: 
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True) 
         st.write("") 
@@ -140,7 +140,7 @@ if os.path.exists(excel_yolu):
                     "GECİKMELİ VERİ 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...", 
                     "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-" 
                 }) 
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK AL SAT HİSSELERİ (ALT PANEL)</p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK AL SAT HİSSELERİ </p>', unsafe_allow_html=True) 
         if len(tablo_alsat) > 0: 
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True) 
         st.write("---") 
