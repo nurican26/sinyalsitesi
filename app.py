@@ -67,7 +67,6 @@ sayac_dosyasi = "bta_sayac_verileri.txt"
 # --- KALICI SAYAÇ YÖNETİMİ (KAYBOLMAYAN VERİLER) ---
 @st.cache_resource
 def sunucu_sayacini_getir():
-    # Günlük ve Toplam sayıları dosya tabanlı saklayarak sıfırlanmayı önlüyoruz
     bugun = datetime.date.today().strftime("%Y-%m-%d")
     toplam_ziyaret = 0
     gunluk_ziyaret = 0
@@ -84,7 +83,6 @@ def sunucu_sayacini_getir():
         except:
             pass
 
-    # Eğer gün değiştiyse günlük sayacı 24 saat kuralına göre sıfırla
     if son_tarih != bugun:
         gunluk_ziyaret = 0
         son_tarih = bugun
@@ -93,22 +91,18 @@ def sunucu_sayacini_getir():
 
 sayac_verisi = sunucu_sayacini_getir()
 
-# Kullanıcı ilk kez girdiyse veya sayfa yenilendiyse sayaçları artır
 if "cihaz_id" not in st.session_state: 
     st.session_state.cihaz_id = str(uuid.uuid4()) 
     
-    # Kalıcı olarak sayıları artır
     sayac_verisi["toplam"] += 1
     sayac_verisi["gunluk"] += 1
     
-    # Dosyaya kaydet (Sunucu kapansa bile kaybolmaz)
     try:
         with open(sayac_dosyasi, "w") as f:
             f.write(f"{sayac_verisi['toplam']}\n{sayac_verisi['gunluk']}\n{sayac_verisi['tarih']}")
     except:
         pass
 
-# Anlık odadaki aktif cihazı takip et (Yenileme süresine göre temizlenir)
 sayac_verisi["aktif_cihazlar"].add(st.session_state.cihaz_id)
 aktif_oda_sayisi = len(sayac_verisi["aktif_cihazlar"])
 
@@ -222,3 +216,14 @@ if os.path.exists(excel_yolu):
                         except Exception as e: 
                             st.error("Borsa verisi çekilirken bir hata oluştu.") 
             else: 
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.") 
+        else: 
+            st.error("Excel dosyasında E sütunu bulunamadı!") 
+            
+    except Exception as e: 
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.") 
+else: 
+    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
+
+st.write("---")
+
