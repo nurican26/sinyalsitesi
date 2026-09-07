@@ -79,11 +79,9 @@ try:
     bist_data = yf.Ticker("^XU100").history(period="1d")
     bist_100 = bist_data['Close'].iloc[-1] if not bist_data.empty else 14109.75
     
-    # Ons altın verisi çekilerek tahmini Gram ve diğer altın hesaplamaları yapılır
     ons_data = yf.Ticker("GC=F").history(period="1d")
     ons_fiyat = ons_data['Close'].iloc[-1] if not ons_data.empty else 2500.0
     
-    # Dolar kuru tahmini çekimi
     try:
         usd_data = yf.Ticker("TRY=X").history(period="1d")
         usd_try = usd_data['Close'].iloc[-1] if not usd_data.empty else 34.20
@@ -242,3 +240,5 @@ if os.path.exists(excel_yolu):
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
             tum_hisseler.sort() 
             if tum_hisseler: 
+                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler) 
+                if aranan_hisse != "Seçiniz...": 
