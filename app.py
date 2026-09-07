@@ -30,6 +30,7 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
+kilit_dosyasi = "bta_oda_durumu.txt"  # Küresel kilit durumunu saklayan yeni ortak dosya
 
 # KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
@@ -38,15 +39,20 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
-# --- GİRİŞ VE ODA KİLİTLEME SİSTEMİ ---
+# --- YENİ KÜRESEL KİLİT MOTORU ---
+# Dosya yoksa oda varsayılan olarak kilitli (LOCKED) başlar
+if not os.path.exists(kilit_dosyasi):
+    with open(kilit_dosyasi, "w") as f:
+        f.write("LOCKED")
+
+# Dosyadan anlık durumu oku
+with open(kilit_dosyasi, "r") as f:
+    oda_guncel_durumu = f.read().strip()
+
 ODA_SIFRESI = "bta123"
 
-# İlk kez açılıyorsa odayı kilitli (True) olarak başlatır
-if "oda_kilitli" not in st.session_state:
-    st.session_state["oda_kilitli"] = True
-
-# Oda kilitliyse giriş panelini göster ve alt tarafı çalıştırma
-if st.session_state["oda_kilitli"]:
+# Eğer dosyadaki durum "LOCKED" ise herkese şifre sorar
+if oda_guncel_durumu == "LOCKED":
     st.markdown('<p style="font-size:24px; font-weight:bold; color:#ff3344; text-align:center;">🔒 BU ODA ŞİFRELİDİR</p>', unsafe_allow_html=True)
     
     with st.form(key="giris_formu"):
@@ -55,13 +61,16 @@ if st.session_state["oda_kilitli"]:
         
         if giriş_butonu:
             if girilen_sifre == ODA_SIFRESI:
-                st.session_state["oda_kilitli"] = False
+                # Sadece giriş yapan kullanıcının bu tarayıcı oturumunda geçici izin verilir
+                st.session_state["gecici_izin"] = True
                 st.success("Giriş başarılı! Oda açılıyor...")
                 st.rerun()
             else:
                 st.error("❌ Hatalı şifre girdiniz!")
                 
-    st.stop()
+    # Kullanıcının geçici izni yoksa içeriği kesinlikle gösterme
+    if "gecici_izin" not in st.session_state or not st.session_state["gecici_izin"]:
+        st.stop()
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -164,17 +173,3 @@ with st.form(key="s_frm", clear_on_submit=True):
         if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
             df_s = pd.read_csv(db_sohbet)
             y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-# YÖNETİCİ VE ERİŞİM KONTROL PANELİ
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-    
-    if adm_mod:
-        st.write("---")
-        st.markdown("### 🔓 Oda Erişim Kontrolü")
-        
-        # Tek tıklamayla odayı halka açan buton
