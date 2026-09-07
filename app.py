@@ -119,20 +119,7 @@ if os.path.exists(excel_yolu):
         if len(tablo_bta) > 0: 
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True) 
         st.write("") 
-
-        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) --- 
-        tablo_alsat = [] 
-        for idx in range(min(10, len(df))): 
-            hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else "" 
-            if hb != "" and hb not in ["BTA AL SAT", "HİSSE", "NAN", "NONE"]: 
-                as_fiyat = 0.0 
-                as_deg = 0.0 
-                try: 
-                    h_as = yf.Ticker(f"{hb}.IS").history(period="2d") 
-                    if not h_as.empty: 
-                        as_fiyat = float(h_as['Close'].iloc[-1]) 
-                        as_prev = float(h_as['Close'].iloc[-2]) if len(h_as) >= 2 else as_fiyat 
-                        as_deg = ((as_fiyat - as_prev) / as_prev) * 100 
+        
                 except: 
                     pass 
                 tablo_alsat.append({ 
