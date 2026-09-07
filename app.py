@@ -72,20 +72,14 @@ def formatla_tl(deger):
     except: return str(deger)
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
+# 2. SADECE BIST 100 PİYASA ALANI
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    gram_f = (ons_f / 31.1034768) * usd_f
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1]) # Panelde alt tarafta kullanıldığı için arka planda kalmalı
     
-    pk1, pk2, pk3, col_bist = st.columns(4)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
-    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
-    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.1f} TL")
-    col_bist.metric("BIST 100", f"{bist_f:,.1f}")
+    # Altın metrikleri kaldırıldı, sadece tam genişlikte BIST 100 gösteriliyor
+    st.metric("BIST 100 ENDEKSİ", f"{bist_f:,.2f}")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
@@ -173,3 +167,10 @@ with st.form(key="s_frm", clear_on_submit=True):
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
+# --- FORM DIŞINA ALINAN GÜVENLİ YÖNETİCİ PANELİ ---
+with st.expander("🛠 Yönetici Panel Ayarları"):
+    adm_sifre = st.text_input("Yönetici Şifreniz:", type="password", key="yonetici_sifre_alani")
+    adm_mod = (adm_sifre == "bta123")
+    
+    if adm_mod:
+        st.write("---")
