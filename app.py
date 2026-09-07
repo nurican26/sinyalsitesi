@@ -18,19 +18,17 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+.kucuk-sayac { font-size: 11px !important; color: #666668 !important; text-align: center; margin-top: 15px; font-weight: bold; }
 </style>
-<marquee scrollamount="6"><span style="font-size:35px; font-weight:bold; color:#fff; text-shadow: 0 0 10px #ff0055;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</span></marquee>
+<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-db_yildiz = "bta_yildiz_db.csv"
 
-# KALICI SOHBET VE YILDIZ VERİTABANI BAŞLATMA
+# KALICI SOHBET VERİTABANI BAŞLATMA (ORİJİNAL YAPINIZ)
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
-if not os.path.exists(db_yildiz):
-    pd.DataFrame([{"s5": 124, "s4": 18, "s3": 5}]).to_csv(db_yildiz, index=False)
 
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
@@ -51,9 +49,9 @@ try:
     gram_f = (ons_f / 31.1034768) * usd_f
     
     pk1, pk2, col_bist = st.columns(3)
-    pk1.metric("✨ GRAM ALTIN", f"{gram_f:,.1f} TL")
-    pk2.metric("🎯 ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
-    col_bist.metric("🌐 BIST 100", f"{bist_f:,.1f}")
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
+    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
+    col_bist.metric("BIST 100", f"{bist_f:,.1f}")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
@@ -107,39 +105,28 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR VE HABERLER
+# 4. HALKA ARZLAR VE HABERLER (DÜZENLENDİ)
 # ===================================================================== #
 st.write("---")
 st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
 
-st.subheader("📰 Son Dakika Gelişmeler / KAP")
-st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
-st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.")
+c_sol, c_sag = st.columns(2)
+with c_sol:
+    st.write("**🚀 Yeni Halka Arz Listesi**")
+    st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
 
+with c_sag:
+    st.write("**📺 TV GÜNDEM & DÜNYA HABERLERİ**")
+    st.write("[SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
+    st.write("[Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
+    st.write("[Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
+
+# ===================================================================== #
+# 5. ORİJİNAL GÜVENLİ SOHBET FORMU (HİÇ DOKUNULMADI)
+# ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:22px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
 
-# GÜNCEL YILDIZ VERİSİNİ OKUMA VE GÜNCELLEME
-df_y = pd.read_csv(db_yildiz)
-st.write("**Paneli Puanlayın:**")
-b1, b2, b3 = st.columns(3)
-if b1.button(f"🤩 5 Yıldız ({df_y.loc[0, 's5']})", key="b5"):
-    df_y.loc[0, "s5"] += 1
-    df_y.to_csv(db_yildiz, index=False)
-    st.rerun()
-if b2.button(f"🙂 4 Yıldız ({df_y.loc[0, 's4']})", key="b4"):
-    df_y.loc[0, "s4"] += 1
-    df_y.to_csv(db_yildiz, index=False)
-    st.rerun()
-if b3.button(f"😐 3 Yıldız ({df_y.loc[0, 's3']})", key="b3"):
-    df_y.loc[0, "s3"] += 1
-    df_y.to_csv(db_yildiz, index=False)
-    st.rerun()
-
-st.write("---")
-
-# GENİŞLETİLMİŞ ARGO VE KÜFÜR ENGELLEME LİSTESİ
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
 with st.form(key="s_frm", clear_on_submit=True):
@@ -169,3 +156,12 @@ for s in range(len(df_sohbet_oku)):
         df_sl = pd.read_csv(db_sohbet)
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
         st.rerun()
+
+# ===================================================================== #
+# YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
+# ===================================================================== #
+st.write("---")
+st.markdown('''
+<p style="font-size:11px; color:#666668; text-align:center; margin-bottom: 2px;">
+⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.
+</p>
