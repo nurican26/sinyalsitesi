@@ -57,33 +57,53 @@ st.markdown('<div class="warning-banner">⚠️ Dikkat: Panel üzerindeki borsa 
 
 st.markdown('''
 <p style="color:#ff4b4b; font-size:13px; text-align:center;">
-⚠ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
+⚠ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum adolescent tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
 </p>
 ''', unsafe_allow_html=True) 
 
 excel_yolu = "nurican.xls.xlsm" 
 
-# --- GÜVENLİ SAYAÇ MİMARİSİ ---
-if "toplam_sayac" not in st.session_state:
-    st.session_state["toplam_sayac"] = 1450  
-if "gunluk_sayac" not in st.session_state:
-    st.session_state["gunluk_sayac"] = 120
+# --- GERÇEK VERİ TABANLI SAYAÇ SİSTEMİ (SERVER GLOBAL STORAGE) ---
+@st.cache_resource
+def sunucu_gercek_hafizasini_getir():
+    # Tüm kullanıcılar için ortak, sunucu düzeyinde tek bir güvenli havuz oluşturur
+    return {
+        "aktif_cihazlar": {},  # {"cihaz_id": son_gorulme_timestamp}
+        "toplam_tekil_ziyaretci": set(), # Toplam benzersiz ziyaretçi listesi
+        "gunluk_tekil_ziyaretci": set(), # Günlük benzersiz ziyaretçi listesi
+        "son_tarih": datetime.date.today().strftime("%Y-%m-%d")
+    }
 
-# Her sayfa yenilendiğinde sayaçları artır
-st.session_state["toplam_sayac"] += 1
-st.session_state["gunluk_sayac"] += 1
-
-# Günlük sayacın 24 saatte bir sıfırlanması kontrolü
+sunucu_hafizasi = sunucu_gercek_hafizasini_getir()
+su_an = time.time()
 bugun = datetime.date.today().strftime("%Y-%m-%d")
-if "son_giris_tarihi" not in st.session_state:
-    st.session_state["son_giris_tarihi"] = bugun
 
-if st.session_state["son_giris_tarihi"] != bugun:
-    st.session_state["gunluk_sayac"] = 1
-    st.session_state["son_giris_tarihi"] = bugun
+# 24 Saatlik Gün Değişimi Kontrolü (Gece yarısı günlük sayacı sıfırlar)
+if sunucu_hafizasi["son_tarih"] != bugun:
+    sunucu_hafizasi["gunluk_tekil_ziyaretci"].clear()
+    sunucu_hafizasi["son_tarih"] = bugun
 
-# Anlık odadaki kişi sayısı dinamik simülasyonu
-anlik_oda = (int(time.time()) % 5) + 3 
+# Kullanıcıya özel benzersiz tarayıcı kimliği (Cihaz ID) atama
+if "cihaz_id" not in st.session_state:
+    st.session_state.cihaz_id = str(uuid.uuid4())
+
+cid = st.session_state.cihaz_id
+
+# Aktiflik Güncellemesi: Kullanıcının sunucudaki zaman damgasını yenile
+sunucu_hafizasi["aktif_cihazlar"][cid] = su_an
+sunucu_hafizasi["toplam_tekil_ziyaretci"].add(cid)
+sunucu_hafizasi["gunluk_tekil_ziyaretci"].add(cid)
+
+# Pasif Kullanıcıları Temizleme (Son 30 saniyede sayfada aktif olmayanları odadan düşürür)
+eski_aktifler = list(sunucu_hafizasi["aktif_cihazlar"].keys())
+for k in eski_aktifler:
+    if su_an - sunucu_hafizasi["aktif_cihazlar"][k] > 30:
+        del sunucu_hafizasi["aktif_cihazlar"][k]
+
+# Kesin ve Gerçek Sayım Sonuçları
+gercek_anlik_oda = len(sunucu_hafizasi["aktif_cihazlar"])
+gercek_gunluk = len(sunucu_hafizasi["gunluk_tekil_ziyaretci"])
+gercek_toplam = len(sunucu_hafizasi["toplam_tekil_ziyaretci"])
 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ") 
 
@@ -193,24 +213,3 @@ if os.path.exists(excel_yolu):
                             else: 
                                 st.warning(f"{aranan_hisse} koduna ait veri bulunamadı. Excel'deki kodu kontrol edin (Örn: THYAO).") 
                         except Exception as e: 
-                            st.error("Borsa verisi çekilirken bir hata oluştu.") 
-            else: 
-                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.") 
-        else: 
-            st.error("Excel dosyasında E sütunu bulunamadı!") 
-            
-    except Exception as e: 
-        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.") 
-else: 
-    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}") 
-
-st.write("---") 
-
-# --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ --- 
-st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True) 
-
-# Streamlit'in yerleşik alt kolon mimarisi ile HTML bağımlılığı olmadan sayaç çizimi
-sc1, sc2, sc3 = st.columns(3) 
-sc1.metric(label="👥 Anlık Odadaki Kişi Sayısı", value=f"{anlik_oda} Aktif") 
-sc2.metric(label="📅 Günlük Toplam Giriş (24s Sıfırlanır)", value=f"{st.session_state['gunluk_sayac']} Giriş") 
-sc3.metric(label="💎 Genel Toplam Giriş (Hiç Sıfırlanmaz)", value=f"{st.session_state['toplam_sayac']} Giriş")
