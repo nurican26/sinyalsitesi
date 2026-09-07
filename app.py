@@ -1,4 +1,24 @@
-# --- HAREKETLİ BTA LOGOSU VE STYLES (GÖZ YORMAYAN ŞEFFAF PANEL VE BORSA ANİMASYONU) ---
+import streamlit as st
+import pandas as pd
+import datetime
+import yfinance as yf
+import os
+import time
+import requests
+from bs4 import BeautifulSoup
+from streamlit_autorefresh import st_autorefresh
+
+# =====================================================================
+# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ (İlk bu komut çalışmalı)
+# =====================================================================
+st.set_page_config(page_title="BTA Merkez", layout="wide")
+
+# 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
+st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
+
+# =====================================================================
+# 2. HAREKETLİ BTA LOGOSU VE ŞEFFAF PANEL TASARIMI
+# =====================================================================
 st.markdown('''
 <style>
 /* Streamlit genel arka planını göz almayan koyu antrasit tonuna çekiyoruz */
@@ -101,3 +121,4 @@ st.markdown('''
 ''', unsafe_allow_html=True)
 
 # --- 15 DAKİKA GECİKMELİ VERİ UYARISI VE YASAL UYARI ---
+# (Kodunuzun geri kalan kısmı buradan aynen devam edecek...)
