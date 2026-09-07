@@ -13,10 +13,10 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
-st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
+# Verilerin düşmesini engellemek için yenileme süresi 30 saniyeye çıkarıldı
+st_autorefresh(interval=30 * 1000, key="bta_merkezi_yenileyici")
 
-# --- YENİLENEN GERÇEKÇİ ALEVLİ VE BÜYÜTÜLMÜŞ BTA LOGO PANELİ ---
+# --- KÜÇÜLTÜLMÜŞ GERÇEKÇİ ALEVLİ BTA LOGO PANELİ ---
 st.markdown('''
 <style>
 @keyframes rgbText {
@@ -28,44 +28,44 @@ st.markdown('''
 }
 
 @keyframes flicker {
-    0%, 100% { transform: scale(1) rotate(-2deg); opacity: 0.9; filter: blur(2px); }
-    20% { transform: scale(1.1) rotate(3deg); opacity: 1; filter: blur(1px); }
-    40% { transform: scale(0.95) rotate(-1deg); opacity: 0.85; filter: blur(3px); }
-    60% { transform: scale(1.15) rotate(2deg); opacity: 0.95; filter: blur(1px); }
-    80% { transform: scale(1) rotate(-3deg); opacity: 0.9; filter: blur(2px); }
+    0%, 100% { transform: scale(1) rotate(-2deg); opacity: 0.9; filter: blur(1px); }
+    20% { transform: scale(1.08) rotate(3deg); opacity: 1; filter: blur(0.5px); }
+    40% { transform: scale(0.96) rotate(-1deg); opacity: 0.85; filter: blur(1.5px); }
+    60% { transform: scale(1.1) rotate(2deg); opacity: 0.95; filter: blur(0.5px); }
+    80% { transform: scale(1) rotate(-3deg); opacity: 0.9; filter: blur(1px); }
 }
 
 .bta-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 20px auto 35px auto;
+    margin: 15px auto 25px auto;
     width: fit-content;
     position: relative;
     background: #0e1117;
-    padding: 15px 70px;
-    border-radius: 20px;
+    padding: 10px 55px;
+    border-radius: 15px;
     overflow: visible;
 }
 
 .bta-logo-custom {
     font-family: 'Brush Script MT', 'cursive', sans-serif;
-    font-size: 72px;
+    font-size: 72px; /* Yazının büyük boyutu korundu */
     font-weight: bold;
     animation: rgbText 8s infinite linear;
     letter-spacing: 6px;
     position: relative;
     z-index: 10;
-    padding: 0 20px;
-    text-shadow: 0 0 10px rgba(255,255,255,0.2);
+    padding: 0 15px;
+    text-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
-/* Gerçekçi CSS Alev Katmanları */
+/* Ateşlerin Boyutları Küçültüldü (60px -> 35px) */
 .fire-effect {
     position: absolute;
-    width: 60px;
-    height: 60px;
-    bottom: 25px;
+    width: 35px;
+    height: 35px;
+    bottom: 35px;
     border-radius: 50% 0 50% 50%;
     transform: rotate(-45deg);
     animation: flicker 0.5s infinite alternate ease-in-out;
@@ -73,27 +73,27 @@ st.markdown('''
 }
 
 .fire-left {
-    left: 20px;
+    left: 15px;
     background: radial-gradient(circle at 60% 60%, #ffdd00 20%, #ff5500 50%, #ff0000 80%);
-    box-shadow: 0 0 30px #ff5500, 0 0 50px #ff0000, -10px -20px 40px rgba(255,68,0,0.5);
+    box-shadow: 0 0 15px #ff5500, 0 0 25px #ff0000;
 }
 
 .fire-right {
-    right: 20px;
+    right: 15px;
     background: radial-gradient(circle at 60% 60%, #ffdd00 20%, #ff5500 50%, #ff0000 80%);
-    box-shadow: 0 0 30px #ff5500, 0 0 50px #ff0000, 10px -20px 40px rgba(255,68,0,0.5);
+    box-shadow: 0 0 15px #ff5500, 0 0 25px #ff0000;
 }
 
-/* İç çekirdek (Ateşin sıcak merkezi) */
+/* İç Çekirdek Küçültüldü */
 .fire-core {
     position: absolute;
-    width: 25px;
-    height: 25px;
+    width: 14px;
+    height: 14px;
     background: #ffffff;
     border-radius: 50% 0 50% 50%;
-    left: 15px;
-    top: 15px;
-    box-shadow: 0 0 15px #ffffff, 0 0 25px #ffdd00;
+    left: 10px;
+    top: 10px;
+    box-shadow: 0 0 8px #ffffff, 0 0 12px #ffdd00;
 }
 </style>
 
@@ -248,3 +248,4 @@ if os.path.exists(excel_yolu):
             
     except Exception as e:
         st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
+else:
