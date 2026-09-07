@@ -77,7 +77,7 @@ def formatla_tl(deger):
         return str(deger)
 
 # ===================================================================== #
-# 2. ORİJİNAL VERİ TABLOLARI VE MOTORU (AL-SAT PANELİ KALDIRILDI)
+# 2. ORİJİNAL VERİ TABLOLARI VE MOTORU
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -199,13 +199,14 @@ st.markdown('''
 </p>
 ''', unsafe_allow_html=True)
 
+
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ (GÖRSEL OLARAK GELİŞTİRİLDİ)
+# 4. YORUMLAR VE BEĞENİ PANELİ (GARANTİ VE BAĞIMSIZ YAPILANDIRMA)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
 
-# Hafıza (Session State) Hazırlığı
+# Hafıza Kontrolü
 if "begeniler" not in st.session_state:
     st.session_state["begeniler"] = {"⭐ 5 Yıldız": 124, "⭐ 4 Yıldız": 18, "⭐ 3 Yıldız": 5}
 
@@ -215,4 +216,8 @@ if "yorumlar_listesi" not in st.session_state:
         {"isim": "Elif K.", "zaman": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# Sol tarafta Yorum Yazma Formu ve Yıldızlar, Sağ tarafta güncel yorumlar akacak şekilde 2 kolon yapıyoruz
+# Sol Panel (Giriş) ve Sağ Panel (Yorum Listesi) Bölümü
+sol_blok, sag_blok = st.columns([1, 1.2])
+
+with sol_blok:
+    st.write("**Paneli Puanlayın:**")
