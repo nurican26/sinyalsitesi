@@ -19,7 +19,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.kucuk-sayac { font-size: 11px !important; color: #666668 !important; text-align: center; margin-top: 15px; font-weight: bold; }
+.kucuk-sayac { font-size: 13px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -96,26 +96,22 @@ if os.path.exists(excel_yolu):
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
-        # --- BORSA ARAMA MOTORU (KOTA DOSTU ULTRA HAFİF SÜRÜM) ---
+        # --- BORSA ARAMA MOTORU (DOLAR KALDIRILDI) ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
-                    # Kotayı şişiren 5 günlük geçmiş silindi, sadece 1 günlük ultra hafif fiyata geçildi
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
-                        anlik_f_arama = float(h_detay_veri['Close'].iloc[-1])
-                        st.metric("Güncel Fiyat", f"{anlik_f_arama:,.2f} TL")
+                        st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
                         
-                        # Kotayı kilitleyen sinyal kutuları sildi yerine canlı ekonomik göstergeler kilitlendi
                         st.write("")
                         st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
-                        f_col1, f_col2, f_col3 = st.columns(3)
+                        f_col1, f_col2 = st.columns(2)
                         f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
-                        f_col2.metric("💵 Canlı Dolar Kuru", f"{usd_f:,.2f} TL")
-                        f_col3.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
+                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL") # Sadece Euro ve Faiz kaldı
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
@@ -147,7 +143,7 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler topluluk kuralları gereği engellendi!")
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
@@ -163,3 +159,6 @@ for s in range(len(df_sohbet_oku)):
         st.rerun()
 
 # ===================================================================== #
+# YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
+# ===================================================================== #
+st.write("---")
