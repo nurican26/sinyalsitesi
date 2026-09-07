@@ -118,7 +118,7 @@ if os.path.exists(excel_yolu):
                     "KAR / ZARAR 📊": kz_str
                 })
         
-        st.markdown('<p style="font-size:20px; font-weight:bold; color:#1E90FF;">📈 BTA HİSSELERİ (ÜST PANEL)</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:20px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if len(tablo_bta) > 0:
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True)
         
@@ -132,7 +132,7 @@ if os.path.exists(excel_yolu):
             tum_hisseler.sort()
             
             if tum_hisseler:
-                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
+                aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin ", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
                     with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
                         try:
