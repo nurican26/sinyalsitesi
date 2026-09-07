@@ -14,11 +14,32 @@ from streamlit_autorefresh import st_autorefresh
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 # 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
-
-# --- HAREKETLİ BTA LOGOSU VE STYLES ---
-st.markdown('''
-<div class="bta-logo">BTA</div>
+ /* BTA LOGO - Yukarıdan Düşüş ve 30 Saniyede Bir Alev Efekti */
+    .logo-konteyner {{display: flex; justify-content: center; align-items: center; padding: 20px 0; margin-bottom: 10px; position: relative;}}
+    .cember-animasyon-{anim_id} {{
+        width: 120px; height: 120px; 
+        border: 4px solid #fff; border-radius: 50%; 
+        display: flex; justify-content: center; align-items: center; 
+        background: transparent; position: relative; overflow: hidden;
+        animation: yukaridanDus-{anim_id} 1.5s ease-out forwards, atesPatla-{anim_id} 30s infinite;
+    }}
+    .bta-yazi-{anim_id} {{font-family: 'Caveat', 'Segoe UI', cursive, sans-serif; font-size: 3.2rem; font-weight: bold; margin: 0; padding: 0; z-index: 2; background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0px 2px 8px rgba(255,255,255,0.3));}}
+    
+    @keyframes yukaridanDus-{anim_id} {{
+        0% {{ transform: translateY(-200px); opacity: 0; }}
+        60% {{ transform: translateY(20px); opacity: 1; }}
+        80% {{ transform: translateY(-10px); }}
+        100% {{ transform: translateY(0); }}
+    }}
+    @keyframes atesPatla-{anim_id} {{
+        0%, 95%, 100% {{ border-color: #ff0000; box-shadow: 0 0 15px #ff0000, inset 0 0 15px #ff0000; }}
+        97% {{ border-color: #ff5500; box-shadow: 0 0 35px 15px #ff3300, inset 0 0 25px 10px #ff7700; transform: scale(1.1); }}
+    }}
+</style>
 ''', unsafe_allow_html=True)
+
+st.markdown(f'<div class="logo-konteyner"><div class="cember-animasyon-{anim_id}"><span class="bta-yazi-{anim_id}">BTA</span></div></div>', unsafe_allow_html=True)
+
 
 
 
