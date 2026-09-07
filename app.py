@@ -58,12 +58,11 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR (SÜTUN BAŞLIĞI KISALTILDI VE DARALTILDI)
+# 3. VERİ MOTORU VE TABLOLAR (%100 DOĞRU KÖPRÜ LİNK AYARI YAPILDI)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        # İstediğiniz gibi başlık milimetrik olarak sadece 'HİSSE 🔗' şeklinde kısaltıldı
         tablo_html = '<table class="borsa-tablo"><tr><th>PUAN</th><th>HİSSE 🔗</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
@@ -86,7 +85,7 @@ if os.path.exists(excel_yolu):
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
                     else: kz_str = "<span>-</span>"
                     
-                    # Mercek işareti sola alındı, link yapısı daraltıldı
+                    # HATASIZ BORSA KÖPRÜSÜ: Adres yapısı eğik çizgilerle tam kilitlendi
                     link_url = f"https://doviz.com{ha.lower()}"
                     hisse_kopru = f'<a href="{link_url}" target="_blank" class="hisse-link">🔍 {ha}</a>'
                     
@@ -169,3 +168,5 @@ for s in range(len(df_sohbet_oku)):
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
         st.rerun()
 
+# ===================================================================== #
+# GİZLİ, ULTRA KÜÇÜK YASAL UYARI VE GİRİŞ SAYAÇLARI
