@@ -119,18 +119,6 @@ if os.path.exists(excel_yolu):
         if len(tablo_bta) > 0: 
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True) 
         st.write("") 
-        
-                except: 
-                    pass 
-                tablo_alsat.append({ 
-                    "GÜNLÜK HİSSELERİ ⚡": hb, 
-                    "GECİKMELİ VERİ 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...", 
-                    "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-" 
-                }) 
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK HİSSELER)</p>', unsafe_allow_html=True) 
-        if len(tablo_alsat) > 0: 
-            st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True) 
-        st.write("---") 
 
         # --- HİSSE ARAMA MOTORU --- 
         st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">🔍  HİSSE ARAMA </p>', unsafe_allow_html=True) 
