@@ -77,7 +77,7 @@ def formatla_tl(deger):
         return str(deger)
 
 # ===================================================================== #
-# 2. OORİJİNAL VERİ TABLOLARI VE MOTORU (AL-SAT PANELİ KALDIRILDI)
+# 2. ORİJİNAL VERİ TABLOLARI VE MOTORU (AL-SAT PANELİ KALDIRILDI)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -198,3 +198,22 @@ st.markdown('''
 ⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
 </p>
 ''', unsafe_allow_html=True)
+
+# ===================================================================== #
+# 4. YORUMLAR VE BEĞENİ PANELİ (YENİ EKLENEN ALAN)
+# ===================================================================== #
+st.write("---")
+st.markdown('<p style="font-size:20px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
+
+# Session State Hazırlığı (Sayfa yenilendiğinde verilerin uçmaması için)
+if "begeniler" not in st.session_state:
+    st.session_state["begeniler"] = {"👍 Faydalı": 42, "🔥 Harika": 28, "🚀 Roket": 35}
+
+if "yorumlar_listesi" not in st.session_state:
+    st.session_state["yorumlar_listesi"] = [
+        {"isim": "Ahmet Y.", "zaman": "12:15", "yorum": "Algoritma puanlamaları gerçekten çok başarılı çalışıyor."},
+        {"isim": "Elif K.", "zaman": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
+    ]
+
+# --- BEĞENİ REAKSİYON BUTONLARI ---
+st.write("**Bu paneli nasıl buldunuz?**")
