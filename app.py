@@ -156,7 +156,7 @@ def formatla_tl(deger):
         return str(deger)
 
 # ===================================================================== #
-# 2. ORİJİNAL VERİ TABLOLARI VE MOTORU (ASLA DONMAYAN GÜVENLİ SÜRÜM)
+# 2. ORİJİNAL VERİ TABLOLARI VE MOTORU
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -177,7 +177,6 @@ if os.path.exists(excel_yolu):
                     
                     c_fiyat = 0.0
                     try:
-                        # İnternet takılmalarını önlemek için 2 saniyelik zaman aşımı (timeout) koyuldu
                         h_bta = yf.Ticker(f"{ha}.IS")
                         h_veri = h_bta.history(period="1d", timeout=2)
                         if not h_veri.empty:
@@ -204,7 +203,7 @@ if os.path.exists(excel_yolu):
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet_gosterim}</td><td>{fiyat_gosterim}</td><td>{kz_str}</td></tr>'
             except:
-                continue # Tek bir hissede hata olursa durma, diğer hisseye geç
+                continue
         
         tablo_html += '</table>'
         
@@ -241,3 +240,7 @@ if os.path.exists(excel_yolu):
                             else:
                                 st.warning(f"{aranan_hisse} koduna ait veri bulunamadı.")
                         except:
+                            st.error("Borsa verisi şu an çekilemiyor.")
+            else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+        else:
