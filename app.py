@@ -185,7 +185,7 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. TEK SIRA YILDIZLI VE GELİŞMİŞ SOHBET PANELİ (KÜFÜR KORUMALI & EDİTÖRLÜ)
+# 4. TEK SIRA YILDIZLI VE GELİŞMİŞ SOHBET PANELİ (SIFIR GIRINTI RISKLI SÜRÜM)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI AKIŞ</p>', unsafe_allow_html=True)
@@ -209,6 +209,7 @@ sol_taraf, sag_taraf = st.columns([1, 1.2])
 with sol_taraf:
     st.write("**Paneli Puanlayın:**")
     
-    # Yıldızlar tek sıra halinde yan yana dizildi (with kaldırıldı, girinti hatası imkansız)
-    yildiz_sutunlari = st.columns(3)
-    if yildiz_sutunlari[0].button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star_5_btn", use_container_width=True):
+    # Yıldızlar hata vermeyecek şekilde yan yana 3 bağımsız parça olarak tek satırda dizildi
+    yc1, yc2, yc3 = st.columns(3)
+    if yc1.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star_5_btn", use_container_width=True):
+        st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
