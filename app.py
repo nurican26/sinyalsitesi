@@ -66,8 +66,6 @@ if st.session_state["son_giris_tarihi"] != bugun:
 # Anlık odadaki kişi sayısı dinamik simülasyonu
 anlik_oda = (int(time.time()) % 5) + 3
 
-st.header("📊 BTA ")
-
 # Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
