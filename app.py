@@ -88,7 +88,7 @@ def formatla_tl(deger):
 if os.path.exists(excel_yolu): 
     try: 
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl") 
-        # --- (BTA HİSSELERİ) --- 
+        # --- ÜST PANEL (BTA HİSSELERİ) --- 
         tablo_bta = [] 
         for idx in range(min(10, len(df))): 
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else "" 
@@ -115,12 +115,12 @@ if os.path.exists(excel_yolu):
                     "GÜNCEL FİYAT 💥": formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor...", 
                     "KAR / ZARAR 📊": kz_str 
                 }) 
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">📈 BTA HİSSELERİ </p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">📈 BTA HİSSELERİ</p>', unsafe_allow_html=True) 
         if len(tablo_bta) > 0: 
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True) 
         st.write("") 
 
-        # ---  (GÜNLÜK AL SAT HİSSELERİ) --- 
+        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) --- 
         tablo_alsat = [] 
         for idx in range(min(10, len(df))): 
             hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else "" 
@@ -137,16 +137,16 @@ if os.path.exists(excel_yolu):
                     pass 
                 tablo_alsat.append({ 
                     "GÜNLÜK AL SAT HİSSELERİ ⚡": hb, 
-                    "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-" 
                     "GECİKMELİ VERİ 📊": formatla_tl(as_fiyat) if as_fiyat > 0 else "Yükleniyor...", 
-                })
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK AL SAT HİSSELERİ </p>', unsafe_allow_html=True) 
+                    "YÜKSELİŞ ORANI 📈": f"%{as_deg:+.2f}" if as_fiyat > 0 else "-" 
+                }) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">⚡ GÜNLÜK AL SAT HİSSELERİ )</p>', unsafe_allow_html=True) 
         if len(tablo_alsat) > 0: 
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True) 
         st.write("---") 
 
         # --- BIST ANLIK ARAMA MOTORU --- 
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True) 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">🔍 BIST HİSSE ARAMA </p>', unsafe_allow_html=True) 
         if len(df.columns) >= 5: 
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist() 
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
