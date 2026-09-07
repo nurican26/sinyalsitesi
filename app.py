@@ -240,4 +240,5 @@ if os.path.exists(excel_yolu):
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
             tum_hisseler.sort() 
             
-            # İç içe if'ler birleştirilerek girinti hatası kesin olarak engellendi
+            aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler) if len(tum_hisseler) > 0 else "Seçiniz..." 
+            
