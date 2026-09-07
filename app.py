@@ -17,7 +17,7 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st.markdown("""
     <style>
         .stApp {
-            background: linear-gradient(135deg, #7a0000 0%, #003d19 100%) !important;
+            background: linear-gradient(100deg, #7a0000 0%, #003d19 100%) !important;
             background-attachment: fixed !important;
         }
         header, [data-testid="stHeader"] {
@@ -181,12 +181,6 @@ else:
     st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}") 
 st.write("---") 
 
-# ===================================================================== 
-# 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI 
-# ===================================================================== 
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER") 
-st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')} (Her 10 dakikada bir otomatik güncellenir)*") 
-col_arz, col_haber = st.columns(2) 
 with col_arz: 
     st.subheader("🚀 Yeni Halka Arz Listesi") 
     df_arz = pd.DataFrame({ 
@@ -201,4 +195,9 @@ with col_haber:
     st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.") 
 st.write("---") 
 
-# --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ --- 
+# ===================================================================== 
+# 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI 
+# ===================================================================== 
+st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER") 
+st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')} (Her 10 dakikada bir otomatik güncellenir)*") 
+col_arz, col_haber = st.columns(2) 
