@@ -88,7 +88,7 @@ def formatla_tl(deger):
 if os.path.exists(excel_yolu): 
     try: 
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl") 
-        # --- ÜST PANEL (BTA HİSSELERİ) --- 
+        # --- (BTA HİSSELERİ) --- 
         tablo_bta = [] 
         for idx in range(min(10, len(df))): 
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else "" 
@@ -120,7 +120,7 @@ if os.path.exists(excel_yolu):
             st.dataframe(pd.DataFrame(tablo_bta), use_container_width=True, hide_index=True) 
         st.write("") 
 
-        # --- ALT PANEL (GÜNLÜK AL SAT HİSSELERİ) --- 
+        # ---  (GÜNLÜK AL SAT HİSSELERİ) --- 
         tablo_alsat = [] 
         for idx in range(min(10, len(df))): 
             hb = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else "" 
