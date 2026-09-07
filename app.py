@@ -145,8 +145,8 @@ if os.path.exists(excel_yolu):
             st.dataframe(pd.DataFrame(tablo_alsat), use_container_width=True, hide_index=True) 
         st.write("---") 
 
-        # --- BIST ANLIK ARAMA MOTORU --- 
-        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">🔍 BIST HİSSE ARAMA </p>', unsafe_allow_html=True) 
+        # --- HİSSE ARAMA MOTORU --- 
+        st.markdown('<p style="font-size:32px; font-weight:bold; text-align:left; margin:10px 0;">🔍  HİSSE ARAMA </p>', unsafe_allow_html=True) 
         if len(df.columns) >= 5: 
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist() 
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
