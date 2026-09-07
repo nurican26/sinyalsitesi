@@ -102,7 +102,7 @@ if os.path.exists(excel_yolu):
                     if not h_bta.empty: 
                         c_fiyat = float(h_bta['Close'].iloc[-1]) 
                 except: 
-                    pass 
+            
                 try: 
                     maliyet = float(alim_c.replace(",", ".")) 
                 except: 
