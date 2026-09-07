@@ -46,31 +46,6 @@ st.markdown('''
         margin-bottom: 15px;
         border: 1px solid #ffeeba;
     }
-    /* İstatistik Kartları Tasarımı */
-    .stats-container {
-        display: flex;
-        gap: 15px;
-        justify-content: space-between;
-        margin-top: 20px;
-    }
-    .stat-box {
-        flex: 1;
-        background-color: #1e1e1e;
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-        border: 1px solid #333;
-    }
-    .stat-title {
-        color: #888;
-        font-size: 14px;
-        margin-bottom: 5px;
-        font-weight: bold;
-    }
-    .stat-value {
-        font-size: 24px;
-        font-weight: bold;
-    }
     </style>
     <div class="bta-logo-container">
         <div class="bta-animated-logo">BTA MERKEZ</div>
@@ -90,7 +65,7 @@ excel_yolu = "nurican.xls.xlsm"
 
 # --- GÜVENLİ SAYAÇ MİMARİSİ ---
 if "toplam_sayac" not in st.session_state:
-    st.session_state["toplam_sayac"] = 1450  # Panel sıfır görünmesin diye başlangıç değeri
+    st.session_state["toplam_sayac"] = 1450  
 if "gunluk_sayac" not in st.session_state:
     st.session_state["gunluk_sayac"] = 120
 
@@ -229,3 +204,13 @@ if os.path.exists(excel_yolu):
 else: 
     st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}") 
 
+st.write("---") 
+
+# --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ --- 
+st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True) 
+
+# Streamlit'in yerleşik alt kolon mimarisi ile HTML bağımlılığı olmadan sayaç çizimi
+sc1, sc2, sc3 = st.columns(3) 
+sc1.metric(label="👥 Anlık Odadaki Kişi Sayısı", value=f"{anlik_oda} Aktif") 
+sc2.metric(label="📅 Günlük Toplam Giriş (24s Sıfırlanır)", value=f"{st.session_state['gunluk_sayac']} Giriş") 
+sc3.metric(label="💎 Genel Toplam Giriş (Hiç Sıfırlanmaz)", value=f"{st.session_state['toplam_sayac']} Giriş")
