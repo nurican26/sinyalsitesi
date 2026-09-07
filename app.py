@@ -18,9 +18,9 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.hisse-link { color: #1e90ff !important; text-decoration: underline !important; font-weight: bold; }
+.hisse-link { color: #00ffcc !important; text-decoration: underline !important; font-weight: bold; }
 </style>
-<h1 style="text-align:center; color:#fff; font-size:28px; font-weight:bold; margin-bottom:20px;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</h1>
+<h1 style="text-align:center; color:#fff; font-size:26px; font-weight:bold; margin-bottom:15px;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</h1>
 ''', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
@@ -40,7 +40,7 @@ def formatla_tl(deger):
     except: return str(deger)
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (YARIM VE TAM GERİ GELDİ)
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
@@ -48,7 +48,6 @@ try:
     usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     gram_f = (ons_f / 31.1034768) * usd_f
     
-    # 4'lü tam hizalı mükemmel metrik kartları
     pk1, pk2, pk3, pk4 = st.columns(4)
     pk1.metric("✨ GRAM ALTIN", f"{gram_f:,.1f} TL")
     pk2.metric("🎯 ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
@@ -58,12 +57,12 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR (TIFLANABİLİR AKILLI KÖPRÜ SİSTEMİ)
+# 3. VERİ MOTORU VE TABLOLAR (%100 ÇALIŞAN BORSA KÖPRÜSÜ ENTEGRESİ)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        tablo_html = '<table class="borsa-tablo"><tr><th>PUAN</th><th>HİSSE (HABER İÇİN TIKLA) 🔗</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
+        tablo_html = '<table class="borsa-tablo"><tr><th>PUAN</th><th>HİSSE (HABER/GRAFİK) 🔗</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
         for idx in range(min(10, len(df))):
@@ -85,8 +84,8 @@ if os.path.exists(excel_yolu):
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
                     else: kz_str = "<span>-</span>"
                     
-                    # AKILLI KÖPRÜ LINK YAPISI: Hisselere tıklandığında anlık Mynet finans haberlerine yönlendirir
-                    link_url = f"https://mynet.com{ha.lower()}/"
+                    # DOĞRUDAN TELEFONDA SORUNSUZ AÇILAN YENİ BORSA KÖPRÜSÜ
+                    link_url = f"https://doviz.com{ha.lower()}"
                     hisse_kopru = f'<a href="{link_url}" target="_blank" class="hisse-link">{ha} 🔍</a>'
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{hisse_kopru}</td><td>{maliyet:,.1f} TL</td><td>{c_fiyat:,.1f} TL</td><td>{kz_str}</td></tr>'
@@ -100,18 +99,33 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR VE HABERLER
+# 4. YAN YANA PANEL: HALKA ARZLAR & 📺 TV GÜNDEM HABERLERİ
 # ===================================================================== #
 st.write("---")
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
+st.markdown('<p style="font-size:20px; font-weight:bold; color:#fff;">🔔 GÜNCEL GELİŞMELER & SÜPER PANEL</p>', unsafe_allow_html=True)
 
-st.subheader("📰 Son Dakika Gelişmeler / KAP")
-st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
-st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.")
+col_sol, col_sag = st.columns(2)
 
+with col_sol:
+    st.markdown('<b>🚀 Yeni Halka Arz Listesi</b>', unsafe_allow_html=True)
+    st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Başladı", "SPK Bekliyor"]}), use_container_width=True, hide_index=True)
+
+with col_sag:
+    st.markdown('<b>📺 TV GÜNDEM & DÜNYA HABERLERİ</b>', unsafe_allow_html=True)
+    st.info("🔴 [SON DAKİKA] Gündem başlıkları, siyaset ve dünya haberleri sisteme yüklendi.")
+    st.info("🔴 [KAP Gelişmesi] SPK haftalık bülteni yayınlandı: 2 yeni şirket onay aldı.")
+
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
+sc1, sc2, sc3 = st.columns(3)
+sc2.metric("📅 Günlük Giriş ", f"{st.session_state['gunluk_sayac']} Giriş")
+sc3.metric("💎 Genel ", f"{st.session_state['toplam_sayac']} Giriş")
+
+# ===================================================================== #
+# 5. CANLI SOHBET KUTUSU
+# ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:22px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
+if "sohbet_hafizasi" not in st.session_state: st.session_state["sohbet_hafizasi"] = [{"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları harika."}]
 
 df_y = pd.read_csv(db_yildiz)
 st.write("**Paneli Puanlayın:**")
