@@ -20,11 +20,7 @@ st.markdown('''
 <div class="bta-logo">BTA</div>
 ''', unsafe_allow_html=True)
 
-# --- 15 DAKİKA GECİKMELİ VERİ UYARISI VE YASAL UYARI ---
-st.markdown('<p class="warning-text">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
-st.markdown('''
-<p class="spk-text">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</p>
-''', unsafe_allow_html=True)
+
 
 excel_yolu = "nurican.xls.xlsm"
 
@@ -203,3 +199,9 @@ st.markdown('<p class="section-title">📈 BTA PANEL İSTATİSTİKLERİ</p>', un
 sc1, sc2, sc3 = st.columns(3)
 sc2.metric(label="📅 Günlük Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş")
 sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
+
+# --- 15 DAKİKA GECİKMELİ VERİ UYARISI VE YASAL UYARI ---
+st.markdown('<p class="warning-text">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
+st.markdown('''
+<p class="spk-text">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.</p>
+''', unsafe_allow_html=True)
