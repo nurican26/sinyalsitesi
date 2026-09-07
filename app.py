@@ -16,66 +16,99 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 # 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 
-# --- YENİLENEN ALEVLİ, EL YAZILI, RENKLİ BTA LOGO PANELİ ---
+# --- YENİLENEN GERÇEKÇİ ALEVLİ VE BÜYÜTÜLMÜŞ BTA LOGO PANELİ ---
 st.markdown('''
 <style>
-@keyframes rgbGlow {
-    0% { color: #ff3333; text-shadow: 0 0 10px #ff3333, -15px 0 15px #ff5500, 15px 0 15px #ff5500; }
-    25% { color: #33ff33; text-shadow: 0 0 10px #33ff33, -15px 0 20px #00ffcc, 15px 0 20px #00ffcc; }
-    50% { color: #3333ff; text-shadow: 0 0 10px #3333ff, -15px 0 15px #9900ff, 15px 0 15px #9900ff; }
-    75% { color: #ffff33; text-shadow: 0 0 10px #ffff33, -15px 0 20px #ffaa00, 15px 0 20px #ffaa00; }
-    100% { color: #ff3333; text-shadow: 0 0 10px #ff3333, -15px 0 15px #ff5500, 15px 0 15px #ff5500; }
+@keyframes rgbText {
+    0% { color: #ff3333; }
+    25% { color: #33ff33; }
+    50% { color: #3333ff; }
+    75% { color: #ffff33; }
+    100% { color: #ff3333; }
 }
-@keyframes flameLeft {
-    0%, 100% { transform: scale(1) rotate(-5deg); filter: hue-rotate(0deg); }
-    50% { transform: scale(1.15) rotate(-15deg); filter: hue-rotate(30deg); }
+
+@keyframes flicker {
+    0%, 100% { transform: scale(1) rotate(-2deg); opacity: 0.9; filter: blur(2px); }
+    20% { transform: scale(1.1) rotate(3deg); opacity: 1; filter: blur(1px); }
+    40% { transform: scale(0.95) rotate(-1deg); opacity: 0.85; filter: blur(3px); }
+    60% { transform: scale(1.15) rotate(2deg); opacity: 0.95; filter: blur(1px); }
+    80% { transform: scale(1) rotate(-3deg); opacity: 0.9; filter: blur(2px); }
 }
-@keyframes flameRight {
-    0%, 100% { transform: scale(1) rotate(5deg); filter: hue-rotate(0deg); }
-    50% { transform: scale(1.15) rotate(15deg); filter: hue-rotate(30deg); }
-}
+
 .bta-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 10px auto 25px auto;
+    margin: 20px auto 35px auto;
     width: fit-content;
     position: relative;
     background: #0e1117;
-    padding: 10px 40px;
-    border-radius: 15px;
+    padding: 15px 70px;
+    border-radius: 20px;
+    overflow: visible;
 }
+
 .bta-logo-custom {
     font-family: 'Brush Script MT', 'cursive', sans-serif;
-    font-size: 42px; /* Orta boy panel boyutu */
+    font-size: 72px; /* Yazı boyutu ciddi oranda büyütüldü */
     font-weight: bold;
-    animation: rgbGlow 6s infinite linear;
-    letter-spacing: 4px;
+    animation: rgbText 8s infinite linear;
+    letter-spacing: 6px;
     position: relative;
-    z-index: 2;
-    padding: 0 10px;
+    z-index: 10;
+    padding: 0 20px;
+    text-shadow: 0 0 10px rgba(255,255,255,0.2);
 }
-.flame {
-    font-size: 36px;
-    display: inline-block;
-    position: relative;
+
+/* Gerçekçi CSS Alev Katmanları */
+.fire-effect {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    bottom: 25px;
+    border-radius: 50% 0 50% 50%;
+    transform: rotate(-45deg);
+    animation: flicker 0.5s infinite alternate ease-in-out;
     z-index: 1;
-    user-select: none;
 }
-.flame-left {
-    animation: flameLeft 0.6s infinite alternate ease-in-out;
-    margin-right: 15px;
+
+.fire-left {
+    left: 20px;
+    background: radial-gradient(circle at 60% 60%, #ffdd00 20%, #ff5500 50%, #ff0000 80%);
+    box-shadow: 0 0 30px #ff5500, 0 0 50px #ff0000, -10px -20px 40px rgba(255,68,0,0.5);
 }
-.flame-right {
-    animation: flameRight 0.6s infinite alternate ease-in-out;
-    margin-left: 15px;
+
+.fire-right {
+    right: 20px;
+    background: radial-gradient(circle at 60% 60%, #ffdd00 20%, #ff5500 50%, #ff0000 80%);
+    box-shadow: 0 0 30px #ff5500, 0 0 50px #ff0000, 10px -20px 40px rgba(255,68,0,0.5);
+}
+
+/* İç çekirdek (Ateşin sıcak merkezi) */
+.fire-core {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background: #ffffff;
+    border-radius: 50% 0 50% 50%;
+    left: 15px;
+    top: 15px;
+    box-shadow: 0 0 15px #ffffff, 0 0 25px #ffdd00;
 }
 </style>
 
 <div class="bta-container">
-    <span class="flame flame-left">🔥</span>
+    <!-- Sol Ateş -->
+    <div class="fire-effect fire-left">
+        <div class="fire-core"></div>
+    </div>
+    
     <div class="bta-logo-custom">BTA</div>
-    <span class="flame flame-right">🔥</span>
+    
+    <!-- Sağ Ateş -->
+    <div class="fire-effect fire-right">
+        <div class="fire-core"></div>
+    </div>
 </div>
 ''', unsafe_allow_html=True)
 
@@ -217,16 +250,3 @@ if os.path.exists(excel_yolu):
                         except Exception as e:
                             st.error("Borsa verisi çekilirken bir hata oluştu.")
             else:
-                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
-        else:
-            st.error("Excel dosyasında E sütunu bulunamadı!")
-            
-    except Exception as e:
-        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
-else:
-    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
-
-st.write("---")
-
-# ===================================================================== #
-# 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI
