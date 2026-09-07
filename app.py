@@ -5,34 +5,35 @@ import yfinance as yf
 import os
 
 # ===================================================================== #
-# 1. TEMALANDIRMA VE STİLLER (CSS - TELEFON OPTİMİZASYONLU)
+# 1. TEMALANDIRMA VE STİLLER (GÖZ DOSTU & ULTRA OKUNAKLI)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Deep Gece Mavisi Borsa Arka Planı ve Grafik Çizgileri */
+/* Deep Gece Mavisi Arka Plan */
 .stApp {
     background-color: #0b111e !important;
-    background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%), linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) !important;
-    background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
+    background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important;
 }
+/* Gözü Yormayan Büyük Veri Kartları */
 div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] {
-    background-color: #121d33 !important; border: 1px solid #1e2e4d !important; border-radius: 12px !important; padding: 15px !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    background-color: #121d33 !important; border: 2px solid #1e3a5f !important; border-radius: 12px !important; padding: 18px !important; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5) !important;
 }
-input, textarea, select, div[data-baseweb="select"] { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; }
-.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #ffffff !important; border: 1px solid #00ffcc !important; border-radius: 8px !important; font-weight: bold !important; box-shadow: 0 0 10px rgba(0, 255, 204, 0.2) !important; }
-.stButton>button:hover { background: linear-gradient(135deg, #0d9488 0%, #00ffcc 100%) !important; color: #0b111e !important; box-shadow: 0 0 20px rgba(0, 255, 204, 0.6) !important; }
+input, textarea, select, div[data-baseweb="select"] { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; font-size: 16px !important; }
+.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #ffffff !important; border: 1px solid #00ffcc !important; border-radius: 8px !important; font-weight: bold !important; font-size: 16px !important; }
 
-/* TELEFONDA KUTULARI KÜÇÜLTEN VE YER KAZANDIRAN YENİ TABLO CSS YAPISI */
-.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; font-family: sans-serif; background-color: #121d33; border-radius: 12px; overflow: hidden; }
-.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; font-size: 13px; font-weight: bold; text-transform: uppercase; }
-.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; font-size: 14px; }
-.pozitif-degisim { color: #00ff66 !important; font-weight: bold; font-size: 15px; }
-.negatif-degisim { color: #ff3344 !important; font-weight: bold; font-size: 15px; }
+/* TELEFONDA KAN KAN AKAN DÜZGÜN BORSA TABLOSU */
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 16px; background-color: #121d33; border-radius: 12px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 12px 10px; font-weight: bold; }
+.borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+.pozitif-degisim { color: #00ff66 !important; font-weight: bold; }
+.negatif-degisim { color: #ff3344 !important; font-weight: bold; }
 
-/* TELEFONDA BÜYÜK GÖRÜNEN CANLI ALTIN BANDI CSS */
-.finans-bandi { background: #121d33; border: 2px solid #1e3a5f; border-radius: 10px; padding: 12px; margin-bottom: 15px; font-weight: bold; font-size: 17px; color: #fff; text-align: center; line-height: 1.6; box-shadow: 0 0 15px rgba(0, 255, 204, 0.1); }
+/* ULTRA GÖRÜNÜR BÜYÜK FİNANS KARTLARI CSS */
+.altin-kart { background: linear-gradient(135deg, #121d33 0%, #1a2e5c 100%); border: 2px solid #00ffcc; border-radius: 12px; padding: 15px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0, 255, 204, 0.1); }
+.altin-baslik { font-size: 18px !important; color: #00ffcc !important; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+.altin-fiyat { font-size: 26px !important; color: #ffffff !important; font-weight: 900 !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 </style>
 <marquee scrollamount="8"><span style="font-size:45px; font-weight:bold; color:#fff; text-shadow: 0 0 10px #ff0055;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</span></marquee>
 ''', unsafe_allow_html=True)
@@ -49,8 +50,9 @@ def formatla_tl(deger):
     except: return str(deger)
 
 # ===================================================================== #
-# CANLI ALTIN VE BIST 100 PİYASA FIYAT BANDI (BÜYÜTÜLDÜ)
+# CANLI ALTIN VE BIST 100 PİYASA FIYAT ALANI (BÜYÜK KART SİSTEMİ)
 # ===================================================================== #
+st.markdown('<p style="font-size:22px; font-weight:bold; color:#00ffcc;">📊 CANLI PİYASA ÖZETİ (GÖZ DOSTU)</p>', unsafe_allow_html=True)
 try:
     bist_v = yf.Ticker("XU100.IS").history(period="2d", timeout=2)
     ons_v = yf.Ticker("GC=F").history(period="2d", timeout=2)
@@ -70,20 +72,32 @@ try:
     bist_renk = "#00ff66" if bist_d >= 0 else "#ff3344"
     bist_isaret = "▲" if bist_d >= 0 else "▼"
     
+    # Telefonlarda alt alta devasa parlayan buton şeklinde kartlar diziyoruz
     st.markdown(f'''
-    <div class="finans-bandi">
-        🌐 <b>BIST 100:</b> {bist_f:,.2f} <span style="color:{bist_renk};">{bist_isaret} %{bist_d:.2f}</span><br>
-        🟡 <b>Ons Altın:</b> ${ons_f:,.2f} | ✨ <b>Gram Altın:</b> {formatla_tl(gram_f)}<br>
-        🎯 <b>Çeyrek:</b> {formatla_tl(ceyrek_f)} | 📊 <b>Yarım:</b> {formatla_tl(yarim_f)}<br>
-        👑 <b>Tam Altın:</b> {formatla_tl(tam_f)}
+    <div class="altin-kart" style="border-color:{bist_renk};">
+        <div class="altin-baslik">🌐 BIST 100 ENDEKSİ</div>
+        <div class="altin-fiyat">{bist_f:,.2f} <span style="color:{bist_renk}; font-size:20px;">{bist_isaret} %{bist_d:.2f}</span></div>
+    </div>
+    <div class="altin-kart">
+        <div class="altin-baslik">✨ GRAM ALTIN</div>
+        <div class="altin-fiyat">{formatla_tl(gram_f)}</div>
+    </div>
+    <div class="altin-kart">
+        <div class="altin-baslik">🎯 ÇEYREK ALTIN</div>
+        <div class="altin-fiyat">{formatla_tl(ceyrek_f)}</div>
+    </div>
+    <div class="altin-kart">
+        <div class="altin-baslik">👑 TAM ALTIN</div>
+        <div class="altin-fiyat">{formatla_tl(tam_f)}</div>
     </div>
     ''', unsafe_allow_html=True)
 except:
-    st.markdown('<div class="finans-bandi">⏳ Finansal Veri Bandı Yükleniyor...</div>', unsafe_allow_html=True)
+    st.markdown('<div class="altin-kart">⏳ Fiyatlar Güncelleniyor...</div>', unsafe_allow_html=True)
 
 # ===================================================================== #
-# 2. VERİ MOTORU VE TABLOLAR (BAŞLIKLAR KISALTILDI, FONT KÜÇÜLTÜLDÜ)
+# 2. VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
+st.write("")
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -143,14 +157,10 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 3. HALKA ARZ VE HABER ALANI
+# 3. HALKA ARZ VE HABER ALANI (2 ADET HABER TAM SÜRÜM)
 # ===================================================================== #
 st.write("---")
 st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
 c_arz, c_hbr = st.columns(2)
 with c_arz:
     st.subheader("🚀 Yeni Halka Arz Listesi")
-    st.dataframe(pd.DataFrame({"Hisse Kodu 📈": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
-with c_hbr:
-    st.subheader("📰 Son Dakika Gelişmeler / KAP")
-    st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
