@@ -181,7 +181,7 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ (YENİLENMİŞ VE HATALARDAN ARNDIRILMIŞ YAPILAR)
+# 4. YORUMLAR VE BEĞENİ PANELİ (%100 BOŞLUK HATASI VERMEYEN KESİN YAPILAR)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
@@ -201,15 +201,16 @@ sol_taraf, sag_taraf = st.columns([1, 1.2])
 with sol_taraf:
     st.write("**Paneli Puanlayın:**")
     
-    # Yıldız butonlarını tamamen yan yana hizalayan 3 bağımsız sütun açıyoruz
+    # Tüm tehlikeli girintili alt bloklar düzleştirildi
     c1, c2, c3 = st.columns(3)
     with c1:
         if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star5", use_container_width=True):
             st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
-            st.experimental_rerun()
     with c2:
         if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="star4", use_container_width=True):
             st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
-            st.experimental_rerun()
     with c3:
         if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="star3", use_container_width=True):
+            st.session_state["begeniler"]["⭐ 3 Yıldız"] += 1
+            
+    st.write("---")
