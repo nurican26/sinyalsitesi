@@ -19,7 +19,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.kucuk-sayac { font-size: 13px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
+.kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
@@ -36,9 +36,7 @@ if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
-if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
 st.session_state["topham_sayac"] += 1
-st.session_state["gunluk_sayac"] += 1
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -124,10 +122,9 @@ st.markdown('<div class="kucuk-baslik">Halka Arz Hisseleri</div>', unsafe_allow_
 st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
 
 # ===================================================================== #
-# 5. ORİJİNAL GÜVENLİ SOHBET FORMU (PEMBE RENK VE FAZLALIKLAR SİLİNDİ)
+# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
 # ===================================================================== #
 st.write("---")
-# İstediğiniz gibi pembe renkli büyük başlık ve emoji silinerek sadece düz zarif 'Sohbet' yazıldı
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
@@ -145,7 +142,7 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler topluluk kuralları gereği engellendi!")
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
@@ -161,6 +158,7 @@ for s in range(len(df_sohbet_oku)):
         st.rerun()
 
 # ===================================================================== #
-# YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
+# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI (EN ALTA TAM İSTEDİĞİNİZ GİBİ ÇIKAR)
 # ===================================================================== #
 st.write("---")
+st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
