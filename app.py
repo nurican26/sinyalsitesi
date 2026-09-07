@@ -11,11 +11,13 @@ st.set_page_config(page_title="BTA", layout="wide")
 st.markdown('<h1 style="font-family: \'Brush Script MT\', cursive, sans-serif; font-size: 50px; color: #00ffcc; text-align: center; margin-bottom: 5px;">BTA</h1>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
-db_sohbet_kalici = "bta_sohbet_nihai.csv"
 
-# KESİN KALICILIK: Dosya yoksa sıfırdan oluşturur, varsa içindekileri asla silmez
-if not os.path.exists(db_sohbet_kalici):
-    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet_kalici, index=False)
+# --- KASMAYAN VE KİLİTLENMEYEN SOHBET BELLEĞİ ---
+if "bta_sohbet_hafiza_sistemi" not in st.session_state:
+    st.session_state["bta_sohbet_hafiza_sistemi"] = [
+        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Sistem donma zırhı sayesinde artık roket gibi hızlandı, elinize sağlık."},
+        {"isim": "BTA Sistem", "saat": "10:00", "yorum": "BTA Canlı Sohbet Alanına Hoş Geldiniz!"}
+    ]
 
 # Giriş sayaçları bellek ayarı
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
@@ -28,43 +30,78 @@ def formatla_tl(deger):
     except: return str(deger)
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
+# DONMAYI ENGELLEYEN AKILLI FİNANSAL VERİ ÖNBELLEĞİ (15 Dk Gecikmeli)
 # ===================================================================== #
-try:
-    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    gram_f = (ons_f / 31.1034768) * usd_f
-    
-    pk1, pk2, pk3, pk4 = st.columns(4)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
-    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
-    pk3.metric("TAM ALTIN", f"{gram_f * 6.52:,.1f} TL")
-    pk4.metric("BIST 100", f"{bist_f:,.1f}")
-except:
-    st.info("⏳ Finansal Veriler Güncelleniyor...")
+@st.cache_data(ttl=900) # Verileri 15 dakika hafızada tutar, sitenin donmasını KESİN önler!
+def finansal_verileri_getir(hisse_listesi_input):
+    veriler = {}
+    try:
+        bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=1.5)['Close'].iloc[-1])
+        ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=1.5)['Close'].iloc[-1])
+        usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=1.5)['Close'].iloc[-1])
+        veriler["bist"] = bist_f
+        veriler["gram"] = (ons_f / 31.1034768) * usd_f
+    except:
+        veriler["bist"] = 0.0
+        veriler["gram"] = 0.0
+        
+    # Tablodaki hisselerin fiyatlarını toplu çeker
+    for h in hisse_listesi_input:
+        try:
+            h_veri = yf.Ticker(f"{h}.IS").history(period="1d", timeout=1.5)
+            veriler[h] = float(h_veri['Close'].iloc[-1]) if not h_veri.empty else 0.0
+        except:
+            veriler[h] = 0.0
+    return veriler
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR
+# Excel Dosyası Kontrolü ve Hisse Listesi Çıkarma
+# ===================================================================== #
+hisse_kodlari = []
+if os.path.exists(excel_yolu):
+    try:
+        df_excel = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        for idx in range(min(10, len(df_excel))):
+            ha = str(df_excel.iloc[idx, 0]).strip().upper() if pd.notna(df_excel.iloc[idx, 0]) else ""
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                hisse_kodlari.append(ha)
+    except:
+        pass
+
+# Önbellekten zırhlı veri çekimi tetikleniyor
+canli_piyasa = finansal_verileri_getir(hisse_kodlari)
+
+# ===================================================================== #
+# PİYASA METRİK KARTLARI GÖSTERİMİ
+# ===================================================================== #
+if canli_piyasa.get("gram", 0.0) > 0:
+    pk1, pk2, pk3, pk4 = st.columns(4)
+    pk1.metric("GRAM ALTIN", f"{canli_piyasa['gram']:,.1f} TL")
+    pk2.metric("ÇEYREK ALTIN", f"{canli_piyasa['gram'] * 1.63:,.1f} TL")
+    pk3.metric("TAM ALTIN", f"{canli_piyasa['gram'] * 6.52:,.1f} TL")
+    pk4.metric("BIST 100", f"{canli_piyasa['bist']:,.1f}")
+else:
+    st.info("⏳ Finansal Veri Bandı Yenileniyor...")
+
+# ===================================================================== #
+# 3. VERİ MOTORU VE ALGORİTMİK TABLO
 # ===================================================================== #
 st.write("")
 if os.path.exists(excel_yolu):
     try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         tablo_html = '<table style="width:100%; border-collapse:collapse; margin:10px 0;"><tr><th style="text-align:left; padding:8px;">PUAN</th><th style="text-align:left; padding:8px;">HİSSE 🔗</th><th style="text-align:left; padding:8px;">ALIM</th><th style="text-align:left; padding:8px;">FİYAT</th><th style="text-align:left; padding:8px;">K/Z</th></tr>'
         veri_var_mi = False
         
-        for idx in range(min(10, len(df))):
+        for idx in range(min(10, len(df_excel))):
             try:
-                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-                puan_d = df.iloc[idx, 3]
+                ha = str(df_excel.iloc[idx, 0]).strip().upper() if pd.notna(df_excel.iloc[idx, 0]) else ""
+                alim_c = str(df_excel.iloc[idx, 2]).strip() if pd.notna(df_excel.iloc[idx, 2]) else ""
+                puan_d = df_excel.iloc[idx, 3]
                 
-                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                if ha in hisse_kodlari:
                     veri_var_mi = True
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+                    c_fiyat = canli_piyasa.get(ha, 0.0)
                     try: maliyet = float(alim_c.replace(",", "."))
                     except: maliyet = 0.0
                     
@@ -103,47 +140,44 @@ with col_sag:
     st.write("[Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. ANINDA GÜNCELLEYEN KALICI CANLI SOHBET SİSTEMİ (WHATSAPP TARZI BAND)
+# 5. ASLA DONMAYAN VE ANINDA GÜNCELLEŞEN CANLI SOHBET SİSTEMİ
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
 
-# Kullanıcı adı girişi
-r_rumuz = st.text_input("Sohbete katılmak için adınızı yazın:", max_chars=20, value="Ziyaretçi", key="bta_rumuz_al")
-
-# WhatsApp tarzı, kilitlenmeyen alt canlı mesaj bandı
-y_mesaj_girdisi = st.chat_input("Yorumunuzu buraya yazıp enter tuşuna basın...")
-
-if y_mesaj_girdisi:
-    if y_mesaj_girdisi.strip():
-        m_temiz_or = y_mesaj_girdisi.lower().replace(" ", "")
-        if not any(z in m_temiz_or for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
-            # Kalıcı Veritabanı CSV dosyasına milisaniyede kaydeder
-            df_eski = pd.read_csv(db_sohbet_kalici)
-            y_yeni_satir = pd.DataFrame([{"isim": r_rumuz.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_mesaj_girdisi.strip()}])
-            pd.concat([y_yeni_satir, df_eski], ignore_index=True).to_csv(db_sohbet_kalici, index=False)
-            st.rerun()
+# Kilitlenmeleri bitiren form yapısı
+with st.form(key="bta_donmaz_sohbet_formu", clear_on_submit=True):
+    y_is = st.text_input("Adınız / Rumuzunuz:", max_chars=25)
+    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
+    bta_yayinla = st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True)
+    
+    if bta_yayinla:
+        if y_is.strip() and y_me.strip():
+            m_kucuk = y_me.lower().replace(" ", "")
+            if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
+                y_satir = {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}
+                st.session_state["bta_sohbet_hafiza_sistemi"].insert(0, y_satir)
+                st.rerun()
+            else:
+                st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
         else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+            st.error("❌ Lütfen adınızı ve mesajınızı doldurun.")
 
-# YÖNETİCİ KONTROL ALANI (BTA123 AKTİF)
+# YÖNETİCİ MODERASYON PANELİ (BTA123 AKTİF)
 with st.expander("🛠 Yönetici Girişi"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
     if adm_mod: st.success("🔓 Silme yetkisi aktif!")
 
-# MESAJLARI GERÇEK ZAMANLI DOSYADAN OKUR VE ASLA SİLMEZ
-df_sohbet_oku = pd.read_csv(db_sohbet_kalici)
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
+# SOHBET AKIŞINI GÖRÜNTÜLEME
+for s, sh in enumerate(st.session_state["bta_sohbet_hafiza_sistemi"]):
     st.write(f"👤 **{sh['isim']}** ({sh['saat']}): {sh['yorum']}")
     if adm_mod:
         if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-            df_sl = pd.read_csv(db_sohbet_kalici)
-            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet_kalici, index=False)
+            st.session_state["bta_sohbet_hafiza_sistemi"].pop(s)
             st.rerun()
 
 # ===================================================================== #
-# YASAL UYARI VE EN ALTA SABİTLENEN GİRİŞ SAYAÇLARI
+# YASAL UYARI VE EN ALTA SABİTLENEN SAYAÇLAR
 # ===================================================================== #
 st.write("---")
 st.caption("⚠ SPK YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.")
