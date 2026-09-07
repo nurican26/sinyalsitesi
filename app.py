@@ -4,20 +4,18 @@ import datetime
 import yfinance as yf
 import os
 
-# Sayfa Yapılandırması
+# Sayfa Yapılandırması (Ultra Hafif)
 st.set_page_config(page_title="BTA", layout="wide")
 
-# En tepede el yazısı logomuz
+# Tepede sadece el yazısı stilinde temiz BTA başlığı
 st.markdown('<h1 style="font-family: \'Brush Script MT\', cursive, sans-serif; font-size: 50px; color: #00ffcc; text-align: center; margin-bottom: 5px;">BTA</h1>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
+db_sohbet_kalici = "bta_sohbet_nihai.csv"
 
-# --- KASMAYAN GÜVENLİ SOHBET HAFIZASI ---
-if "bta_sohbet_odasi_yedek" not in st.session_state:
-    st.session_state["bta_sohbet_odasi_yedek"] = [
-        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Sistem harika çalışıyor, elinize sağlık."},
-        {"isim": "Sistem", "saat": "10:00", "yorum": "Sohbet alanı aktif."}
-    ]
+# KESİN KALICILIK: Dosya yoksa sıfırdan oluşturur, varsa içindekileri asla silmez
+if not os.path.exists(db_sohbet_kalici):
+    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet_kalici, index=False)
 
 # Giriş sayaçları bellek ayarı
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
@@ -94,7 +92,6 @@ st.write("---")
 st.subheader("🔔 GÜNCEL GELİŞMELER & SÜPER PANEL")
 
 col_sol, col_sag = st.columns(2)
-
 with col_sol:
     st.write("**🚀 Yeni Halka Arz Listesi**")
     st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum": ["Talep Başladı", "SPK Bekliyor"]}), use_container_width=True, hide_index=True)
@@ -106,46 +103,47 @@ with col_sag:
     st.write("[Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. GARANTİLİ MESAJ GÖNDEREN YENİ SOHBET TASARIMI (FORM ENTEGRE EDİLDİ)
+# 5. ANINDA GÜNCELLEYEN KALICI CANLI SOHBET SİSTEMİ (WHATSAPP TARZI BAND)
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
 
-# Düğmeye basıldığında verinin havada kaybolmasını engelleyen garantili form yapısı
-with st.form(key="bta_garanti_sohbet_formu", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    bta_gonder_btn = st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True)
-    
-    if bta_gonder_btn:
-        if y_is.strip() and y_me.strip():
-            m_kucuk = y_me.lower().replace(" ", "")
-            if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
-                # Mesajı kalıcı bellek listesinin en başına ekler
-                y_satir = {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}
-                st.session_state["bta_sohbet_odasi_yedek"].insert(0, y_satir)
-                st.rerun()
-            else:
-                st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-        else:
-            st.error("❌ Lütfen hem adınızı hem de mesajınızı doldurun.")
+# Kullanıcı adı girişi
+r_rumuz = st.text_input("Sohbete katılmak için adınızı yazın:", max_chars=20, value="Ziyaretçi", key="bta_rumuz_al")
 
-# YÖNETİCİ KONTROL ALANI
+# WhatsApp tarzı, kilitlenmeyen alt canlı mesaj bandı
+y_mesaj_girdisi = st.chat_input("Yorumunuzu buraya yazıp enter tuşuna basın...")
+
+if y_mesaj_girdisi:
+    if y_mesaj_girdisi.strip():
+        m_temiz_or = y_mesaj_girdisi.lower().replace(" ", "")
+        if not any(z in m_temiz_or for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
+            # Kalıcı Veritabanı CSV dosyasına milisaniyede kaydeder
+            df_eski = pd.read_csv(db_sohbet_kalici)
+            y_yeni_satir = pd.DataFrame([{"isim": r_rumuz.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_mesaj_girdisi.strip()}])
+            pd.concat([y_yeni_satir, df_eski], ignore_index=True).to_csv(db_sohbet_kalici, index=False)
+            st.rerun()
+        else:
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+
+# YÖNETİCİ KONTROL ALANI (BTA123 AKTİF)
 with st.expander("🛠 Yönetici Girişi"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-    if adm_mod:
-        st.success("🔓 Silme yetkisi aktif!")
+    if adm_mod: st.success("🔓 Silme yetkisi aktif!")
 
-# MESAJ LİSTELEME
-for s, sh in enumerate(st.session_state["bta_sohbet_odasi_yedek"]):
+# MESAJLARI GERÇEK ZAMANLI DOSYADAN OKUR VE ASLA SİLMEZ
+df_sohbet_oku = pd.read_csv(db_sohbet_kalici)
+for s in range(len(df_sohbet_oku)):
+    sh = df_sohbet_oku.iloc[s]
     st.write(f"👤 **{sh['isim']}** ({sh['saat']}): {sh['yorum']}")
     if adm_mod:
         if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-            st.session_state["bta_sohbet_odasi_yedek"].pop(s)
+            df_sl = pd.read_csv(db_sohbet_kalici)
+            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet_kalici, index=False)
             st.rerun()
 
 # ===================================================================== #
-# YASAL UYARI VE EN ALTA GELEN GİRİŞ SAYAÇLARI
+# YASAL UYARI VE EN ALTA SABİTLENEN GİRİŞ SAYAÇLARI
 # ===================================================================== #
 st.write("---")
 st.caption("⚠ SPK YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.")
