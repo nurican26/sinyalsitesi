@@ -17,7 +17,7 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st.markdown("""
     <style>
         .stApp {
-            background: linear-gradient(100deg, #8a0000 0%, #003d19 65%) !important;
+            background: linear-gradient(200deg, #8a0000 0%, #003d19 90%) !important;
             background-attachment: fixed !important;
         }
         header, [data-testid="stHeader"] {
