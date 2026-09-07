@@ -181,7 +181,7 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ (%100 BOŞLUK HATASI VERMEYEN KESİN YAPILAR)
+# 4. YORUMLAR VE BEĞENİ PANELİ (KARANLIK MOD UYUMLU, ASLA GİZLENEMEZ SÜRÜM)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
@@ -201,7 +201,7 @@ sol_taraf, sag_taraf = st.columns([1, 1.2])
 with sol_taraf:
     st.write("**Paneli Puanlayın:**")
     
-    # Tüm tehlikeli girintili alt bloklar düzleştirildi
+    # Yıldız butonları yan yana şık yerleşim
     c1, c2, c3 = st.columns(3)
     with c1:
         if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="star5", use_container_width=True):
@@ -214,3 +214,4 @@ with sol_taraf:
             st.session_state["begeniler"]["⭐ 3 Yıldız"] += 1
             
     st.write("---")
+    
