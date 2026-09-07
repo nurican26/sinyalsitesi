@@ -88,26 +88,26 @@ st.markdown('''
 
 excel_yolu = "nurican.xls.xlsm" 
 
-# --- GÜVENLİ VE KESİN SAYAÇ MİMARİSİ ---
+# --- GÜVENLİ SAYAÇ MİMARİSİ ---
 if "toplam_sayac" not in st.session_state:
-    st.session_state["toplam_sayac"] = 1450  # Başlangıç değeri (Sıfır görünmemesi için yüksek bir sayıdan başlattık)
+    st.session_state["toplam_sayac"] = 1450  # Panel sıfır görünmesin diye başlangıç değeri
 if "gunluk_sayac" not in st.session_state:
     st.session_state["gunluk_sayac"] = 120
 
-# Her sayfa yenilendiğinde sayaçları güvenle birer adet artırıyoruz
+# Her sayfa yenilendiğinde sayaçları artır
 st.session_state["toplam_sayac"] += 1
 st.session_state["gunluk_sayac"] += 1
 
-# Günlük sayacın 24 saatte bir sıfırlanması için zaman kontrolü
+# Günlük sayacın 24 saatte bir sıfırlanması kontrolü
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 if "son_giris_tarihi" not in st.session_state:
     st.session_state["son_giris_tarihi"] = bugun
 
 if st.session_state["son_giris_tarihi"] != bugun:
-    st.session_state["gunluk_sayac"] = 1  # Yeni günde sayacı sıfırla
+    st.session_state["gunluk_sayac"] = 1
     st.session_state["son_giris_tarihi"] = bugun
 
-# Anlık odadaki kişi sayısı simülasyonu (Yenilemeye bağlı dinamik değişim gösterir)
+# Anlık odadaki kişi sayısı dinamik simülasyonu
 anlik_oda = (int(time.time()) % 5) + 3 
 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ") 
@@ -225,3 +225,7 @@ if os.path.exists(excel_yolu):
             st.error("Excel dosyasında E sütunu bulunamadı!") 
             
     except Exception as e: 
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.") 
+else: 
+    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}") 
+
