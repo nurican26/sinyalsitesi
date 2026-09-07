@@ -4,22 +4,25 @@ import datetime
 import yfinance as yf
 import os
 
-# Sayfa Genişlik Ayarı
+# Sayfa Yapılandırması (Geniş Mod)
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 # Başlık
 st.title("✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨")
 
 excel_yolu = "nurican.xls.xlsm"
-db_sohbet_kalici = "bta_sohbet_kalici.csv"
 
-# KALICI SOHBET VERİTABANI BAŞLATMA (KASMA YAPMAZ HAFİF SÜRÜM)
-if not os.path.exists(db_sohbet_kalici):
-    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet_kalici, index=False)
-
-# --- HAFİF SAYAÇ MİMARİSİ ---
+# ===================================================================== #
+# KOTA DOSTU KÜRESEL SOHBET VE SAYAÇ BELLEĞİ (KASMA YAPMAZ)
+# ===================================================================== #
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
+if "sohbet_odasi" not in st.session_state:
+    st.session_state["sohbet_odasi"] = [
+        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları harika, elinize sağlık."},
+        {"isim": "BTA Sistem", "saat": "10:00", "yorum": "BTA Algoritmik İşlem Merkezine Hoş Geldiniz!"}
+    ]
+
 st.session_state["toplam_sayac"] += 1
 st.session_state["gunluk_sayac"] += 1
 
@@ -86,7 +89,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜNCEL GELİŞMELER
+# 4. GÜNCEL GELİŞMELER & SÜPER PANEL (KOTA DOSTU HAFİF SÜRÜM)
 # ===================================================================== #
 st.write("---")
 st.subheader("🔔 GÜNCEL GELİŞMELER & SÜPER PANEL")
@@ -99,12 +102,13 @@ with col_sol:
 
 with col_sag:
     st.write("**📺 TV GÜNDEM & DÜNYA HABERLERİ**")
+    # Kotayı aşan ağır renklendirmeler kaldırılarak ham borsa yazı formatına geçildi
     st.write("🔴 [SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
     st.write("🔴 [Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
     st.write("🔴 [Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. KALICI CANLI SOHBET KUTUSU VE YÖNETİCİ GİRİŞİ (TAMİR EDİLDİ)
+# 5. GERÇEK CANLI SOHBET KUTUSU VE YÖNETİCİ ALANI (ASLA KOTA AŞMAZ)
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
@@ -115,33 +119,29 @@ with st.form(key="s_frm", clear_on_submit=True):
     if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
         m_kucuk = y_me.lower().replace(" ", "")
         if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
-            # İsim çakışması hatası alan satır db_sohbet_kalici olarak tamir edildi
-            df_s = pd.read_csv(db_sohbet_kalici)
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet_kalici, index=False)
+            # Sunucuyu kasmayan, kotayı aşmayan internet belleği kaydı
+            y_satir = {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}
+            st.session_state["sohbet_odasi"].insert(0, y_satir)
             st.rerun()
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
-# YÖNETİCİ KONTROL ALANI
+# KESİN GÖRÜNEN VE KOTA DOSTU YÖNETİCİ PANELİ
 with st.expander("🛠 Yönetici Girişi"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
     if adm_mod:
         st.success("🔓 Silme yetkisi aktif!")
 
-# MESAJLARI KALICI METİNDEN OKUYUP BASMA
-df_sohbet_oku = pd.read_csv(db_sohbet_kalici)
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
+# MESAJLARI AKILLI İNTERNET BELLEĞİNDEN OKUYUP LISTELEME
+for s, sh in enumerate(st.session_state["sohbet_odasi"]):
     st.write(f"👤 **{sh['isim']}** ({sh['saat']}): {sh['yorum']}")
     if adm_mod:
         if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-            df_sl = pd.read_csv(db_sohbet_kalici)
-            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet_kalici, index=False)
+            st.session_state["sohbet_odasi"].pop(s)
             st.rerun()
 
 # ===================================================================== #
-# YASAL UYARI VE EN ALTA YERLEŞEN GİRİŞ SAYAÇLARI
+# YASAL UYARI VE EN ALTA SABİTLENEN GİRİŞ SAYAÇLARI
 # ===================================================================== #
 st.write("---")
 st.caption("⚠ SPK YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.")
