@@ -13,96 +13,69 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# Verilerin düşmesini engellemek için yenileme süresi 30 saniyeye çıkarıldı
-st_autorefresh(interval=30 * 1000, key="bta_merkezi_yenileyici")
+# 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
+st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 
-# --- KÜÇÜLTÜLMÜŞ GERÇEKÇİ ALEVLİ BTA LOGO PANELİ ---
+# --- YENİLENEN ALEVLİ, EL YAZILI, RENKLİ BTA LOGO PANELİ ---
 st.markdown('''
 <style>
-@keyframes rgbText {
-    0% { color: #ff3333; }
-    25% { color: #33ff33; }
-    50% { color: #3333ff; }
-    75% { color: #ffff33; }
-    100% { color: #ff3333; }
+@keyframes rgbGlow {
+    0% { color: #ff3333; text-shadow: 0 0 10px #ff3333, -15px 0 15px #ff5500, 15px 0 15px #ff5500; }
+    25% { color: #33ff33; text-shadow: 0 0 10px #33ff33, -15px 0 20px #00ffcc, 15px 0 20px #00ffcc; }
+    50% { color: #3333ff; text-shadow: 0 0 10px #3333ff, -15px 0 15px #9900ff, 15px 0 15px #9900ff; }
+    75% { color: #ffff33; text-shadow: 0 0 10px #ffff33, -15px 0 20px #ffaa00, 15px 0 20px #ffaa00; }
+    100% { color: #ff3333; text-shadow: 0 0 10px #ff3333, -15px 0 15px #ff5500, 15px 0 15px #ff5500; }
 }
-
-@keyframes flicker {
-    0%, 100% { transform: scale(1) rotate(-2deg); opacity: 0.9; filter: blur(1px); }
-    20% { transform: scale(1.08) rotate(3deg); opacity: 1; filter: blur(0.5px); }
-    40% { transform: scale(0.96) rotate(-1deg); opacity: 0.85; filter: blur(1.5px); }
-    60% { transform: scale(1.1) rotate(2deg); opacity: 0.95; filter: blur(0.5px); }
-    80% { transform: scale(1) rotate(-3deg); opacity: 0.9; filter: blur(1px); }
+@keyframes flameLeft {
+    0%, 100% { transform: scale(1) rotate(-5deg); filter: hue-rotate(0deg); }
+    50% { transform: scale(1.15) rotate(-15deg); filter: hue-rotate(30deg); }
 }
-
+@keyframes flameRight {
+    0%, 100% { transform: scale(1) rotate(5deg); filter: hue-rotate(0deg); }
+    50% { transform: scale(1.15) rotate(15deg); filter: hue-rotate(30deg); }
+}
 .bta-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 15px auto 25px auto;
+    margin: 10px auto 25px auto;
     width: fit-content;
     position: relative;
     background: #0e1117;
-    padding: 10px 55px;
+    padding: 10px 40px;
     border-radius: 15px;
-    overflow: visible;
 }
-
 .bta-logo-custom {
     font-family: 'Brush Script MT', 'cursive', sans-serif;
-    font-size: 72px;
+    font-size: 42px; /* Orta boy panel boyutu */
     font-weight: bold;
-    animation: rgbText 8s infinite linear;
-    letter-spacing: 6px;
+    animation: rgbGlow 6s infinite linear;
+    letter-spacing: 4px;
     position: relative;
-    z-index: 10;
-    padding: 0 15px;
-    text-shadow: 0 0 10px rgba(255,255,255,0.1);
+    z-index: 2;
+    padding: 0 10px;
 }
-
-.fire-effect {
-    position: absolute;
-    width: 35px;
-    height: 35px;
-    bottom: 35px;
-    border-radius: 50% 0 50% 50%;
-    transform: rotate(-45deg);
-    animation: flicker 0.5s infinite alternate ease-in-out;
+.flame {
+    font-size: 36px;
+    display: inline-block;
+    position: relative;
     z-index: 1;
+    user-select: none;
 }
-
-.fire-left {
-    left: 15px;
-    background: radial-gradient(circle at 60% 60%, #ffdd00 20%, #ff5500 50%, #ff0000 80%);
-    box-shadow: 0 0 15px #ff5500, 0 0 25px #ff0000;
+.flame-left {
+    animation: flameLeft 0.6s infinite alternate ease-in-out;
+    margin-right: 15px;
 }
-
-.fire-right {
-    right: 15px;
-    background: radial-gradient(circle at 60% 60%, #ffdd00 20%, #ff5500 50%, #ff0000 80%);
-    box-shadow: 0 0 15px #ff5500, 0 0 25px #ff0000;
-}
-
-.fire-core {
-    position: absolute;
-    width: 14px;
-    height: 14px;
-    background: #ffffff;
-    border-radius: 50% 0 50% 50%;
-    left: 10px;
-    top: 10px;
-    box-shadow: 0 0 8px #ffffff, 0 0 12px #ffdd00;
+.flame-right {
+    animation: flameRight 0.6s infinite alternate ease-in-out;
+    margin-left: 15px;
 }
 </style>
 
 <div class="bta-container">
-    <div class="fire-effect fire-left">
-        <div class="fire-core"></div>
-    </div>
+    <span class="flame flame-left">🔥</span>
     <div class="bta-logo-custom">BTA</div>
-    <div class="fire-effect fire-right">
-        <div class="fire-core"></div>
-    </div>
+    <span class="flame flame-right">🔥</span>
 </div>
 ''', unsafe_allow_html=True)
 
@@ -114,9 +87,11 @@ if "toplam_sayac" not in st.session_state:
 if "gunluk_sayac" not in st.session_state:
     st.session_state["gunluk_sayac"] = 120
 
+# Her sayfa yenilendiğinde sayaçları artır
 st.session_state["toplam_sayac"] += 1
 st.session_state["gunluk_sayac"] += 1
 
+# Günlük sayacın 24 saatte bir sıfırlanması kontrolü
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 if "son_giris_tarihi" not in st.session_state:
     st.session_state["son_giris_tarihi"] = bugun
@@ -125,10 +100,12 @@ if st.session_state["son_giris_tarihi"] != bugun:
     st.session_state["gunluk_sayac"] = 1
     st.session_state["son_giris_tarihi"] = bugun
 
+# Anlık odadaki kişi sayısı dinamik simülasyonu
 anlik_oda = (int(time.time()) % 5) + 3
 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ")
 
+# Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -211,19 +188,14 @@ if os.path.exists(excel_yolu):
             
         st.write("---")
         
-        # --- BIST ANLIK ARAMA MOTORU (Hizalama ve Blok Yapısı Tamamen Düzeltildi) ---
+        # --- BIST ANLIK ARAMA MOTORU ---
         st.markdown('<p style="font-weight:bold; font-size:18px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        
-        if len(df.columns) < 5:
-            st.error("Excel dosyasında E sütunu bulunamadı!")
-        else:
+        if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]]
             tum_hisseler.sort()
             
-            if not tum_hisseler:
-                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
-            else:
+            if tum_hisseler:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
                     with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
@@ -244,6 +216,10 @@ if os.path.exists(excel_yolu):
                                 st.warning(f"{aranan_hisse} koduna ait veri bulunamadı.")
                         except Exception as e:
                             st.error("Borsa verisi çekilirken bir hata oluştu.")
+            else:
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
+        else:
+            st.error("Excel dosyasında E sütunu bulunamadı!")
             
     except Exception as e:
         st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
@@ -252,3 +228,5 @@ else:
 
 st.write("---")
 
+# ===================================================================== #
+# 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI
