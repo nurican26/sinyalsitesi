@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 
 # Sayfa yapılandırması ve 10 saniyede bir otomatik yenileyici 
 st.set_page_config(page_title="BTA Merkez", layout="wide") 
-st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici") 
+st_autorefresh(interval=10 * 1000, key="bta yenileyici") 
 
 # --- HAREKETLİ BTA LOGOSU VE STYLES ---
 st.markdown('''
