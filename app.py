@@ -27,13 +27,13 @@ input, textarea, select, div[data-baseweb="select"] { background-color: #090f1a 
 .borsa-tablo td { padding: 14px 18px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .pozitif-degisim { color: #00ff66 !important; font-weight: bold; font-size: 19px; }
 .negatif-degisim { color: #ff3344 !important; font-weight: bold; font-size: 19px; }
+.finans-bandi { background: #121d33; border: 1px solid #1e2e4d; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-weight: bold; font-size: 15px; color: #fff; text-align: center; }
 </style>
 <marquee scrollamount="8"><span style="font-size:45px; font-weight:bold; color:#fff; text-shadow: 0 0 10px #ff0055;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</span></marquee>
 ''', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- REFRESH VE SAYAÇ BAŞLANGICI ---
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
 st.session_state["toplam_sayac"] += 1
@@ -42,6 +42,42 @@ st.session_state["gunluk_sayac"] += 1
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
+
+# ===================================================================== #
+# CANLI ALTIN VE BIST 100 PİYASA FIYAT BANDI
+# ===================================================================== #
+try:
+    bist_v = yf.Ticker("XU100.IS").history(period="2d", timeout=2)
+    ons_v = yf.Ticker("GC=F").history(period="2d", timeout=2)
+    dolar_v = yf.Ticker("TRY=X").history(period="2d", timeout=2)
+    
+    bist_f = float(bist_v['Close'].iloc[-1]) if len(bist_v)>0 else 0.0
+    bist_d = ((bist_f - float(bist_v['Close'].iloc[-2])) / float(bist_v['Close'].iloc[-2])) * 100 if len(bist_v)>=2 else 0.0
+    
+    ons_f = float(ons_v['Close'].iloc[-1]) if len(ons_v)>0 else 0.0
+    usd_try = float(dolar_v['Close'].iloc[-1]) if len(dolar_v)>0 else 34.50
+    
+    # Gram Altın Hesaplama formülü: (Ons / 31.1034768) * Dolar Kuru
+    gram_f = (ons_f / 31.1034768) * usd_try if ons_f>0 else 0.0
+    ceyrek_f = gram_f * 1.63 if gram_f>0 else 0.0
+    yarim_f = gram_f * 3.26 if gram_f>0 else 0.0
+    tam_f = gram_f * 6.52 if gram_f>0 else 0.0
+    
+    bist_renk = "#00ff66" if bist_d >= 0 else "#ff3344"
+    bist_isaret = "▲" if bist_d >= 0 else "▼"
+    
+    st.markdown(f'''
+    <div class="finans-bandi">
+        🌐 <b>BIST 100:</b> {bist_f:,.2f} <span style="color:{bist_renk};">{bist_isaret} %{bist_d:.2f}</span> | 
+        🟡 <b>Ons Altın:</b> ${ons_f:,.2f} | 
+        ✨ <b>Gram Altın:</b> {formatla_tl(gram_f)} | 
+        🎯 <b>Çeyrek:</b> {formatla_tl(ceyrek_f)} | 
+        📊 <b>Yarım:</b> {formatla_tl(yarim_f)} | 
+        👑 <b>Tam Altın:</b> {formatla_tl(tam_f)}
+    </div>
+    ''', unsafe_allow_html=True)
+except:
+    st.markdown('<div class="finans-bandi">⏳ Finansal Veri Bandı Yükleniyor...</div>', unsafe_allow_html=True)
 
 # ===================================================================== #
 # 2. VERİ MOTORU VE TABLOLAR
@@ -121,28 +157,3 @@ with c_hbr:
 st.markdown('<p style="font-size:20px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
 sc1, sc2, sc3 = st.columns(3)
 sc2.metric("📅 Günlük Giriş ", f"{st.session_state['gunluk_sayac']} Giriş")
-sc3.metric("💎 Genel ", f"{st.session_state['toplam_sayac']} Giriş")
-
-# ===================================================================== #
-# 4. CANLI SOHBET KUTUSU
-# ===================================================================== #
-st.write("---")
-st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
-if "sohbet_hafizasi" not in st.session_state: st.session_state["sohbet_hafizasi"] = [{"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları harika."}]
-
-with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=100)
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
-        if not any(z in y_me.lower() or z in y_is.lower() for z in ["küfür1", "siktir", "piç", "salak"]):
-            st.session_state["sohbet_hafizasi"].insert(0, {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()})
-            st.success("✅ Yayınlandı!")
-            time.sleep(0.5)
-            st.rerun()
-        else: st.error("⚠ Argo kelime engellendi!")
-
-with st.expander("🛠 Yönetici Girişi"):
-    if st.text_input("Şifre:", type="password", key="adm") == "bta123": st.success("🔓 Silme yetkisi aktif!")
-
-for s, sh in enumerate(st.session_state["sohbet_hafizasi"]):
-    st.markdown(f'<div style="background-color: #121d33; padding: 12px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid #FF69B4;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:6px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
