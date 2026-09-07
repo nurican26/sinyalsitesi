@@ -25,12 +25,12 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı Tazeleyerek Anlık Senkronizasyon Sağlar)
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-kilit_dosyasi = "bta_oda_durumu.txt"  # Küresel kilit dosyası
+kilit_dosyasi = "bta_oda_durumu.txt"  # Küresel kilit ayar dosyası
 
 # KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
@@ -39,46 +39,46 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
-# --- KÜRESEL KİLİT KONTROLÜ ---
+# --- KÜRESEL KİLİT SİSTEMİ ALANI ---
 if not os.path.exists(kilit_dosyasi):
     with open(kilit_dosyasi, "w") as f:
-        f.write("LOCKED")
+        f.write("LOCKED")  # İlk açılışta güvenli olması için şifreli başlar
 
 with open(kilit_dosyasi, "r") as f:
     oda_guncel_durumu = f.read().strip()
 
-ODA_SIFRESI = "bta123"
+UYELIK_SIFRESI = "bta123"  # Üyelerin odaya girmek için kullanacağı ortak şifre
 
-# Eğer oda kilitliyse giriş panelini göster (Özel geçici izni olanlar hariç)
+# Eğer oda "LOCKED" (Sadece Üyeler) ise ve mevcut tarayıcıda üye girişi yapılmadıysa kilit ekranını göster
 if oda_guncel_durumu == "LOCKED":
-    if "gecici_izin" not in st.session_state or not st.session_state["gecici_izin"]:
-        st.markdown('<p style="font-size:24px; font-weight:bold; color:#ff3344; text-align:center;">🔒 BU ODA ŞİFRELİDİR</p>', unsafe_allow_html=True)
+    if "uye_girisi_basarili" not in st.session_state or not st.session_state["uye_girisi_basarili"]:
+        st.markdown('<p style="font-size:24px; font-weight:bold; color:#ff3344; text-align:center;">🔒 BU ODA SADECE ÜYELERE AÇIKTIR</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:14px; color:#aaa; text-align:center;">İçeriği görmek için lütfen geçerli üye şifresini giriniz.</p>', unsafe_allow_html=True)
         
-        with st.form(key="giris_formu"):
-            girilen_sifre = st.text_input("Giriş Şifresini Giriniz:", type="password")
+        with st.form(key="uye_giris_formu"):
+            girilen_sifre = st.text_input("Üye Giriş Şifresi:", type="password")
             giriş_butonu = st.form_submit_button("Odaya Giriş Yap 🔓", use_container_width=True)
             
             if giriş_butonu:
-                if girilen_sifre == ODA_SIFRESI:
-                    st.session_state["gecici_izin"] = True
-                    st.success("Giriş başarılı! Oda açılıyor...")
+                if girilen_sifre == UYELIK_SIFRESI:
+                    st.session_state["uye_girisi_basarili"] = True
+                    st.success("Giriş başarılı! Üye paneli yükleniyor...")
                     st.rerun()
                 else:
-                    st.error("❌ Hatalı şifre girdiniz!")
-        st.stop()
+                    st.error("❌ Hatalı Üye Şifresi Girdiniz!")
+        st.stop()  # Şifre girilmediyse kodun geri kalanını kesinlikle çalıştırma
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
 
 # ===================================================================== #
-# 2. SADECE BIST 100 PİYASA ALANI
+# 2. SADECE BIST 100 PİYASA ALANI (Altın Fiyatları Kaldırıldı)
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1]) # Panelde alt tarafta kullanıldığı için arka planda kalmalı
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     
-    # Altın metrikleri kaldırıldı, sadece tam genişlikte BIST 100 gösteriliyor
     st.metric("BIST 100 ENDEKSİ", f"{bist_f:,.2f}")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
@@ -165,12 +165,3 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-# --- FORM DIŞINA ALINAN GÜVENLİ YÖNETİCİ PANELİ ---
-with st.expander("🛠 Yönetici Panel Ayarları"):
-    adm_sifre = st.text_input("Yönetici Şifreniz:", type="password", key="yonetici_sifre_alani")
-    adm_mod = (adm_sifre == "bta123")
-    
-    if adm_mod:
-        st.write("---")
