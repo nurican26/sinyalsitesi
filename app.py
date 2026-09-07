@@ -3,17 +3,28 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import requests  # Hava durumu verisi çekmek için eklendi
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
+# 1. BORSA TEMASI, ANIMASYONLU ARKA PLAN VE STİLLER (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-.stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
+/* Kasmayan ve internet harcamayan dinamik CSS arka plan animasyonu */
+@keyframes borsaDalgalanma {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.stApp { 
+    background: linear-gradient(-45deg, #070b12, #111e36, #091526, #0e223d) !important; 
+    background-size: 400% 400% !important; 
+    animation: borsaDalgalanma 15s ease infinite !important;
+}
+
 div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
 input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
 .stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
@@ -23,7 +34,8 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
-<!-- BTA BAŞLIĞI KAYAN YAZI OLARAK GÜNCELLENDİ -->
+
+<!-- BTA BAŞLIĞI KAYAN YAZI -->
 <marquee behavior="scroll" direction="left" scrollamount="7">
     <h1 style="color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px; display:inline;">BTA</h1>
 </marquee>
@@ -45,29 +57,6 @@ st.session_state["topham_sayac"] += 1
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
-
-# CANLI HAVA DURUMU ÇEKME FONKSİYONU (Açık Kaynaklı Open-Meteo API kullanılır)
-def hava_durumu_getir():
-    try:
-        # İstanbul Enlem/Boylamı ayarlandı. İstediğiniz şehirle değiştirebilirsiniz.
-        url = "https://open-meteo.com"
-        yanit = requests.get(url, timeout=2).json()
-        current = yanit["current_weather"]
-        sicaklik = current["temperature"]
-        ruzgar = current["windspeed"]
-        
-        # Basit hava durumu kodu eşleştirme
-        w_code = current["weathercode"]
-        durum_metni = "☀️ Açık"
-        if w_code in [1, 2, 3]: durum_metni = "⛅ Parçalı Bulutlu"
-        elif w_code in [45, 48]: durum_metni = "🌫️ Sisli"
-        elif w_code in [51, 53, 55, 61, 63, 65, 80, 81, 82]: durum_metni = "🌧️ Yağmurlu"
-        elif w_code in [71, 73, 75, 77, 85, 86]: durum_metni = "❄️ Karlı"
-        elif w_code in [95, 96, 99]: durum_metni = "⚡ Gök Gürültülü Fırtına"
-        
-        return f"{sicaklik}°C", durum_metni, f"{ruzgar} km/h"
-    except:
-        return "⏳ --", "Veri Alınamadı", "--"
 
 # ===================================================================== #
 # 2. CANLI BIST 100 PİYASA ALANI (KUTU BOYUTU KISALTILDI)
@@ -126,20 +115,11 @@ if os.path.exists(excel_yolu):
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-                        
-                        st.write("")
-                        # --- YENİ CANLI HAVA DURUMU PANELİ ---
-                        st.markdown('<b>🌦️ CANLI HAVA DURUMU PANELİ (İSTANBUL)</b>', unsafe_allow_html=True)
-                        sicaklik, durum, ruzgar = hava_durumu_getir()
-                        
-                        f_col1, f_col2 = st.columns(2)
-                        f_col1.metric("Sıcaklık ve Durum", sicaklik, help=durum)
-                        f_col2.metric("Rüzgar Hızı", ruzgar)
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR (TALEBİNİZ ÜZERİNE BU BÖLÜM KALDIRILDI)
+# 4. HALKA ARZLAR (KALDIRILDI)
 # ===================================================================== #
 
 # ===================================================================== #
@@ -172,3 +152,14 @@ with st.expander("🛠 Yönetici"):
 df_sohbet_oku = pd.read_csv(db_sohbet)
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
+    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+        df_sl = pd.read_csv(db_sohbet)
+        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+        st.rerun()
+
+# ===================================================================== #
+# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI
+# ===================================================================== #
+st.write("---")
+st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
