@@ -7,7 +7,7 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. SAYFA YAPILANDIRMASI VE BORSA TASARIMI (CSS)
+# 1. SAYFA YAPILANDIRMASI VE GELİŞMİŞ BORSA TEMASI (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -25,7 +25,7 @@ st.markdown('''
 }
 
 /* Veri Tabloları, Kartlar ve Form Alanları */
-div[data-testid="stMetric"], div[data-testid="stForm"] {
+div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] {
     background-color: #121d33 !important;
     border: 1px solid #1e2e4d !important;
     border-radius: 12px !important;
@@ -58,7 +58,7 @@ input, textarea, select, div[data-baseweb="select"] {
     transform: scale(1.02);
 }
 
-/* Tablo Verilerinin Net Görünmesi İçin Ek CSS */
+/* Tablo Verilerinin Net Görünmesi İçin CSS */
 .borsa-tablo {
     width: 100%;
     border-collapse: collapse;
@@ -211,7 +211,9 @@ if os.path.exists(excel_yolu):
         
         st.write("")
 
-        # HATA VEREN KARMAŞIK ARAMA MOTORU SİLİNDİ, %100 HATASIZ YALIN YENİ MOTOR EKLENDİ
+        # ===================================================================== #
+        # Gelişmiş Grafik ve Haber Entegrasyonlu Yeni BIST Hisse Arama Motoru #
+        # ===================================================================== #
         st.markdown('<p style="font-size:20px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
@@ -221,39 +223,21 @@ if os.path.exists(excel_yolu):
             if len(tum_hisseler) > 0:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin ", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
-                    # Hiçbir riskli if-else veya try-except içermeyen tek satırlık veri basma sistemi
-                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
+                    # Son 30 günlük borsa geçmişini tek seferde çekiyoruz (Takılma riski sıfırlandı)
+                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="30d", timeout=3)
                     if len(h_detay_veri) > 0:
                         anlik_fiyat = float(h_detay_veri['Close'].iloc[-1])
-                        st.info(f"📊 {aranan_hisse} Güncel Fiyatı: {formatla_tl(anlik_fiyat)}")
-            else:
-                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
-        else:
-            st.error("Excel dosyasında E sütunu bulunamadı!")
-            
-    except:
-        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
-else:
-    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
-
-st.write("---")
-
-# ===================================================================== #
-# 3. HALKA ARZ VE HABER ALANI
-# ===================================================================== #
-st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')}*")
-
-col_arz, col_haber = st.columns(2)
-with col_arz:
-    st.subheader("🚀 Yeni Halka Arz Listesi")
-    df_arz = pd.DataFrame({
-        "Hisse Kodu 📈": ["XYZEN", "ABCDE"],
-        "Şirket Adı 🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"],
-        "Durum 📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]
-    })
-    st.dataframe(df_arz, use_container_width=True, hide_index=True)
-
-with col_haber:
-    st.subheader("📰 Son Dakika Gelişmeler / KAP")
-    st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
+                        dunku_kapanis = float(h_detay_veri['Close'].iloc[-2]) if len(h_detay_veri) >= 2 else anlik_fiyat
+                        gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
+                        gunun_en_yuksek = float(h_detay_veri['High'].iloc[-1])
+                        gunun_en_dusuk = float(h_detay_veri['Low'].iloc[-1])
+                        
+                        # 1. Aşama: Metrik Göstergeleri (Güncel, En Düşük, En Yüksek)
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric(label="Fiyat (Gecikmeli) 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
+                        col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek))
+                        col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
+                        
+                        # 2. Aşama: Canlı Trend Çizgi Grafiği Analizi
+                        st.write("")
+                        st.markdown(f"📈 **{aranan_hisse} Son 30 Günlük Değişim Grafiği:**")
