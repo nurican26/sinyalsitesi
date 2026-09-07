@@ -5,12 +5,13 @@ import yfinance as yf
 import os
 
 # ===================================================================== #
-# 1. TEMALANDIRMA VE STİLLER (CSS)
+# 1. TEMALANDIRMA VE STİLLER (CSS - TELEFON OPTİMİZASYONLU)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
+/* Deep Gece Mavisi Borsa Arka Planı ve Grafik Çizgileri */
 .stApp {
     background-color: #0b111e !important;
     background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%), linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) !important;
@@ -22,12 +23,16 @@ div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpan
 input, textarea, select, div[data-baseweb="select"] { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; }
 .stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #ffffff !important; border: 1px solid #00ffcc !important; border-radius: 8px !important; font-weight: bold !important; box-shadow: 0 0 10px rgba(0, 255, 204, 0.2) !important; }
 .stButton>button:hover { background: linear-gradient(135deg, #0d9488 0%, #00ffcc 100%) !important; color: #0b111e !important; box-shadow: 0 0 20px rgba(0, 255, 204, 0.6) !important; }
-.borsa-tablo { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 18px; font-family: sans-serif; background-color: #121d33; border-radius: 12px; overflow: hidden; }
-.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 14px 18px; }
-.borsa-tablo td { padding: 14px 18px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.pozitif-degisim { color: #00ff66 !important; font-weight: bold; font-size: 19px; }
-.negatif-degisim { color: #ff3344 !important; font-weight: bold; font-size: 19px; }
-.finans-bandi { background: #121d33; border: 1px solid #1e2e4d; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-weight: bold; font-size: 15px; color: #fff; text-align: center; }
+
+/* TELEFONDA KUTULARI KÜÇÜLTEN VE YER KAZANDIRAN YENİ TABLO CSS YAPISI */
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; font-family: sans-serif; background-color: #121d33; border-radius: 12px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; font-size: 13px; font-weight: bold; text-transform: uppercase; }
+.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; font-size: 14px; }
+.pozitif-degisim { color: #00ff66 !important; font-weight: bold; font-size: 15px; }
+.negatif-degisim { color: #ff3344 !important; font-weight: bold; font-size: 15px; }
+
+/* TELEFONDA BÜYÜK GÖRÜNEN CANLI ALTIN BANDI CSS */
+.finans-bandi { background: #121d33; border: 2px solid #1e3a5f; border-radius: 10px; padding: 12px; margin-bottom: 15px; font-weight: bold; font-size: 17px; color: #fff; text-align: center; line-height: 1.6; box-shadow: 0 0 15px rgba(0, 255, 204, 0.1); }
 </style>
 <marquee scrollamount="8"><span style="font-size:45px; font-weight:bold; color:#fff; text-shadow: 0 0 10px #ff0055;">✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨</span></marquee>
 ''', unsafe_allow_html=True)
@@ -44,7 +49,7 @@ def formatla_tl(deger):
     except: return str(deger)
 
 # ===================================================================== #
-# CANLI ALTIN VE BIST 100 PİYASA FIYAT BANDI
+# CANLI ALTIN VE BIST 100 PİYASA FIYAT BANDI (BÜYÜTÜLDÜ)
 # ===================================================================== #
 try:
     bist_v = yf.Ticker("XU100.IS").history(period="2d", timeout=2)
@@ -57,7 +62,6 @@ try:
     ons_f = float(ons_v['Close'].iloc[-1]) if len(ons_v)>0 else 0.0
     usd_try = float(dolar_v['Close'].iloc[-1]) if len(dolar_v)>0 else 34.50
     
-    # Gram Altın Hesaplama formülü: (Ons / 31.1034768) * Dolar Kuru
     gram_f = (ons_f / 31.1034768) * usd_try if ons_f>0 else 0.0
     ceyrek_f = gram_f * 1.63 if gram_f>0 else 0.0
     yarim_f = gram_f * 3.26 if gram_f>0 else 0.0
@@ -68,11 +72,9 @@ try:
     
     st.markdown(f'''
     <div class="finans-bandi">
-        🌐 <b>BIST 100:</b> {bist_f:,.2f} <span style="color:{bist_renk};">{bist_isaret} %{bist_d:.2f}</span> | 
-        🟡 <b>Ons Altın:</b> ${ons_f:,.2f} | 
-        ✨ <b>Gram Altın:</b> {formatla_tl(gram_f)} | 
-        🎯 <b>Çeyrek:</b> {formatla_tl(ceyrek_f)} | 
-        📊 <b>Yarım:</b> {formatla_tl(yarim_f)} | 
+        🌐 <b>BIST 100:</b> {bist_f:,.2f} <span style="color:{bist_renk};">{bist_isaret} %{bist_d:.2f}</span><br>
+        🟡 <b>Ons Altın:</b> ${ons_f:,.2f} | ✨ <b>Gram Altın:</b> {formatla_tl(gram_f)}<br>
+        🎯 <b>Çeyrek:</b> {formatla_tl(ceyrek_f)} | 📊 <b>Yarım:</b> {formatla_tl(yarim_f)}<br>
         👑 <b>Tam Altın:</b> {formatla_tl(tam_f)}
     </div>
     ''', unsafe_allow_html=True)
@@ -80,12 +82,12 @@ except:
     st.markdown('<div class="finans-bandi">⏳ Finansal Veri Bandı Yükleniyor...</div>', unsafe_allow_html=True)
 
 # ===================================================================== #
-# 2. VERİ MOTORU VE TABLOLAR
+# 2. VERİ MOTORU VE TABLOLAR (BAŞLIKLAR KISALTILDI, FONT KÜÇÜLTÜLDÜ)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUAN 🔢</th><th>BTA HİSSE 📈</th><th>BTA ALIM 📥</th><th>GÜNCEL FİYAT 💥</th><th>KAR / ZARAR 📊</th></tr>'
+        tablo_html = '<table class="borsa-tablo"><tr><th>PUAN</th><th>HİSSE</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
         for idx in range(min(10, len(df))):
@@ -104,10 +106,10 @@ if os.path.exists(excel_yolu):
                     
                     if maliyet > 0 and c_fiyat > 0:
                         or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                        kz_str = f'<span class="pozitif-degisim">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span class="negatif-degisim">▼ %{or_dg:.2f}</span>'
+                        kz_str = f'<span class="pozitif-degisim">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span class="negatif-degisim">▼ %{or_dg:.1f}</span>'
                     else: kz_str = "<span>-</span>"
                     
-                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{formatla_tl(maliyet) if maliyet>0 else alim_c}</td><td>{formatla_tl(c_fiyat) if c_fiyat>0 else "Bağlanıyor..."}</td><td>{kz_str}</td></tr>'
+                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{formatla_tl(maliyet) if maliyet>0 else alim_c}</td><td>{formatla_tl(c_fiyat) if c_fiyat>0 else "..."}</td><td>{kz_str}</td></tr>'
             except: continue
             
         tablo_html += '</table>'
@@ -152,8 +154,3 @@ with c_arz:
 with c_hbr:
     st.subheader("📰 Son Dakika Gelişmeler / KAP")
     st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.")
-    st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.")
-
-st.markdown('<p style="font-size:20px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
-sc1, sc2, sc3 = st.columns(3)
-sc2.metric("📅 Günlük Giriş ", f"{st.session_state['gunluk_sayac']} Giriş")
