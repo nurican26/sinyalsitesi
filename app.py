@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import requests  # Hava durumu verisi çekmek için eklendi
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
@@ -45,12 +46,34 @@ def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
 
+# CANLI HAVA DURUMU ÇEKME FONKSİYONU (Açık Kaynaklı Open-Meteo API kullanılır)
+def hava_durumu_getir():
+    try:
+        # İstanbul Enlem/Boylamı ayarlandı. İstediğiniz şehirle değiştirebilirsiniz.
+        url = "https://open-meteo.com"
+        yanit = requests.get(url, timeout=2).json()
+        current = yanit["current_weather"]
+        sicaklik = current["temperature"]
+        ruzgar = current["windspeed"]
+        
+        # Basit hava durumu kodu eşleştirme
+        w_code = current["weathercode"]
+        durum_metni = "☀️ Açık"
+        if w_code in [1, 2, 3]: durum_metni = "⛅ Parçalı Bulutlu"
+        elif w_code in [45, 48]: durum_metni = "🌫️ Sisli"
+        elif w_code in [51, 53, 55, 61, 63, 65, 80, 81, 82]: durum_metni = "🌧️ Yağmurlu"
+        elif w_code in [71, 73, 75, 77, 85, 86]: durum_metni = "❄️ Karlı"
+        elif w_code in [95, 96, 99]: durum_metni = "⚡ Gök Gürültülü Fırtına"
+        
+        return f"{sicaklik}°C", durum_metni, f"{ruzgar} km/h"
+    except:
+        return "⏳ --", "Veri Alınamadı", "--"
+
 # ===================================================================== #
 # 2. CANLI BIST 100 PİYASA ALANI (KUTU BOYUTU KISALTILDI)
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     
     # 4 sütun oluşturup sadece ilkini kullanarak BIST kutusunun uzamasını engelledik
     col_bist, _, _, _ = st.columns(4)
@@ -105,10 +128,13 @@ if os.path.exists(excel_yolu):
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
                         
                         st.write("")
-                        st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
+                        # --- YENİ CANLI HAVA DURUMU PANELİ ---
+                        st.markdown('<b>🌦️ CANLI HAVA DURUMU PANELİ (İSTANBUL)</b>', unsafe_allow_html=True)
+                        sicaklik, durum, ruzgar = hava_durumu_getir()
+                        
                         f_col1, f_col2 = st.columns(2)
-                        f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
-                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
+                        f_col1.metric("Sıcaklık ve Durum", sicaklik, help=durum)
+                        f_col2.metric("Rüzgar Hızı", ruzgar)
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
@@ -146,14 +172,3 @@ with st.expander("🛠 Yönetici"):
 df_sohbet_oku = pd.read_csv(db_sohbet)
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.rerun()
-
-# ===================================================================== #
-# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI (EN ALTA TAM İSTEDİĞİNİZ GİBİ ÇIKAR)
-# ===================================================================== #
-st.write("---")
-st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
