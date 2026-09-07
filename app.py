@@ -7,9 +7,59 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. SAYFA YAPILANDIRMASI VE OTOMATİK CANLI TAZELEYİCİ
+# 1. SAYFA YAPILANDIRMASI VE GELİŞMİŞ BORSA TEMASI (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
+
+# Sitenin arka planını ve kutularını tamamen finans dünyasına uyarlayan özel borsa tasarımı
+st.markdown('''
+<style>
+/* Derin Gece Mavisi Borsa Arka Planı ve Grafik Çizgileri */
+.stApp {
+    background-color: #0b111e !important;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) !important;
+    background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
+}
+
+/* Veri Tabloları ve Metrik Kartlarının Tasarımı */
+div[data-testid="stMetric"], .stDataFrame, div[data-testid="stForm"] {
+    background-color: #121d33 !important;
+    border: 1px solid #1e2e4d !important;
+    border-radius: 12px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Giriş Kutularının (Input) Finansal Matrix Tasarımı */
+input, textarea, select, div[data-baseweb="select"] {
+    background-color: #090f1a !important;
+    color: #00ffcc !important;
+    border: 1px solid #1e3a5f !important;
+    border-radius: 8px !important;
+}
+
+/* Butonların Siber Yeşil / Borsa Canlılığı Buton Tasarımı */
+.stButton>button {
+    background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #00ffcc !important;
+    border-radius: 8px !important;
+    font-weight: bold !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.2) !important;
+}
+.stButton>button:hover {
+    background: linear-gradient(135deg, #0d9488 0%, #00ffcc 100%) !important;
+    color: #0b111e !important;
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.6) !important;
+    transform: scale(1.02);
+}
+</style>
+''', unsafe_allow_html=True)
 
 # Sohbeti ve verileri 5 saniyede bir otomatik eşitler
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize")
@@ -176,42 +226,3 @@ sc1, sc2, sc3 = st.columns(3)
 sc2.metric(label="📅 Günlük Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş")
 sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
 
-st.markdown('<p style="font-size:14px; color:#FF4500; font-weight:bold;">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
-st.markdown('''
-<p style="font-size:12px; color:#888888;">
-⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
-</p>
-''', unsafe_allow_html=True)
-
-
-# ===================================================================== #
-# 4. KULLANICI SOHBET VE MODERASYON PANELİ (SIFIRDAN DÜZ SIRALI DÜZENEK)
-# ===================================================================== #
-st.write("---")
-st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
-
-# Sunucu Bellek Hafızası Ayarları
-if "begeniler" not in st.session_state:
-    st.session_state["begeniler"] = {"⭐ 5 Yıldız": 124, "⭐ 4 Yıldız": 18, "⭐ 3 Yıldız": 5}
-
-if "sohbet_hafizasi" not in st.session_state:
-    st.session_state["sohbet_hafizasi"] = [
-        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları gerçekten çok başarılı çalışıyor, elinize sağlık."},
-        {"isim": "Elif K.", "saat": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
-    ]
-
-# Yasaklı Argo/Küfür Kelime Filtresi (Tam Moderasyon)
-yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç", "oç", "oc"]
-
-# Puanlama Butonları
-st.write("**Paneli Puanlayın:**")
-if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="s5_btn"):
-    st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
-
-if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="s4_btn"):
-    st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
-
-if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="s3_btn"):
-    st.session_state["begeniler"]["⭐ 3 Yıldız"] += 1
-
- 
