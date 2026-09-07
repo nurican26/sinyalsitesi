@@ -4,23 +4,21 @@ import datetime
 import yfinance as yf
 import os
 
-# Sayfa Yapılandırması (Geniş Mod)
-st.set_page_config(page_title="BTA Merkez", layout="wide")
+# Sayfa Yapılandırması
+st.set_page_config(page_title="BTA", layout="wide")
 
-# Başlık
-st.title("✨ BTA ALGORİTMİK İŞLEM MERKEZİ ✨")
+# En tepede sadece zarif, el yazısı stilinde BTA logosu (Maksimum kota hafifliği)
+st.markdown('<h1 style="font-family: \'Brush Script MT\', cursive, sans-serif; font-size: 50px; color: #00ffcc; text-align: center; margin-bottom: 5px;">BTA</h1>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
-# ===================================================================== #
-# KOTA DOSTU KÜRESEL SOHBET VE SAYAÇ BELLEĞİ (KASMA YAPMAZ)
-# ===================================================================== #
+# --- KOTA DOSTU BELLEK SİSTEMİ ---
 if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
 if "sohbet_odasi" not in st.session_state:
     st.session_state["sohbet_odasi"] = [
-        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları harika, elinize sağlık."},
-        {"isim": "BTA Sistem", "saat": "10:00", "yorum": "BTA Algoritmik İşlem Merkezine Hoş Geldiniz!"}
+        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Sistem tıkır tıkır çalışıyor, elinize sağlık."},
+        {"isim": "Sistem", "saat": "10:00", "yorum": "BTA Sohbet Alanı Aktif."}
     ]
 
 st.session_state["toplam_sayac"] += 1
@@ -89,7 +87,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜNCEL GELİŞMELER & SÜPER PANEL (KOTA DOSTU HAFİF SÜRÜM)
+# 4. GÜNCEL GELİŞMELER & SÜPER PANEL (KIRMIZI NOKTALAR KALDIRILDI)
 # ===================================================================== #
 st.write("---")
 st.subheader("🔔 GÜNCEL GELİŞMELER & SÜPER PANEL")
@@ -102,37 +100,40 @@ with col_sol:
 
 with col_sag:
     st.write("**📺 TV GÜNDEM & DÜNYA HABERLERİ**")
-    # Kotayı aşan ağır renklendirmeler kaldırılarak ham borsa yazı formatına geçildi
-    st.write("🔴 [SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
-    st.write("🔴 [Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
-    st.write("🔴 [Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
+    # İstediğiniz gibi kırmızı noktalar tamamen kaldırıldı, ham yazı formatına geçildi
+    st.write("[SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
+    st.write("[Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
+    st.write("[Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. GERÇEK CANLI SOHBET KUTUSU VE YÖNETİCİ ALANI (ASLA KOTA AŞMAZ)
+# 5. KİLİTLENMEYEN DOĞRUDAN CANLI SOHBET SİSTEMİ (FORM SİLİNDİ)
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
 
-with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
+# Kasmayı önlemek için form kaldırıldı, doğrudan giriş kutuları yerleştirildi
+y_is = st.text_input("Adınız:", max_chars=25, key="sohbet_isim")
+y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="sohbet_mesaj")
+
+if st.button("Mesajı Yayınla 📨", use_container_width=True):
+    if y_is.strip() and y_me.strip():
         m_kucuk = y_me.lower().replace(" ", "")
         if not any(z in m_kucuk for z in ["orospu", "amk", "oç", "oc", "siktir", "piç", "salak"]):
-            # Sunucuyu kasmayan, kotayı aşmayan internet belleği kaydı
             y_satir = {"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}
             st.session_state["sohbet_odasi"].insert(0, y_satir)
             st.rerun()
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+    else:
+        st.error("❌ Lütfen adınızı ve mesajınızı yazın.")
 
-# KESİN GÖRÜNEN VE KOTA DOSTU YÖNETİCİ PANELİ
+# YÖNETİCİ KONTROL ALANI (KOTA DOSTU SABİT SÜRÜM)
 with st.expander("🛠 Yönetici Girişi"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
     if adm_mod:
         st.success("🔓 Silme yetkisi aktif!")
 
-# MESAJLARI AKILLI İNTERNET BELLEĞİNDEN OKUYUP LISTELEME
+# MESAJ LİSTELEME
 for s, sh in enumerate(st.session_state["sohbet_odasi"]):
     st.write(f"👤 **{sh['isim']}** ({sh['saat']}): {sh['yorum']}")
     if adm_mod:
