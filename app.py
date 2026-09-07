@@ -229,3 +229,4 @@ if os.path.exists(excel_yolu):
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
+ 
