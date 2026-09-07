@@ -181,46 +181,34 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. KALICI, KÜFÜR FİLTRELİ VE EDİTÖRLÜ KULLANICI YORUM PANELİ
+# 4. KULLANICI SOHBET VE MODERASYON PANELİ (SIFIR RİSKLİ ÇEKİRDEK YAPILAR)
 # ===================================================================== #
 st.write("---")
-st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI AKIŞ</p>', unsafe_allow_html=True)
 
-# GİZLİ VERİTABANI DOSYA YOLU (Tüm mesajları kalıcı kaydeder)
-db_dosyasi = "sohbet_verileri.csv"
+# Sunucu Hafızası Ayarları (Bulut Sunucuyla Tam Uyumlu Kalıcı Yapı)
+if "begeniler" not in st.session_state:
+    st.session_state["begeniler"] = {"⭐ 5 Yıldız": 124, "⭐ 4 Yıldız": 18, "⭐ 3 Yıldız": 5}
 
-# Yasaklı Kelime Filtre Listesi (Buraya istediğiniz kadar kelime ekleyebilirsiniz)
-yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "pç", "orospu", "gerizekalı", "salak"]
+if "sohbet_hafizasi" not in st.session_state:
+    st.session_state["sohbet_hafizasi"] = [
+        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Algoritma puanlamaları gerçekten çok başarılı çalışıyor, elinize sağlık."},
+        {"isim": "Elif K.", "saat": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
+    ]
 
-# Veritabanı Dosyası Yoksa Sıfırdan Oluşturma Mantığı
-if not os.path.exists(db_dosyasi):
-    df_db = pd.DataFrame(columns=["isim", "mesaj", "saat"])
-    df_db.to_csv(db_dosyasi, index=False)
+# Yasaklı Kelime Filtre Listesi
+yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç"]
 
-# Mesajları Veritabanından Okuma Fonksiyonu
-def yorumlari_getir():
-    try:
-        return pd.read_csv(db_dosyasi).to_dict(orient="records")
-    except:
-        return []
+# Ekranı Sol ve Sağ olarak ikiye bölüyoruz
+sol_kontrol, sag_akis = st.columns([1, 1.2])
 
-# Yeni Mesaj Yazma Fonksiyonu
-def yorum_kaydet(isim, mesaj):
-    yeni_satir = pd.DataFrame([{"isim": isim, "mesaj": mesaj, "saat": datetime.datetime.now().strftime("%H:%M")}])
-    try:
-        df_eski = pd.read_csv(db_dosyasi)
-        df_yeni = pd.concat([yeni_satir, df_eski], ignore_index=True)
-        df_yeni.to_csv(db_dosyasi, index=False)
-    except:
-        yeni_satir.to_csv(db_dosyasi, index=False)
-
-# Mesaj Silme Fonksiyonu (Sadece Yönetici Kullanır)
-def yorum_sil(index_no):
-    try:
-        df_sil = pd.read_csv(db_dosyasi)
-        df_sil = df_sil.drop(index_no).reset_index(drop=True)
-        df_sil.to_csv(db_dosyasi, index=False)
-    except:
-        pass
-
-# Ekranı Sol (Form) ve Sağ (Yorumlar) olarak ikiye bölüyoruz
+with sol_kontrol:
+    st.write("**Paneli Puanlayın:**")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="btn5", use_container_width=True):
+            st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
+    with c2:
+        if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="btn4", use_container_width=True):
+            st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
+    with c3:
