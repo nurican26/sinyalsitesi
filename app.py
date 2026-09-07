@@ -7,20 +7,21 @@ import os
 # Sayfa Yapılandırması
 st.set_page_config(page_title="BTA", layout="wide")
 
-# En tepede sadece zarif, el yazısı stilinde BTA logosu (Maksimum kota hafifliği)
+# En tepedeki kaba başlık kaldırıldı, yerine sadece el yazısı stilinde sade BTA yazıldı
 st.markdown('<h1 style="font-family: \'Brush Script MT\', cursive, sans-serif; font-size: 50px; color: #00ffcc; text-align: center; margin-bottom: 5px;">BTA</h1>', unsafe_allow_html=True)
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- KOTA DOSTU BELLEK SİSTEMİ ---
-if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
-if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
+# --- KOTA DOSTU SOHBET BELLEĞİ ---
 if "sohbet_odasi" not in st.session_state:
     st.session_state["sohbet_odasi"] = [
-        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Sistem tıkır tıkır çalışıyor, elinize sağlık."},
-        {"isim": "Sistem", "saat": "10:00", "yorum": "BTA Sohbet Alanı Aktif."}
+        {"isim": "Ahmet Y.", "saat": "12:15", "yorum": "Sistem harika çalışıyor, elinize sağlık."},
+        {"isim": "Sistem", "saat": "10:00", "yorum": "Sohbet alanı aktif."}
     ]
 
+# Giriş sayaçları bellek ayarı
+if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
+if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
 st.session_state["toplam_sayac"] += 1
 st.session_state["gunluk_sayac"] += 1
 
@@ -87,7 +88,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜNCEL GELİŞMELER & SÜPER PANEL (KIRMIZI NOKTALAR KALDIRILDI)
+# 4. GÜNCEL GELİŞMELER & SÜPER PANEL (KIRMIZI NOKTALAR TAMAMEN SİLİNDİ)
 # ===================================================================== #
 st.write("---")
 st.subheader("🔔 GÜNCEL GELİŞMELER & SÜPER PANEL")
@@ -100,20 +101,20 @@ with col_sol:
 
 with col_sag:
     st.write("**📺 TV GÜNDEM & DÜNYA HABERLERİ**")
-    # İstediğiniz gibi kırmızı noktalar tamamen kaldırıldı, ham yazı formatına geçildi
+    # İstediğiniz gibi kırmızı noktalar tamamen kaldırıldı
     st.write("[SON DAKİKA] Küresel piyasalarda altın ve döviz hareketliliği yakından takip ediliyor.")
     st.write("[Gündem] İç piyasada borsa endeksleri haftaya dengeli bir seyirle başladı.")
     st.write("[Dünya] Ekonomi yönetiminden makro ekonomik verilere dair yeni açıklamalar geldi.")
 
 # ===================================================================== #
-# 5. KİLİTLENMEYEN DOĞRUDAN CANLI SOHBET SİSTEMİ (FORM SİLİNDİ)
+# 5. DÜZELTİLMİŞ DOĞRUDAN CANLI SOHBET ALANI
 # ===================================================================== #
 st.write("---")
 st.subheader("💬 KULLANICI YORUMLARI VE CANLI SOHBET")
 
-# Kasmayı önlemek için form kaldırıldı, doğrudan giriş kutuları yerleştirildi
-y_is = st.text_input("Adınız:", max_chars=25, key="sohbet_isim")
-y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="sohbet_mesaj")
+# Formsuz, doğrudan çalışan kilitlenmeyen giriş kutuları
+y_is = st.text_input("Adınız:", max_chars=25, key="ad_kutusu")
+y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="mesaj_kutusu")
 
 if st.button("Mesajı Yayınla 📨", use_container_width=True):
     if y_is.strip() and y_me.strip():
@@ -125,9 +126,9 @@ if st.button("Mesajı Yayınla 📨", use_container_width=True):
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
     else:
-        st.error("❌ Lütfen adınızı ve mesajınızı yazın.")
+        st.error("❌ Lütfen hem adınızı hem de mesajınızı doldurun.")
 
-# YÖNETİCİ KONTROL ALANI (KOTA DOSTU SABİT SÜRÜM)
+# YÖNETİCİ KONTROL ALANI
 with st.expander("🛠 Yönetici Girişi"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
     if adm_mod:
@@ -142,7 +143,7 @@ for s, sh in enumerate(st.session_state["sohbet_odasi"]):
             st.rerun()
 
 # ===================================================================== #
-# YASAL UYARI VE EN ALTA SABİTLENEN GİRİŞ SAYAÇLARI
+# YASAL UYARI VE EN ALTA GELEN GİRİŞ SAYAÇLARI
 # ===================================================================== #
 st.write("---")
 st.caption("⚠ SPK YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.")
