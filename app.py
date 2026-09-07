@@ -129,7 +129,7 @@ st.markdown('''
 
 excel_yolu = "nurican.xls.xlsm"
 
-# --- GÜVENLİ SAYAÇ MİMARİSİ (YAZIM HATASI DÜZELTİLDİ) ---
+# --- GÜVENLİ SAYAÇ MİMARİSİ ---
 if "toplam_sayac" not in st.session_state:
     st.session_state["toplam_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state:
@@ -156,7 +156,7 @@ def formatla_tl(deger):
         return str(deger)
 
 # ===================================================================== #
-# 2. ORİJİNAL VERİ TABLOLARI VE MOTORU
+# 2. ORİJİNAL VERİ TABLOLARI VE MOTORU (ASLA DONMAYAN GÜVENLİ SÜRÜM)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -166,40 +166,45 @@ if os.path.exists(excel_yolu):
         veri_var_mi = False
         
         for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-            
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                veri_var_mi = True
-                p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
+            try:
+                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+                puan_d = df.iloc[idx, 3]
                 
-                c_fiyat = 0.0
-                try:
-                    h_bta = yf.Ticker(f"{ha}.IS").history(period="1d")
-                    if not h_bta.empty:
-                        c_fiyat = float(h_bta['Close'].iloc[-1])
-                except:
-                    pass
-                
-                try:
-                    maliyet = float(alim_c.replace(",", "."))
-                except:
-                    maliyet = 0.0
-                
-                if maliyet > 0 and c_fiyat > 0:
-                    degisim_oran = ((c_fiyat - maliyet) / maliyet) * 100
-                    if degisim_oran >= 0:
-                        kz_str = f'<span class="pozitif-degisim">▲ %{degisim_oran:.2f}</span>'
+                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                    veri_var_mi = True
+                    p_temiz = f"{float(puan_d):.2f}" if hasattr(puan_d, '__float__') or isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                    
+                    c_fiyat = 0.0
+                    try:
+                        # İnternet takılmalarını önlemek için 2 saniyelik zaman aşımı (timeout) koyuldu
+                        h_bta = yf.Ticker(f"{ha}.IS")
+                        h_veri = h_bta.history(period="1d", timeout=2)
+                        if not h_veri.empty:
+                            c_fiyat = float(h_veri['Close'].iloc[-1])
+                    except:
+                        c_fiyat = 0.0
+                    
+                    try:
+                        maliyet = float(alim_c.replace(",", "."))
+                    except:
+                        maliyet = 0.0
+                    
+                    if maliyet > 0 and c_fiyat > 0:
+                        degisim_oran = ((c_fiyat - maliyet) / maliyet) * 100
+                        if degisim_oran >= 0:
+                            kz_str = f'<span class="pozitif-degisim">▲ %{degisim_oran:.2f}</span>'
+                        else:
+                            kz_str = f'<span class="negatif-degisim">▼ %{degisim_oran:.2f}</span>'
                     else:
-                        kz_str = f'<span class="negatif-degisim">▼ %{degisim_oran:.2f}</span>'
-                else:
-                    kz_str = "<span>-</span>"
-                
-                fiyat_gosterim = formatla_tl(c_fiyat) if c_fiyat > 0 else "Yükleniyor..."
-                maliyet_gosterim = formatla_tl(maliyet) if maliyet > 0 else alim_c
-                
-                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet_gosterim}</td><td>{fiyat_gosterim}</td><td>{kz_str}</td></tr>'
+                        kz_str = "<span>-</span>"
+                    
+                    fiyat_gosterim = formatla_tl(c_fiyat) if c_fiyat > 0 else "Bağlanıyor..."
+                    maliyet_gosterim = formatla_tl(maliyet) if maliyet > 0 else alim_c
+                    
+                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet_gosterim}</td><td>{fiyat_gosterim}</td><td>{kz_str}</td></tr>'
+            except:
+                continue # Tek bir hissede hata olursa durma, diğer hisseye geç
         
         tablo_html += '</table>'
         
@@ -220,13 +225,14 @@ if os.path.exists(excel_yolu):
                 if aranan_hisse != "Seçiniz...":
                     with st.spinner(f"{aranan_hisse} verileri çekiliyor..."):
                         try:
-                            h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d")
-                            if not h_detay.empty:
-                                anlik_fiyat = float(h_detay['Close'].iloc[-1])
-                                dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat
+                            h_detay = yf.Ticker(f"{aranan_hisse}.IS")
+                            h_detay_veri = h_detay.history(period="2d", timeout=2)
+                            if not h_detay_veri.empty:
+                                anlik_fiyat = float(h_detay_veri['Close'].iloc[-1])
+                                dunku_kapanis = float(h_detay_veri['Close'].iloc[-2]) if len(h_detay_veri) >= 2 else anlik_fiyat
                                 gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100
-                                gunun_en_yuksek = float(h_detay['High'].iloc[-1])
-                                gunun_en_dusuk = float(h_detay['Low'].iloc[-1])
+                                gunun_en_yuksek = float(h_detay_veri['High'].iloc[-1])
+                                gunun_en_dusuk = float(h_detay_veri['Low'].iloc[-1])
                                 
                                 col1, col2, col3 = st.columns(3)
                                 col1.metric(label="Fiyat (Gecikmeli) 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}")
@@ -234,17 +240,4 @@ if os.path.exists(excel_yolu):
                                 col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk))
                             else:
                                 st.warning(f"{aranan_hisse} koduna ait veri bulunamadı.")
-                        except Exception as e:
-                            st.error("Borsa verisi çekilirken bir hata oluştu.")
-            else:
-                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.")
-        else:
-            st.error("Excel dosyasında E sütunu bulunamadı!")
-            
-    except Exception as e:
-        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.")
-else:
-    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}")
-
-st.write("---")
-
+                        except:
