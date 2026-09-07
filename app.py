@@ -75,7 +75,7 @@ def sohbet_temizle(metin):
             temiz_metin = insens_kelime.sub(sansur, temiz_metin) 
     return temiz_metin 
 
-# Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Tüm kullanıcılar için ortaktır) 
+# Tüm kullanıcılar için tek bir ortak hafıza havuzu oluşturur (Kalıcı Singleton)
 @st.cache_resource 
 def sunucu_canli_havuzunu_getir(): 
     return {"mesajlar": []} 
@@ -207,12 +207,14 @@ else:
 
 st.write("---")
 
-# --- SOHBET ALANI PANELİ ---
+# --- SOHBET ALANI PANELİ (GÜVENLİ VE KESİN ÇÖZÜM) ---
 st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">💬 CANLI SOHBET ODASI</p>', unsafe_allow_html=True)
 
-with st.form(key="bta_sohbet_formu", clear_on_submit=True):
-    kullanici_adi = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=20)
-    mesaj_metni = st.text_input("Mesajınız (Göndermek için Enter'a basın veya butona tıklayın):", max_chars=150)
+# Mesaj gönderme fonksiyonu (Callback)
+def mesaj_gonder_callback():
+    # Session state'deki güncel metni güvenle yakala
+    kullanici = st.session_state.get("input_rumuz", "Yatırımcı").strip()
+    mesaj = st.session_state.get("input_mesaj", "").strip()
     
-    gonder_butonu = st.form_submit_button(label="🚀 Mesajı Gönder", type="primary")
-
+    if mesaj != "":
+        temiz_mesaj = sohbet_temizle(mesaj)
