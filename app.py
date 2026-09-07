@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -203,7 +203,7 @@ if "sohbet_hafizasi" not in st.session_state:
 # Yasaklı Argo/Küfür Kelime Filtresi (Tam Moderasyon)
 yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç", "oç", "oc"]
 
-# Puanlama Butonları (Genişliği sınırlandırılmış düz bağımsız satırlar)
+# Puanlama Butonları
 st.write("**Paneli Puanlayın:**")
 if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="s5_btn"):
     st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
@@ -212,3 +212,6 @@ if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']
     st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
 
 if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="s3_btn"):
+    st.session_state["begeniler"]["⭐ 3 Yıldız"] += 1
+
+ 
