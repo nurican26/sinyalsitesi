@@ -4,17 +4,11 @@ import datetime
 import yfinance as yf
 import os
 import time
-import requests
-from bs4 import BeautifulSoup
-from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ
+# 1. SAYFA YAPILANDIRMASI
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
-
-# 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
-st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
 
 # --- IŞIKLI, GÖLGELİ VE KAYAN BTA LOGOSU ---
 st.markdown('''
@@ -28,7 +22,7 @@ st.markdown('''
     }
 }
 .neon-marquee {
-    font-size: 65px;
+    font-size: 45px;
     font-weight: bold;
     font-family: 'Arial Black', sans-serif;
     color: #ffffff;
@@ -50,11 +44,9 @@ if "toplam_sayac" not in st.session_state:
 if "gunluk_sayac" not in st.session_state:
     st.session_state["gunluk_sayac"] = 120
 
-# Her sayfa yenilendiğinde sayaçları artır
 st.session_state["toplam_sayac"] += 1
 st.session_state["gunluk_sayac"] += 1
 
-# Günlük sayacın 24 saatte bir sıfırlanması kontrolü
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 if "son_giris_tarihi" not in st.session_state:
     st.session_state["son_giris_tarihi"] = bugun
@@ -63,10 +55,6 @@ if st.session_state["son_giris_tarihi"] != bugun:
     st.session_state["gunluk_sayac"] = 1
     st.session_state["son_giris_tarihi"] = bugun
 
-# Anlık odadaki kişi sayısı dinamik simülasyonu
-anlik_oda = (int(time.time()) % 5) + 3
-
-# Sayıları TR formatına çevirme fonksiyonu
 def formatla_tl(deger):
     try:
         f_deger = float(deger)
@@ -83,7 +71,6 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # --- ÜST PANEL (BTA HİSSELERİ) ---
         tablo_bta = []
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -122,7 +109,6 @@ if os.path.exists(excel_yolu):
         
         st.write("")
 
-        # --- BIST ANLIK ARAMA MOTORU ---
         st.markdown('<p style="font-size:20px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist()
@@ -166,7 +152,7 @@ st.write("---")
 # 3. HALKA ARZ VE HABER ALANI
 # ===================================================================== #
 st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
-st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')} (Her 10 dakikada bir otomatik güncellenir)*")
+st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')}*")
 
 col_arz, col_haber = st.columns(2)
 with col_arz:
@@ -185,13 +171,11 @@ with col_haber:
 
 st.write("---")
 
-# --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ ---
 st.markdown('<p style="font-size:20px; font-weight:bold; color:#00FF7F;">📈 BTA PANEL İSTATİSTİKLERİ</p>', unsafe_allow_html=True)
 sc1, sc2, sc3 = st.columns(3)
 sc2.metric(label="📅 Günlük Giriş ", value=f"{st.session_state['gunluk_sayac']} Giriş")
 sc3.metric(label="💎 Genel ", value=f"{st.session_state['toplam_sayac']} Giriş")
 
-# --- 15 DAKİKA GECİKMELİ VERİ UYARISI VE YASAL UYARI ---
 st.markdown('<p style="font-size:14px; color:#FF4500; font-weight:bold;">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
 st.markdown('''
 <p style="font-size:12px; color:#888888;">
@@ -201,7 +185,7 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. YORUMLAR VE BEĞENİ PANELİ (GİRİNTİ HATASI VERMEYEN DÜZLEŞTİRİLMİŞ YENİ SÜRÜM)
+# 4. YORUMLAR VE BEĞENİ PANELİ (%100 GARANTİLİ YALIN SÜRÜM)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE ETKİLEŞİM</p>', unsafe_allow_html=True)
@@ -215,6 +199,23 @@ if "yorumlar_listesi" not in st.session_state:
         {"isim": "Elif K.", "zaman": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# Ekranı sol ve sağ olarak iki kolona bölüyoruz
+# Sol tarafa giriş alanları, sağ tarafa yorum listesi
 sol_blok, sag_blok = st.columns([1, 1.2])
 
+with sol_blok:
+    st.write("**Paneli Puanlayın:**")
+    
+    # Butonlar alt alta sıralı düz yapıya getirildi, hata riski sıfırlandı
+    if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="str_5", use_container_width=True):
+        st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
+        st.toggle("yenile_1")
+
+    if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="str_4", use_container_width=True):
+        st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
+        st.toggle("yenile_2")
+
+    if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="str_3", use_container_width=True):
+        st.session_state["begeniler"]["⭐ 3 Yıldız"] += 1
+        st.toggle("yenile_3")
+            
+    st.write("---")
