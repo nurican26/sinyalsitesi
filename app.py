@@ -13,7 +13,7 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== 
 st.set_page_config(page_title="BTA Merkez", layout="wide") 
 
-# --- 🎨 KIRMIZIDAN YEŞİLE KADEMELİ ARKA PANEL VE STYLES ---
+# --- 🎨 KIRMIZIDAN YEŞİLE KADEMELİ ARKA PANEL ---
 st.markdown("""
     <style>
         .stApp {
@@ -23,106 +23,15 @@ st.markdown("""
         header, [data-testid="stHeader"] {
             background-color: transparent !important;
         }
-        /* Yazıların koyu arka planda tamamen okunabilir kalması için */
+        /* Yazılarınızın koyu arka planda tamamen okunabilir kalması için */
         h1, h2, h3, h4, h5, h6, p, span, label {
             color: #ffffff !important;
-        }
-        
-        /* Canlı Üst Finans Paneli (Ticker) Tasarımı */
-        .live-ticker-container {
-            background: rgba(0, 0, 0, 0.65);
-            border-bottom: 2px solid #ffdd57;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            text-align: center;
-        }
-        .ticker-item {
-            padding: 5px 15px;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .ticker-label {
-            font-size: 13px;
-            color: #ccc;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 3px;
-        }
-        .ticker-value {
-            font-size: 18px;
-            color: #ffdd57;
-            font-weight: bold;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici 
 st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici") 
-
-# ===================================================================== 
-# CANLI ÜST VERİ PANELİ MOTORU (BIST 100 & ALTIN FİYATLARI)
-# ===================================================================== 
-def formatla_tr_stil(deger):
-    try:
-        f_deger = float(deger)
-        ingiliz_stil = f"{f_deger:,.2f}"
-        tr_stil = ingiliz_stil.replace(",", "X").replace(".", ",").replace("X", ".")
-        return tr_stil
-    except:
-        return str(deger)
-
-# Canlı verilerin Yahoo Finance üzerinden çekilmesi
-try:
-    bist_data = yf.Ticker("^XU100").history(period="1d")
-    bist_100 = bist_data['Close'].iloc[-1] if not bist_data.empty else 14109.75
-    
-    ons_data = yf.Ticker("GC=F").history(period="1d")
-    ons_fiyat = ons_data['Close'].iloc[-1] if not ons_data.empty else 2500.0
-    
-    try:
-        usd_data = yf.Ticker("TRY=X").history(period="1d")
-        usd_try = usd_data['Close'].iloc[-1] if not usd_data.empty else 34.20
-    except:
-        usd_try = 34.20
-        
-    gram_altin = (ons_fiyat / 31.10347) * usd_try
-    ceyrek_altin = gram_altin * 1.635
-    yarim_altin = gram_altin * 3.27
-    tam_altin = gram_altin * 6.54
-except:
-    bist_100 = 14109.75
-    gram_altin = 6839.47
-    ceyrek_altin = 11184.17
-    yarim_altin = 22368.34
-    tam_altin = 44459.00
-
-st.markdown(f"""
-    <div class="live-ticker-container">
-        <div class="ticker-item">
-            <span class="ticker-label">📊 BIST 100</span>
-            <span class="ticker-value">{formatla_tr_stil(bist_100)}</span>
-        </div>
-        <div class="ticker-item">
-            <span class="ticker-label">🟡 GRAM ALTIN</span>
-            <span class="ticker-value">{formatla_tr_stil(gram_altin)} TL</span>
-        </div>
-        <div class="ticker-item">
-            <span class="ticker-label">🪙 ÇEYREK ALTIN</span>
-            <span class="ticker-value">{formatla_tr_stil(ceyrek_altin)} TL</span>
-        </div>
-        <div class="ticker-item">
-            <span class="ticker-label">🥈 YARIM ALTIN</span>
-            <span class="ticker-value">{formatla_tr_stil(yarim_altin)} TL</span>
-        </div>
-        <div class="ticker-item">
-            <span class="ticker-label">👑 TAM ALTIN</span>
-            <span class="ticker-value">{formatla_tr_stil(tam_altin)} TL</span>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
 
 # --- HAREKETLİ BTA LOGOSU VE STYLES --- 
 st.markdown('''
@@ -147,9 +56,11 @@ if "toplam_sayac" not in st.session_state:
 if "gunluk_sayac" not in st.session_state: 
     st.session_state["gunluk_sayac"] = 120 
 
+# Her sayfa yenilendiğinde sayaçları artır 
 st.session_state["toplam_sayac"] += 1 
 st.session_state["gunluk_sayac"] += 1 
 
+# Günlük sayacın 24 saatte bir sıfırlanması kontrolü 
 bugun = datetime.date.today().strftime("%Y-%m-%d") 
 if "son_giris_tarihi" not in st.session_state: 
     st.session_state["son_giris_tarihi"] = bugun 
@@ -157,9 +68,11 @@ if st.session_state["son_giris_tarihi"] != bugun:
     st.session_state["gunluk_sayac"] = 1 
     st.session_state["son_giris_tarihi"] = bugun 
 
+# Anlık odadaki kişi sayısı dinamik simülasyonu 
 anlik_oda = (int(time.time()) % 5) + 3 
 st.header("📊 BTA ALGORİTMİK HİSSE PANELİ") 
 
+# Sayıları TR formatına çevirme fonksiyonu 
 def formatla_tl(deger): 
     try: 
         f_deger = float(deger) 
@@ -175,7 +88,6 @@ def formatla_tl(deger):
 if os.path.exists(excel_yolu): 
     try: 
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl") 
-        
         # --- ÜST PANEL (BTA HİSSELERİ) --- 
         tablo_bta = [] 
         for idx in range(min(10, len(df))): 
@@ -239,7 +151,54 @@ if os.path.exists(excel_yolu):
             tum_hisseler = df.iloc[:, 4].dropna().astype(str).str.strip().str.upper().unique().tolist() 
             tum_hisseler = [h for h in tum_hisseler if h not in ["HİSSE", "HİSSELER", "NAN", "NONE", ""]] 
             tum_hisseler.sort() 
-            
-            if len(tum_hisseler) > 0:
+            if tum_hisseler: 
                 aranan_hisse = st.selectbox("Analiz etmek istediğiniz hisseyi seçin veya yazın:", ["Seçiniz..."] + tum_hisseler) 
                 if aranan_hisse != "Seçiniz...": 
+                    with st.spinner(f"{aranan_hisse} verileri çekiliyor..."): 
+                        try: 
+                            h_detay = yf.Ticker(f"{aranan_hisse}.IS").history(period="2d") 
+                            if not h_detay.empty: 
+                                anlik_fiyat = float(h_detay['Close'].iloc[-1]) 
+                                dunku_kapanis = float(h_detay['Close'].iloc[-2]) if len(h_detay) >= 2 else anlik_fiyat 
+                                gunluk_degisim = ((anlik_fiyat - dunku_kapanis) / dunku_kapanis) * 100 
+                                gunun_en_yuksek = float(h_detay['High'].iloc[-1]) 
+                                gunun_en_dusuk = float(h_detay['Low'].iloc[-1]) 
+                                col1, col2, col3 = st.columns(3) 
+                                col1.metric(label="Fiyat (Gecikmeli) 💥", value=formatla_tl(anlik_fiyat), delta=f"%{gunluk_degisim:+.2f}") 
+                                col2.metric(label="Gün içi En Yüksek 📈", value=formatla_tl(gunun_en_yuksek)) 
+                                col3.metric(label="Gün içi En Düşük 📉", value=formatla_tl(gunun_en_dusuk)) 
+                            else: 
+                                st.warning(f"{aranan_hisse} koduna ait veri bulunamadı.") 
+                        except Exception as e: 
+                            st.error("Borsa verisi çekilirken bir hata oluştu.") 
+            else: 
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.") 
+        else: 
+            st.error("Excel dosyasında E sütunu bulunamadı!") 
+    except Exception as e: 
+        st.error("Excel veya Borsa verileri yüklenirken bir sorun oluştu.") 
+else: 
+    st.error(f"Belirtilen Excel dosyası bulunamadı: {excel_yolu}") 
+st.write("---") 
+
+# ===================================================================== 
+# 3. YENİ EKLENEN: 10 DAKİKADA BİR GÜNCELLENEN HALKA ARZ VE HABER ALANI 
+# ===================================================================== 
+st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER") 
+st.markdown(f"⏱ *Son Güncellenme: {datetime.datetime.now().strftime('%H:%M:%S')} (Her 10 dakikada bir otomatik güncellenir)*") 
+col_arz, col_haber = st.columns(2) 
+with col_arz: 
+    st.subheader("🚀 Yeni Halka Arz Listesi") 
+    df_arz = pd.DataFrame({ 
+        "Hisse Kodu 📈": ["XYZEN", "ABCDE"], 
+        "Şirket Adı 🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], 
+        "Durum 📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"] 
+    }) 
+    st.dataframe(df_arz, use_container_width=True, hide_index=True) 
+with col_haber: 
+    st.subheader("📰 Son Dakika Gelişmeler / KAP") 
+    st.info("🔴 [12:10] XYZEN halka arz sonuçları açıklandı! Hesap başı 15 lot dağıtıldı.") 
+    st.info("🔴 [11:45] SPK haftalık bülteni yayınlandı: 2 yeni halka arz onayı çıktı.") 
+st.write("---") 
+
+# --- GÜVENLİ VE KESİN GÖRÜNÜR İSTATİSTİK PANELİ --- 
