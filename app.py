@@ -57,7 +57,7 @@ st.markdown('<div class="warning-banner">⚠️ Dikkat: Panel üzerindeki borsa 
 
 st.markdown('''
 <p style="color:#ff4b4b; font-size:13px; text-align:center;">
-⚠ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum adolescent tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
+⚠ <b>SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz.
 </p>
 ''', unsafe_allow_html=True) 
 
@@ -66,11 +66,10 @@ excel_yolu = "nurican.xls.xlsm"
 # --- GERÇEK VERİ TABANLI SAYAÇ SİSTEMİ (SERVER GLOBAL STORAGE) ---
 @st.cache_resource
 def sunucu_gercek_hafizasini_getir():
-    # Tüm kullanıcılar için ortak, sunucu düzeyinde tek bir güvenli havuz oluşturur
     return {
-        "aktif_cihazlar": {},  # {"cihaz_id": son_gorulme_timestamp}
-        "toplam_tekil_ziyaretci": set(), # Toplam benzersiz ziyaretçi listesi
-        "gunluk_tekil_ziyaretci": set(), # Günlük benzersiz ziyaretçi listesi
+        "aktif_cihazlar": {},  
+        "toplam_tekil_ziyaretci": set(), 
+        "gunluk_tekil_ziyaretci": set(), 
         "son_tarih": datetime.date.today().strftime("%Y-%m-%d")
     }
 
@@ -78,23 +77,23 @@ sunucu_hafizasi = sunucu_gercek_hafizasini_getir()
 su_an = time.time()
 bugun = datetime.date.today().strftime("%Y-%m-%d")
 
-# 24 Saatlik Gün Değişimi Kontrolü (Gece yarısı günlük sayacı sıfırlar)
+# 24 Saatlik Gün Değişimi Kontrolü
 if sunucu_hafizasi["son_tarih"] != bugun:
     sunucu_hafizasi["gunluk_tekil_ziyaretci"].clear()
     sunucu_hafizasi["son_tarih"] = bugun
 
-# Kullanıcıya özel benzersiz tarayıcı kimliği (Cihaz ID) atama
+# Kullanıcıya özel benzersiz cihaz kimliği atama
 if "cihaz_id" not in st.session_state:
     st.session_state.cihaz_id = str(uuid.uuid4())
 
 cid = st.session_state.cihaz_id
 
-# Aktiflik Güncellemesi: Kullanıcının sunucudaki zaman damgasını yenile
+# Aktiflik Güncellemesi adolescent Listeye Ekleme
 sunucu_hafizasi["aktif_cihazlar"][cid] = su_an
 sunucu_hafizasi["toplam_tekil_ziyaretci"].add(cid)
 sunucu_hafizasi["gunluk_tekil_ziyaretci"].add(cid)
 
-# Pasif Kullanıcıları Temizleme (Son 30 saniyede sayfada aktif olmayanları odadan düşürür)
+# Pasif Kullanıcıları Temizleme (Son 30 saniyede sayfada aktif olmayanlar)
 eski_aktifler = list(sunucu_hafizasi["aktif_cihazlar"].keys())
 for k in eski_aktifler:
     if su_an - sunucu_hafizasi["aktif_cihazlar"][k] > 30:
@@ -213,3 +212,10 @@ if os.path.exists(excel_yolu):
                             else: 
                                 st.warning(f"{aranan_hisse} koduna ait veri bulunamadı. Excel'deki kodu kontrol edin (Örn: THYAO).") 
                         except Exception as e: 
+                            st.error("Borsa verisi çekilirken bir hata oluştu.") 
+            else: 
+                st.warning("Excel dosyasının E sütununda geçerli bir hisse listesi bulunamadı.") 
+        else: 
+            st.error("Excel dosyasında E sütunu bulunamadı!") 
+            
+    except Exception as e: 
