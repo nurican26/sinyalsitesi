@@ -6,7 +6,7 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. BORSA TEMASI, ANIMASYONLU ARKA PLAN VE STİLLER (CSS)
+# 1. BORSA TEMASI, MATRİKS ARKA PLAN VE STİLLER (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -19,8 +19,9 @@ st.markdown('''
     100% { background-position: 0% 50%; }
 }
 
+/* TALEBİNİZ ÜZERİNE 1. SEÇENEK: MATRİKS YEŞİL & SİYAH ARKA PLAN */
 .stApp { 
-    background: linear-gradient(-45deg, #070b12, #111e36, #091526, #0e223d) !important; 
+    background: linear-gradient(-45deg, #020503, #071a0f, #0c140e, #030d06) !important; 
     background-size: 400% 400% !important; 
     animation: borsaDalgalanma 15s ease infinite !important;
 }
