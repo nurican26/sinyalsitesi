@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -11,7 +11,7 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# Sohbeti 5 saniyede bir otomatik eşitler
+# Sohbeti ve verileri 5 saniyede bir otomatik eşitler
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize")
 
 # --- IŞIKLI, GÖLGELİ VE KAYAN BTA LOGOSU ---
@@ -185,10 +185,10 @@ st.markdown('''
 
 
 # ===================================================================== #
-# 4. YORUMLAR VE SOHBET AKIŞ PANELİ (SIFIR GİRİNTİ RİSKLİ YENİ TASARIM)
+# 4. KULLANICI SOHBET VE MODERASYON PANELİ (SIFIRDAN DÜZ SIRALI DÜZENEK)
 # ===================================================================== #
 st.write("---")
-st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI AKIŞ</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:24px; font-weight:bold; color:#FF69B4;">💬 KULLANICI YORUMLARI VE CANLI SOHBET</p>', unsafe_allow_html=True)
 
 # Sunucu Bellek Hafızası Ayarları
 if "begeniler" not in st.session_state:
@@ -200,14 +200,15 @@ if "sohbet_hafizasi" not in st.session_state:
         {"isim": "Elif K.", "saat": "14:30", "yorum": "Hisse arama motorundaki gecikmeli fiyat uyarısını görmem iyi oldu, teşekkürler."}
     ]
 
-# Yasaklı Argo/Küfür Kelime Filtresi (Küfür Engelleme)
+# Yasaklı Argo/Küfür Kelime Filtresi (Tam Moderasyon)
 yasakli_kelimeler = ["küfür1", "küfür2", "argo1", "argo2", "piç", "siktir", "orospu", "gerizekalı", "salak", "pç", "oç", "oc"]
 
-# Puanlama Butonları (Hata riski yaratan alt sütun with yapıları tamamen kaldırıldı)
+# Puanlama Butonları (Genişliği sınırlandırılmış düz bağımsız satırlar)
 st.write("**Paneli Puanlayın:**")
-if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="s5_btn", use_container_width=True):
+if st.button(f"🤩 5 Yıldız ({st.session_state['begeniler']['⭐ 5 Yıldız']})", key="s5_btn"):
     st.session_state["begeniler"]["⭐ 5 Yıldız"] += 1
 
-if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="s4_btn", use_container_width=True):
+if st.button(f"🙂 4 Yıldız ({st.session_state['begeniler']['⭐ 4 Yıldız']})", key="s4_btn"):
     st.session_state["begeniler"]["⭐ 4 Yıldız"] += 1
 
+if st.button(f"😐 3 Yıldız ({st.session_state['begeniler']['⭐ 3 Yıldız']})", key="s3_btn"):
