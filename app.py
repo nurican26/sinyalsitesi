@@ -75,7 +75,7 @@ def sohbet_temizle(metin):
             temiz_metin = insens_kelime.sub(sansur, temiz_metin) 
     return temiz_metin 
 
-# Tüm kullanıcılar için tek bir ortak hafıza havuzu oluşturur (Kalıcı Singleton)
+# Sunucu genelinde tek bir ortak havuz oluşturma
 @st.cache_resource 
 def sunucu_canli_havuzunu_getir(): 
     return {"mesajlar": []} 
@@ -207,14 +207,11 @@ else:
 
 st.write("---")
 
-# --- SOHBET ALANI PANELİ (GÜVENLİ VE KESİN ÇÖZÜM) ---
+# --- SOHBET ALANI PANELİ (KAYBOLMAYA KARŞI TAM GÜVENLİ FORM YAPISI) ---
 st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">💬 CANLI SOHBET ODASI</p>', unsafe_allow_html=True)
 
-# Mesaj gönderme fonksiyonu (Callback)
-def mesaj_gonder_callback():
-    # Session state'deki güncel metni güvenle yakala
-    kullanici = st.session_state.get("input_rumuz", "Yatırımcı").strip()
-    mesaj = st.session_state.get("input_mesaj", "").strip()
+# Streamlit'in en güvenli mesaj temizleme ve yakalama yöntemi (Form Yapısı)
+with st.form(key="bta_sohbet_formu", clear_on_submit=True):
+    kullanici_adi = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=20)
+    mesaj_metni = st.text_input("Mesajınız (Göndermek için Enter'a basın veya butona tıklayın):", max_chars=150)
     
-    if mesaj != "":
-        temiz_mesaj = sohbet_temizle(mesaj)
