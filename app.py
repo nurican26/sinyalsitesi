@@ -1,4 +1,24 @@
-# --- KUSURSUZ MERKEZLENMİŞ BTA PANELİ (HATA DÜZELTME) ---
+import streamlit as st
+import pandas as pd
+import datetime
+import yfinance as yf
+import os
+import time
+import requests
+from bs4 import BeautifulSoup
+from streamlit_autorefresh import st_autorefresh
+
+# =====================================================================
+# 1. SAYFA YAPILANDIRMASI VE OTOMATİK YENİLEYİCİ (MUTLAKA İLK SIRADA OLMALI)
+# =====================================================================
+st.set_page_config(page_title="BTA Merkez", layout="wide")
+
+# 10 saniyede bir veya ihtiyacınıza göre yenilenen ana tetikleyici
+st_autorefresh(interval=10 * 1000, key="bta_merkezi_yenileyici")
+
+# =====================================================================
+# 2. KUSURSUZ MERKEZLENMİŞ BTA PANELİ (HATA DÜZELTME)
+# =====================================================================
 st.markdown('''
 <style>
 /* Streamlit genel arka planı */
@@ -111,3 +131,8 @@ st.markdown('''
     </div>
 </div>
 ''', unsafe_allow_html=True)
+
+# =====================================================================
+# 3. YASAL UYARILAR VE MOTOR ALANI (Kodunuz buradan aşağıya aynen devam ediyor)
+# =====================================================================
+st.markdown('<p style="color:#ffaa00; font-weight:bold;">⚠ Dikkat: Panel üzerindeki borsa verileri borsa kuralları gereği en az 15 dakika gecikmeli olarak yansıtılmaktadır.</p>', unsafe_allow_html=True)
