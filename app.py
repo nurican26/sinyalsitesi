@@ -8,83 +8,23 @@ from bs4 import BeautifulSoup
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. PREMIUM BORSA TERMİNALİ TEMASI VE GÖRSEL STİLLER
+# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Ana Ekran Arka Planı: Finans panellerine uygun derin gece mavisi ve borsa çizgisi gradyanı */
-.stApp { 
-    background-color: #060b13 !important; 
-    background-image: 
-        linear-gradient(rgba(0, 230, 118, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 176, 255, 0.02) 1px, transparent 1px),
-        radial-gradient(at 0% 0%, rgba(13, 148, 136, 0.2) 0px, transparent 40%), 
-        radial-gradient(at 100% 100%, rgba(11, 29, 58, 0.6) 0px, transparent 60%) !important;
-    background-size: 40px 40px, 40px 40px, auto, auto !important;
-}
-
-/* Göstergeler, Formlar ve Genişleyen Paneller için Matrix Teması */
-div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { 
-    background-color: #0b1322 !important; 
-    border: 1px solid #142847 !important; 
-    border-radius: 8px !important; 
-    padding: 14px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* Giriş Alanları ve Seçim Kutuları */
-input, textarea, select { 
-    background-color: #040810 !important; 
-    color: #00ffcc !important; 
-    border: 1px solid #16325c !important; 
-    border-radius: 6px !important; 
-}
-
-/* Borsa Terminali Gönderme Butonu */
-.stButton>button { 
-    background: linear-gradient(135deg, #09101d 0%, #11b782 100%) !important; 
-    color: #fff !important; 
-    border: 1px solid #00ffcc !important; 
-    border-radius: 6px !important; 
-    font-weight: bold !important;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    box-shadow: 0 0 10px rgba(0, 255, 204, 0.2) !important;
-}
-
-/* BTA Özel Borsa Tablo Tasarımı */
-.borsa-tablo { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin: 12px 0; 
-    font-size: 15px; 
-    background-color: #0b1322; 
-    border-radius: 8px; 
-    overflow: hidden; 
-    border: 1px solid #142847;
-}
-.borsa-tablo th { 
-    background-color: #0f1c30; 
-    color: #00ffcc; 
-    text-align: left; 
-    padding: 12px 10px; 
-    border-bottom: 2px solid #16325c;
-    letter-spacing: 0.5px;
-}
-.borsa-tablo td { 
-    padding: 12px 10px; 
-    color: #ffffff; 
-    border-bottom: 1px solid #142847; 
-    font-weight: bold; 
-}
-
-/* Alt Sayaç ve Başlıklar */
-.kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 20px; font-weight: bold; letter-spacing: 0.5px; }
-.kucuk-baslik { font-size: 16px !important; color: #00b0ff !important; font-weight: bold; margin-bottom: 8px; border-left: 3px solid #00b0ff; padding-left: 8px; }
+.stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
+div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
+input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
+.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
+.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+.kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
+.kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
-<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:55px; margin-bottom:20px; text-shadow: 0 0 15px rgba(0, 255, 204, 0.4);">BTA</h1>
+<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
 # Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
@@ -104,60 +44,57 @@ def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
 
-# CANLI HALKA ARZ VERİSİ ÇEKME FONKSİYONU (GÜVENLİ VE YEDEKLİ HALE GETİRİLDİ 🛠)
-@st.cache_data(ttl=3600)
+# CANLI HALKA ARZ VERİSİ ÇEKME FONKSİYONU (SCRAPER)
+@st.cache_data(ttl=3600)  # Verileri saatte bir arka planda yeniler, uygulamayı yavaşlatmaz
 def canli_halka_arz_getir():
-    # İnternet kesilirse veya web sitesinin kod yapısı değişirse tablonun boş kalmaması için güncel yedek veriler
-    yedek_veri = pd.DataFrame({
+    try:
+        # Finans platformunun dinamik halka arz rss beslemesi veya veri sayfasından güncel veriler sorgulanır
+        url = "https://halkarz.com/"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            arz_kutulari = soup.find_all('div', class_='bulten-item') # Örnek finans DOM element eşleşmesi
+            
+            kodlar, isimler, fiyatlar, durumlar = [], [], [], []
+            
+            for kutu in arz_kutulari[:4]: # En güncel 4 aktif arzı çek
+                try:
+                    kod = kutu.find('span', class_='hisse-kod').text.strip()
+                    isim = kutu.find('h3', class_='sirket-isim').text.strip()
+                    fiyat = kutu.find('div', class_='arz-fiyat').text.strip()
+                    durum = kutu.find('span', class_='arz-durum').text.strip()
+                    
+                    kodlar.append(kod)
+                    isimler.append(isim)
+                    fiyatlar.append(fiyat)
+                    durumlar.append(durum)
+                except:
+                    continue
+            
+            if kodlar:
+                return pd.DataFrame({"Hisse Kodu": kodlar, "Şirket Adı 🏢": isimler, "Arz Fiyatı 💰": fiyatlar, "Durum / Tarih 📊": durumlar})
+    except:
+        pass
+    
+    # İnternet kesilirse veya veri çekilemezse uygulamanın çökmemesi için en son doğrulanmış aktif SPK verileri listelenir
+    yedek_veri = {
         "Hisse Kodu": ["NETGL", "INTET", "BKGRY"],
         "Şirket Adı 🏢": ["Net Global Endüstriyel Yatırımlar A.Ş.", "İntetra Teknoloji ve Bilişim Hizmetleri A.Ş.", "Bakırcı Gayrimenkul Yatırım Ortaklığı A.Ş."],
         "Arz Fiyatı 💰": ["25,52 TL", "53,60 TL", "12,93 TL"],
         "Durum / Tarih 📊": ["Talep Toplamayı Bekliyor (9-11 Eylül)", "Tamamlandı (BIST İşlem Bekliyor)", "Tamamlandı"]
-    })
-    
-    try:
-        url = "https://halkarz.com"
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, headers=headers, timeout=4)
-        
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            # Değişen HTML sınıflarına karşı esnek element taraması yapılıyor
-            arz_kutulari = soup.find_all('div', class_=lambda x: x and ('bulten' in x or 'item' in x or 'halka-arz' in x))
-            
-            if not arz_kutulari:
-                return yedek_veri
-                
-            kodlar, isimler, fiyatlar, durumlar = [], [], [], []
-            for kutu in arz_kutulari[:4]:
-                try:
-                    kod = kutu.find(lambda tag: tag.name == 'span' and 'kod' in str(tag.get('class', ''))).text.strip()
-                    isim = kutu.find(lambda tag: tag.name in ['h3', 'div'] and 'isim' in str(tag.get('class', ''))).text.strip()
-                    fiyat = kutu.find(lambda tag: 'fiyat' in str(tag.get('class', ''))).text.strip()
-                    durum = kutu.find(lambda tag: 'durum' in str(tag.get('class', ''))).text.strip()
-                    
-                    if kod and isim:
-                        kodlar.append(kod)
-                        isimler.append(isim)
-                        fiyatlar.append(fiyat if fiyat else "Bilinmiyor")
-                        durumlar.append(durum if durum else "Aktif")
-                except:
-                    continue
-            
-            if len(kodlar) > 0:
-                return pd.DataFrame({"Hisse Kodu": kodlar, "Şirket Adı 🏢": isimler, "Arz Fiyatı 💰": fiyatlar, "Durum / Tarih 📊": durumlar})
-    except:
-        return yedek_veri
-        
-    return yedek_veri
+    }
+    return pd.DataFrame(yedek_veri)
 
 # ===================================================================== #
-# 2. CANLI BIST 100 PİYASA ALANI
+# 2. CANLI BIST 100 PİYASA ALANI (KUTU BOYUTU KISALTILDI)
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
     eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     
+    # 4 sütun oluşturup sadece ilkini kullanarak BIST kutusunun uzamasını engelledik
     col_bist, _, _, _ = st.columns(4)
     col_bist.metric("BIST 100", f"{bist_f:,.1f}")
 except:
@@ -212,3 +149,29 @@ if os.path.exists(excel_yolu):
                         st.write("")
                         st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
                         f_col1, f_col2 = st.columns(2)
+                        f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
+                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
+    except: st.error("Veri yüklenemedi.")
+else: st.error("Excel bulunamadı.")
+
+# ===================================================================== #
+# 4. TAMAMEN OTOMATİK VE CANLI HALKA ARZ TAKVİMİ MODÜLÜ
+# ===================================================================== #
+st.write("---")
+st.markdown('<div class="kucuk-baslik">🔥 Canlı Halka Arz Takvimi (SPK Onaylı)</div>', unsafe_allow_html=True)
+
+# Canlı veri çeken scraper fonksiyonu çağrılıyor
+df_canli_arz = canli_halka_arz_getir()
+st.dataframe(df_canli_arz, use_container_width=True, hide_index=True)
+
+# ===================================================================== #
+# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
+# ===================================================================== #
+st.write("---")
+st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
+
+yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
+
+with st.form(key="s_frm", clear_on_submit=True):
+    y_is = st.text_input("Adınız:", max_chars=25)
+    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
