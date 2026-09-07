@@ -25,12 +25,11 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı Tazeleyerek Anlık Senkronizasyon Sağlar)
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-kilit_dosyasi = "bta_oda_durumu.txt"  # Küresel kilit ayar dosyası
 
 # KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
@@ -39,47 +38,25 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
-# --- KÜRESEL KİLİT SİSTEMİ ALANI ---
-if not os.path.exists(kilit_dosyasi):
-    with open(kilit_dosyasi, "w") as f:
-        f.write("LOCKED")  # İlk açılışta güvenli olması için şifreli başlar
-
-with open(kilit_dosyasi, "r") as f:
-    oda_guncel_durumu = f.read().strip()
-
-UYELIK_SIFRESI = "bta123"  # Üyelerin odaya girmek için kullanacağı ortak şifre
-
-# Eğer oda "LOCKED" (Sadece Üyeler) ise ve mevcut tarayıcıda üye girişi yapılmadıysa kilit ekranını göster
-if oda_guncel_durumu == "LOCKED":
-    if "uye_girisi_basarili" not in st.session_state or not st.session_state["uye_girisi_basarili"]:
-        st.markdown('<p style="font-size:24px; font-weight:bold; color:#ff3344; text-align:center;">🔒 BU ODA SADECE ÜYELERE AÇIKTIR</p>', unsafe_allow_html=True)
-        st.markdown('<p style="font-size:14px; color:#aaa; text-align:center;">İçeriği görmek için lütfen geçerli üye şifresini giriniz.</p>', unsafe_allow_html=True)
-        
-        with st.form(key="uye_giris_formu"):
-            girilen_sifre = st.text_input("Üye Giriş Şifresi:", type="password")
-            giriş_butonu = st.form_submit_button("Odaya Giriş Yap 🔓", use_container_width=True)
-            
-            if giriş_butonu:
-                if girilen_sifre == UYELIK_SIFRESI:
-                    st.session_state["uye_girisi_basarili"] = True
-                    st.success("Giriş başarılı! Üye paneli yükleniyor...")
-                    st.rerun()
-                else:
-                    st.error("❌ Hatalı Üye Şifresi Girdiniz!")
-        st.stop()  # Şifre girilmediyse kodun geri kalanını kesinlikle çalıştırma
-
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
 
 # ===================================================================== #
-# 2. SADECE BIST 100 PİYASA ALANI (Altın Fiyatları Kaldırıldı)
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
+    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    gram_f = (ons_f / 31.1034768) * usd_f
     
-    st.metric("BIST 100 ENDEKSİ", f"{bist_f:,.2f}")
+    pk1, pk2, pk3, col_bist = st.columns(4)
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
+    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
+    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.1f} TL")
+    col_bist.metric("BIST 100", f"{bist_f:,.1f}")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
@@ -165,3 +142,23 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+
+with st.expander("🛠 Yönetici"):
+    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
+
+# MESAJ LİSTELEME
+df_sohbet_oku = pd.read_csv(db_sohbet)
+for s in range(len(df_sohbet_oku)):
+    sh = df_sohbet_oku.iloc[s]
+    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+        df_sl = pd.read_csv(db_sohbet)
+        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+        st.rerun()
+
+# ===================================================================== #
+# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI (EN ALTA TAM İSTEDİĞİNİZ GİBİ ÇIKAR)
+# ===================================================================== #
+st.write("---")
+st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
