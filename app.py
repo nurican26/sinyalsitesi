@@ -30,9 +30,9 @@ db_sohbet = "bta_sohbet_db.csv"
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
-if "toplam_sayac" not in st.session_state: st.session_state["toplam_sayac"] = 1450
+if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 if "gunluk_sayac" not in st.session_state: st.session_state["gunluk_sayac"] = 120
-st.session_state["toplam_sayac"] += 1
+st.session_state["topham_sayac"] += 1
 st.session_state["gunluk_sayac"] += 1
 
 def formatla_tl(deger):
@@ -105,7 +105,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR VE HABERLER (DÜZENLENDİ)
+# 4. HALKA ARZLAR VE HABERLER
 # ===================================================================== #
 st.write("---")
 st.header("🔔 GÜNCEL HALKA ARZLAR VE ANLIK HABERLER")
@@ -147,7 +147,7 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJLARI KALICI VERİTABANINDAN ÇEKİP LİSTELEME
+# MESAJ LİSTELEME
 df_sohbet_oku = pd.read_csv(db_sohbet)
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
@@ -161,7 +161,5 @@ for s in range(len(df_sohbet_oku)):
 # YASAL UYARI VE EN ALTA GİZLENEN SAYAÇ ÇİZGİSİ
 # ===================================================================== #
 st.write("---")
-st.markdown('''
-<p style="font-size:11px; color:#666668; text-align:center; margin-bottom: 2px;">
-⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.
-</p>
+st.markdown('<p style="font-size:11px; color:#666668; text-align:center; margin-bottom: 2px;">⚠ **SPK YASAL UYARI:** Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Belirtilen hisseler algoritma çıktısı olup tavsiye niteliği taşımaz. Panel üzerindeki borsa verileri kurallar gereği en az 15 dakika gecikmelidir.</p>', unsafe_allow_html=True)
+
