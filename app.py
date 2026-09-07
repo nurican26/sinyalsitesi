@@ -78,7 +78,6 @@ def sohbet_temizle(metin):
 # Sunucu düzeyinde tek bir global hafıza havuzu oluşturur (Tüm kullanıcılar için ortaktır) 
 @st.cache_resource 
 def sunucu_canli_havuzunu_getir(): 
-    # Streamlit'in takibini kolaylaştırmak için listeyi bir dict içinde sarmalıyoruz
     return {"mesajlar": []} 
 
 ortak_havuz_dict = sunucu_canli_havuzunu_getir() 
@@ -211,7 +210,9 @@ st.write("---")
 # --- SOHBET ALANI PANELİ ---
 st.markdown('<p style="font-weight:bold; font-size:18px; color:#E91E63;">💬 CANLI SOHBET ODASI</p>', unsafe_allow_html=True)
 
-# Form yapısından bağımsız state yönetimi ile veriyi yakalama
-kullanici_adi = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=20, key="chat_user")
-mesaj_metni = st.text_input("Mesajınız:", max_chars=150, key="chat_message")
+with st.form(key="bta_sohbet_formu", clear_on_submit=True):
+    kullanici_adi = st.text_input("Takma Adınız (Rumuz):", value="Yatırımcı", max_chars=20)
+    mesaj_metni = st.text_input("Mesajınız (Göndermek için Enter'a basın veya butona tıklayın):", max_chars=150)
+    
+    gonder_butonu = st.form_submit_button(label="🚀 Mesajı Gönder", type="primary")
 
