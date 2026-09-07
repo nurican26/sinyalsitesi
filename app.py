@@ -38,7 +38,7 @@ st.markdown('''
     }
     .warning-banner {
         background-color: #fff3cd;
-        color: #856408;
+        color: #856208;
         padding: 12px;
         border-radius: 8px;
         text-align: center;
