@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import uuid
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
@@ -30,6 +31,7 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
+db_aktifler = "bta_aktif_kullanicilar.csv" # Aktif oda takibi için geçici dosya
 
 # KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
@@ -37,6 +39,32 @@ if not os.path.exists(db_sohbet):
 
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
+
+# ANLIK ODA KULLANICI TAKİP MOTORU
+if "cihaz_id" not in st.session_state:
+    st.session_state["cihaz_id"] = str(uuid.uuid4())
+
+# Aktif kullanıcılar tablosunu güncelle ve eski (sinyal vermeyenleri) temizle
+simdi = datetime.datetime.now()
+try:
+    if os.path.exists(db_aktifler):
+        df_akt = pd.read_csv(db_aktifler)
+        # 15 saniyeden uzun süredir yenilenmeyen (odadan çıkan) kullanıcıları düşür
+        df_akt["zaman"] = pd.to_datetime(df_akt["zaman"])
+        df_akt = df_akt[df_akt["zaman"] > (simdi - datetime.timedelta(seconds=15))]
+    else:
+        df_akt = pd.DataFrame(columns=["id", "zaman"])
+except:
+    df_akt = pd.DataFrame(columns=["id", "zaman"])
+
+# Mevcut kullanıcıyı listeye ekle/güncelle
+df_akt = df_akt[df_akt["id"] != st.session_state["cihaz_id"]]
+yeni_aktif = pd.DataFrame([{"id": st.session_state["cihaz_id"], "zaman": simdi}])
+df_akt = pd.concat([df_akt, yeni_aktif], ignore_index=True)
+df_akt.to_csv(db_aktifler, index=False)
+
+# Net gerçek kişi sayısı
+gercek_kisi_sayisi = len(df_akt)
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -114,17 +142,8 @@ else: st.error("Excel bulunamadı.")
 # ===================================================================== #
 st.write("---")
 
-# MESAJ LİSTELEME VE KONTROL MOTORU
-df_sohbet_oku = pd.read_csv(db_sohbet)
-
-# Benzersiz (unique) isim sayısını hesaplayarak gerçek kişi sayısını buluyoruz
-try:
-    kisi_sayisi = df_sohbet_oku["isim"].nunique()
-except:
-    kisi_sayisi = 0
-
-# Sohbet başlığına kişi sayısını ekliyoruz
-st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">{kisi_sayisi} Kişi</span>)</div>', unsafe_allow_html=True)
+# Sohbet başlığına anlık aktif cihaz/sekme sayısını yansıtıyoruz
+st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">Odadaki Kişi: {gercek_kisi_sayisi}</span>)</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
@@ -160,20 +179,3 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-if "son_mesaj_sayisi" not in st.session_state:
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-
-# Yeni mesaj geldiğinde yerel ses tetiklenir
-if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
-    st.components.v1.html(garantili_bip_html, height=0, width=0)
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
