@@ -24,7 +24,7 @@ st_autorefresh(interval=10 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 
 # ===================================================================== #
-# 2. CANLI BORSA TABLOSU (EXCEL WEB SAYFASINI DOĞRUDAN OKUR - KOTA %0)
+# 2. CANLI BORSA TABLOSU (SADECE WEB SAYFASINDAKİ SÜZÜLMÜŞ HİSSELER)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
