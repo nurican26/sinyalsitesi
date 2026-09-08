@@ -31,7 +31,7 @@ db_sohbet = "bta_sohbet_db.csv"
 db_ayar = "bta_ayar_db.csv"
 db_sayac = "bta_sayac_db.csv"
 
-# VERİTABANLARINI BAŞLATMA
+# VERİTABANLARINI EKSİKSİZ BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum", "onayli"]).to_csv(db_sohbet, index=False)
 
@@ -41,7 +41,7 @@ if not os.path.exists(db_ayar):
 if not os.path.exists(db_sayac):
     pd.DataFrame(columns=["session_id", "son_aksiyon"]).to_csv(db_sayac, index=False)
 
-# 👥 GERÇEK CANLI SAYAÇ MOTORU
+# 👥 %100 GERÇEK CANLI SAYAÇ MOTORU
 now_time = time.time()
 if "user_session" not in st.session_state:
     st.session_state["user_session"] = str(now_time)
@@ -78,7 +78,7 @@ garantili_bip_html = """
 
 # Ayarları dosyadan oku
 df_ayar_oku = pd.read_csv(db_ayar)
-oda_su_an_kilitli = int(df_ayar_oku.iloc[0, 0])
+oda_su_an_kilitli = int(df_ayar_oku.iloc[0]["oda_kilitli"])
 
 # ===================================================================== #
 # 2. CANLI BORSA TABLOSU
@@ -131,7 +131,7 @@ else:
     st.error("Excel veritabanı bulunamadı. Lütfen nurican.xls.xlsm dosyasını yükleyin.")
 
 # ===================================================================== #
-# 3. SOHBET ODASI VE GERÇEK CANLI ALANI
+# 3. SOHBET ODASI VE GERÇEK CANLI ALANI (KİLİTLENMEYEN BAĞIMSIZ GİRİŞ)
 # ===================================================================== #
 st.write("---")
 col_baslik, col_sayac = st.columns(2)
@@ -145,30 +145,29 @@ else:
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# KİLİTLENMEYEN %100 ÇALIŞAN MESAJ MOTORU
-with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True):
-        if y_is.strip() and y_me.strip():
-            m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-            i_kucuk = y_is.lower().replace(" ", "")
+# KİLİTLENMEYEN %100 GARANTİLİ GÖNDERİM MOTORU (FORM KALKTI)
+y_is = st.text_input("Adınız:", max_chars=25, key="input_ad_alani")
+y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="input_mesaj_alani")
+
+if st.button("Mesajı Yayınla 📨", use_container_width=True, key="yayinla_ana_tetiği"):
+    if y_is.strip() and y_me.strip():
+        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
+        i_kucuk = y_is.lower().replace(" ", "")
+        
+        if any(z in m_kucuk or z in i_kucuk for z in yasakli):
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+        else:
+            df_s = pd.read_csv(db_sohbet)
+            onay_durumu = 0 if oda_su_an_kilitli == 1 else 1
             
-            if any(z in m_kucuk or z in i_kucuk for z in yasakli):
-                st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-            else:
-                df_s = pd.read_csv(db_sohbet)
-                
-                # EĞER ODA KİLİTLİYSE: Mesajı onayli=0 (gizli) olarak kaydet, oda açıkken onayli=1 (herkese açık) kaydet
-                onay_durumu = 0 if oda_su_an_kilitli == 1 else 1
-                
-                y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip(), "onayli": onay_durumu}])
-                pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-                st.rerun()
+            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip(), "onayli": onay_durumu}])
+            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+            st.success("✅ Mesaj başarıyla iletildi!")
+            time.sleep(0.5)
+            st.rerun()
 
 # ===================================================================== #
-# 4. GİZLİ YÖNETİCİ PANELİ (ODA ŞALTERİ & ONAYLAMA MERKEZİ)
+# 4. GİZLİ YÖNETİCİ PANELİ (ŞALTER KONTROLÜ VE ONAYLAMA MERKEZİ)
 # ===================================================================== #
 st.write("---")
 with st.expander("🛠 Yönetici Kontrol Paneli (Şifre: bta123)"):
@@ -178,11 +177,11 @@ with st.expander("🛠 Yönetici Kontrol Paneli (Şifre: bta123)"):
         st.write("#### 🎛 Oda Gösterim Şalteri")
         
         col_kilitle, col_ac = st.columns(2)
-        if col_kilitle.button("🔒 Odayı Dışarıya Kapat (Mesajları Gizle)"):
+        if col_kilitle.button("🔒 Odayı Dışarıya Kapat (Mesajları Gizle)", key="btn_od_kilit"):
             pd.DataFrame([{"oda_kilitli": 1}]).to_csv(db_ayar, index=False)
             st.rerun()
             
-        if col_ac.button("🔓 Odayı Herkese Aç (Canlıya Al)"):
+        if col_ac.button("🔓 Odayı Herkese Aç (Canlıya Al)", key="btn_od_ac"):
             pd.DataFrame([{"oda_kilitli": 0}]).to_csv(db_ayar, index=False)
             st.rerun()
 
