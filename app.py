@@ -6,71 +6,25 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. ERKEKSİ, KOYU VE MAT BORSA TERMİNALİ STİLLERİ (CSS)
+# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Ağır ve mat borsa grafit arka planı - parlak olmayan loş çizgiler */
-.stApp { 
-    background-color: #050806 !important;
-    background-image: 
-        linear-gradient(to right, rgba(0, 255, 102, 0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0, 255, 102, 0.03) 1px, transparent 1px) !important;
-    background-size: 60px 60px !important;
-}
-
-/* Parlak yeşil çerçeveler YOK EDİLDİ - Koyu Çelik/Antrasit Çerçeve Yapıldı */
-div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { 
-    background-color: #0b110d !important; 
-    border: 1px solid #1a241d !important; 
-    border-radius: 4px !important; 
-    padding: 14px !important; 
-}
-
-/* Giriş Alanları ve Seçim Kutuları */
-input, textarea, select { 
-    background-color: #030604 !important; 
-    color: #00ff66 !important; 
-    border: 1px solid #1a241d !important; 
-    border-radius: 4px !important; 
-}
-
-/* Maskülen Mat Karbon Butonlar */
-.stButton>button { 
-    background: linear-gradient(135deg, #141f17 0%, #0a120c 100%) !important; 
-    color: #ffffff !important; 
-    border: 1px solid #223327 !important; 
-    border-radius: 4px !important; 
-    font-weight: bold !important; 
-}
-.stButton>button:hover {
-    border: 1px solid #00ff66 !important;
-    color: #00ff66 !important;
-}
-
-/* Ağır Kurumsal Borsa Tablosu */
-.borsa-tablo { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin: 10px 0; 
-    font-size: 15px; 
-    background-color: #0b110d; 
-    border-radius: 4px; 
-    overflow: hidden; 
-    border: 1px solid #1a241d;
-}
-.borsa-tablo th { background-color: #111a14; color: #00ff66; text-align: left; padding: 12px 10px; border-bottom: 1px solid #1a241d; }
-.borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #0b110d; font-weight: bold; }
-
-.kucuk-sayac { font-size: 14px !important; color: #557755 !important; text-align: center; margin-top: 15px; font-weight: bold; }
+.stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
+div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
+input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
+.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
+.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+.kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
-
-<!-- BTA BAŞLIĞI KAYAN YAZI -->
+<!-- BTA BAŞLIĞI KAYAN YAZI OLARAK GÜNCELLENDİ -->
 <marquee behavior="scroll" direction="left" scrollamount="7">
-    <h1 style="color:#00ff66; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px; display:inline;">BTA</h1>
+    <h1 style="color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px; display:inline;">BTA</h1>
 </marquee>
 ''', unsafe_allow_html=True)
 
@@ -87,7 +41,7 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
-# Sohbet sayfa yenilemelerinde yeni mesaj gelip gelmediğini kontrol etmek için sayaç
+# Arka planda yeni mesaj kontrolü için mesaj sayacı hafızası
 if "eski_mesaj_sayisi" not in st.session_state:
     try:
         st.session_state["eski_mesaj_sayisi"] = len(pd.read_csv(db_sohbet))
@@ -103,6 +57,7 @@ def formatla_tl(deger):
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     
     # 4 sütun oluşturup sadece ilkini kullanarak BIST kutusunun uzamasını engelledik
     col_bist, _, _, _ = st.columns(4)
@@ -142,7 +97,7 @@ if os.path.exists(excel_yolu):
             except: continue
             
         tablo_html += '</table>'
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
         # --- BORSA ARAMA MOTORU ---
@@ -155,11 +110,17 @@ if os.path.exists(excel_yolu):
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
+                        
+                        st.write("")
+                        st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
+                        f_col1, f_col2 = st.columns(2)
+                        f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
+                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR (KALDIRILDI)
+# 4. HALKA ARZLAR (TALEBİNİZ ÜZERİNE BU BÖLÜM KALDIRILDI)
 # ===================================================================== #
 
 # ===================================================================== #
@@ -170,7 +131,7 @@ st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# Hazır dijital bildirim "bip" sesi
+# Dijital "bip" bildirim sesi linki
 ses_url = "https://mixkit.co"
 
 with st.form(key="s_frm", clear_on_submit=True):
@@ -185,7 +146,7 @@ with st.form(key="s_frm", clear_on_submit=True):
             y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             
-            # Anlık mesaj gönderen için sesi hemen tetikle
+            # Gönderen kişide sesin hemen çalması için tetikleyici
             st.markdown(f'<audio autoplay><source src="{ses_url}" type="audio/wav"></audio>', unsafe_allow_html=True)
             st.rerun()
         else:
@@ -194,15 +155,18 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJ LİSTELEME VE ARKA PLANDA YENİ MESAJ KONTROLÜ
+# MESAJ LİSTELEME VE KULLANICILAR İÇİN SES MOTORU
 try:
     df_sohbet_oku = pd.read_csv(db_sohbet)
     guncel_mesaj_sayisi = len(df_sohbet_oku)
     
-    # Eğer 5 saniyelik otomatik yenilemede veri tabanındaki satır sayısı artmışsa, sayfadaki herkes için ses çal
+    # Otomatik yenilemede yeni bir mesaj algılanırsa odadaki herkes için ses çalar
     if guncel_mesaj_sayisi > st.session_state["eski_mesaj_sayisi"]:
         st.markdown(f'<audio autoplay><source src="{ses_url}" type="audio/wav"></audio>', unsafe_allow_html=True)
         st.session_state["eski_mesaj_sayisi"] = guncel_mesaj_sayisi
 
     for s in range(guncel_mesaj_sayisi):
         sh = df_sohbet_oku.iloc[s]
+        st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+        if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+            df_sl = pd.read_csv(db_sohbet)
