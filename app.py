@@ -6,62 +6,66 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTASIZ VE BELİRGİN GENİŞ ÇİZGİLİ MATRİKS TEMASI VE STİLLER (CSS)
+# 1. ERKEKSİ, KOYU VE MAT BORSA TERMİNALİ STİLLERİ (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Gözü yormayan, geniş aralıklı ve belirgin borsa çizgili arka planı */
+/* Ağır ve mat borsa grafit arka planı - parlak olmayan loş çizgiler */
 .stApp { 
-    background-color: #040805 !important;
+    background-color: #050806 !important;
     background-image: 
-        linear-gradient(to right, rgba(0, 255, 102, 0.08) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0, 255, 102, 0.08) 1px, transparent 1px) !important;
-    background-size: 60px 60px !important; /* Çizgi aralıkları genişletildi */
+        linear-gradient(to right, rgba(0, 255, 102, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 255, 102, 0.03) 1px, transparent 1px) !important;
+    background-size: 60px 60px !important;
 }
 
-/* Matriks yeşili paneller ve kutular */
+/* Parlak yeşil çerçeveler YOK EDİLDİ - Koyu Çelik/Antrasit Çerçeve Yapıldı */
 div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { 
-    background-color: #09100b !important; 
-    border: 1px solid #00aa44 !important; 
-    border-radius: 6px !important; 
-    padding: 12px !important; 
+    background-color: #0b110d !important; 
+    border: 1px solid #1a241d !important; 
+    border-radius: 4px !important; 
+    padding: 14px !important; 
 }
 
-/* Girdiler ve Seçim Alanları */
+/* Giriş Alanları ve Seçim Kutuları */
 input, textarea, select { 
-    background-color: #020503 !important; 
+    background-color: #030604 !important; 
     color: #00ff66 !important; 
-    border: 1px solid #00aa44 !important; 
+    border: 1px solid #1a241d !important; 
     border-radius: 4px !important; 
 }
 
-/* Matriks Yeşili Butonlar */
+/* Maskülen Mat Karbon Butonlar */
 .stButton>button { 
-    background: linear-gradient(135deg, #050f08 0%, #006622 100%) !important; 
-    color: #00ff66 !important; 
-    border: 1px solid #00ff66 !important; 
+    background: linear-gradient(135deg, #141f17 0%, #0a120c 100%) !important; 
+    color: #ffffff !important; 
+    border: 1px solid #223327 !important; 
     border-radius: 4px !important; 
     font-weight: bold !important; 
 }
+.stButton>button:hover {
+    border: 1px solid #00ff66 !important;
+    color: #00ff66 !important;
+}
 
-/* Borsa Tablosu */
+/* Ağır Kurumsal Borsa Tablosu */
 .borsa-tablo { 
     width: 100%; 
     border-collapse: collapse; 
     margin: 10px 0; 
     font-size: 15px; 
-    background-color: #09100b; 
-    border-radius: 6px; 
+    background-color: #0b110d; 
+    border-radius: 4px; 
     overflow: hidden; 
-    border: 1px solid #00aa44;
+    border: 1px solid #1a241d;
 }
-.borsa-tablo th { background-color: #0e1a12; color: #00ff66; text-align: left; padding: 10px 8px; border-bottom: 1px solid #00aa44; }
-.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #0e1a12; font-weight: bold; }
+.borsa-tablo th { background-color: #111a14; color: #00ff66; text-align: left; padding: 12px 10px; border-bottom: 1px solid #1a241d; }
+.borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #0b110d; font-weight: bold; }
 
-.kucuk-sayac { font-size: 14px !important; color: #00ff66 !important; text-align: center; margin-top: 15px; font-weight: bold; }
-.kucuk-baslik { font-size: 15px !important; color: #00ff66 !important; font-weight: bold; margin-bottom: 5px; }
+.kucuk-sayac { font-size: 14px !important; color: #557755 !important; text-align: center; margin-top: 15px; font-weight: bold; }
+.kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
 
 <!-- BTA BAŞLIĞI KAYAN YAZI -->
@@ -131,7 +135,7 @@ if os.path.exists(excel_yolu):
             except: continue
             
         tablo_html += '</table>'
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ff66;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
         # --- BORSA ARAMA MOTORU ---
@@ -181,7 +185,7 @@ with st.expander("🛠 Yönetici"):
 df_sohbet_oku = pd.read_csv(db_sohbet)
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #09100b; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ff66; border: 1px solid #00aa44;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: #0b110d; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #557755; border: 1px solid #1a241d;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#778877; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
     if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
         df_sl = pd.read_csv(db_sohbet)
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
