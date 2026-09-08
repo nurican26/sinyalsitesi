@@ -87,6 +87,13 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
+# Sohbet sayfa yenilemelerinde yeni mesaj gelip gelmediğini kontrol etmek için sayaç
+if "eski_mesaj_sayisi" not in st.session_state:
+    try:
+        st.session_state["eski_mesaj_sayisi"] = len(pd.read_csv(db_sohbet))
+    except:
+        st.session_state["eski_mesaj_sayisi"] = 0
+
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
@@ -156,12 +163,15 @@ else: st.error("Excel bulunamadı.")
 # ===================================================================== #
 
 # ===================================================================== #
-# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
+# 5. ORİJİNAL GÜVENLİ SOHBET FORMU (SES BİLDİRİMLİ)
 # ===================================================================== #
 st.write("---")
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
+
+# Hazır dijital bildirim "bip" sesi
+ses_url = "https://mixkit.co"
 
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
@@ -174,6 +184,9 @@ with st.form(key="s_frm", clear_on_submit=True):
             df_s = pd.read_csv(db_sohbet)
             y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+            
+            # Anlık mesaj gönderen için sesi hemen tetikle
+            st.markdown(f'<audio autoplay><source src="{ses_url}" type="audio/wav"></audio>', unsafe_allow_html=True)
             st.rerun()
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
@@ -181,18 +194,15 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJ LİSTELEME
-df_sohbet_oku = pd.read_csv(db_sohbet)
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #0b110d; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #557755; border: 1px solid #1a241d;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#778877; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.rerun()
+# MESAJ LİSTELEME VE ARKA PLANDA YENİ MESAJ KONTROLÜ
+try:
+    df_sohbet_oku = pd.read_csv(db_sohbet)
+    guncel_mesaj_sayisi = len(df_sohbet_oku)
+    
+    # Eğer 5 saniyelik otomatik yenilemede veri tabanındaki satır sayısı artmışsa, sayfadaki herkes için ses çal
+    if guncel_mesaj_sayisi > st.session_state["eski_mesaj_sayisi"]:
+        st.markdown(f'<audio autoplay><source src="{ses_url}" type="audio/wav"></audio>', unsafe_allow_html=True)
+        st.session_state["eski_mesaj_sayisi"] = guncel_mesaj_sayisi
 
-# ===================================================================== #
-# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI
-# ===================================================================== #
-st.write("---")
-st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
+    for s in range(guncel_mesaj_sayisi):
+        sh = df_sohbet_oku.iloc[s]
