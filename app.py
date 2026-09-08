@@ -31,7 +31,7 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-db_aktifler = "bta_aktif_kullanicilar.csv" # Aktif oda takibi için geçici dosya
+db_aktifler = "bta_aktif_kullanicilar.csv"
 
 # KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
@@ -44,12 +44,10 @@ st.session_state["topham_sayac"] += 1
 if "cihaz_id" not in st.session_state:
     st.session_state["cihaz_id"] = str(uuid.uuid4())
 
-# Aktif kullanıcılar tablosunu güncelle ve eski (sinyal vermeyenleri) temizle
 simdi = datetime.datetime.now()
 try:
     if os.path.exists(db_aktifler):
         df_akt = pd.read_csv(db_aktifler)
-        # 15 saniyeden uzun süredir yenilenmeyen (odadan çıkan) kullanıcıları düşür
         df_akt["zaman"] = pd.to_datetime(df_akt["zaman"])
         df_akt = df_akt[df_akt["zaman"] > (simdi - datetime.timedelta(seconds=15))]
     else:
@@ -57,13 +55,11 @@ try:
 except:
     df_akt = pd.DataFrame(columns=["id", "zaman"])
 
-# Mevcut kullanıcıyı listeye ekle/güncelle
 df_akt = df_akt[df_akt["id"] != st.session_state["cihaz_id"]]
 yeni_aktif = pd.DataFrame([{"id": st.session_state["cihaz_id"], "zaman": simdi}])
 df_akt = pd.concat([df_akt, yeni_aktif], ignore_index=True)
 df_akt.to_csv(db_aktifler, index=False)
 
-# Net gerçek kişi sayısı
 gercek_kisi_sayisi = len(df_akt)
 
 def formatla_tl(deger):
@@ -142,12 +138,10 @@ else: st.error("Excel bulunamadı.")
 # ===================================================================== #
 st.write("---")
 
-# Sohbet başlığına anlık aktif cihaz/sekme sayısını yansıtıyoruz
 st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">Odadaki Kişi: {gercek_kisi_sayisi}</span>)</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# İnternet bağlantısı gerektirmeyen, doğrudan tarayıcının kendi ürettiği Bip Sesi (Web Audio API)
 garantili_bip_html = """
 <script>
     (function() {
@@ -157,10 +151,10 @@ garantili_bip_html = """
         osc.connect(gain);
         gain.connect(context.destination);
         osc.type = 'sine';
-        osc.frequency.value = 830; // Sesin incelik ayarı (Hz)
-        gain.gain.setValueAtTime(0.1, context.currentTime); // Ses seviyesi (0.1 ideal)
+        osc.frequency.value = 830;
+        gain.gain.setValueAtTime(0.1, context.currentTime);
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); // 0.15 saniye sürer
+        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15);
         osc.stop(context.currentTime + 0.16);
     })();
 </script>
@@ -179,3 +173,17 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+
+with st.expander("🛠 Yönetici"):
+    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
+
+# MESAJ LİSTELEME VE KONTROL MOTORU
+df_sohbet_oku = pd.read_csv(db_sohbet)
+
+if "son_mesaj_sayisi" not in st.session_state:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
+    st.components.v1.html(garantili_bip_html, height=0, width=0)
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
