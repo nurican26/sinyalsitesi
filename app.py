@@ -21,8 +21,13 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 18px !important; color: #00ffcc !important; font-weight: bold; margin-bottom: 10px; }
-/* Mesaj Paneli Büyük Çerçeve Stili */
-.mesaj-cerceve { background-color: #121d33; border: 2px solid #00ffcc; border-radius: 12px; padding: 20px; margin-top: 15px; }
+/* Kısaltılmış ve Dikey Kaydırma Eklenmiş Mesaj Paneli */
+.mesaj-cerceve { background-color: #121d33; border: 2px solid #00ffcc; border-radius: 12px; padding: 15px; margin-top: 15px; }
+.mesaj-akisi { max-height: 250px; overflow-y: auto; padding-right: 5px; margin-top: 10px; }
+/* Kaydırma çubuğu tasarımı */
+.mesaj-akisi::-webkit-scrollbar { width: 6px; }
+.mesaj-akisi::-webkit-scrollbar-track { background: #090f1a; }
+.mesaj-akisi::-webkit-scrollbar-thumb { background: #0d9488; border-radius: 3px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -116,14 +121,14 @@ else: st.error("Excel bulunamadı.")
 # ===================================================================== #
 st.write("---")
 
-# Sohbet Odasındaki Kişi Sayısı (Sohbet geçmişindeki benzersiz isimler + admin simülasyonu baz alınır)
+# Hatanın düzeltildiği yer: try bloğu doğru girinti seviyesine alındı
 try:
     sohbet_df_oku = pd.read_csv(db_sohbet)
     aktif_kisi_sayisi = max(1, sohbet_df_oku["isim"].nunique())
 except:
     aktif_kisi_sayisi = 1
 
-# BÜYÜK ÇERÇEVE BAŞLANGICI (HTML AÇILIŞI)
+# BÜYÜK ÇERÇEVE BAŞLANGICI
 st.markdown(f'''
 <div class="mesaj-cerceve">
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e3a5f; padding-bottom: 8px; margin-bottom: 15px;">
@@ -175,10 +180,3 @@ with st.form(key="s_frm", clear_on_submit=True):
                 st.success("✅ Mesajınız başarıyla yayınlandı!")
                 st.rerun()
         else:
-            st.warning("⚠️ Adınız ve Mesajınız alanları boş bırakılamaz!")
-
-# ===================================================================== #
-# 5. SOHBET GEÇMİŞİNİ EKRANA YAZDIRMA
-# ===================================================================== #
-if os.path.exists(db_sohbet):
-    try:
