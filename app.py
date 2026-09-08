@@ -18,50 +18,53 @@ st.markdown('''
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:40px; margin-bottom:15px;">BTA ANALİZ MERKEZİ</h1>
 ''', unsafe_allow_html=True)
 
-# Ekranı 10 saniyede bir yenileyen hafif saat motoru
+# Sitenin kotasını harcamadan ekranı 10 saniyede bir otomatik yenileyen motor
 st_autorefresh(interval=10 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 
 # ===================================================================== #
-# 2. CANLI BORSA TABLOSU (SADECE WEB SAYFASINDAKİ SÜZÜLMÜŞ HİSSELER)
+# 2. CANLI BORSA TABLOSU (SADECE "WEB" SAYFASI - B SÜTUNU GİZLİ)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
+        # Nokta atışı olarak tam senin o yeşil "WEB" sekmesini içeri yüklüyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
+        
+        # B sütununu sildiğimiz için yeni başlıklarımız: BTA HİSSE, BTA ALIM FİYATI, BTA PUANI
+        tablo_html = '<table class="borsa-tablo"><tr><th>BTA HİSSE</th><th>BTA ALGORİTMİK FİYAT</th><th>BTA PUANI</th></tr>'
         veri_var_mi = False
         
+        # Sizin "WEB" sayfanızın satırlarını baştan aşağıya tarıyoruz
         for idx in range(len(df)):
             try:
-                puan_d = df.iloc[idx, 0]    # A Sütunu: BTA Puanı
-                ha = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""  # B Sütunu: Hisse Adı
-                algo_f = df.iloc[idx, 2]    # C Sütunu: Algoritmik Fiyat
-                canli_f = df.iloc[idx, 3]   # D Sütunu: Canlı Fiyat
-                kz_orani = df.iloc[idx, 4]  # E Sütunu: K/Z Oranı
+                # Sütun endeksleri (Python 0'dan başlar):
+                # A sütunu (0): BTA HİSSE
+                # B sütunu (1): BTA AL SAT ➡️ (GÖSTERMİYORUZ!)
+                # C sütunu (2): BTA ALIM FİYATI
+                # D sütunu (3): BTA PUANI
                 
-                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "HİSSE ADI", "HİSSE ADI "]:
+                hisse_adi = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+                alim_fiyati = df.iloc[idx, 2]
+                bta_puani = df.iloc[idx, 3]
+                
+                # Başlıkları ve boş satırları süzüp sadece gerçek hisseyi alıyoruz
+                if hisse_adi != "" and hisse_adi not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "HİSSE ADI", "HİSSE ADI "]:
                     veri_var_mi = True
                     
-                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                    maliyet_str = f"{float(algo_f):,.1f} TL" if isinstance(algo_f, (int, float)) else str(algo_f).strip()
-                    canli_str = f"{float(canli_f):,.1f} TL" if isinstance(canli_f, (int, float)) else str(canli_f).strip()
+                    # Verileri ekranda pürüzsüz gösterecek metin nizamları
+                    fiyat_temiz = f"{float(alim_fiyati):,.2f} TL" if isinstance(alim_fiyati, (int, float)) else str(alim_fiyati).strip()
+                    puan_temiz = f"{float(bta_puani):.2f}" if isinstance(bta_puani, (int, float)) else str(bta_puani).strip()
                     
-                    kz_metin = str(kz_orani).strip()
-                    if "▼" in kz_metin or "-" in kz_metin:
-                        kz_str = f'<span style="color:#ff3344;">{kz_metin}</span>'
-                    elif "▲" in kz_metin or "%" in kz_metin:
-                        kz_str = f'<span style="color:#00ff66;">{kz_metin}</span>'
-                    else:
-                        kz_str = f'<span>{kz_metin}</span>'
-                    
-                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet_str}</td><td>{canli_str}</td><td>{kz_str}</td></tr>'
+                    # Tablo satırına ekliyoruz (B sütunu olan BTA AL SAT tamamen dışarıda bırakıldı)
+                    tablo_html += f'<tr><td>{hisse_adi}</td><td>{fiyat_temiz}</td><td>{puan_temiz}</td></tr>'
             except:
                 continue
             
         tablo_html += '</table>'
         
         st.markdown('<p style="font-size:20px; font-weight:bold; color:#1E90FF; margin-top:20px;">📈 BTA ALGORİTMİK HİSSE LİSTESİ</p>', unsafe_allow_html=True)
+        
         if veri_var_mi: 
             st.markdown(tablo_html, unsafe_allow_html=True)
         else:
