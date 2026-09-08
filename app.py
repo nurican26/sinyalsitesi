@@ -6,19 +6,19 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTASIZ SABİT ÇİZGİLİ MATRİKS TEMASI VE STİLLER (CSS)
+# 1. KOTASIZ VE BELİRGİN GENİŞ ÇİZGİLİ MATRİKS TEMASI VE STİLLER (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* İnternet kotası harcamayan, statik ince çizgili Matriks arka planı */
+/* Gözü yormayan, geniş aralıklı ve belirgin borsa çizgili arka planı */
 .stApp { 
     background-color: #040805 !important;
     background-image: 
-        linear-gradient(to right, rgba(0, 255, 102, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0, 255, 102, 0.04) 1px, transparent 1px) !important;
-    background-size: 25px 25px !important;
+        linear-gradient(to right, rgba(0, 255, 102, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 255, 102, 0.08) 1px, transparent 1px) !important;
+    background-size: 60px 60px !important; /* Çizgi aralıkları genişletildi */
 }
 
 /* Matriks yeşili paneller ve kutular */
