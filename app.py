@@ -21,7 +21,7 @@ st.markdown('''
     background-size: 60px 60px !important;
 }
 
-/* Parlak yeşil çerçeveler YOK EDİLDİ - Koyu Çelik/Antrasit Çerçeve Yapıldı */
+/* Koyu Çelik/Antrasit Çerçeve */
 div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { 
     background-color: #0b110d !important; 
     border: 1px solid #1a241d !important; 
@@ -50,7 +50,7 @@ input, textarea, select {
     color: #00ff66 !important;
 }
 
-/* Ağır Kurumsal Borsa Tablosu */
+/* Borsa Tablosu */
 .borsa-tablo { 
     width: 100%; 
     border-collapse: collapse; 
@@ -87,6 +87,48 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
+# KOTASIZ JAVASCRIPT SES MOTORLARI (Tarayıcının kendi ses kartını tetikler, internet yemez)
+def cal_mesaj_sesi():
+    st.components.v1.html("""
+    <script>
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 Notası (Kısa Temiz Bip)
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    </script>
+    """, height=0, width=0)
+
+def cal_alkis_sesi():
+    st.components.v1.html("""
+    <script>
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Alkış hissi yaratmak için hızlı ritmik frekans patlamaları dizisi
+    for (var i = 0; i < 8; i++) {
+        (function(index) {
+            setTimeout(function() {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150 + Math.random() * 200, ctx.currentTime);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+            }, index * 120);
+        })(i);
+    }
+    </script>
+    """, height=0, width=0)
+
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
@@ -111,6 +153,7 @@ if os.path.exists(excel_yolu):
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         tablo_html = '<table class="borsa-tablo"><tr><th>PUAN</th><th>HİSSE</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
+        alkis_calinsin_mi = False # Alkış tetiği
         
         for idx in range(min(10, len(df))):
             try:
@@ -128,6 +171,8 @@ if os.path.exists(excel_yolu):
                     
                     if maliyet > 0 and c_fiyat > 0:
                         or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                        if or_dg >= 10.0:
+                            alkis_calinsin_mi = True # Eğer %10 veya üstü kâr varsa alkışı tetikle
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
                     else: kz_str = "<span>-</span>"
                     
@@ -136,7 +181,10 @@ if os.path.exists(excel_yolu):
             
         tablo_html += '</table>'
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+        if veri_var_mi: 
+            st.markdown(tablo_html, unsafe_allow_html=True)
+            if alkis_calinsin_mi:
+                cal_alkis_sesi() # Şart sağlandığında alkış ses dizisini çalıştırır
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
@@ -163,36 +211,14 @@ st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
+# Önceki mesaj sayısını kontrol etmek için session_state başlatalım
+if "eski_mesaj_sayisi" not in st.session_state:
+    if os.path.exists(db_sohbet):
+        st.session_state["eski_mesaj_sayisi"] = len(pd.read_csv(db_sohbet))
+    else:
+        st.session_state["eski_mesaj_sayisi"] = 0
+
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
     if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-        i_kucuk = y_is.lower().replace(" ", "")
-        
-        if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
-            df_s = pd.read_csv(db_sohbet)
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-# MESAJ LİSTELEME
-df_sohbet_oku = pd.read_csv(db_sohbet)
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #0b110d; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #557755; border: 1px solid #1a241d;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#778877; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.rerun()
-
-# ===================================================================== #
-# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI
-# ===================================================================== #
-st.write("---")
-st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
