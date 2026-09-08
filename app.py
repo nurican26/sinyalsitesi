@@ -17,46 +17,25 @@ st.markdown('''
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 12px 10px; font-weight: bold; }
 .borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-baslik { font-size: 20px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; margin-top: 20px; }
-.oda-durum { font-size: 14px; font-weight: bold; padding: 5px 10px; border-radius: 5px; display: inline-block; margin-bottom: 10px; }
+.oda-durum { font-size: 14px; font-weight: bold; padding: 6px 12px; border-radius: 5px; display: inline-block; margin-bottom: 10px; }
 div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:40px; margin-bottom:15px;">BTA ANALİZ MERKEZİ</h1>
 ''', unsafe_allow_html=True)
 
-# Ekranı 10 saniyede bir otomatik yenileyen hafif saat motoru
+# Ekranı 10 saniyede bir yenileyen hafif borsa motoru (Isınma yapmaz)
 st_autorefresh(interval=10 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-db_ayar = "bta_ayar_db.csv"
-db_sayac = "bta_sayac_db.csv"
 
-# VERİTABANLARINI EKSİKSİZ BAŞLATMA
+# VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
-    pd.DataFrame(columns=["isim", "saat", "yorum", "onayli"]).to_csv(db_sohbet, index=False)
+    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
-if not os.path.exists(db_ayar):
-    pd.DataFrame([{"oda_kilitli": 0}]).to_csv(db_ayar, index=False)
-
-if not os.path.exists(db_sayac):
-    pd.DataFrame(columns=["session_id", "son_aksiyon"]).to_csv(db_sayac, index=False)
-
-# 👥 %100 GERÇEK CANLI SAYAÇ MOTORU
-now_time = time.time()
-if "user_session" not in st.session_state:
-    st.session_state["user_session"] = str(now_time)
-
-try:
-    df_sayac_oku = pd.read_csv(db_sayac)
-    df_sayac_oku = df_sayac_oku[df_sayac_oku["son_aksiyon"] > (now_time - 30)]
-    if st.session_state["user_session"] in df_sayac_oku["session_id"].astype(str).values:
-        df_sayac_oku.loc[df_sayac_oku["session_id"].astype(str) == st.session_state["user_session"], "son_aksiyon"] = now_time
-    else:
-        df_sayac_oku = pd.concat([df_sayac_oku, pd.DataFrame([{"session_id": st.session_state["user_session"], "son_aksiyon": now_time}])], ignore_index=True)
-    df_sayac_oku.to_csv(db_sayac, index=False)
-    gercek_canli_kisi = len(df_sayac_oku)
-except:
-    gercek_canli_kisi = 1
+# KİLİT MEKANİZMASINI BELLEKTE TUTMA (Sunucu trafiğini ve CPU'yu yormaz)
+if "oda_kilidi_durumu" not in st.session_state:
+    st.session_state["oda_kilidi_durumu"] = False  # Varsayılan: Herkese Açık
 
 garantili_bip_html = """
 <script>
@@ -76,12 +55,8 @@ garantili_bip_html = """
 </script>
 """
 
-# Ayarları dosyadan oku
-df_ayar_oku = pd.read_csv(db_ayar)
-oda_su_an_kilitli = int(df_ayar_oku.iloc[0]["oda_kilitli"])
-
 # ===================================================================== #
-# 2. CANLI BORSA TABLOSU
+# 2. CANLI BORSA TABLOSU (Sayfa1 ve WEB Çapraz Eşleştirme - Kota %0)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -102,7 +77,7 @@ if os.path.exists(excel_yolu):
                     canli_fiyati = 0.0
                     hisse_satiri = df_ana[df_ana.iloc[:, 0].astype(str).str.strip().str.upper() == hisse_adi]
                     if not hisse_satiri.empty:
-                        canli_fiyati = hisse_satiri.iloc[0, 4]
+                        canli_fiyati = hisse_satiri.iloc[0, 4] # Sayfa1'deki E Sütunu Anlık Fiyat
                     
                     try:
                         maliyet = float(algo_fiyati)
@@ -131,59 +106,50 @@ else:
     st.error("Excel veritabanı bulunamadı. Lütfen nurican.xls.xlsm dosyasını yükleyin.")
 
 # ===================================================================== #
-# 3. SOHBET ODASI VE GERÇEK CANLI ALANI (KİLİTLENMEYEN BAĞIMSIZ GİRİŞ)
+# 3. YÖNETİCİ GİZLİ ŞALTER ODASI (Sadece Sende Açılır)
 # ===================================================================== #
 st.write("---")
-col_baslik, col_sayac = st.columns(2)
-col_baslik.markdown('<div class="kucuk-baslik">Sohbet Odası 💬</div>', unsafe_allow_html=True)
-col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bold; margin-top:25px;">👥 Gerçek Canlı: {gercek_canli_kisi} Kişi</div>', unsafe_allow_html=True)
-
-if oda_su_an_kilitli == 1:
-    st.markdown('<div class="oda-durum" style="background-color:#ff3344; color:white;">🔒 ODA GÖSTERİMİ DIŞ DÜNYAYA KAPATILDI (Mesajlar gizli panele düşer)</div>', unsafe_allow_html=True)
-else:
-    st.markdown('<div class="oda-durum" style="background-color:#00ff66; color:#0b111e;">🔓 ODA HERKESE AÇIK (Canlı sohbet modu)</div>', unsafe_allow_html=True)
-
-yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
-
-# KİLİTLENMEYEN %100 GARANTİLİ GÖNDERİM MOTORU (FORM KALKTI)
-y_is = st.text_input("Adınız:", max_chars=25, key="input_ad_alani")
-y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="input_mesaj_alani")
-
-if st.button("Mesajı Yayınla 📨", use_container_width=True, key="yayinla_ana_tetiği"):
-    if y_is.strip() and y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-        i_kucuk = y_is.lower().replace(" ", "")
-        
-        if any(z in m_kucuk or z in i_kucuk for z in yasakli):
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-        else:
-            df_s = pd.read_csv(db_sohbet)
-            onay_durumu = 0 if oda_su_an_kilitli == 1 else 1
-            
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip(), "onayli": onay_durumu}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.success("✅ Mesaj başarıyla iletildi!")
-            time.sleep(0.5)
-            st.rerun()
-
-# ===================================================================== #
-# 4. GİZLİ YÖNETİCİ PANELİ (ŞALTER KONTROLÜ VE ONAYLAMA MERKEZİ)
-# ===================================================================== #
-st.write("---")
-with st.expander("🛠 Yönetici Kontrol Paneli (Şifre: bta123)"):
-    adm_mod = st.text_input("Yönetici Şifresi:", type="password", key="adm") == "bta123"
+with st.expander("🛠 Sadece Nurican Usta Yönetim Paneli"):
+    adm_mod = st.text_input("Şifrenizi Girin:", type="password", key="adm_key") == "bta123"
     if adm_mod:
-        st.success("🛡 Yönetici Girişi Başarılı.")
-        st.write("#### 🎛 Oda Gösterim Şalteri")
-        
-        col_kilitle, col_ac = st.columns(2)
-        if col_kilitle.button("🔒 Odayı Dışarıya Kapat (Mesajları Gizle)", key="btn_od_kilit"):
-            pd.DataFrame([{"oda_kilitli": 1}]).to_csv(db_ayar, index=False)
+        st.success("🛡 Giriş Başarılı. Oda Şalterini Buradan Kontrol Edin:")
+        col_k1, col_ac1 = st.columns(2)
+        if col_k1.button("🔒 SOHBET ODASINI DIŞARIYA KAPAT"):
+            st.session_state["oda_kilidi_durumu"] = True
             st.rerun()
-            
-        if col_ac.button("🔓 Odayı Herkese Aç (Canlıya Al)", key="btn_od_ac"):
-            pd.DataFrame([{"oda_kilitli": 0}]).to_csv(db_ayar, index=False)
+        if col_ac1.button("🔓 SOHBET ODASINI HERKESE AÇ"):
+            st.session_state["oda_kilidi_durumu"] = False
             st.rerun()
+
+# ===================================================================== #
+# 4. YENİ TELEGRAM MODU CANLI SOHBET ALANI
+# ===================================================================== #
+st.markdown('<div class="kucuk-baslik">Canlı Borsa Sohbet Odası 💬</div>', unsafe_allow_html=True)
+
+if st.session_state["oda_kilidi_durumu"]:
+    st.markdown('<div class="oda-durum" style="background-color:#ff3344; color:white;">🔒 SOHBET KİLİTLİ: Oda şu an Nurican Usta tarafından dış dünyaya kapatıldı.</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="oda-durum" style="background-color:#00ff66; color:#0b111e;">🔓 SOHBET AKTİF: Herkes serbestçe yazabilir ve silebilir.</div>', unsafe_allow_html=True)
+
+# İsim Kaydı
+rumuz = st.text_input("Sohbetteki Adınız:", max_chars=20, value="Ziyaretçi", key="bta_rumuz_alani")
+
+# KİLİT KONTROLÜ: Oda kilitliyse yazma çubuğunu tamamen gizler
+if not st.session_state["oda_kilidi_durumu"]:
+    # WhatsApp/Telegram tarzı ince chat giriş çubuğu (Donma, kasma yapmaz)
+    mesaj_girdisi = st.chat_input("Mesajınızı buraya yazın ve Enter'a basın...")
+    
+    if mesaj_girdisi:
+        m_temiz = mesaj_girdisi.lower().replace(" ", "")
+        if not any(z in m_temiz for z in ["amk", "oç", "orospu", "siktir", "piç"]):
+            df_s = pd.read_csv(db_sohbet)
+            y_satir = pd.DataFrame([{"isim": rumuz.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": mesaj_girdisi.strip()}])
+            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+            st.rerun()
+        else:
+            st.error("⚠ Argo kelime tespit edildi, mesaj engellendi!")
+else:
+    st.warning("🔒 Oda şu an kapalı olduğu için mesaj gönderim alanı geçici olarak devre dışıdır.")
 
 # MESAJ LİSTELEME VE SES MOTORU
 df_sohbet_oku = pd.read_csv(db_sohbet)
@@ -194,3 +160,19 @@ if "son_mesaj_sayisi" not in st.session_state:
 if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
     st.components.v1.html(garantili_bip_html, height=0, width=0)
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+# Mesajları Telegram tarzı balonlarla listeler
+for s in range(len(df_sohbet_oku)):
+    sh = df_sohbet_oku.iloc[s]
+    with st.chat_message("user"):
+        st.write(f"**👤 {sh['isim']}** | ⏱ {sh['saat']}")
+        st.write(sh['yorum'])
+        
+        # Herkesin basıp silebileceği bağımsız buton
+        if st.button(f"Sil ❌", key=f"sl_{s}"):
+            df_sl = pd.read_csv(db_sohbet)
+            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+            st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
+            st.rerun()
