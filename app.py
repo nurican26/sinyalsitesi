@@ -3,7 +3,9 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import time
 from streamlit_autorefresh import st_autorefresh
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 # ===================================================================== #
 # 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
@@ -37,10 +39,14 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
+db_aktif_kullanicilar = "bta_aktif_kisi_db.csv"
 
-# KALICI SOHBET VERİTABANI BAŞLATMA
+# KALICI VERİTABANLARINI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
+
+if not os.path.exists(db_aktif_kullanicilar):
+    pd.DataFrame(columns=["session_id", "son_gorulme"]).to_csv(db_aktif_kullanicilar, index=False)
 
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
@@ -117,15 +123,34 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
+# 4. GERÇEK ZAMANLI AKTİF KULLANICI HESAPLAMA MOTORU
 # ===================================================================== #
 st.write("---")
 
+# Kullanıcının tarayıcı kimliğini alıyoruz
+ctx = get_script_run_ctx()
+session_id = ctx.session_id if ctx else "bilinmeyen_user"
+su an = time.time()
+
 try:
-    sohbet_df_oku = pd.read_csv(db_sohbet)
-    aktif_kisi_sayisi = max(1, sohbet_df_oku["isim"].nunique())
+    # Aktif kullanıcılar dosyasını oku
+    aktif_df = pd.read_csv(db_aktif_kullanicilar)
+    
+    # Mevcut kullanıcıyı listeye ekle veya zamanını güncelle
+    if session_id in aktif_df['session_id'].values:
+        aktif_df.loc[aktif_df['session_id'] == session_id, 'son_gorulme'] = su_an
+    else:
+        yeni_user = pd.DataFrame([{"session_id": session_id, "son_gorulme": su_an}])
+        aktif_df = pd.concat([aktif_df, yeni_user], ignore_index=True)
+    
+    # Son 10 saniye içinde sinyal (yenileme) göndermemiş olanları odadan düşür (Gerçek zaman filtreleme)
+    aktif_df = aktif_df[aktif_df['son_gorulme'] > (su_an - 10)]
+    aktif_df.to_csv(db_aktif_kullanicilar, index=False)
+    
+    # Tamamen gerçek, canlı bağlantı sayısı
+    gercek_kisi_sayisi = len(aktif_df)
 except:
-    aktif_kisi_sayisi = 1
+    gercek_kisi_sayisi = 1
 
 # BÜYÜK ÇERÇEVE BAŞLANGICI
 st.markdown(f'''
@@ -133,7 +158,7 @@ st.markdown(f'''
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e3a5f; padding-bottom: 8px; margin-bottom: 15px;">
         <span class="kucuk-baslik">💬 Canlı Sohbet Paneli</span>
         <span style="background-color: #0d9488; color: #ffffff; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #00ffcc;">
-            🟢 Odada {aktif_kisi_sayisi} Kişi Var
+            🟢 Odada {gercek_kisi_sayisi} Aktif Kişi Var
         </span>
     </div>
 ''', unsafe_allow_html=True)
@@ -160,24 +185,3 @@ garantili_bip_html = """
 
 # Form Alanı
 with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True):
-        if y_is.strip() and y_me.strip():
-            mesaj_temiz = y_me.lower().replace(" ", "").replace("@", "a").replace("1", "i")
-            if any(kelime in mesaj_temiz for kelime in yasakli):
-                st.error("⚠️ Lütfen mesajınızda uygunsuz kelimeler kullanmayın!")
-            else:
-                yeni_mesaj = pd.DataFrame([{
-                    "isim": y_is.strip(),
-                    "saat": datetime.datetime.now().strftime("%H:%M:%S"),
-                    "yorum": y_me.strip()
-                }])
-                yeni_mesaj.to_csv(db_sohbet, mode='a', header=not os.path.exists(db_sohbet), index=False)
-                st.components.v1.html(garantili_bip_html, height=0, width=0)
-                st.success("✅ Mesajınız başarıyla yayınlandı!")
-                st.rerun()
-        else:
-            st.warning("⚠️ Adınız ve Mesajınız alanları boş bırakılamaz!")
-
