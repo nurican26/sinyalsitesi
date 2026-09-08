@@ -48,12 +48,15 @@ if not os.path.exists(db_sohbet):
 if not os.path.exists(db_aktif_kullanicilar):
     pd.DataFrame(columns=["session_id", "son_gorulme"]).to_csv(db_aktif_kullanicilar, index=False)
 
-if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
+if "topham_sayac" not in st.session_state: 
+    st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
 def formatla_tl(deger):
-    try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
-    except: return str(deger)
+    try: 
+        return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
+    except: 
+        return str(deger)
 
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
@@ -94,20 +97,25 @@ if os.path.exists(excel_yolu):
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                    try: maliyet = float(alim_c.replace(",", "."))
-                    except: maliyet = 0.0
+                    try: 
+                        maliyet = float(alim_c.replace(",", "."))
+                    except: 
+                        maliyet = 0.0
                     
                     if maliyet > 0 and c_fiyat > 0:
                         or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
-                    else: kz_str = "<span>-</span>"
+                    else: 
+                        kz_str = "<span>-</span>"
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.1f} TL</td><td>{c_fiyat:,.1f} TL</td><td>{kz_str}</td></tr>'
-            except: continue
+            except: 
+                continue
             
         tablo_html += '</table>'
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+        if veri_var_mi: 
+            st.markdown(tablo_html, unsafe_allow_html=True)
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
@@ -119,8 +127,10 @@ if os.path.exists(excel_yolu):
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-    except: st.error("Veri yüklenemedi.")
-else: st.error("Excel bulunamadı.")
+    except: 
+        st.error("Veri yüklenemedi.")
+else: 
+    st.error("Excel bulunamadı.")
 
 # ===================================================================== #
 # 4. GERÇEK ZAMANLI AKTİF KULLANICI HESAPLAMA MOTORU
@@ -183,5 +193,3 @@ with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
     
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True):
-        if y_is.strip() and y_me.strip():
