@@ -19,7 +19,7 @@ st.markdown('''
 .kucuk-baslik { font-size: 20px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; margin-top: 20px; }
 div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; }
 
-/* 📦 SOHBETİ KUTU İÇİNE HAPSEDEN VE KAYDIRAN ÖZEL AYAR (SCROLL BOX) */
+/* 📦 SOHBETİ KUTU İÇİNE HAPSEDEN VE KAYDIRAN ÖZEL AYAR */
 .sohbet-kaydirma-kutusu {
     max-height: 400px;
     overflow-y: auto;
@@ -40,8 +40,8 @@ div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1p
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:40px; margin-bottom:15px;">BTA ANALİZ MERKEZİ</h1>
 ''', unsafe_allow_html=True)
 
-# Ekranı 10 saniyede bir yenileyen hafif borsa motoru
-st_autorefresh(interval=10 * 1000, key="bta_anlik_senkronize_motoru")
+# Ekranı 5 saniyede bir otomatik yenileyen canlı borsa motoru
+st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
@@ -54,7 +54,7 @@ if not os.path.exists(db_sohbet):
 if not os.path.exists(db_sayac):
     pd.DataFrame(columns=["session_id", "son_aksiyon"]).to_csv(db_sayac, index=False)
 
-# 👥 %100 GERÇEK CANLI SAYAÇ MOTORU (Geri Getirildi)
+# 👥 %100 GERÇEK CANLI SAYAÇ MOTORU
 now_time = time.time()
 if "user_session" not in st.session_state:
     st.session_state["user_session"] = str(now_time)
@@ -111,7 +111,7 @@ if os.path.exists(excel_yolu):
                     canli_fiyati = 0.0
                     hisse_satiri = df_ana[df_ana.iloc[:, 0].astype(str).str.strip().str.upper() == hisse_adi]
                     if not hisse_satiri.empty:
-                        canli_fiyati = hisse_satiri.iloc
+                        canli_fiyati = hisse_satiri.iloc[0, 4]
                     
                     try:
                         maliyet = float(algo_fiyati)
@@ -159,7 +159,22 @@ col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bo
 rumuz = st.text_input("Sohbetteki Adınız:", max_chars=20, value="Ziyaretçi", key="bta_rumuz_alani")
 
 # ===================================================================== #
-# 5. KUTU İÇİNDE KAYAN MESAJ LİSTELEME MOTORU (SCROLL BOX)
+# 5. EN ALTTA SABİT WHATSAPP TARZI GİRİŞ ÇUBUĞU (KİLİTTEN ÖNCE ÇALIŞTIRMA)
+# ===================================================================== #
+mesaj_girdisi = st.chat_input("Mesajınızı buraya yazın ve Enter'a basın...")
+
+if mesaj_girdisi:
+    m_temiz = mesaj_girdisi.lower().replace(" ", "")
+    if not any(z in m_temiz for z in ["amk", "oç", "orospu", "siktir", "piç"]):
+        df_s = pd.read_csv(db_sohbet)
+        y_satir = pd.DataFrame([{"isim": rumuz.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": mesaj_girdisi.strip()}])
+        pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+        st.rerun()
+    else:
+        st.error("⚠ Argo kelime tespit edildi, mesaj engellendi!")
+
+# ===================================================================== #
+# 6. KUTU İÇİNDE KAYAN MESAJ LİSTELEME MOTORU (SCROLL BOX)
 # ===================================================================== #
 df_sohbet_oku = pd.read_csv(db_sohbet)
 
@@ -179,26 +194,10 @@ for s in range(len(df_sohbet_oku)):
     html_sohbet_icerik += f'<div class="mesaj-balonu"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff; margin-bottom:0px;">{sh["yorum"]}</p></div>'
 html_sohbet_icerik += '</div>'
 
-# Kutuyu ekrana jilet gibi basıyoruz
 st.markdown(html_sohbet_icerik, unsafe_allow_html=True)
 
-# SİLME SEÇENEKLERİ (Yalnızca sen şifre girince listenin altında sıralı açılır, odayı kasmaz)
+# SİLME SEÇENEKLERİ (Yalnızca sen şifre girince listenin altında sıralı açılır)
 if adm_mod and len(df_sohbet_oku) > 0:
     st.write("🗑 **Yönetici Silme Paneli:**")
     for s in range(len(df_sohbet_oku)):
         sh = df_sohbet_oku.iloc[s]
-        if st.button(f"Sil ❌ - {sh['isim']}: {sh['yorum'][:20]}...", key=f"sl_{s}"):
-            df_sl = pd.read_csv(db_sohbet)
-            df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-            st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
-            st.rerun()
-
-# ===================================================================== #
-# 6. EN ALTTA SABİT WHATSAPP TARZI GİRİŞ ÇUBUĞU
-# ===================================================================== #
-mesaj_girdisi = st.chat_input("Mesajınızı buraya yazın ve Enter'a basın...")
-
-if mesaj_girdisi:
-    m_temiz = mesaj_girdisi.lower().replace(" ", "")
-    if not any(z in m_temiz for z in ["amk", "oç", "orospu", "siktir", "piç"]):
-        df_s = pd.read_csv(db_sohbet)
