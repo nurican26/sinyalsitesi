@@ -46,49 +46,10 @@ st_autorefresh(interval=10 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-db_sayac = "bta_sayac_db.csv"
 
 # VERİTABANLARINI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
-
-if not os.path.exists(db_sayac):
-    pd.DataFrame(columns=["session_id", "son_aksiyon"]).to_csv(db_sayac, index=False)
-
-# 👥 %100 GERÇEK CANLI SAYAÇ MOTORU
-now_time = time.time()
-if "user_session" not in st.session_state:
-    st.session_state["user_session"] = str(now_time)
-
-try:
-    df_sayac_oku = pd.read_csv(db_sayac)
-    df_sayac_oku = df_sayac_oku[df_sayac_oku["son_aksiyon"] > (now_time - 30)]
-    if st.session_state["user_session"] in df_sayac_oku["session_id"].astype(str).values:
-        df_sayac_oku.loc[df_sayac_oku["session_id"].astype(str) == st.session_state["user_session"], "son_aksiyon"] = now_time
-    else:
-        df_sayac_oku = pd.concat([df_sayac_oku, pd.DataFrame([{"session_id": st.session_state["user_session"], "son_aksiyon": now_time}])], ignore_index=True)
-    df_sayac_oku.to_csv(db_sayac, index=False)
-    gercek_canli_kisi = len(df_sayac_oku)
-except:
-    gercek_canli_kisi = 1
-
-garantili_bip_html = """
-<script>
-    (function() {
-        var context = new (window.AudioContext || window.webkitAudioContext)();
-        var osc = context.createOscillator();
-        var gain = context.createGain();
-        osc.connect(gain);
-        gain.connect(context.destination);
-        osc.type = 'sine';
-        osc.frequency.value = 830;
-        gain.gain.setValueAtTime(0.1, context.currentTime);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15);
-        osc.stop(context.currentTime + 0.16);
-    })();
-</script>
-"""
 
 # ===================================================================== #
 # 2. CANLI INTERNET DESTEKLİ BORSA TABLOSU (TAM NURİCAN USTA NİZAMI)
@@ -103,7 +64,7 @@ if os.path.exists(excel_yolu):
         
         for idx in range(len(df_web)):
             try:
-                # Sadece A sütununda (BTA HİSSE) veri varsa işlem yap, diğerlerini görme!
+                # Sadece A sütununda (BTA HİSSE) veri varsa işlem yap, diğerlerini (B sütununu) görme!
                 hisse_adi = str(df_web.iloc[idx, 0]).strip().upper() if pd.notna(df_web.iloc[idx, 0]) else ""
                 
                 if hisse_adi != "" and hisse_adi not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "HİSSE ADI", "BTA AL SAT"]:
@@ -163,13 +124,9 @@ with st.expander("🛠 Sadece Nurican Usta Yönetici Girişi"):
         st.success("🛡 Yönetici Yetkileri Aktif. Artık Temizlik Yapabilirsiniz.")
 
 # ===================================================================== #
-# 4. BAŞLIK VE CANLI ODA SAYACI ALANI
+# 4. BAŞLIK
 # ===================================================================== #
-col_baslik, col_sayac = st.columns(2)
-col_baslik.markdown('<div class="kucuk-baslik">Canlı Borsa Sohbet Odası 💬</div>', unsafe_allow_html=True)
-col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bold; margin-top:25px; font-size:18px;">👥 Gerçek Canlı: {gercek_canli_kisi} Kişi</div>', unsafe_allow_html=True)
-
-# İsim Kaydı
+st.markdown('<div class="kucuk-baslik">Canlı Borsa Sohbet Odası 💬</div>', unsafe_allow_html=True)
 rumuz = st.text_input("Sohbetteki Adınız:", max_chars=30, value="Ziyaretçi", key="bta_rumuz_alani")
 
 # ===================================================================== #
@@ -203,3 +160,19 @@ if adm_mod and len(df_sohbet_oku) > 0:
             df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
             st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
             st.rerun()
+
+# ===================================================================== #
+# 6. EN ALTTA SABİT WHATSAPP TARZI GİRİŞ ÇUBUĞU (LİMİT 5000 HARF)
+# ===================================================================== #
+mesaj_girdisi = st.chat_input("Uzun mesajınızı veya borsa analizinizi buraya yazın ve Enter'a basın...", max_chars=5000)
+
+if mesaj_girdisi:
+    m_temiz = mesaj_girdisi.lower().replace(" ", "")
+    if not any(z in m_temiz for z in ["amk", "oç", "orospu", "siktir", "piç"]):
+        df_s = pd.read_csv(db_sohbet)
+        y_satir = pd.DataFrame([{"isim": rumuz.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": mesaj_girdisi.strip()}])
+        pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+        st.rerun()
+    else:
+        st.error("⚠ Argo kelime tespit edildi, mesaj engellendi!")
+        
