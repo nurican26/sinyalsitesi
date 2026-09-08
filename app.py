@@ -43,7 +43,7 @@ def formatla_tl(deger):
     except: return str(deger)
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
@@ -52,11 +52,13 @@ try:
     eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     gram_f = (ons_f / 31.1034768) * usd_f
     
-    pk1, pk2, pk3, col_bist = st.columns(4)
+    # Başlığı istediğiniz gibi 🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ olarak güncelledik ve Euro fiyatını bağladık
+    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
     pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
     pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
     pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.1f} TL")
     col_bist.metric("BIST 100", f"{bist_f:,.1f}")
+    col_eur.metric("🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ", f"{eur_f:,.2f} TL")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
@@ -105,10 +107,6 @@ if os.path.exists(excel_yolu):
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-                        
-                        st.write("")
-                        st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
-                        st.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
