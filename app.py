@@ -1,4 +1,5 @@
-
+import streamlit as st
+import pandas as pd
 import datetime
 import os
 import time
@@ -202,6 +203,3 @@ if adm_mod and len(df_sohbet_oku) > 0:
             df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
             st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
             st.rerun()
-
-# ===================================================================== #
-# 6. EN ALTTA SABİT WHATSAPP TARZI GİRİŞ ÇUBUĞU (LİMİT 5000 HARF)
