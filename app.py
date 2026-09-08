@@ -26,11 +26,9 @@ st_autorefresh(interval=10 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
 
-# KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
-# İnternet gerektirmeyen, doğrudan tarayıcının kendi ürettiği Bip Sesi (Web Audio API)
 garantili_bip_html = """
 <script>
     (function() {
@@ -40,61 +38,61 @@ garantili_bip_html = """
         osc.connect(gain);
         gain.connect(context.destination);
         osc.type = 'sine';
-        osc.frequency.value = 830; // Sesin incelik ayarı (Hz)
-        gain.gain.setValueAtTime(0.1, context.currentTime); // Ses seviyesi (0.1 ideal)
+        osc.frequency.value = 830;
+        gain.gain.setValueAtTime(0.1, context.currentTime);
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); // 0.15 saniye sürer
+        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15);
         osc.stop(context.currentTime + 0.16);
     })();
 </script>
 """
 
 # ===================================================================== #
-# 2. CANLI BORSA TABLOSU (EXCEL'DEN GÜNCEL FİYAT VE K/Z EKLENDİ)
+# 2. CANLI BORSA TABLOSU (ÇAPRAZ EŞLEŞTİRME İLE GÜNCEL FİYAT VE K/Z)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        # İki sayfayı birden arka planda hafızaya alıyoruz (Kayıt ve kayma yapmaz)
+        df_web = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        df_ana = pd.read_excel(excel_yolu, sheet_name="Sayfa1", engine="openpyxl")
         
-        # Sütun başlıklarına GÜNCEL FİYAT ve K/Z alanlarını tam sırasıyla ekledik
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA HİSSE</th><th>BTA ALGORİTMİK FİYAT</th><th>GÜNCEL FİYAT</th><th>BTA PUANI</th><th>K/Z STATUS</th></tr>'
         veri_var_mi = False
         
-        for idx in range(len(df)):
+        for idx in range(len(df_web)):
             try:
-                # Sizin yeşil sekmeli WEB sayfanızın tam sütun nizamı:
-                # A sütunu (0): BTA HİSSE
-                # B sütunu (1): BTA AL SAT -> (GÖSTERMİYORUZ)
-                # C sütunu (2): BTA ALIM FİYATI
-                # D sütunu (3): BTA PUANI
-                # E sütunu (4): GÜNCEL CANLI FİYAT (Excel'inizde hangi sütundaysa ona göre güncel fiyatı çeker)
-                # F sütunu (5): K/Z ORANI
+                # WEB sayfasındaki nizam: A (0)=Hisse, C (2)=Algo Fiyat, D (3)=Puan
+                hisse_adi = str(df_web.iloc[idx, 0]).strip().upper() if pd.notna(df_web.iloc[idx, 0]) else ""
+                algo_fiyati = df_web.iloc[idx, 2]
+                bta_puani = df_web.iloc[idx, 3]
                 
-                hisse_adi = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-                algo_fiyati = df.iloc[idx, 2]
-                bta_puani = df.iloc[idx, 3]
-                
-                # Excel tablonuzdaki Güncel Fiyat ve K/Z verilerini çekiyoruz
-                # Eğer Excel'de yerleri farklıysa sütun sayılarını (4 ve 5) ona göre eşleştiririz
-                canli_fiyati = df.iloc[idx, 4] if len(df.columns) >= 5 else 0.0
-                kz_orani = df.iloc[idx, 5] if len(df.columns) >= 6 else ""
-                
-                if hisse_adi != "" and hisse_adi not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "HİSSE ADI", "HİSSE ADI "]:
+                if hisse_adi != "" and hisse_adi not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "HİSSE ADI"]:
                     veri_var_mi = True
                     
-                    # Sayısal nizamlar
+                    # KRİTİK EŞLEŞTİRME: WEB sayfasındaki hisseyi Sayfa1'de bulup güncel fiyatını oradan çekiyoruz
+                    canli_fiyati = 0.0
+                    kz_orani = ""
+                    
+                    # Sayfa1'deki sütunlar: A=Hisse, E=Anlık Fiyat
+                    hisse_satiri = df_ana[df_ana.iloc[:, 0].astype(str).str.strip().str.upper() == hisse_adi]
+                    if not hisse_satiri.empty:
+                        canli_fiyati = hisse_satiri.iloc[0, 4] # E Sütunu (4. endeks) Anlık Fiyat
+                    
+                    # Hesaplanan Kar/Zarar Nizamı
+                    try:
+                        maliyet = float(algo_fiyati)
+                        g_fiyat = float(canli_fiyati)
+                        if maliyet > 0 and g_fiyat > 0:
+                            or_dg = ((g_fiyat - maliyet) / maliyet) * 100
+                            kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
+                        else:
+                            kz_str = "<span>-</span>"
+                    except:
+                        kz_str = "<span>-</span>"
+                    
                     algo_str = f"{float(algo_fiyati):,.2f} TL" if isinstance(algo_fiyati, (int, float)) else str(algo_fiyati).strip()
                     canli_str = f"{float(canli_fiyati):,.2f} TL" if isinstance(canli_fiyati, (int, float)) else str(canli_fiyati).strip()
                     puan_str = f"{float(bta_puani):.2f}" if isinstance(bta_puani, (int, float)) else str(bta_puani).strip()
-                    
-                    # K/Z Renklendirme motoru
-                    kz_metin = str(kz_orani).strip()
-                    if "▼" in kz_metin or "-" in kz_metin:
-                        kz_str = f'<span style="color:#ff3344;">{kz_metin}</span>'
-                    elif "▲" in kz_metin or "%" in kz_metin:
-                        kz_str = f'<span style="color:#00ff66;">{kz_metin}</span>'
-                    else:
-                        kz_str = f'<span>{kz_metin}</span>'
                     
                     tablo_html += f'<tr><td>{hisse_adi}</td><td>{algo_str}</td><td>{canli_str}</td><td>{puan_str}</td><td>{kz_str}</td></tr>'
             except:
@@ -139,20 +137,17 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJ LİSTELEME VE SES KONTROL MOTORU
 df_sohbet_oku = pd.read_csv(db_sohbet)
 
 if "son_mesaj_sayisi" not in st.session_state:
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 
-# Yeni mesaj geldiğinde sayfa yenilenirken yerel ses tetiklenir
 if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
     st.components.v1.html(garantili_bip_html, height=0, width=0)
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 
-# Gelen mesajları ekrana nizamla dizer
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
     st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
