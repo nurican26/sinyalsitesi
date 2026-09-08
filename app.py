@@ -47,10 +47,8 @@ if "user_session" not in st.session_state:
 
 try:
     df_sayac_oku = pd.read_csv(db_sayac)
-    # 30 saniyedir sayfada hiçbir hareket yapmayan eski bağlantıları listeden siler
     df_sayac_oku = df_sayac_oku[df_sayac_oku["son_aksiyon"] > (now_time - 30)]
     
-    # Mevcut kullanıcının durumunu günceller veya ekler
     if st.session_state["user_session"] in df_sayac_oku["session_id"].astype(str).values:
         df_sayac_oku.loc[df_sayac_oku["session_id"].astype(str) == st.session_state["user_session"], "son_aksiyon"] = now_time
     else:
@@ -81,7 +79,7 @@ garantili_bip_html = """
 
 # Ayarları dosyadan oku
 df_ayar_oku = pd.read_csv(db_ayar)
-oda_su_an_kilitli = int(df_ayar_oku.iloc[0, 0])
+oda_su_an_kilitli = int(df_ayar_oku.iloc[0]["oda_kilitli"])
 
 # ===================================================================== #
 # 2. CANLI BORSA TABLOSU (ÇAPRAZ EŞLEŞTİRME İLE GÜNCEL FİYAT VE K/Z)
@@ -159,7 +157,6 @@ with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
     
-    # Oda kilitliyken formun içine şifre kutusu ekliyoruz, böylece her halükarda form doldurulabiliyor
     girilen_oda_sifresi = ""
     if oda_su_an_kilitli == 1:
         girilen_oda_sifresi = st.text_input("🔑 Oda Şifresini Girin (Bilmeyenlerin mesajı yayınlanmaz):", type="password")
@@ -171,7 +168,6 @@ with st.form(key="s_frm", clear_on_submit=True):
         if any(z in m_kucuk or z in i_kucuk for z in yasakli):
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
         else:
-            # Kilitleme kontrolü
             yayinla_izni = True
             if oda_su_an_kilitli == 1:
                 if girilen_oda_sifresi == "bta123":
@@ -199,3 +195,12 @@ with st.expander("🛠 Yönetici Kontrol Paneli"):
             pd.DataFrame([{"oda_kilitli": 1}]).to_csv(db_ayar, index=False)
             st.rerun()
         if col_ac.button("🔓 Odayı Herkese Aç"):
+            pd.DataFrame([{"oda_kilitli": 0}]).to_csv(db_ayar, index=False)
+            st.rerun()
+
+# MESAJ LİSTELEME VE SES MOTORU
+df_sohbet_oku = pd.read_csv(db_sohbet)
+
+if "son_mesaj_sayisi" not in st.session_state:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
