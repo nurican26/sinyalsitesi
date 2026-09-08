@@ -82,8 +82,10 @@ st.session_state["topham_sayac"] += 1
 
 # Arka planda diğer kullanıcılara ses çalabilmesi için mesaj takip sistemi
 if "eski_mesaj_sayisi" not in st.session_state:
-    try: st.session_state["eski_mesaj_sayisi"] = len(pd.read_csv(db_sohbet))
-    except: st.session_state["eski_mesaj_sayisi"] = 0
+    try: 
+        st.session_state["eski_mesaj_sayisi"] = len(pd.read_csv(db_sohbet))
+    except: 
+        st.session_state["eski_mesaj_sayisi"] = 0
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -199,6 +201,7 @@ try:
 
     for s in range(guncel_mesaj_sayisi):
         sh = df_sohbet_oku.iloc[s]
-        # Mesaj kutuları da koyu gri renge çekilerek sol kenar çizgisi sadeleştirildi
         st.markdown(f'<div style="background-color: #161b22; padding: 10px; border-radius: 6px; margin-bottom: 6px; border: 1px solid #30363d; border-left: 4px solid #8b949e;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#8b949e; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#c9d1d9; font-weight:normal;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+        
+        # Hatalı boşluk bırakılan if satırı ve altındaki işlemler düzeltildi
         if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
