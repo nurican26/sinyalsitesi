@@ -52,7 +52,6 @@ try:
     eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     gram_f = (ons_f / 31.1034768) * usd_f
     
-    # Başlık sadece "EURO" olacak şekilde güncellendi
     pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
     pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
     pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
@@ -111,12 +110,19 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜVENLİ SOHBET FORMU
+# 4. GÜVENLİ SOHBET FORMU VE SES SİNYALİ
 # ===================================================================== #
 st.write("---")
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
+
+# Tarayıcı bildirimi için temiz ve hafif bip sesi kodu (HTML5 Audio)
+bip_sesi_html = """
+<audio autoplay>
+    <source src="https://mixkit.co" type="audio/wav">
+</audio>
+"""
 
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
@@ -136,14 +142,26 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJ LİSTELEME
+# MESAJ LİSTELEME VE YENİ MESAJ SES KONTROLÜ
 df_sohbet_oku = pd.read_csv(db_sohbet)
+
+# Session state üzerinden son mesaj kontrolü yaparak yeni mesaj geldiğinde ses tetikliyoruz
+if "son_mesaj_sayisi" not in st.session_state:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
+    st.markdown(bip_sesi_html, unsafe_allow_html=True)
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
     st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
     if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
         df_sl = pd.read_csv(db_sohbet)
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+        st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
         st.rerun()
 
 # ===================================================================== #
