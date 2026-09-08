@@ -65,10 +65,8 @@ input, textarea, select {
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
 
-<!-- BTA BAŞLIĞI KAYAN YAZI -->
-<marquee behavior="scroll" direction="left" scrollamount="7">
-    <h1 style="color:#00ff66; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px; display:inline;">BTA</h1>
-</marquee>
+<!-- TALEBİNİZ ÜZERİNE BTA LOGOSU ARTIK KAYMIYOR, SABİT VE ORTALANMIŞTIR -->
+<h1 style="text-align:center; color:#00ff66; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
 # Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
@@ -214,4 +212,6 @@ if guncel_mesaj_sayisi > st.session_state["eski_mesaj_sayisi"]:
 for s in range(guncel_mesaj_sayisi):
     sh = df_sohbet_oku.iloc[s]
     st.markdown(f'<div style="background-color: #0a0e0a; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #335533; border: 1px solid #141f14;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#556655; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+    if adm_mod:
+        if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+            df_sl = pd.read_csv(db_sohbet)
