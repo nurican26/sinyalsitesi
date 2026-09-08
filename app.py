@@ -163,10 +163,6 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR (KALDIRILDI)
-# ===================================================================== #
-
-# ===================================================================== #
 # 5. ORİJİNAL GÜVENLİ SOHBET FORMU
 # ===================================================================== #
 st.write("---")
@@ -213,5 +209,8 @@ for s in range(guncel_mesaj_sayisi):
     sh = df_sohbet_oku.iloc[s]
     st.markdown(f'<div style="background-color: #0a0e0a; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #335533; border: 1px solid #141f14;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#556655; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
     if adm_mod:
+        # TIKLANDIĞINDA SATIRI CSV'DEN SİLEN AKTİF BUTON MOTORU
         if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
             df_sl = pd.read_csv(db_sohbet)
+            df_sl = df_sl.drop(index=s).reset_index(drop=True)
+            df_sl.to_csv(db_sohbet, index=False)
