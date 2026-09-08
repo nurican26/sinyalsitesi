@@ -108,21 +108,12 @@ if os.path.exists(excel_yolu):
                         
                         st.write("")
                         st.markdown('<b>🏛️ CANLI EKONOMİK GÖSTERGELER PANELİ</b>', unsafe_allow_html=True)
-                        f_col1, f_col2 = st.columns(2)
-                        f_col1.metric("🏛️ TCMB Politika Faizi", "%50,00")
-                        f_col2.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
+                        st.metric("💶 Canlı Euro Kuru", f"{eur_f:,.2f} TL")
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. HALKA ARZLAR
-# ===================================================================== #
-st.write("---")
-st.markdown('<div class="kucuk-baslik">Halka Arz Hisseleri</div>', unsafe_allow_html=True)
-st.dataframe(pd.DataFrame({"Hisse Kodu": ["XYZEN", "ABCDE"], "Şirket🏢": ["XYZ Enerji A.Ş.", "ABC Gıda Sanayi"], "Durum📊": ["Talep Toplama Başladı", "SPK Onay Bekliyor"]}), use_container_width=True, hide_index=True)
-
-# ===================================================================== #
-# 5. ORİJİNAL GÜVENLİ SOHBET FORMU
+# 4. GÜVENLİ SOHBET FORMU
 # ===================================================================== #
 st.write("---")
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
@@ -158,7 +149,7 @@ for s in range(len(df_sohbet_oku)):
         st.rerun()
 
 # ===================================================================== #
-# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI (EN ALTA TAM İSTEDİĞİNİZ GİBİ ÇIKAR)
+# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI
 # ===================================================================== #
 st.write("---")
 st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
