@@ -22,14 +22,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
-.kucuk-baslik { font-size: 18px !important; color: #00ffcc !important; font-weight: bold; margin-bottom: 10px; }
-/* Kısaltılmış ve Dikey Kaydırma Eklenmiş Mesaj Paneli */
-.mesaj-cerceve { background-color: #121d33; border: 2px solid #00ffcc; border-radius: 12px; padding: 15px; margin-top: 15px; }
-.mesaj-akisi { max-height: 250px; overflow-y: auto; padding-right: 5px; margin-top: 10px; }
-/* Kaydırma çubuğu tasarımı */
-.mesaj-akisi::-webkit-scrollbar { width: 6px; }
-.mesaj-akisi::-webkit-scrollbar-track { background: #090f1a; }
-.mesaj-akisi::-webkit-scrollbar-thumb { background: #0d9488; border-radius: 3px; }
+.kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -41,22 +34,19 @@ excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
 db_aktif_kullanicilar = "bta_aktif_kisi_db.csv"
 
-# KALICI VERİTABANLARINI BAŞLATMA
+# KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
 if not os.path.exists(db_aktif_kullanicilar):
     pd.DataFrame(columns=["session_id", "son_gorulme"]).to_csv(db_aktif_kullanicilar, index=False)
 
-if "topham_sayac" not in st.session_state: 
-    st.session_state["topham_sayac"] = 1450
+if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
 def formatla_tl(deger):
-    try: 
-        return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
-    except: 
-        return str(deger)
+    try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
+    except: return str(deger)
 
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
@@ -97,25 +87,20 @@ if os.path.exists(excel_yolu):
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                    try: 
-                        maliyet = float(alim_c.replace(",", "."))
-                    except: 
-                        maliyet = 0.0
+                    try: maliyet = float(alim_c.replace(",", "."))
+                    except: maliyet = 0.0
                     
                     if maliyet > 0 and c_fiyat > 0:
                         or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
-                    else: 
-                        kz_str = "<span>-</span>"
+                    else: kz_str = "<span>-</span>"
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.1f} TL</td><td>{c_fiyat:,.1f} TL</td><td>{kz_str}</td></tr>'
-            except: 
-                continue
+            except: continue
             
         tablo_html += '</table>'
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        if veri_var_mi: 
-            st.markdown(tablo_html, unsafe_allow_html=True)
+        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
@@ -127,46 +112,38 @@ if os.path.exists(excel_yolu):
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-    except: 
-        st.error("Veri yüklenemedi.")
-else: 
-    st.error("Excel bulunamadı.")
+    except: st.error("Veri yüklenemedi.")
+else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GERÇEK ZAMANLI AKTİF KULLANICI HESAPLAMA MOTORU
+# 4. ANLIK GERÇEK KULLANICI TAKİP MOTORU
 # ===================================================================== #
-st.write("---")
-
 ctx = get_script_run_ctx()
 session_id = ctx.session_id if ctx else "bilinmeyen_user"
 su_an = time.time()
 
 try:
     aktif_df = pd.read_csv(db_aktif_kullanicilar)
-    
     if session_id in aktif_df['session_id'].values:
         aktif_df.loc[aktif_df['session_id'] == session_id, 'son_gorulme'] = su_an
     else:
         yeni_user = pd.DataFrame([{"session_id": session_id, "son_gorulme": su_an}])
         aktif_df = pd.concat([aktif_df, yeni_user], ignore_index=True)
-    
     aktif_df = aktif_df[aktif_df['son_gorulme'] > (su_an - 10)]
     aktif_df.to_csv(db_aktif_kullanicilar, index=False)
-    
     gercek_kisi_sayisi = len(aktif_df)
 except:
     gercek_kisi_sayisi = 1
 
-# BÜYÜK ÇERÇEVE BAŞLANGICI
-st.markdown(f'''
-<div class="mesaj-cerceve">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e3a5f; padding-bottom: 8px; margin-bottom: 15px;">
-        <span class="kucuk-baslik">💬 Canlı Sohbet Paneli</span>
-        <span style="background-color: #0d9488; color: #ffffff; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #00ffcc;">
-            🟢 Odada {gercek_kisi_sayisi} Aktif Kişi Var
-        </span>
-    </div>
-''', unsafe_allow_html=True)
+# ===================================================================== #
+# 5. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (ESKİ ORİJİNAL AKIŞ)
+# ===================================================================== #
+st.write("---")
+
+# Sol başlık, sağ gerçek oda sayısı hizalaması
+col_baslik, col_sayac = st.columns([4, 1])
+col_baslik.markdown('<div class="kucuk-baslik">Sohbet Odası</div>', unsafe_allow_html=True)
+col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bold; font-size:14px;">🟢 Gerçek {gercek_kisi_sayisi} Kişi Aktif</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
@@ -179,16 +156,28 @@ garantili_bip_html = """
         osc.connect(gain);
         gain.connect(context.destination);
         osc.type = 'sine';
-        osc.frequency.value = 830;
-        gain.gain.setValueAtTime(0.1, context.currentTime);
+        osc.frequency.value = 830; 
+        gain.gain.setValueAtTime(0.1, context.currentTime); 
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); 
         osc.stop(context.currentTime + 0.16);
     })();
 </script>
 """
 
-# Akış Kilitlemeyen Bağımsız Giriş Alanları
-y_is = st.text_input("Adınız:", max_chars=25, key="shbt_isim")
-y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="shbt_mesaj")
-
+with st.form(key="s_frm", clear_on_submit=True):
+    y_is = st.text_input("Adınız:", max_chars=25)
+    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
+    
+    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True):
+        if y_is.strip() and y_me.strip():
+            mesaj_temiz = y_me.lower().replace(" ", "").replace("@", "a").replace("1", "i")
+            if any(kelime in mesaj_temiz for kelime in yasakli):
+                st.error("⚠️ Lütfen mesajınızda uygunsuz kelimeler kullanmayın!")
+            else:
+                yeni_mesaj = pd.DataFrame([{
+                    "isim": y_is.strip(),
+                    "saat": datetime.datetime.now().strftime("%H:%M:%S"),
+                    "yorum": y_me.strip()
+                }])
+                yeni_mesaj.to_csv(db_sohbet, mode='a', header=not os.path.exists(db_sohbet), index=False)
