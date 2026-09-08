@@ -110,18 +110,30 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜVENLİ SOHBET FORMU VE SES SİNYALİ
+# 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
 # ===================================================================== #
 st.write("---")
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# Tarayıcı bildirimi için temiz ve hafif bip sesi kodu (HTML5 Audio)
-bip_sesi_html = """
-<audio autoplay>
-    <source src="https://mixkit.co" type="audio/wav">
-</audio>
+# İnternet bağlantısı gerektirmeyen, doğrudan tarayıcının kendi ürettiği Bip Sesi (Web Audio API)
+garantili_bip_html = """
+<script>
+    (function() {
+        var context = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = context.createOscillator();
+        var gain = context.createGain();
+        osc.connect(gain);
+        gain.connect(context.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 830; // Sesin incelik ayarı (Hz)
+        gain.gain.setValueAtTime(0.1, context.currentTime); // Ses seviyesi (0.1 ideal)
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); // 0.15 saniye sürer
+        osc.stop(context.currentTime + 0.16);
+    })();
+</script>
 """
 
 with st.form(key="s_frm", clear_on_submit=True):
@@ -142,15 +154,15 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJ LİSTELEME VE YENİ MESAJ SES KONTROLÜ
+# MESAJ LİSTELEME VE KONTROL MOTORU
 df_sohbet_oku = pd.read_csv(db_sohbet)
 
-# Session state üzerinden son mesaj kontrolü yaparak yeni mesaj geldiğinde ses tetikliyoruz
 if "son_mesaj_sayisi" not in st.session_state:
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 
+# Yeni mesaj geldiğinde yerel ses tetiklenir
 if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
-    st.markdown(bip_sesi_html, unsafe_allow_html=True)
+    st.components.v1.html(garantili_bip_html, height=0, width=0)
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
@@ -162,10 +174,3 @@ for s in range(len(df_sohbet_oku)):
         df_sl = pd.read_csv(db_sohbet)
         df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
         st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
-        st.rerun()
-
-# ===================================================================== #
-# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI
-# ===================================================================== #
-st.write("---")
-st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
