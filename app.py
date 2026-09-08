@@ -105,18 +105,7 @@ if os.path.exists(excel_yolu):
                 if aranan_hisse != "Seçiniz...":
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
-                        guncel_fiyat = float(h_detay_veri['Close'].iloc[-1])
-                        en_yuksek = float(h_detay_veri['High'].iloc[-1])
-                        en_dusuk = float(h_detay_veri['Low'].iloc[-1])
-                        
-                        m_col1, m_col2, m_col3 = st.columns(3)
-                        m_col1.metric("Güncel Fiyat", f"{guncel_fiyat:,.2f} TL")
-                        m_col2.metric("En Yüksek Fiyat", f"{en_yuksek:,.2f} TL")
-                        m_col3.metric("En Düşük Fiyat", f"{en_dusuk:,.2f} TL")
-                        
-        # --- TOPLAM GİRİŞ SAYACI ---
-        st.markdown(f'<p class="kucuk-sayac">📊 Oda Toplam Giriş Yapanlar: {st.session_state["topham_sayac"]}</p>', unsafe_allow_html=True)
-
+                        st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
@@ -176,3 +165,12 @@ if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
     st.components.v1.html(garantili_bip_html, height=0, width=0)
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+for s in range(len(df_sohbet_oku)):
+    sh = df_sohbet_oku.iloc[s]
+    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+        df_sl = pd.read_csv(db_sohbet)
+        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+        st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
