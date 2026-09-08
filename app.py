@@ -160,6 +160,20 @@ garantili_bip_html = """
 </script>
 """
 
+# MESAJ LİSTELEME VE KONTROL MOTORU
+df_sohbet_oku = pd.read_csv(db_sohbet)
+mesaj_sayisi_su_an = len(df_sohbet_oku)
+
+# Oturum durumunu (Session State) güvenli şekilde başlat ve sesi sadece gerçek artışta tetikle
+if "hafiza_mesaj_sayisi" not in st.session_state:
+    st.session_state["hafiza_mesaj_sayisi"] = mesaj_sayisi_su_an
+
+if mesaj_sayisi_su_an > st.session_state["hafiza_mesaj_sayisi"]:
+    st.components.v1.html(garantili_bip_html, height=0, width=0)
+    st.session_state["hafiza_mesaj_sayisi"] = mesaj_sayisi_su_an
+else:
+    st.session_state["hafiza_mesaj_sayisi"] = mesaj_sayisi_su_an
+
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
@@ -171,19 +185,3 @@ with st.form(key="s_frm", clear_on_submit=True):
             df_s = pd.read_csv(db_sohbet)
             y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-# MESAJ LİSTELEME VE KONTROL MOTORU
-df_sohbet_oku = pd.read_csv(db_sohbet)
-
-if "son_mesaj_sayisi" not in st.session_state:
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-
-if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
-    st.components.v1.html(garantili_bip_html, height=0, width=0)
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
