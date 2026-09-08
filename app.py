@@ -6,39 +6,42 @@ import os
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTASIZ, EN HAFİF VE DÜZ MAT SİYAH BORSA TERMİNALİ STİLLERİ (CSS)
+# 1. ERKEKSİ, KOYU VE MAT BORSA TERMİNALİ STİLLERİ (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Kotayı ve sistemi asla yormayan düz mat siyah arka plan */
+/* Ağır ve mat borsa grafit arka planı - parlak olmayan loş çizgiler */
 .stApp { 
-    background-color: #050705 !important;
-    background-image: none !important;
+    background-color: #050806 !important;
+    background-image: 
+        linear-gradient(to right, rgba(0, 255, 102, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 255, 102, 0.03) 1px, transparent 1px) !important;
+    background-size: 60px 60px !important;
 }
 
-/* Ağır ve Sade Panel Çerçeveleri */
+/* Parlak yeşil çerçeveler YOK EDİLDİ - Koyu Çelik/Antrasit Çerçeve Yapıldı */
 div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { 
-    background-color: #0a0e0a !important; 
-    border: 1px solid #141f14 !important; 
+    background-color: #0b110d !important; 
+    border: 1px solid #1a241d !important; 
     border-radius: 4px !important; 
     padding: 14px !important; 
 }
 
 /* Giriş Alanları ve Seçim Kutuları */
 input, textarea, select { 
-    background-color: #020402 !important; 
+    background-color: #030604 !important; 
     color: #00ff66 !important; 
-    border: 1px solid #141f14 !important; 
+    border: 1px solid #1a241d !important; 
     border-radius: 4px !important; 
 }
 
-/* Düz Maskülen Butonlar */
+/* Maskülen Mat Karbon Butonlar */
 .stButton>button { 
-    background: #0f1710 !important; 
+    background: linear-gradient(135deg, #141f17 0%, #0a120c 100%) !important; 
     color: #ffffff !important; 
-    border: 1px solid #1c2e1f !important; 
+    border: 1px solid #223327 !important; 
     border-radius: 4px !important; 
     font-weight: bold !important; 
 }
@@ -47,26 +50,28 @@ input, textarea, select {
     color: #00ff66 !important;
 }
 
-/* Sade Borsa Tablosu */
+/* Ağır Kurumsal Borsa Tablosu */
 .borsa-tablo { 
     width: 100%; 
     border-collapse: collapse; 
     margin: 10px 0; 
     font-size: 15px; 
-    background-color: #0a0e0a; 
+    background-color: #0b110d; 
     border-radius: 4px; 
     overflow: hidden; 
-    border: 1px solid #141f14;
+    border: 1px solid #1a241d;
 }
-.borsa-tablo th { background-color: #0f1710; color: #00ff66; text-align: left; padding: 12px 10px; border-bottom: 1px solid #141f14; }
-.borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #0a0e0a; font-weight: bold; }
+.borsa-tablo th { background-color: #111a14; color: #00ff66; text-align: left; padding: 12px 10px; border-bottom: 1px solid #1a241d; }
+.borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #0b110d; font-weight: bold; }
 
-.kucuk-sayac { font-size: 14px !important; color: #446644 !important; text-align: center; margin-top: 15px; font-weight: bold; }
+.kucuk-sayac { font-size: 14px !important; color: #557755 !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 </style>
 
-<!-- TALEBİNİZ ÜZERİNE BTA LOGOSU ARTIK KAYMIYOR, SABİT VE ORTALANMIŞTIR -->
-<h1 style="text-align:center; color:#00ff66; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
+<!-- BTA BAŞLIĞI KAYAN YAZI -->
+<marquee behavior="scroll" direction="left" scrollamount="7">
+    <h1 style="color:#00ff66; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px; display:inline;">BTA</h1>
+</marquee>
 ''', unsafe_allow_html=True)
 
 # Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
@@ -82,24 +87,6 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
-# KOTASIZ JAVASCRIPT MESAJ SES MOTORU (İnternet yemez, tarayıcıdan ses verir)
-def cal_mesaj_sesi():
-    st.components.v1.html("""
-    <script>
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 Notası (Kısa Temiz Bip)
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
-    </script>
-    """, height=0, width=0)
-
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
@@ -109,6 +96,8 @@ def formatla_tl(deger):
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    
+    # 4 sütun oluşturup sadece ilkini kullanarak BIST kutusunun uzamasını engelledik
     col_bist, _, _, _ = st.columns(4)
     col_bist.metric("BIST 100", f"{bist_f:,.1f}")
 except:
@@ -149,8 +138,8 @@ if os.path.exists(excel_yolu):
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
-        # --- BORSA ARAMA MOTORU (SADE VE BEYAZ) ---
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        # --- BORSA ARAMA MOTORU ---
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
             tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
             if tum_hisseler:
@@ -174,13 +163,6 @@ st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# Mesaj sayacı başlangıcı
-if "eski_mesaj_sayisi" not in st.session_state:
-    if os.path.exists(db_sohbet):
-        st.session_state["eski_mesaj_sayisi"] = len(pd.read_csv(db_sohbet))
-    else:
-        st.session_state["eski_mesaj_sayisi"] = 0
-
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
@@ -192,8 +174,6 @@ with st.form(key="s_frm", clear_on_submit=True):
             df_s = pd.read_csv(db_sohbet)
             y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.session_state["eski_mesaj_sayisi"] += 1
-            cal_mesaj_sesi() # Mesaj atan kişide anlık bip çalar
             st.rerun()
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
@@ -201,17 +181,18 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJ LİSTELEME VE DİĞER KULLANICILAR İÇİN SES KONTROLÜ
+# MESAJ LİSTELEME
 df_sohbet_oku = pd.read_csv(db_sohbet)
-guncel_mesaj_sayisi = len(df_sohbet_oku)
-
-if guncel_mesaj_sayisi > st.session_state["eski_mesaj_sayisi"]:
-    st.session_state["eski_mesaj_sayisi"] = guncel_mesaj_sayisi
-    cal_mesaj_sesi() # Odadaki diğer kişilere yeni mesaj düştüğünde bip çalar
-
-for s in range(guncel_mesaj_sayisi):
+for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #0a0e0a; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #335533; border: 1px solid #141f14;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#556655; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod:
-        if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-            df_sl = pd.read_csv(db_sohbet)
+    st.markdown(f'<div style="background-color: #0b110d; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #557755; border: 1px solid #1a241d;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#778877; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+        df_sl = pd.read_csv(db_sohbet)
+        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+        st.rerun()
+
+# ===================================================================== #
+# SADECE ODADAKİ TOPLAM GİRİŞ SAYISI
+# ===================================================================== #
+st.write("---")
+st.markdown(f'<div class="kucuk-sayac">💎 Odadaki Toplam Giriş Sayısı: {st.session_state["topham_sayac"]}</div>', unsafe_allow_html=True)
