@@ -127,27 +127,22 @@ else: st.error("Excel bulunamadı.")
 # ===================================================================== #
 st.write("---")
 
-# Kullanıcının tarayıcı kimliğini alıyoruz
 ctx = get_script_run_ctx()
 session_id = ctx.session_id if ctx else "bilinmeyen_user"
-su an = time.time()
+su_an = time.time()  # Buradaki boşluk hatası alt çizgi (_) ile giderildi
 
 try:
-    # Aktif kullanıcılar dosyasını oku
     aktif_df = pd.read_csv(db_aktif_kullanicilar)
     
-    # Mevcut kullanıcıyı listeye ekle veya zamanını güncelle
     if session_id in aktif_df['session_id'].values:
         aktif_df.loc[aktif_df['session_id'] == session_id, 'son_gorulme'] = su_an
     else:
         yeni_user = pd.DataFrame([{"session_id": session_id, "son_gorulme": su_an}])
         aktif_df = pd.concat([aktif_df, yeni_user], ignore_index=True)
     
-    # Son 10 saniye içinde sinyal (yenileme) göndermemiş olanları odadan düşür (Gerçek zaman filtreleme)
     aktif_df = aktif_df[aktif_df['son_gorulme'] > (su_an - 10)]
     aktif_df.to_csv(db_aktif_kullanicilar, index=False)
     
-    # Tamamen gerçek, canlı bağlantı sayısı
     gercek_kisi_sayisi = len(aktif_df)
 except:
     gercek_kisi_sayisi = 1
@@ -185,3 +180,8 @@ garantili_bip_html = """
 
 # Form Alanı
 with st.form(key="s_frm", clear_on_submit=True):
+    y_is = st.text_input("Adınız:", max_chars=25)
+    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
+    
+    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True):
+        if y_is.strip() and y_me.strip():
