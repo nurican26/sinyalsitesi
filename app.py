@@ -3,9 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import time
 from streamlit_autorefresh import st_autorefresh
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 # ===================================================================== #
 # 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
@@ -32,14 +30,10 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-db_aktif_kullanicilar = "bta_aktif_kisi_db.csv"
 
 # KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
-
-if not os.path.exists(db_aktif_kullanicilar):
-    pd.DataFrame(columns=["session_id", "son_gorulme"]).to_csv(db_aktif_kullanicilar, index=False)
 
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
@@ -116,37 +110,14 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. ANLIK GERÇEK KULLANICI TAKİP MOTORU
-# ===================================================================== #
-ctx = get_script_run_ctx()
-session_id = ctx.session_id if ctx else "bilinmeyen_user"
-su_an = time.time()
-
-try:
-    aktif_df = pd.read_csv(db_aktif_kullanicilar)
-    if session_id in aktif_df['session_id'].values:
-        aktif_df.loc[aktif_df['session_id'] == session_id, 'son_gorulme'] = su_an
-    else:
-        yeni_user = pd.DataFrame([{"session_id": session_id, "son_gorulme": su_an}])
-        aktif_df = pd.concat([aktif_df, yeni_user], ignore_index=True)
-    aktif_df = aktif_df[aktif_df['son_gorulme'] > (su_an - 10)]
-    aktif_df.to_csv(db_aktif_kullanicilar, index=False)
-    gercek_kisi_sayisi = len(aktif_df)
-except:
-    gercek_kisi_sayisi = 1
-
-# ===================================================================== #
-# 5. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (ESKİ ORİJİNAL AKIŞ)
+# 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
 # ===================================================================== #
 st.write("---")
-
-# Sol başlık, sağ gerçek oda sayısı hizalaması
-col_baslik, col_sayac = st.columns([4, 1])
-col_baslik.markdown('<div class="kucuk-baslik">Sohbet Odası</div>', unsafe_allow_html=True)
-col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bold; font-size:14px;">🟢 Gerçek {gercek_kisi_sayisi} Kişi Aktif</div>', unsafe_allow_html=True)
+st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
+# İnternet bağlantısı gerektirmeyen, doğrudan tarayıcının kendi ürettiği Bip Sesi (Web Audio API)
 garantili_bip_html = """
 <script>
     (function() {
@@ -156,10 +127,10 @@ garantili_bip_html = """
         osc.connect(gain);
         gain.connect(context.destination);
         osc.type = 'sine';
-        osc.frequency.value = 830; 
-        gain.gain.setValueAtTime(0.1, context.currentTime); 
+        osc.frequency.value = 830; // Sesin incelik ayarı (Hz)
+        gain.gain.setValueAtTime(0.1, context.currentTime); // Ses seviyesi (0.1 ideal)
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); 
+        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); // 0.15 saniye sürer
         osc.stop(context.currentTime + 0.16);
     })();
 </script>
@@ -168,16 +139,38 @@ garantili_bip_html = """
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True):
-        if y_is.strip() and y_me.strip():
-            mesaj_temiz = y_me.lower().replace(" ", "").replace("@", "a").replace("1", "i")
-            if any(kelime in mesaj_temiz for kelime in yasakli):
-                st.error("⚠️ Lütfen mesajınızda uygunsuz kelimeler kullanmayın!")
-            else:
-                yeni_mesaj = pd.DataFrame([{
-                    "isim": y_is.strip(),
-                    "saat": datetime.datetime.now().strftime("%H:%M:%S"),
-                    "yorum": y_me.strip()
-                }])
-                yeni_mesaj.to_csv(db_sohbet, mode='a', header=not os.path.exists(db_sohbet), index=False)
+    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
+        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
+        i_kucuk = y_is.lower().replace(" ", "")
+        
+        if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
+            df_s = pd.read_csv(db_sohbet)
+            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
+            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+            st.rerun()
+        else:
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+
+with st.expander("🛠 Yönetici"):
+    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
+
+# MESAJ LİSTELEME VE KONTROL MOTORU
+df_sohbet_oku = pd.read_csv(db_sohbet)
+
+if "son_mesaj_sayisi" not in st.session_state:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+# Yeni mesaj geldiğinde yerel ses tetiklenir
+if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
+    st.components.v1.html(garantili_bip_html, height=0, width=0)
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+for s in range(len(df_sohbet_oku)):
+    sh = df_sohbet_oku.iloc[s]
+    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+        df_sl = pd.read_csv(db_sohbet)
+        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+        st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
