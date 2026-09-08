@@ -188,8 +188,7 @@ garantili_bip_html = """
 </script>
 """
 
-# Form Alanı
-with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    
+# Akış Kilitlemeyen Bağımsız Giriş Alanları
+y_is = st.text_input("Adınız:", max_chars=25, key="shbt_isim")
+y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="shbt_mesaj")
+
