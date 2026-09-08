@@ -113,7 +113,18 @@ else: st.error("Excel bulunamadı.")
 # 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
 # ===================================================================== #
 st.write("---")
-st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
+
+# MESAJ LİSTELEME VE KONTROL MOTORU
+df_sohbet_oku = pd.read_csv(db_sohbet)
+
+# Benzersiz (unique) isim sayısını hesaplayarak gerçek kişi sayısını buluyoruz
+try:
+    kisi_sayisi = df_sohbet_oku["isim"].nunique()
+except:
+    kisi_sayisi = 0
+
+# Sohbet başlığına kişi sayısını ekliyoruz
+st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">{kisi_sayisi} Kişi</span>)</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
@@ -154,9 +165,6 @@ with st.form(key="s_frm", clear_on_submit=True):
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
 
-# MESAJ LİSTELEME VE KONTROL MOTORU
-df_sohbet_oku = pd.read_csv(db_sohbet)
-
 if "son_mesaj_sayisi" not in st.session_state:
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 
@@ -169,8 +177,3 @@ elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
 
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
