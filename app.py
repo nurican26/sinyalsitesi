@@ -1,175 +1,73 @@
 import streamlit as st
 import pandas as pd
-import datetime
-import yfinance as yf
 import os
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
+# 1. KOTA DOSTU SADE TASARIM VE RENK AYARLARI
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-.stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
-div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
-input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
-.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
-.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
-.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
-.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
-.kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
+.stApp { background-color: #0b111e !important; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 16px; background-color: #121d33; border-radius: 8px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 12px 10px; font-weight: bold; }
+.borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 </style>
-<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
+<h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:40px; margin-bottom:15px;">BTA ANALİZ MERKEZİ</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
-st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
+# Ekranı 10 saniyede bir yenileyen hafif saat motoru
+st_autorefresh(interval=10 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_sohbet = "bta_sohbet_db.csv"
-
-# KALICI SOHBET VERİTABANI BAŞLATMA
-if not os.path.exists(db_sohbet):
-    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
-
-if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
-st.session_state["topham_sayac"] += 1
-
-def formatla_tl(deger):
-    try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
-    except: return str(deger)
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
-# ===================================================================== #
-try:
-    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    gram_f = (ons_f / 31.1034768) * usd_f
-    
-    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
-    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
-    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.1f} TL")
-    col_bist.metric("BIST 100", f"{bist_f:,.1f}")
-    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
-except:
-    st.info("⏳ Finansal Veriler Güncelleniyor...")
-
-# ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR (KOTA DOSTU EXCEL BAĞLANTISI)
+# 2. CANLI BORSA TABLOSU (EXCEL WEB SAYFASINI DOĞRUDAN OKUR - KOTA %0)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
-        # Doğrudan sizin o tek sayfa haline getirdiğiniz "WEB" sayfasını okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
-        # Sizin tam ekran görüntüsünde gönderdiğiniz A, B, C, D, E sütun sıralaması:
-        # A sütunu (0): BTA PUANI
-        # B sütunu (1): HİSSE
-        # C sütunu (2): ALGORİTMİK FİYATI
-        # D sütunu (3): FİYAT
-        # E sütunu (4): K/Z
         for idx in range(len(df)):
             try:
-                puan_d = df.iloc[idx, 0]  # A sütunu
-                ha = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""  # B sütunu
-                algo_f = df.iloc[idx, 2]  # C sütunu
-                canli_f = df.iloc[idx, 3]  # D sütunu
-                kz_orani = df.iloc[idx, 4]  # E sütunu
+                puan_d = df.iloc[idx, 0]    # A Sütunu: BTA Puanı
+                ha = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""  # B Sütunu: Hisse Adı
+                algo_f = df.iloc[idx, 2]    # C Sütunu: Algoritmik Fiyat
+                canli_f = df.iloc[idx, 3]   # D Sütunu: Canlı Fiyat
+                kz_orani = df.iloc[idx, 4]  # E Sütunu: K/Z Oranı
                 
                 if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "HİSSE ADI", "HİSSE ADI "]:
                     veri_var_mi = True
                     
-                    # Hücrelerin boş kalmasını engellemek için nizam veriyoruz
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     maliyet_str = f"{float(algo_f):,.1f} TL" if isinstance(algo_f, (int, float)) else str(algo_f).strip()
                     canli_str = f"{float(canli_f):,.1f} TL" if isinstance(canli_f, (int, float)) else str(canli_f).strip()
                     
-                    # E sütunundaki K/Z oranına göre ok simgelerini renklendiriyoruz
-                    try:
-                        or_dg = float(str(kz_orani).replace("%", "").replace("▲", "").replace("▼", "").replace(" ", "").replace(",", "."))
-                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
-                    except:
-                        kz_str = f'<span>{str(kz_orani).strip()}</span>'
+                    kz_metin = str(kz_orani).strip()
+                    if "▼" in kz_metin or "-" in kz_metin:
+                        kz_str = f'<span style="color:#ff3344;">{kz_metin}</span>'
+                    elif "▲" in kz_metin or "%" in kz_metin:
+                        kz_str = f'<span style="color:#00ff66;">{kz_metin}</span>'
+                    else:
+                        kz_str = f'<span>{kz_metin}</span>'
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet_str}</td><td>{canli_str}</td><td>{kz_str}</td></tr>'
             except:
                 continue
             
         tablo_html += '</table>'
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        
+        st.markdown('<p style="font-size:20px; font-weight:bold; color:#1E90FF; margin-top:20px;">📈 BTA ALGORİTMİK HİSSE LİSTESİ</p>', unsafe_allow_html=True)
         if veri_var_mi: 
             st.markdown(tablo_html, unsafe_allow_html=True)
         else:
             st.info("⏳ WEB Sayfasında Gösterilecek Hisse Verisi Bulunamadı...")
-        
-        # --- BORSA ARAMA MOTORU ---
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        if len(df.columns) >= 2:
-            # Excel'deki B sütunundan tüm güncel hisse kodlarını çeker
-            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 1].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", "", "BTA HİSSE", "NAN", "NONE"]])
-            if tum_hisseler:
-                aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
-                if aranan_hisse != "Seçiniz...":
-                    # Arama motorunda seçilen hissenin satırını bulup tablodaki canlı fiyatını yansıtır
-                    hisse_satiri = df[df.iloc[:, 1].astype(str).str.strip().str.upper() == aranan_hisse]
-                    if not hisse_satiri.empty:
-                        fiyat_v = hisse_satiri.iloc[0, 3]
-                        fiyat_str = f"{float(fiyat_v):,.2f} TL" if isinstance(fiyat_v, (int, float)) else str(fiyat_v).strip()
-                        st.metric("Güncel Fiyat", fiyat_str)
+            
     except Exception as e: 
-        st.error(f"Veri yüklenemedi: {e}")
+        st.error(f"Veri okunurken bir hata oluştu: {e}")
 else: 
-    st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
-# ===================================================================== #
-st.write("---")
-st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
-
-yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
-
-# İnternet bağlantısı gerektirmeyen, doğrudan tarayıcının kendi ürettiği Bip Sesi (Web Audio API)
-garantili_bip_html = """
-<script>
-    (function() {
-        var context = new (window.AudioContext || window.webkitAudioContext)();
-        var osc = context.createOscillator();
-        var gain = context.createGain();
-        osc.connect(gain);
-        gain.connect(context.destination);
-        osc.type = 'sine';
-        osc.frequency.value = 830; // Sesin incelik ayarı (Hz)
-        gain.gain.setValueAtTime(0.1, context.currentTime); // Ses seviyesi (0.1 ideal)
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); // 0.15 saniye sürer
-        osc.stop(context.currentTime + 0.16);
-    })();
-</script>
-"""
-
-with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-        i_kucuk = y_is.lower().replace(" ", "")
-        
-        if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
-            df_s = pd.read_csv(db_sohbet)
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-with st.expander("🛠 Yönetici"):
+    st.error("Excel veritabanı bulunamadı. Lütfen nurican.xls.xlsm dosyasını yükleyin.")
