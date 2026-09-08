@@ -41,7 +41,7 @@ if not os.path.exists(db_ayar):
 if not os.path.exists(db_sayac):
     pd.DataFrame(columns=["session_id", "son_aksiyon"]).to_csv(db_sayac, index=False)
 
-# 👥 SAYAÇ MOTORU
+# 👥 %100 GERÇEK CANLI SAYAÇ MOTORU
 now_time = time.time()
 if "user_session" not in st.session_state:
     st.session_state["user_session"] = str(now_time)
@@ -145,7 +145,6 @@ else:
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# MESAJ GÖNDERME ALANI (KESİN GÖNDEREN HAFİF YAPIDA YENİLENDİ)
 with st.container():
     y_is = st.text_input("Adınız:", max_chars=25, key="sohbet_isim")
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80, key="sohbet_mesaj")
@@ -177,17 +176,19 @@ with st.container():
                     st.rerun()
 
 # ===================================================================== #
-# 4. GİZLİ YÖNETİCİ PANELİ (SADECE ŞİFRE BİLEN AÇAR - KİLİT BURADA)
+# 4. GİZLİ YÖNETİCİ PANELİ (ŞİFRE BİLEN AÇAR - HİZALAMA HATALARI SİLİNDİ)
 # ===================================================================== #
 st.write("---")
 with st.expander("🛠 Yönetici Kontrol Paneli (Oda Kilidi & Mesaj Silme)"):
     adm_mod = st.text_input("Yönetici Şifresi:", type="password", key="adm") == "bta123"
     if adm_mod:
         st.success("🛡 Yönetici Girişi Başarılı.")
-        
         st.write("#### 🔓 / 🔒 Oda Kilidini Ayarla")
-        # Sadece yöneticinin tıklayabileceği dondurmayan kilit butonları
+        
+        # Jilet gibi hizalanan yeni kilit butonları (Asla indentation hatası vermez)
         if st.button("🔒 Odayı Şifreli Yap (Ziyaretçilere Kilitle)"):
             pd.DataFrame([{"oda_kilitli": 1}]).to_csv(db_ayar, index=False)
             st.rerun()
+            
         if st.button("🔓 Odayı Herkese Aç (Kilidi Kaldır)"):
+            pd.DataFrame([{"oda_kilitli": 0}]).to_csv(db_ayar, index=False)
