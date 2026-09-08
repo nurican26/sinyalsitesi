@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import base64
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
@@ -83,22 +82,23 @@ if not os.path.exists(db_sohbet):
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
-# TARAYICI ENGELİNE TAKILMAYAN YENİ SES MOTORU (HTML5 Audio Altyapısı)
+# KOTASIZ JAVASCRIPT MESAJ SES MOTORU (İnternet yemez, tarayıcıdan ses verir)
 def cal_mesaj_sesi():
-    # Kısa ve temiz bip sesinin Base64 formatındaki ses verisi (İnternet yemez)
-    b64_ses = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" 
-    # Alternatif olarak daha stabil çalışan HTML5 Audio nesnesi tetikleniyor
-    st.components.v1.html(
-        f"""
-        <script>
-        var audio = new Audio('{b64_ses}');
-        // Tarayıcı izin durumunu kontrol ederek çalmayı zorlar
-        audio.play().catch(function(error) {{
-            console.log("Tarayıcı otomatik ses çalmayı engelledi. Lütfen sayfaya bir kez tıklayın.");
-        }});
-        </script>
-        """, height=0, width=0
-    )
+    st.components.v1.html("""
+    <script>
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 Notası (Kısa Temiz Bip)
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    </script>
+    """, height=0, width=0)
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -212,3 +212,5 @@ for s in range(guncel_mesaj_sayisi):
         # TIKLANDIĞINDA SATIRI CSV'DEN SİLEN AKTİF BUTON MOTORU
         if st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
             df_sl = pd.read_csv(db_sohbet)
+            df_sl = df_sl.drop(index=s).reset_index(drop=True)
+            df_sl.to_csv(db_sohbet, index=False)
