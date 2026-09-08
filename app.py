@@ -62,52 +62,73 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR
+# 3. VERİ MOTORU VE TABLOLAR (KOTA DOSTU EXCEL BAĞLANTISI)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
+        # Doğrudan sizin o tek sayfa haline getirdiğiniz "WEB" sayfasını okuyoruz
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
+        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
-        for idx in range(min(10, len(df))):
+        # Sizin tam ekran görüntüsünde gönderdiğiniz A, B, C, D, E sütun sıralaması:
+        # A sütunu (0): BTA PUANI
+        # B sütunu (1): HİSSE
+        # C sütunu (2): ALGORİTMİK FİYATI
+        # D sütunu (3): FİYAT
+        # E sütunu (4): K/Z
+        for idx in range(len(df)):
             try:
-                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-                puan_d = df.iloc[idx, 3]
+                puan_d = df.iloc[idx, 0]  # A sütunu
+                ha = str(df.iloc[idx, 1]).strip().upper() if pd.notna(df.iloc[idx, 1]) else ""  # B sütunu
+                algo_f = df.iloc[idx, 2]  # C sütunu
+                canli_f = df.iloc[idx, 3]  # D sütunu
+                kz_orani = df.iloc[idx, 4]  # E sütunu
                 
-                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "HİSSE ADI", "HİSSE ADI "]:
                     veri_var_mi = True
+                    
+                    # Hücrelerin boş kalmasını engellemek için nizam veriyoruz
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                    try: maliyet = float(alim_c.replace(",", "."))
-                    except: maliyet = 0.0
+                    maliyet_str = f"{float(algo_f):,.1f} TL" if isinstance(algo_f, (int, float)) else str(algo_f).strip()
+                    canli_str = f"{float(canli_f):,.1f} TL" if isinstance(canli_f, (int, float)) else str(canli_f).strip()
                     
-                    if maliyet > 0 and c_fiyat > 0:
-                        or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    # E sütunundaki K/Z oranına göre ok simgelerini renklendiriyoruz
+                    try:
+                        or_dg = float(str(kz_orani).replace("%", "").replace("▲", "").replace("▼", "").replace(" ", "").replace(",", "."))
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
-                    else: kz_str = "<span>-</span>"
+                    except:
+                        kz_str = f'<span>{str(kz_orani).strip()}</span>'
                     
-                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.1f} TL</td><td>{c_fiyat:,.1f} TL</td><td>{kz_str}</td></tr>'
-            except: continue
+                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet_str}</td><td>{canli_str}</td><td>{kz_str}</td></tr>'
+            except:
+                continue
             
         tablo_html += '</table>'
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+        if veri_var_mi: 
+            st.markdown(tablo_html, unsafe_allow_html=True)
+        else:
+            st.info("⏳ WEB Sayfasında Gösterilecek Hisse Verisi Bulunamadı...")
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        if len(df.columns) >= 5:
-            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
+        if len(df.columns) >= 2:
+            # Excel'deki B sütunundan tüm güncel hisse kodlarını çeker
+            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 1].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", "", "BTA HİSSE", "NAN", "NONE"]])
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
-                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
-                    if len(h_detay_veri) > 0:
-                        st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-    except: st.error("Veri yüklenemedi.")
-else: st.error("Excel bulunamadı.")
+                    # Arama motorunda seçilen hissenin satırını bulup tablodaki canlı fiyatını yansıtır
+                    hisse_satiri = df[df.iloc[:, 1].astype(str).str.strip().str.upper() == aranan_hisse]
+                    if not hisse_satiri.empty:
+                        fiyat_v = hisse_satiri.iloc[0, 3]
+                        fiyat_str = f"{float(fiyat_v):,.2f} TL" if isinstance(fiyat_v, (int, float)) else str(fiyat_v).strip()
+                        st.metric("Güncel Fiyat", fiyat_str)
+    except Exception as e: 
+        st.error(f"Veri yüklenemedi: {e}")
+else: 
+    st.error("Excel bulunamadı.")
 
 # ===================================================================== #
 # 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
@@ -152,25 +173,3 @@ with st.form(key="s_frm", clear_on_submit=True):
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
 with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-# MESAJ LİSTELEME VE KONTROL MOTORU
-df_sohbet_oku = pd.read_csv(db_sohbet)
-
-if "son_mesaj_sayisi" not in st.session_state:
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-
-# Yeni mesaj geldiğinde yerel ses tetiklenir
-if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
-    st.components.v1.html(garantili_bip_html, height=0, width=0)
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
