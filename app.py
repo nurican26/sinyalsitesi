@@ -17,7 +17,8 @@ st.markdown('''
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 12px 10px; font-weight: bold; }
 .borsa-tablo td { padding: 12px 10px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-baslik { font-size: 20px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; margin-top: 20px; }
-.oda-durum { font-size: 14px; font-weight: bold; padding: 5px 10px; border-radius: 5px; display: inline-block; margin-bottom: 10px; }
+.stRadio > div { display: flex; gap: 20px; background-color: #121d33; padding: 10px; border-radius: 8px; border: 1px solid #1e3a5f; }
+label { color: #00ffcc !important; font-weight: bold !important; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:40px; margin-bottom:15px;">BTA ANALİZ MERKEZİ</h1>
 ''', unsafe_allow_html=True)
@@ -40,7 +41,7 @@ if not os.path.exists(db_ayar):
 if not os.path.exists(db_sayac):
     pd.DataFrame(columns=["session_id", "son_aksiyon"]).to_csv(db_sayac, index=False)
 
-# 👥 KANDIRMAYAN %100 GERÇEK CANLI SAYAÇ MOTORU
+# 👥 %100 GERÇEK CANLI SAYAÇ MOTORU
 now_time = time.time()
 if "user_session" not in st.session_state:
     st.session_state["user_session"] = str(now_time)
@@ -76,10 +77,6 @@ garantili_bip_html = """
     })();
 </script>
 """
-
-# Ayarları dosyadan oku
-df_ayar_oku = pd.read_csv(db_ayar)
-oda_su_an_kilitli = int(df_ayar_oku.iloc[0]["oda_kilitli"])
 
 # ===================================================================== #
 # 2. CANLI BORSA TABLOSU (ÇAPRAZ EŞLEŞTİRME İLE GÜNCEL FİYAT VE K/Z)
@@ -139,17 +136,35 @@ else:
     st.error("Excel veritabanı bulunamadı. Lütfen nurican.xls.xlsm dosyasını yükleyin.")
 
 # ===================================================================== #
-# 3. ŞİFRELİ SOHBET FORMU VE SESLİ MESAJ KUTUSU
+# 3. KİLİT AYAR MOTORU (DONDURMAYAN %100 ÇALIŞAN YENİ SİSTEM)
 # ===================================================================== #
 st.write("---")
+st.markdown('### 🔒 Sohbet Odası Yönetim ve Kilit Paneli')
+
+# Ayarları dosyadan oku
+df_ayar_oku = pd.read_csv(db_ayar)
+mevcut_durum = int(df_ayar_oku.iloc[0, 0])
+
+# Sayfayı dondurmayan, takılmayan radyo seçim sistemi
+secilen_mod = st.radio(
+    "Oda Durumunu Seçin:",
+    ("🔓 Herkese Açık Mod", "🔒 Şifreli Kilitli Mod"),
+    index=0 if mevcut_durum == 0 else 1,
+    key="oda_mod_secimi"
+)
+
+# Seçim değiştiği an arka planda dosyaya anında kazır
+yeni_kilit_degeri = 1 if secilen_mod == "🔒 Şifreli Kilitli Mod" else 0
+if yeni_kilit_degeri != mevcut_durum:
+    pd.DataFrame([{"oda_kilitli": yeni_kilit_degeri}]).to_csv(db_ayar, index=False)
+    st.rerun()
+
+# ===================================================================== #
+# 4. ŞİFRELİ / AÇIK SOHBET FORMU
+# ===================================================================== #
 col_baslik, col_sayac = st.columns(2)
 col_baslik.markdown('<div class="kucuk-baslik">Sohbet Odası 💬</div>', unsafe_allow_html=True)
 col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bold; margin-top:25px;">👥 Gerçek Canlı: {gercek_canli_kisi} Kişi</div>', unsafe_allow_html=True)
-
-if oda_su_an_kilitli == 1:
-    st.markdown('<div class="oda-durum" style="background-color:#ff3344; color:white;">🔒 ODA KİLİTLİ (Yayınlanması için Nurican ustanın verdiği şifre gereklidir)</div>', unsafe_allow_html=True)
-else:
-    st.markdown('<div class="oda-durum" style="background-color:#00ff66; color:#0b111e;">🔓 ODA HERKESE AÇIK</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
@@ -157,9 +172,10 @@ with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
     
+    # Oda kilitliyken formun tam içine şifre kutusunu zorunlu açar
     girilen_oda_sifresi = ""
-    if oda_su_an_kilitli == 1:
-        girilen_oda_sifresi = st.text_input("🔑 Oda Şifresini Girin (Bilmeyenlerin mesajı yayınlanmaz):", type="password")
+    if yeni_kilit_degeri == 1:
+        girilen_oda_sifresi = st.text_input("🔑 Oda Şu An Şifreli! Mesajınızın gitmesi için oda şifresini yazın:", type="password")
         
     if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
         m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
@@ -169,38 +185,26 @@ with st.form(key="s_frm", clear_on_submit=True):
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
         else:
             yayinla_izni = True
-            if oda_su_an_kilitli == 1:
+            if yeni_kilit_degeri == 1:
                 if girilen_oda_sifresi == "bta123":
                     yayinla_izni = True
                 else:
                     yayinla_izni = False
-                    st.error("❌ Hatalı Oda Şifresi! Mesajınız Nurican ustaya ulaşmadı.")
+                    st.error("❌ Hatalı Oda Şifresi! Şifreyi bilmediğiniz için mesajınız yayınlanmadı.")
             
-            if yayinla_izni:
+            if yayayinla_izni if 'yayayinla_izni' in locals() else yayinla_izni:
                 df_s = pd.read_csv(db_sohbet)
                 y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
                 pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
                 st.rerun()
 
 # ===================================================================== #
-# 4. YÖNETİCİ PANELİ (KİLİT VE SİLME MOTORU)
+# 5. MESAJ LİSTELEME VE HERKESE SİLME YETKİSİ
 # ===================================================================== #
-with st.expander("🛠 Yönetici Kontrol Paneli"):
-    adm_mod = st.text_input("Yönetici Şifresi:", type="password", key="adm") == "bta123"
-    if adm_mod:
-        st.success("🛡 Yönetici Girişi Başarılı.")
-        st.write("### Oda Yönetim Seçenekleri")
-        col_kilitle, col_ac = st.columns(2)
-        if col_kilitle.button("🔒 Odayı Şifreli Yap"):
-            pd.DataFrame([{"oda_kilitli": 1}]).to_csv(db_ayar, index=False)
-            st.rerun()
-        if col_ac.button("🔓 Odayı Herkese Aç"):
-            pd.DataFrame([{"oda_kilitli": 0}]).to_csv(db_ayar, index=False)
-            st.rerun()
-
-# MESAJ LİSTELEME VE SES MOTORU
 df_sohbet_oku = pd.read_csv(db_sohbet)
 
 if "son_mesaj_sayisi" not in st.session_state:
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 
+# Ses tetiği
+if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
