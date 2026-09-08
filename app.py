@@ -143,7 +143,7 @@ else:
 # 3. YÖNETİCİ GİRİŞ ALANI (Sadece Sana Özel Butonları Açar)
 # ===================================================================== #
 st.write("---")
-with st.expander("🛠 Sadece Nurican Usta Yönetici Girişi"):
+with st.expander("🛠 Yönetici Girişi"):
     adm_mod = st.text_input("Yönetici Şifrenizi Girin:", type="password", key="adm_key") == "bta123"
     if adm_mod:
         st.success("🛡 Yönetici Yetkileri Aktif. Artık Temizlik Yapabilirsiniz.")
@@ -153,7 +153,7 @@ with st.expander("🛠 Sadece Nurican Usta Yönetici Girişi"):
 # ===================================================================== #
 col_baslik, col_sayac = st.columns(2)
 col_baslik.markdown('<div class="kucuk-baslik">Canlı Borsa Sohbet Odası 💬</div>', unsafe_allow_html=True)
-col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bold; margin-top:25px; font-size:18px;">👥 Gerçek Canlı: {gercek_canli_kisi} Kişi</div>', unsafe_allow_html=True)
+col_sayac.markdown(f'<div style="text-align:right; color:#00ffcc; font-weight:bold; margin-top:25px; font-size:18px;">👥 Gerçek Canlı: {kisi} Kişi</div>', unsafe_allow_html=True)
 
 # İsim Kaydı
 rumuz = st.text_input("Sohbetteki Adınız:", max_chars=20, value="Ziyaretçi", key="bta_rumuz_alani")
