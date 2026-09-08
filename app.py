@@ -121,7 +121,6 @@ else: st.error("Excel bulunamadı.")
 # ===================================================================== #
 st.write("---")
 
-# Hatanın düzeltildiği yer: try bloğu doğru girinti seviyesine alındı
 try:
     sohbet_df_oku = pd.read_csv(db_sohbet)
     aktif_kisi_sayisi = max(1, sohbet_df_oku["isim"].nunique())
@@ -180,3 +179,5 @@ with st.form(key="s_frm", clear_on_submit=True):
                 st.success("✅ Mesajınız başarıyla yayınlandı!")
                 st.rerun()
         else:
+            st.warning("⚠️ Adınız ve Mesajınız alanları boş bırakılamaz!")
+
