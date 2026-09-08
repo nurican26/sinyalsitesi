@@ -67,7 +67,7 @@ except:
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALIM</th><th>FİYAT</th><th>K/Z</th></tr>'
+        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
         for idx in range(min(10, len(df))):
