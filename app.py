@@ -129,7 +129,7 @@ st.write("---")
 
 ctx = get_script_run_ctx()
 session_id = ctx.session_id if ctx else "bilinmeyen_user"
-su_an = time.time()  # Buradaki boşluk hatası alt çizgi (_) ile giderildi
+su_an = time.time()
 
 try:
     aktif_df = pd.read_csv(db_aktif_kullanicilar)
