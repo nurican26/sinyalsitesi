@@ -146,14 +146,10 @@ with col_not2:
                     baslik = f"📌 {hisse_adi}{fiyat_metni}{alarm_durumu}"
                     with st.expander(baslik):
                         st.info(row["not"])
-                        if st.button("Bu Notu Sil", key=f"sil_id_{not_id}"):
-                            df_notlar_oku["id"] = df_notlar_oku["id"].astype(str)
-                            df_guncel_notlar = df_notlar_oku[df_notlar_oku["id"] != not_id]
-                            df_guncel_notlar.to_csv(db_notlar, index=False)
-                            st.success("Not silindi!")
-                            time.sleep(0.5)
-                            st.rerun()
-            else:
-                st.caption("Henüz kaydedilmiş bir hisse notu bulunmuyor.")
-    except:
-        pass
+                        
+                        # --- YALNIZCA YÖNETİCİYE ÖZEL SİLME YETKİSİ ---
+                        silme_paneli_ac = st.checkbox("Notu Silme Panelini Aç", key=f"panel_{not_id}")
+                        if silme_paneli_ac:
+                            yonetici_sifresi = st.text_input("Yönetici Şifresi:", type="password", key=f"sifre_{not_id}")
+                            if st.button("Notu Kalıcı Olarak Sil ❌", use_container_width=True, key=f"sil_id_{not_id}"):
+                                # 'bta123' kısmını kendi gizli şifrenizle değiştirebilirsiniz
