@@ -50,7 +50,7 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 if not os.path.exists(db_mesajlar):
     pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
-# --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU (YENİLENDİ) ---
+# --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
     kara_liste = [
         "serefsiz", "şerefsiz", "amk", "aq", "sik", "piç", "pic", "orospu", "göt", "got", 
@@ -182,3 +182,4 @@ with col_sag:
     # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU ---
     if st.session_state["bta_rumuz"] == "CC":
         st.write("")
+        if st.button("Temizle 🗑️", use_container_width=True, key="admin_clear_btn"):
