@@ -145,7 +145,6 @@ st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">Oda
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# Tarayıcılarda kesinlikle çalan ve kilitlenmeyen bip sesi kodu:
 garantili_bip_html = """
 <script>
     (function() {
@@ -167,7 +166,7 @@ garantili_bip_html = """
 </script>
 """
 
-# Sohbet Giriş Formu (Eski kararlı yapıya sadık, submit_button'lı sistem)
+# Sohbet Giriş Formu
 with st.form("sohbet_formu", clear_on_submit=True):
     kullanici_adi = st.text_input("İsminiz", max_chars=20, value="Anonim")
     mesaj = st.text_area("Yorumunuz", max_chars=150)
@@ -185,3 +184,5 @@ with st.form("sohbet_formu", clear_on_submit=True):
                 st.success("Mesaj gönderildi!")
                 st.rerun()
             except Exception as e:
+                st.error("Mesaj gönderilirken bir hata oluştu, lütfen tekrar deneyin.")
+        else:
