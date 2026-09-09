@@ -93,7 +93,7 @@ if len(tum_hisseler) > 0:
             pass
 
 st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır.Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanlerin kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir </p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır.Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir </p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
 
 with col_not1:
@@ -123,15 +123,10 @@ with col_not1:
 with col_not2:
     st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
     
-    admin_yetkisi = False
     admin_paneli = st.checkbox("Yönetici Modu (Not Silme)")
+    sifre_kontrol = ""
     if admin_paneli:
         sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
-        if sifre_kontrol == "bta123":
-            admin_yetkisi = True
-            st.success("Silme yetkisi aktif!")
-        elif sifre_kontrol != "":
-            st.error("Hatalı Şifre!")
 
     if os.path.exists(db_notlar):
         try:
@@ -160,4 +155,6 @@ with col_not2:
                     
                     with st.expander(baslik):
                         st.info(row["not"])
-                        if admin_yetkisi:
+                        buton_metni = "Notu Kalıcı Olarak Sil ❌" if sifre_kontrol == "bta123" else "🔒 SİLME YETKİNİZ YOK"
+                        if st.button(buton_metni, key=f"sil_{not_id}", use_container_width=True):
+                            if sifre_kontrol == "bta123":
