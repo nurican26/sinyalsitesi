@@ -172,10 +172,4 @@ with col_not1:
 
 with col_not2:
     st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
-    
-    # Yönetici modu onay kutusu ve şifre alanı bu alandan kaldırıldı.
-
-    if os.path.exists(db_notlar):
-        df_notlar_oku = pd.read_csv(db_notlar)
-        if not df_notlar_oku.empty:
-            df_notlar_oku = df_notlar_oku.iloc[::-1]
+    # Sağ sütundaki tüm eski liste ve şifre kod bloğu tamamen temizlendi.
