@@ -72,7 +72,7 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel bulunamadı.")
 
-# SPK MEVZUATINA TAM UYUMLU TABLO ALTI YASAL UYARI BÖLÜMÜ
+# SPK YASAL UYARI BÖLÜMÜ
 st.markdown('''
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
     <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -81,11 +81,6 @@ st.markdown('''
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
         Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
         Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
-    </p>
-    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin-top:8px; margin-bottom:0;">
-        Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişilerin mali durumları ile risk og getiri tercihleri dikkate alınarak kişiye özel sunulan yasal bir hizmettir. 
-        Sistemdeki gecikmeli algoritmik çıktılar, mali durumunuza veya risk iştahınıza uygun olmayabilir ve sadece bu gecikmeli verilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. 
-        Geçmiş döneme ait matematiksel başarılar veya geriye dönük test sonuçları, gelecekteki piyasa performansının kesin bir garantisi değildir. Veri sağlayıcılardan kaynaklanan teknik hatalardan, kesintilerden, sistem gecikmelerinden veya sitemizdeki verilere dayanılarak yapılan işlemlerden doğabilecek doğrudan ya da dolaylı zararlardan bu platform hiçbir şekilde sorumlu tutulamaz.
     </p>
 </div>
 ''', unsafe_allow_html=True)
@@ -133,12 +128,35 @@ with col_not1:
                 pass
 
 with col_not2:
-    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
-    if os.path.exists(db_notlar):
-        df_notlar_oku = pd.read_csv(db_notlar)
-        if not df_notlar_oku.empty:
-            df_notlar_oku = df_notlar_oku.iloc[::-1]
-            for i, row in df_notlar_oku.iterrows():
-                with st.expander(f"📌 {row['hisse']} - {row['tarih']}"):
-                    st.write(f"**Not:** {row['not']}")
-                    st.write(f"**Hedef Fiyat:** {row['hedef_fiyat']} TL")
+    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold; margin-bottom:10px;">🔒 Yönetici Not Paneli</div>', unsafe_allow_html=True)
+    
+    # Giriş şifresi kutusu (Varsayılan olarak "1905" ayarladım, aşağıdan değiştirebilirsiniz)
+    admin_sifre = st.text_input("Görmek ve silmek için Yönetici Şifresini girin:", type="password", key="not_paneli_giris_sifresi")
+    
+    if admin_sifre == "1905":  # <--- ŞİFRENİZ BURADA
+        st.success("Yönetici girişi başarılı. Notlar listeleniyor.")
+        if os.path.exists(db_notlar):
+            df_notlar_oku = pd.read_csv(db_notlar)
+            if not df_notlar_oku.empty:
+                df_notlar_oku = df_notlar_oku.iloc[::-1]
+                for i, row in df_notlar_oku.iterrows():
+                    with st.expander(f"📌 {row['hisse']} - {row['tarih']}"):
+                        st.write(f"**Not:** {row['not']}")
+                        st.write(f"**Hedef Fiyat:** {row['hedef_fiyat']} TL")
+                        
+                        # Her nota özel Kırmızı Silme Butonu
+                        if st.button(f"Bu Notu Kalıcı Olarak Sil ❌", key=f"sil_btn_{row['id']}", use_container_width=True):
+                            try:
+                                # Güncel CSV'yi tekrar oku ve ilgili ID'yi uçur
+                                df_guncel = pd.read_csv(db_notlar)
+                                df_guncel = df_guncel[df_guncel['id'].astype(str) != str(row['id'])]
+                                df_guncel.to_csv(db_notlar, index=False)
+                                st.error("Not silindi! Sayfa yenileniyor...")
+                                time.sleep(0.8)
+                                st.rerun()
+                            except:
+                                pass
+            else:
+                st.info("Kayıtlı hiçbir not bulunamadı.")
+    elif admin_sifre != "":
+        st.error("Hatalı yönetici şifresi! Erişim engellendi.")
