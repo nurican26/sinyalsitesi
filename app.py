@@ -7,43 +7,90 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTA DOSTU TASARIM VE KESİN ÇALIŞAN NEON ŞİMŞEK ARKA PLAN (CSS)
+# 1. KOTA DOSTU TASARIM VE KORUNAKLI KARANLIK TEMA (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Harici linke bağımlı olmayan, tarayıcıda doğrudan çizilen garantili şimşek/yıldırım teması */
+/* Ön plan elemanlarını kapatmayan, göze hitap eden karanlık borsa teması */
 .stApp { 
-    background-color: #030712 !important; 
-    background-image: 
-        radial-gradient(at 30% 20%, rgba(0, 255, 204, 0.15) 0px, transparent 40%),
-        radial-gradient(at 80% 40%, rgba(30, 144, 255, 0.12) 0px, transparent 50%),
-        linear-gradient(135deg, rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(45deg, rgba(0, 255, 204, 0.02) 2px, transparent 2px) !important;
-    background-size: 100% 100%, 100% 100%, 40px 40px, 60px 60px !important;
-    position: relative;
+    background-color: #050b14 !important; 
+    background-image: radial-gradient(at 0% 0%, rgba(0, 255, 204, 0.12) 0px, transparent 45%), 
+                      radial-gradient(at 100% 0%, rgba(30, 144, 255, 0.1) 0px, transparent 40%) !important;
+    background-attachment: fixed !important;
 }
 
-/* Sayfaya derinlik ve şimşek çakma efekti hissi veren neon ışık kırılmaları */
-.stApp::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.08) 0%, transparent 60%) !important;
-    pointer-events: none;
-    z-index: 0;
+/* Kutu tasarımları ve görünürlük ayarları */
+div[data-testid="stMetric"], div[data-testid="stExpander"] { 
+    background-color: #0c1524 !important; 
+    border: 1px solid #1e3a5f !important; 
+    border-radius: 8px !important; 
+    padding: 10px !important; 
+}
+input, textarea, select { 
+    background-color: #060b12 !important; 
+    color: #00ffcc !important; 
+    border: 1px solid #1e3a5f !important; 
+    border-radius: 6px !important; 
+}
+.stButton>button { 
+    background: #0d9488 !important; 
+    color: #fff !important; 
+    border: 1px solid #00ffcc !important; 
+    border-radius: 6px !important; 
+    font-weight: bold !important; 
 }
 
-div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: rgba(18, 29, 51, 0.85) !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; padding: 10px !important; }
-input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
-.stButton>button { background: #0d9488 !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
-.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; background-color: rgba(18, 29, 51, 0.85); border-radius: 8px; overflow: hidden; }
-.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 8px; }
-.borsa-tablo td { padding: 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 10px; }
-.spk-uyari-alani { background-color: rgba(255, 51, 68, 0.05); border: 1px dashed #ff3344; padding: 12px; border-radius: 8px; margin-top: 30px; font-size: 11px; color: #cccccc; text-align: justify; line-height: 1.4; display: block !important; clear: both !important; }
-/* Form kutusunun kenarlıklarını temizlemek için */
+/* Borsa Tablosu Düzenlemeleri */
+.borsa-tablo { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin: 10px 0; 
+    font-size: 14px; 
+    background-color: #0c1524; 
+    border-radius: 8px; 
+    overflow: hidden; 
+    border: 1px solid #1e3a5f;
+}
+.borsa-tablo th { 
+    background-color: #16243a; 
+    color: #00ffcc; 
+    text-align: left; padding: 8px; 
+}
+.borsa-tablo td { 
+    padding: 8px; 
+    color: #ffffff; 
+    border-bottom: 1px solid #16243a; 
+    font-weight: bold; 
+}
+
+/* Mesaj ve SPK Alanı */
+.mesaj-kutusu { 
+    background-color: #060b12; 
+    border: 1px solid #1e3a5f; 
+    padding: 8px; 
+    border-radius: 6px; 
+    max-height: 180px; 
+    overflow-y: auto; 
+    font-family: monospace; 
+    font-size: 12px; 
+    margin-bottom: 10px; 
+}
+.spk-uyari-alani { 
+    background-color: rgba(255, 51, 68, 0.05); 
+    border: 1px dashed #ff3344; 
+    padding: 12px; 
+    border-radius: 8px; 
+    margin-top: 30px; 
+    font-size: 11px; 
+    color: #cccccc; 
+    text-align: justify; 
+    line-height: 1.4; 
+    display: block !important; 
+    clear: both !important; 
+}
+
 div[data-testid="stForm"] { border: none !important; padding: 0 !important; margin: 0 !important; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:36px; margin-bottom:10px;">BTA MERKEZ</h1>
@@ -179,3 +226,9 @@ with col_sag:
         if gonder_butonu and yeni_mesaj.strip():
             filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
             saat_str = datetime.datetime.now().strftime("%H:%M")
+            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
+            try:
+                df_eski_msg = pd.read_csv(db_mesajlar)
+                df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
+                df_toplam_msg.to_csv(db_mesajlar, index=False)
+            except:
