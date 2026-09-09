@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -7,81 +7,82 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTA DOSTU TASARIM VE SADE DÜZ SİYAH TEMA (CSS)
+# 1. EN SADE VE SIFIR KASMA YAPANTIPI STANDART TEMA (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Arka planı tamamen düz koyu borsa siyahı yapıyoruz */
+/* Kasma yapmayan, dümdüz koyu arka plan */
 .stApp { 
-    background-color: #080d16 !important; 
+    background-color: #0d1117 !important; 
 }
 
-/* Kutu tasarımları ve görünürlük ayarları */
+/* Tüm paneller standart gri ve sade hale getirildi */
 div[data-testid="stMetric"], div[data-testid="stExpander"] { 
-    background-color: #0e1726 !important; 
-    border: 1px solid #1e3a5f !important; 
-    border-radius: 8px !important; 
+    background-color: #161b22 !important; 
+    border: 1px solid #30363d !important; 
+    border-radius: 6px !important; 
     padding: 10px !important; 
 }
 input, textarea, select { 
-    background-color: #050910 !important; 
-    color: #00ffcc !important; 
-    border: 1px solid #1e3a5f !important; 
+    background-color: #0d1117 !important; 
+    color: #ffffff !important; 
+    border: 1px solid #30363d !important; 
     border-radius: 6px !important; 
 }
 .stButton>button { 
-    background: #0d9488 !important; 
-    color: #fff !important; 
-    border: 1px solid #00ffcc !important; 
+    background-color: #21262d !important; 
+    color: #ffffff !important; 
+    border: 1px solid #30363d !important; 
     border-radius: 6px !important; 
     font-weight: bold !important; 
 }
 
-/* Borsa Tablo Düzenlemeleri */
+/* Standart ve Hafif Borsa Tablosu */
 .borsa-tablo { 
     width: 100%; 
     border-collapse: collapse; 
     margin: 10px 0; 
     font-size: 14px; 
-    background-color: #0e1726; 
-    border-radius: 8px; 
+    background-color: #161b22; 
+    border-radius: 6px; 
     overflow: hidden; 
-    border: 1px solid #1e3a5f;
+    border: 1px solid #30363d;
 }
 .borsa-tablo th { 
-    background-color: #17243c; 
-    color: #00ffcc; 
-    text-align: left; padding: 8px; 
+    background-color: #21262d; 
+    color: #ffffff; 
+    text-align: left; 
+    padding: 8px; 
 }
 .borsa-tablo td { 
     padding: 8px; 
     color: #ffffff; 
-    border-bottom: 1px solid #17243c; 
-    font-weight: bold; 
+    border-bottom: 1px solid #21262d; 
 }
 
-/* Mesaj ve SPK Alanı */
+/* Sade Mesaj Paneli Alanı */
 .mesaj-kutusu { 
-    background-color: #050910; 
-    border: 1px solid #1e3a5f; 
+    background-color: #0d1117; 
+    border: 1px solid #30363d; 
     padding: 12px; 
     border-radius: 6px; 
     max-height: 220px; 
     overflow-y: auto; 
-    font-family: sans-serif; 
+    color: #ffffff;
     font-size: 14px; 
     margin-bottom: 10px; 
 }
+
+/* Sade SPK Uyarı Alanı */
 .spk-uyari-alani { 
-    background-color: rgba(255, 51, 68, 0.05); 
-    border: 1px dashed #ff3344; 
+    border: 1px dashed #30363d; 
     padding: 12px; 
-    border-radius: 8px; 
+    border-radius: 6px; 
     margin-top: 30px; 
     font-size: 11px; 
-    color: #cccccc; 
+    color: #8b949e; 
     text-align: justify; 
     line-height: 1.4; 
     display: block !important; 
@@ -90,10 +91,10 @@ input, textarea, select {
 
 div[data-testid="stForm"] { border: none !important; padding: 0 !important; margin: 0 !important; }
 </style>
-<h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:36px; margin-bottom:10px;">BTA MERKEZ</h1>
+<h1 style="text-align:center; color:#ffffff; font-family:sans-serif; font-size:32px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik yenileme motoru (Kota tasarrufu için 30 saniye)
+# Otomatik yenileme motoru (Kota ve performans için 30 saniye)
 st_autorefresh(interval=30 * 1000, key="bta_kota_dostu_motor")
 
 excel_yolu = "nurican.xls.xlsm"
@@ -125,7 +126,7 @@ def mesajı_sansurle(metin):
                     break
                 uzunluk = len(kufur)
                 orijinal_metin = orijinal_metin[:start_idx] + ("*" * uzunluk) + orijinal_metin[start_idx + uzunluk:]
-                kucuk_metin = kucuk_metin[:start_idx] + ("*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
+                kucuk_metin = kucuk_metin[:start_idx] + ("*" * Adminuzunluk if 'Adminuzunluk' in locals() else "*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
                 start_idx += uzunluk
                 
     return orijinal_metin
@@ -134,7 +135,7 @@ def mesajı_sansurle(metin):
 # RUMUZ GİRİŞ SİSTEMİ (ENTER DESTEKLİ FORM)
 # ===================================================================== #
 if "bta_rumuz" not in st.session_state:
-    st.markdown("<h3 style='text-align:center; color:#fff;'>Giriş Yapın</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align:center; color:#ffffff;'>Giriş Yapın</h3>", unsafe_allow_html=True)
     with st.form("giris_formu", clear_on_submit=False):
         giriş_rumuz = st.text_input("Rumuz (Ad):", max_chars=15, key="rumuz_input")
         giriş_butonu = st.form_submit_button("Bağlan 🚀", use_container_width=True)
@@ -153,13 +154,13 @@ col_sol, col_sag = st.columns(2)
 # SOL TARAF: HİSSELERİM VE ARAMA MOTORU
 # ===================================================================== #
 with col_sol:
-    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF; margin-bottom:2px;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff; margin-bottom:2px;">📈 BTA ALGORİTMİK HİSSE</p>', unsafe_allow_html=True)
     
     if os.path.exists(excel_yolu):
         try:
             df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
             
-            tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th></tr>'
+            tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th></tr>'
             veri_var_mi = False
             
             for idx in range(min(15, len(df))):
@@ -183,7 +184,7 @@ with col_sol:
                 
             # --- BORSA ARAMA MOTORU ---
             st.write("---")
-            st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500; margin-bottom:2px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff; margin-bottom:2px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
             
             if len(df.columns) >= 5:
                 tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
@@ -202,21 +203,20 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (KASMA YAPMAYAN DÜZ YAZI VE SAATSİZ TASARIM)
+# SAĞ TARAF: MESAJ PANELI (TAMAMEN SADE VE DÜZ METİN METRAJLI)
 # ===================================================================== #
 with col_sag:
-    st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffffff; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
     
     # Mesajları Oku
     try:
         df_msg = pd.read_csv(db_mesajlar)
         msg_lines = []
-        # En sade düz metin yapısına geçildi, kasma yapacak HTML yükleri atıldı
         for idx, row in df_msg.tail(10).iloc[::-1].iterrows():  
             msg_lines.append(f"{row['rumuz']}: {row['mesaj']}")
         
         mesaj_govde = "<br>".join(msg_lines) if msg_lines else "Henüz mesaj yok..."
-        st.markdown(f'<div class="mesaj-kutusu" style="color:#ffffff; font-weight:bold;">{mesaj_govde}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="mesaj-kutusu">{mesaj_govde}</div>', unsafe_allow_html=True)
     except:
         st.markdown('<div class="mesaj-kutusu" style="color:#ff3344;">Mesajlar yüklenemedi.</div>', unsafe_allow_html=True)
     
@@ -236,5 +236,7 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- KESİN VE ANINDA ÇALIŞAN SİLME BUTONU ---
+    # --- KESİN V_ANINDA ÇALIŞAN SİLME BUTONU ---
     st.write("")
+    st.button("Temizle 🗑️ (Tüm Sohbeti Sıfırla)", use_container_width=True, on_click=sohbeti_tamamen_temizle, key="clear_pano_safe_callback_btn")
+
