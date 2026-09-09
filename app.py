@@ -67,6 +67,7 @@ def mesajı_sansurle(metin):
                 if start_idx == -1:
                     break
                 uzunluk = len(kufur)
+                orijinal_metin = original_metin if 'original_metin' in locals() else orijinal_metin
                 orijinal_metin = orijinal_metin[:start_idx] + ("*" * uzunluk) + orijinal_metin[start_idx + uzunluk:]
                 kucuk_metin = kucuk_metin[:start_idx] + ("*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
                 start_idx += uzunluk
@@ -182,4 +183,3 @@ with col_sag:
     # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU ---
     if st.session_state["bta_rumuz"] == "CC":
         st.write("")
-        if st.button("Temizle 🗑️", use_container_width=True, key="admin_clear_btn"):
