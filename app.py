@@ -58,7 +58,7 @@ try:
     gram_f = (ons_f / 31.1034768) * usd_f
     
     pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")  # Hassasiyet artırıldı
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
     pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
     pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
     col_bist.metric("BIST 100", f"{bist_f:,.2f}")
@@ -94,7 +94,6 @@ if os.path.exists(excel_yolu):
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                     else: kz_str = "<span>-</span>"
                     
-                    # Yuvarlama engellendi: :,.1f olan yerler :,.2f yapıldı
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
             except: continue
             
@@ -119,7 +118,8 @@ else: st.error("Excel bulunamadı.")
 # 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
 # ===================================================================== #
 st.write("---")
-st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_index=True)
+# DÜZELTİLEN ALAN: unsafe_allow_index hatası unsafe_allow_html olarak güncellendi.
+st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
