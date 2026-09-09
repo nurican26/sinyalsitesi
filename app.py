@@ -21,7 +21,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
-.defter-kutu { background-color: #121d33; border-left: 5px solid #00ffcc; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+.yildiz-panel { background: #121d33; border: 1px solid #1e3a5f; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -30,15 +30,15 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_hisse_defteri = "bta_hisse_kayit_defteri_db.csv"
 db_aktiflik = "bta_aktiflik_db.csv"
+db_yildizlar = "bta_yildiz_begenileri_db.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
-if not os.path.exists(db_hisse_defteri):
-    pd.DataFrame(columns=["tarih", "saat", "hisse", "bta_puani", "algoritmik_fiyat"]).to_csv(db_hisse_defteri, index=False)
-
 if not os.path.exists(db_aktiflik):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_aktiflik, index=False)
+
+if not os.path.exists(db_yildizlar):
+    pd.DataFrame(columns=["rumuz"]).to_csv(db_yildizlar, index=False)
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
@@ -67,14 +67,41 @@ except:
     canli_oda_sayisi = 1
     aktif_listesi = [st.session_state["bta_rumuz"]]
 
-st.markdown(f'<div style="text-align:center;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
+# Üst Kısımdaki Başlık Düzeni
+col_ust1, col_ust2 = st.columns([2, 1])
 
-with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
-    st.caption(", ".join(aktif_listesi))
+with col_ust1:
+    st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
+    with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
+        st.caption(", ".join(aktif_listesi))
+
+# --- GERÇEK YILDIZ BEĞENİSİ MOTORU ---
+with col_ust2:
+    df_yildiz_oku = pd.read_csv(db_yildizlar)
+    begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
+    toplam_gercek_begeni = len(begenen_listesi)
+    
+    # Mevcut kullanıcı daha önce beğenmiş mi kontrol et
+    kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
+    buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
+    
+    st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Gerçek Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
+    if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
+        if kullanici_begenmis_mi:
+            # Beğeniyi geri çek
+            df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
+        else:
+            # Yeni beğeni ekle
+            yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
+            df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
+            
+        df_yildiz_oku.to_csv(db_yildizlar, index=False)
+        st.rerun()
 
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
+st.write("---")
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
     ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
@@ -92,71 +119,7 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. TARİHLİ OTOMATİK HİSSE KAYIT DEFTERİ (EN ÜSTTE)
-# ===================================================================== #
-st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📅 Tarihli Otomatik Hisse Kayıt Defteri (Asla Silinmez Arşiv)</p>', unsafe_allow_html=True)
-
-yeni_kayitlar_listesi = []
-if os.path.exists(excel_yolu):
-    try:
-        df_excel_check = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        df_kayitli_defter_check = pd.read_csv(db_hisse_defteri)
-        bugunun_tarihi_check = datetime.datetime.now().strftime("%d.%m.%Y")
-        
-        for idx_c in range(min(10, len(df_excel_check))):
-            ha_c = str(df_excel_check.iloc[idx_c, 0]).strip().upper() if pd.notna(df_excel_check.iloc[idx_c, 0]) else ""
-            alim_c_c = str(df_excel_check.iloc[idx_c, 2]).strip() if pd.notna(df_excel_check.iloc[idx_c, 2]) else ""
-            puan_d_c = df_excel_check.iloc[idx_c, 3]
-            
-            if ha_c != "" and ha_c not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                if isinstance(puan_d_c, (int, float)):
-                    p_temiz_c = f"{float(puan_d_c):.2f}"
-                else:
-                    p_temiz_c = str(puan_d_c).strip()
-                
-                # Çökmeye sebep olan try-except blokları yerine güvenli if-else sayı dönüşüm motoru
-                alim_c_c_temiz = alim_c_c.replace(",", ".")
-                if alim_c_c_temiz.replace(".", "", 1).isdigit():
-                    maliyet_c = float(alim_c_c_temiz)
-                else:
-                    maliyet_c = 0.0
-                
-                zaten_var_mi = df_kayitli_defter_check[(df_kayitli_defter_check["hisse"] == ha_c) & (df_kayitli_defter_check["tarih"] == bugunun_tarihi_check)]
-                if zaten_var_mi.empty:
-                    yeni_satir = {
-                        "tarih": bugunun_tarihi_check,
-                        "saat": datetime.datetime.now().strftime("%H:%M"),
-                        "hisse": ha_c,
-                        "bta_puani": p_temiz_c,
-                        "algoritmik_fiyat": f"{maliyet_c:,.2f} TL"
-                    }
-                    yeni_kayitlar_listesi.append(yeni_satir)
-                    
-        if yeni_kayitlar_listesi:
-            df_yeni_eklemeler = pd.DataFrame(yeni_kayitlar_listesi)
-            df_guncel_defter = pd.concat([df_yeni_eklemeler, df_kayitli_defter_check], ignore_index=True)
-            df_guncel_defter.to_csv(db_hisse_defteri, index=False)
-            st.rerun()
-    except:
-        pass
-
-df_gosterilecek_defter = pd.read_csv(db_hisse_defteri)
-if not df_gosterilecek_defter.empty:
-    for idx, row in df_gosterilecek_defter.iterrows():
-        st.markdown(f'''
-        <div class="defter-kutu">
-            <span style="color:#aaa; font-size:12px;">📅 {row["tarih"]} - {row["saat"]}</span> &nbsp;&nbsp;&nbsp; 
-            <span style="color:#00ffcc; font-size:15px; font-weight:bold;">🔥 {row["hisse"]}</span> &nbsp;&nbsp;&nbsp; 
-            <span style="color:#fff;">BTA Puanı: <b>{row["bta_puani"]}</b></span> &nbsp;&nbsp;&nbsp; 
-            <span style="color:#fff;">Algoritmik Fiyat: <b style="color:#00ff66;">{row["algoritmik_fiyat"]}</b></span>
-        </div>
-        ''', unsafe_allow_html=True)
-else:
-    st.info("Sistem otomatik takibe başladı. Excel tablonuza yeni bir hisse düştüğü an burada tarihli olarak sonsuza dek kilitlenecektir.")
-
-# ===================================================================== #
-# 4. ANA VERİ MOTORU VE TABLOLAR
+# 3. ANA VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 st.write("---")
 if os.path.exists(excel_yolu):
@@ -178,3 +141,46 @@ if os.path.exists(excel_yolu):
                     p_temiz = str(puan_d).strip()
                     
                 h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                if len(h_veri) > 0:
+                    c_fiyat = float(h_veri['Close'].iloc[-1])
+                else:
+                    c_fiyat = 0.0
+                
+                alim_c_temiz = alim_c.replace(",", ".")
+                if alim_c_temiz.replace(".", "", 1).isdigit():
+                    maliyet = float(alim_c_temiz)
+                else:
+                    maliyet = 0.0
+                
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    if or_dg >= 0:
+                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
+                    else:
+                        kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
+                
+                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            
+        tablo_html += '</table>'
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+        
+        # --- BORSA ARAMA MOTORU ---
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        if len(df.columns) >= 5:
+            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
+            if tum_hisseler:
+                aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
+                if aranan_hisse != "Seçiniz...":
+                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
+                    if len(h_detay_veri) > 0:
+                        st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
+    except:
+        st.error("Veri yüklenemedi.")
+else:
+    st.error("Excel bulunamadı.")
+
+# ===================================================================== #
+# 4. YÖNETİCİ GİRİŞİ
