@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -103,6 +103,10 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 if not os.path.exists(db_mesajlar):
     pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
+# --- MESAJLARI TEMİZLEME FONKSİYONU ---
+def sohbeti_tamamen_temizle():
+    pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
+
 # --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
     kara_liste = [
@@ -198,7 +202,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (HERKESE AÇIK ONAYLI SİLME BUTONLU)
+# SAĞ TARAF: MESAJ PANELI (DÖNGÜSÜZ ANLIK SİLME BUTONLU)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -232,5 +236,3 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- HERKESE AÇIK VE GÜVENLİ ÇİFT AŞAMALI SİLME BUTONU ---
-    st.write("")
