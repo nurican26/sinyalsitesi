@@ -3,9 +3,8 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import time  # Zaman takibi için eklendi
+import time
 from streamlit_autorefresh import st_autorefresh
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 # ===================================================================== #
 # 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
@@ -23,80 +22,62 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
-.online-kullanici { display: inline-block; background-color: #1a2e4c; color: #00ffcc; padding: 4px 10px; border-radius: 20px; font-size: 13px; margin: 3px; border: 1px solid #1e3a5f; }
-.online-nokta { height: 10px; width: 10px; background-color: #00ff66; border-radius: 50%; display: inline-block; margin-right: 5px; animate: pulse 2s infinite; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
 # Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
-st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
+st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_sohbet = "bta_sohbet_db.csv"
 db_arsiv = "bta_hisse_arsiv_db.csv"
-db_aktif_kullanicilar = "bta_aktif_kullanicilar_db.csv"
+db_aktif_kullanicilar = "bta_aktif_kullanicilar.csv"
 
-# KALICI VERİTABANLARINI BAŞLATMA
-if not os.path.exists(db_sohbet):
-    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
-
+# KALICI ARŞİV VE AKTİF KULLANICI VERİTABANI BAŞLATMA
 if not os.path.exists(db_arsiv):
     pd.DataFrame(columns=["tarih_saat", "bta_puani", "hisse", "algoritmik_fiyat", "guncel_fiyat", "kz_orani"]).to_csv(db_arsiv, index=False)
 
 if not os.path.exists(db_aktif_kullanicilar):
-    pd.DataFrame(columns=["session_id", "isim", "son_aktiflik"]).to_csv(db_aktif_kullanicilar, index=False)
+    pd.DataFrame(columns=["kullanici_id", "isim", "son_aktiflik"]).to_csv(db_aktif_kullanicilar, index=False)
 
-if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
-st.session_state["topham_sayac"] += 1
-
-# KULLANICI RUMUZU VE OTURUM TAKİBİ
-ctx = get_script_run_ctx()
-session_id = ctx.session_id if ctx else "bilinmeyen_oturum"
+# KULLANICI GİRİŞ TAKİBİ VE CANLI ÜYE MOTORU
+if "kullanici_id" not in st.session_state:
+    st.session_state["kullanici_id"] = str(int(time.time() * 1000))
 
 if "kullanici_adi" not in st.session_state:
-    st.session_state["kullanici_adi"] = f"Misafir_{session_id[:5].upper()}"
+    st.session_state["kullanici_adi"] = "Ziyaretçi"
 
-# AKTİFLİK GÜNCELLEME MOTORU (Syntax hatası düzeltildi)
+# Giriş Formu (Üst Köşede Şık Bir Alan)
+with st.sidebar:
+    st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc;">👤 Kullanıcı Girişi</p>', unsafe_allow_html=True)
+    yeni_ad = st.text_input("Adınız:", value=st.session_state["kullanici_adi"], max_chars=20)
+    if yeni_ad.strip() != "":
+        st.session_state["kullanici_adi"] = yeni_ad.strip()
+
+# Aktiflik Güncelleme Operasyonu
 try:
-    su_an = int(time.time())
     df_aktif = pd.read_csv(db_aktif_kullanicilar)
+    su_an = int(time.time())
     
-    # Mevcut oturum kayıtlı mı kontrol et
-    if session_id in df_aktif["session_id"].values:
-        df_aktif.loc[df_aktif["session_id"] == session_id, "son_aktiflik"] = su_an
-        df_aktif.loc[df_aktif["session_id"] == session_id, "isim"] = st.session_state["kullanici_adi"]
-    else:
-        yeni_user = pd.DataFrame([{"session_id": session_id, "isim": st.session_state["kullanici_adi"], "son_aktiflik": su_an}])
-        df_aktif = pd.concat([df_aktif, yeni_user], ignore_index=True)
+    # Mevcut kullanıcıyı güncelle veya ekle
+    df_aktif = df_aktif[df_aktif["kullanici_id"] != int(st.session_state["kullanici_id"])]
+    yeni_aktif_satir = pd.DataFrame([{
+        "kullanici_id": int(st.session_state["kullanici_id"]),
+        "isim": st.session_state["kullanici_adi"],
+        "son_aktiflik": su_an
+    }])
+    df_aktif = pd.concat([df_aktif, yeni_aktif_satir], ignore_index=True)
     
-    # 20 saniyeden uzun süre ekranı yenilenmeyen (odadan çıkan) kullanıcıları temizle
-    df_aktif = df_aktif[(su_an - df_aktif["son_aktiflik"]) < 20]
+    # 20 saniyedir sesi çıkmayan (aktif olmayan) kullanıcıları listeden düşür
+    df_aktif = df_aktif[df_aktif["son_aktiflik"] > (su_an - 20)]
     df_aktif.to_csv(db_aktif_kullanicilar, index=False)
+    canli_uye_sayisi = len(df_aktif)
 except:
-    pass
+    canli_uye_sayisi = 1
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
-
-# ===================================================================== #
-# CANLI ÇEVRİMİÇİ ÜYE PANELİ (ÜST ALAN)
-# ===================================================================== #
-try:
-    df_online = pd.read_csv(db_aktif_kullanicilar)
-    toplam_online = len(df_online)
-    
-    online_html = f'<div style="background-color:#121d33; padding:10px; border-radius:10px; border:1px solid #1e3a5f; margin-bottom:15px;">'
-    online_html += f'<p style="color:#00ffcc; font-weight:bold; margin-bottom:5px; font-size:14px;"><span class="online-nokta"></span> CANLI ODADA {toplam_online} KİŞİ VAR</p>'
-    
-    for _, row in df_online.iterrows():
-        online_html += f'<span class="online-kullanici">👤 {row["isim"]}</span>'
-    
-    online_html += '</div>'
-    st.markdown(online_html, unsafe_allow_html=True)
-except:
-    pass
 
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
@@ -179,3 +160,24 @@ if os.path.exists(excel_yolu):
                     else:
                         son_kayit = hisse_eski_kayitlar.iloc[-1]
                         if (str(son_kayit["algoritmik_fiyat"]) != str(h_bilgi["algoritmik_fiyat"])) or (str(son_kayit["bta_puani"]) != str(h_bilgi["bta_puani"])):
+                            yeni_kayitlar.append(h_bilgi)
+                
+                if yeni_kayitlar:
+                    df_yeni = pd.DataFrame(yeni_kayitlar)
+                    pd.concat([df_arsiv_oku, df_yeni], ignore_index=True).to_csv(db_arsiv, index=False)
+            except Exception as e:
+                pass
+        
+        # --- BORSA ARAMA MOTORU ---
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        if len(df.columns) >= 5:
+            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
+            if tum_hisseler:
+                aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
+                if aranan_hisse != "Seçiniz...":
+                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
+                    if len(h_detay_veri) > 0:
+                        st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
+    except: st.error("Veri yüklenemedi.")
+else: st.error("Excel bulunamadı.")
+
