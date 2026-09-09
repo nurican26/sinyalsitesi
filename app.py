@@ -32,7 +32,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; background-color: #121d33; border-radius: 8px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 8px; }
 .borsa-tablo td { padding: 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+.mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:36px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
@@ -61,7 +61,7 @@ if "bta_rumuz" not in st.session_state:
 # Üst Bilgi Satırı
 st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}** | 🕒 30sn Otomatik Yenileme Aktif")
 
-# İki Kolonlu Ana Düzen (Parametre hatası düzeltildi)
+# İki Kolonlu Ana Düzen
 col_sol, col_sag = st.columns(2)
 
 # ===================================================================== #
@@ -86,7 +86,6 @@ with col_sol:
                     veri_var_mi = True
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     
-                    # Eğer fiyatta zaten TL yazmıyorsa sonuna ekle
                     fiyat_str = alim_c if "TL" in alim_c else f"{alim_c} TL"
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{fiyat_str}</td></tr>'
@@ -98,7 +97,7 @@ with col_sol:
             else:
                 st.info("Gösterilecek uygun hisse verisi bulunamadı.")
                 
-            # --- BORSA ARAMA MOTORU (Kota dostu düzen) ---
+            # --- BORSA ARAMA MOTORU ---
             st.write("---")
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500; margin-bottom:2px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
             
@@ -119,16 +118,18 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: KOTA DOSTU MESAJ PANELI
+# SAĞ TARAF: KOTA DOSTU MESAJ PANELI (YENİ MESAJ EN ÜSTTE)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
     
-    # Mesajları Oku ve Listele
+    # Mesajları Oku ve En Yeniyi En Üste Gelecek Şekilde Listele
     try:
         df_msg = pd.read_csv(db_mesajlar)
         msg_lines = []
-        for _, row in df_msg.tail(10).iterrows():  
+        
+        # .iloc[::-1] kullanarak son 10 mesajı tersten (en yeni ilk gelecek şekilde) tarıyoruz
+        for _, row in df_msg.tail(10).iloc[::-1].iterrows():  
             msg_lines.append(f"<span style='color:#0d9488;'>[{row['zaman']}]</span> <b style='color:#ffcc00;'>{row['rumuz']}:</b> <span style='color:#fff;'>{row['mesaj']}</span>")
         
         mesaj_govde = "<br>".join(msg_lines) if msg_lines else "<span style='color:#666;'>Henüz mesaj yok...</span>"
