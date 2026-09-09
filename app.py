@@ -94,7 +94,7 @@ if os.path.exists(excel_yolu):
             
         tablo_html += '</table>'
        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+           📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
         # --- BORSA ARAMA MOTORU ---
