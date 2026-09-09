@@ -179,7 +179,6 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU ---
-    if st.session_state["bta_rumuz"] == "CC":
-        st.write("")
-        if st.button("Temizle 🗑️", use_container_width=True, key="admin_clear_btn"):
+    # --- HATA VERMEYEN YENİ SİLME MANTIĞI ---
+    st.write("")
+    is_admin = (st.session_state.get("bta_rumuz", "") == "CC")
