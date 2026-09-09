@@ -7,7 +7,7 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. EN SADE VE SIFIR KASMA YAPANTIPI STANDART TEMA (CSS)
+# 1. EN SADE VE SIFIR KASMA YAPAN STANDART TEMA (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -104,9 +104,16 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 if not os.path.exists(db_mesajlar):
     pd.DataFrame(columns=["rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
-# --- MESAJLARI TEMİZLEME FONKSİYONU ---
-def sohbeti_tamamen_temizle():
-    pd.DataFrame(columns=["rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
+# --- SADECE KENDİ YAZDIKLARINI SİLME FONKSİYONU ---
+def kendi_mesajlarimi_temizle():
+    if os.path.exists(db_mesajlar) and "bta_rumuz" in st.session_state:
+        try:
+            df_curr = pd.read_csv(db_mesajlar)
+            # Aktif kullanıcının rumuzuna ait olmayan mesajları filtreleyerek geri kaydeder
+            df_filtered = df_curr[df_curr["rumuz"] != st.session_state["bta_rumuz"]]
+            df_filtered.to_csv(db_mesajlar, index=False)
+        except:
+            pass
 
 # --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
@@ -126,7 +133,7 @@ def mesajı_sansurle(metin):
                     break
                 uzunluk = len(kufur)
                 orijinal_metin = orijinal_metin[:start_idx] + ("*" * uzunluk) + orijinal_metin[start_idx + uzunluk:]
-                kucuk_metin = kucuk_metin[:start_idx] + ("*" * Adminuzunluk if 'Adminuzunluk' in locals() else "*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
+                kucuk_metin = kucuk_metin[:start_idx] + ("*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
                 start_idx += uzunluk
                 
     return orijinal_metin
@@ -203,7 +210,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (TAMAMEN SADE VE DÜZ METİN METRAJLI)
+# SAĞ TARAF: MESAJ PANELI (KİŞİSEL TEMİZLEME ALANLI)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffffff; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -234,9 +241,3 @@ with col_sag:
                 df_toplam_msg.to_csv(db_mesajlar, index=False)
             except:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
-            st.rerun()
-
-    # --- KESİN V_ANINDA ÇALIŞAN SİLME BUTONU ---
-    st.write("")
-    st.button("Temizle 🗑️ (Tüm Sohbeti Sıfırla)", use_container_width=True, on_click=sohbeti_tamamen_temizle, key="clear_pano_safe_callback_btn")
-
