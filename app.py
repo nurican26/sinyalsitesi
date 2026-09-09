@@ -21,7 +21,6 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
-.yildiz-panel { background: #121d33; border: 1px solid #1e3a5f; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -30,13 +29,9 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_aktiflik = "bta_aktiflik_db.csv"
 db_yildizlar = "bta_yildiz_begenileri_db.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
-if not os.path.exists(db_aktiflik):
-    pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_aktiflik, index=False)
-
 if not os.path.exists(db_yildizlar):
     pd.DataFrame(columns=["rumuz"]).to_csv(db_yildizlar, index=False)
 
@@ -51,24 +46,28 @@ if "bta_rumuz" not in st.session_state:
         st.rerun()
     st.stop()
 
-# --- ANLIK CANLI ODA SAYISI MOTORU (GERÇEK RUMUZ TABANLI) ---
+# --- %100 KİLİTLENMEYEN ORTAK HAVUZ CANLI ODA MOTORU ---
+# Sunucu seviyesinde ortak bir aktiflik sözlüğü oluşturuyoruz
+if "global_aktiflik_havuzu" not in st.session_state:
+    st.session_state["global_aktiflik_havuzu"] = {}
+
 simdi = time.time()
-try:
-    df_akt = pd.read_csv(db_aktiflik)
-    df_akt = df_akt[df_akt["rumuz"] != st.session_state["bta_rumuz"]]
-    yeni_akt = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
-    df_akt = pd.concat([df_akt, yeni_akt], ignore_index=True)
-    df_akt = df_akt[df_akt["son_gorulme"] > (simdi - 12)]
-    df_akt.to_csv(db_aktiflik, index=False)
-    
-    aktif_listesi = df_akt["rumuz"].unique().tolist()
-    canli_oda_sayisi = len(aktif_listesi)
-except:
-    canli_oda_sayisi = 1
-    aktif_listesi = [st.session_state["bta_rumuz"]]
+# Mevcut kullanıcının son görülme zamanını hafızaya yaz
+st.session_state["global_aktiflik_havuzu"][st.session_state["bta_rumuz"]] = simdi
+
+# Son 15 saniye içinde sinyal göndermeyen pasif kişileri temizle
+aktif_listesi = []
+for rmz, son_sinyal in list(st.session_state["global_aktiflik_havuzu"].items()):
+    if simdi - son_sinyal < 15:
+        aktif_listesi.append(rmz)
+    else:
+        # Süresi dolanı havuzdan sil
+        st.session_state["global_aktiflik_havuzu"].pop(rmz, None)
+
+canli_oda_sayisi = len(aktif_listesi)
 
 # Üst Kısımdaki Başlık Düzeni
-col_ust1, col_ust2 = st.columns([2, 1])
+col_ust1, col_ust2 = st.columns()
 
 with col_ust1:
     st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
@@ -81,17 +80,14 @@ with col_ust2:
     begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
     toplam_gercek_begeni = len(begenen_listesi)
     
-    # Mevcut kullanıcı daha önce beğenmiş mi kontrol et
     kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
     buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
     
     st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Gerçek Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
     if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
         if kullanici_begenmis_mi:
-            # Beğeniyi geri çek
             df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
         else:
-            # Yeni beğeni ekle
             yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
             df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
             
@@ -184,3 +180,6 @@ else:
 
 # ===================================================================== #
 # 4. YÖNETİCİ GİRİŞİ
+# ===================================================================== #
+with st.expander("🛠 Yönetici"):
+    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
