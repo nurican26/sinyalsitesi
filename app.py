@@ -112,9 +112,10 @@ if os.path.exists(excel_yolu):
             if ha_c != "" and ha_c not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 p_temiz_c = f"{float(puan_d_c):.2f}" if isinstance(puan_d_c, (int, float)) else str(puan_d_c).strip()
                 
+                # Hatalı tek satırlık try-except blokları standart güvenli yapıya çekildi
                 try:
                     maliyet_c = float(alim_c_c.replace(",", "."))
-                except:
+                except Exception:
                     maliyet_c = 0.0
                 
                 zaten_var_mi = df_kayitli_defter_check[(df_kayitli_defter_check["hisse"] == ha_c) & (df_kayitli_defter_check["tarih"] == bugunun_tarihi_check)]
@@ -133,7 +134,7 @@ if os.path.exists(excel_yolu):
             df_guncel_defter = pd.concat([df_yeni_eklemeler, df_kayitli_defter_check], ignore_index=True)
             df_guncel_defter.to_csv(db_hisse_defteri, index=False)
             st.rerun()
-    except:
+    except Exception:
         pass
 
 df_gosterilecek_defter = pd.read_csv(db_hisse_defteri)
@@ -174,6 +175,3 @@ if os.path.exists(excel_yolu):
                     
                     try:
                         maliyet = float(alim_c.replace(",", "."))
-                    except:
-                        maliyet = 0.0
-                    
