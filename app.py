@@ -20,15 +20,6 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
-
-/* Kayan Yazı Bant Tasarımı */
-.kayan-yazi-bandi { background: #121d33; border-bottom: 2px solid #1e3a5f; padding: 8px 0; overflow: hidden; white-space: nowrap; font-family: monospace; font-size: 16px; font-weight: bold; }
-.kayan-icerik { display: inline-block; padding-left: 100%; animation: marquee 25s linear infinite; }
-@keyframes marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
-.piyasa-yukselis { color: #00ff66; margin-right: 30px; }
-.piyasa-dusis { color: #ff3344; margin-right: 30px; }
-.piyasa-notr { color: #ffffff; margin-right: 30px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -47,12 +38,9 @@ if not os.path.exists(db_yildizlar):
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["Tarih", "Yazan", "Hisse", "Hedef", "Not"]).to_csv(db_notlar, index=False)
 
-# RUMUZ VE BAĞLANTI SİSTEMLERİ İPTAL EDİLDİ - SABİT DEĞER ATANDI
+# RUMUZ SİSTEMİ İPTAL - VARSAYILAN ATAMA
 if "bta_rumuz" not in st.session_state:
     st.session_state["bta_rumuz"] = "ZİYARETÇİ"
-
-# CANLI ODA SAYISI ARTIK YÖNETİCİ TARAFINDAN MANUEL BELİRLENİYOR
-canli_oda_sayisi = 1  # <-- Panelde görünmesini istediğiniz kişi sayısını buraya yazabilirsiniz
 
 # ===================================================================== #
 # CANLI PİYASA VERİ ÇEKİMİ VE YÜZDESEL DEĞİŞİM HESAPLAMA MOTORU
@@ -86,52 +74,48 @@ try:
     gram_ok, gram_durum, gram_f = hesapla_degisim(ons_t, is_gold=True, usd_df=usd_t)
 
     kayan_yazi_html = f'''
-    <div class="kayan-yazi-bandi">
-        <div class="kayan-icerik">
-            <span class="piyasa-{gram_durum}">GRAM ALTIN: {gram_f:,.2f} TL {gram_ok}</span>
-            <span class="piyasa-{bist_durum}">BIST 100: {bist_f:,.2f} {bist_ok}</span>
-            <span class="piyasa-{usd_durum}">DOLAR (USD): {usd_f:,.2f} TL {usd_ok}</span>
-            <span class="piyasa-{eur_durum}">EURO (EUR): {eur_f:,.2f} TL {eur_ok}</span>
+    <div style="background: #121d33; border-bottom: 2px solid #1e3a5f; padding: 8px 0; overflow: hidden; white-space: nowrap; font-family: monospace; font-size: 16px; font-weight: bold;">
+        <div style="display: inline-block; padding-left: 100%; animation: bta_marquee 25s linear infinite;">
+            <span style="color:{'#00ff66' if bist_durum=='yukselis' else '#ff3344' if bist_durum=='dusis' else '#ffffff'}; margin-right: 30px;">BIST 100: {bist_f:,.2f} {bist_ok}</span>
+            <span style="color:{'#00ff66' if gram_durum=='yukselis' else '#ff3344' if gram_durum=='dusis' else '#ffffff'}; margin-right: 30px;">GRAM ALTIN: {gram_f:,.2f} TL {gram_ok}</span>
+            <span style="color:{'#00ff66' if usd_durum=='yukselis' else '#ff3344' if usd_durum=='dusis' else '#ffffff'}; margin-right: 30px;">DOLAR (USD): {usd_f:,.2f} TL {usd_ok}</span>
+            <span style="color:{'#00ff66' if eur_durum=='yukselis' else '#ff3344' if eur_durum=='dusis' else '#ffffff'}; margin-right: 30px;">EURO (EUR): {eur_f:,.2f} TL {eur_ok}</span>
         </div>
     </div>
+    <style>
+    @keyframes bta_marquee {{ 0% {{ transform: translate3d(0, 0, 0); }} 100% {{ transform: translate3d(-100%, 0, 0); }} }}
+    </style>
     '''
 except Exception as e:
-    kayan_yazi_html = '<div class="kayan-yazi-bandi"><div class="kayan-icerik"><span class="piyasa-notr">⏳ Canlı Finansal Veriler Güncelleniyor...</span></div></div>'
+    kayan_yazi_html = '<div style="background: #121d33; border-bottom: 2px solid #1e3a5f; padding: 8px 0; text-align:center; color:#ffffff; font-weight:bold;">⏳ Canlı Finansal Veriler Güncelleniyor...</div>'
 
-# Kayan Yazıyı Bas
+# Kayan Yazıyı En Üste Ekle
 st.markdown(kayan_yazi_html, unsafe_allow_html=True)
 st.write("")
 
-# Üst Bilgi Satırı
-col_ust1, col_ust2 = st.columns(2)
-
-with col_ust1:
-    st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
-
-with col_ust2:
-    try:
-        df_yildiz_oku = pd.read_csv(db_yildizlar)
-        begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
-    except Exception as e:
-        begenen_listesi = []
-        df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
-        
-    toplam_gercek_begeni = len(begenen_listesi)
-    kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
-    buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
+# Üst Sağ Yıldız Paneli (Canlı oda silindi, sadece yıldız beğenisi kaldı)
+try:
+    df_yildiz_oku = pd.read_csv(db_yildizlar)
+    begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
+except Exception as e:
+    begenen_listesi = []
+    df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
     
-    st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Gerçek Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
-    if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
-        if kullanici_begenmis_mi:
-            df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
-        else:
-            yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
-            df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
-        df_yildiz_oku.to_csv(db_yildizlar, index=False)
-        st.rerun()
+toplam_gercek_begeni = len(begenen_listesi)
+kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
+buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
+
+st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Gerçek Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
+if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
+    if kullanici_begenmis_mi:
+        df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
+    else:
+        df_yildiz_oku = pd.concat([df_yildiz_oku, pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])], ignore_index=True)
+    df_yildiz_oku.to_csv(db_yildizlar, index=False)
+    st.rerun()
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
+# 2. METRİK PANEL ALANI
 # ===================================================================== #
 st.write("---")
 if 'gram_f' in locals():
@@ -145,7 +129,7 @@ else:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. ANA VERİ MOTORU VE TABLOLAR
+# 3. ANA VERİ MOTORU VE TABLOLAR (HATASIZ HİZALAMA)
 # ===================================================================== #
 st.write("---")
 df = None
@@ -188,3 +172,12 @@ if os.path.exists(excel_yolu):
                 else:
                     kz_str = "<span>-</span>"
                 
+                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            
+        tablo_html += '</table>'
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        if veri_var_mi: 
+            st.markdown(tablo_html, unsafe_allow_html=True)
+        
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        if len(df.columns) >= 5:
