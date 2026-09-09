@@ -31,7 +31,6 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_yildizlar = "bta_yildiz_begenileri_db.csv"
 db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
-db_kayit_defteri = "bta_kayit_defteri.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_yildizlar):
@@ -39,24 +38,6 @@ if not os.path.exists(db_yildizlar):
 
 if not os.path.exists(db_ortak_oda):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
-
-if not os.path.exists(db_kayit_defteri):
-    pd.DataFrame(columns=["Tarih", "Hisse", "Algoritmik Fiyat", "Anlık Canlı Fiyat"]).to_csv(db_kayit_defteri, index=False)
-
-
-# GÜVENLİ VERİ YAZMA FONKSİYONU
-def guvenli_deftere_kaydet(yeni_veriler):
-    if not yeni_veriler:
-        return
-    try:
-        df_eski = pd.read_csv(db_kayit_defteri)
-        df_yeni = pd.DataFrame(yeni_veriler)
-        df_toplam = pd.concat([df_eski, df_yeni], ignore_index=True)
-        df_toplam.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
-        df_toplam.tail(500).to_csv(db_kayit_defteri, index=False)
-    except Exception as e:
-        pass
-
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
@@ -117,18 +98,35 @@ with col_ust2:
         st.rerun()
 
 # ===================================================================== #
-# 2. ANA VERİ MOTORU VE TABLOLAR
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
 st.write("---")
-yeni_kayitlar = []
-su_an = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+try:
+    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
+    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    gram_f = (ons_f / 31.1034768) * usd_f
+    
+    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
+    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
+    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
+    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
+    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
+except:
+    st.info("⏳ Finansal Veriler Güncelleniyor...")
 
+# ===================================================================== #
+# 3. ANA VERİ MOTORU VE TABLOLAR
+# ===================================================================== #
+st.write("---")
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
-
+        
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -163,19 +161,10 @@ if os.path.exists(excel_yolu):
                     kz_str = "<span>-</span>"
                 
                 tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-                
-                if ha and (maliyet > 0 or c_fiyat > 0):
-                    yeni_kayitlar.append({
-                        "Tarih": su_an,
-                        "Hisse": ha,
-                        "Algoritmik Fiyat": f"{maliyet:,.2f} TL",
-                        "Anlık Canlı Fiyat": f"{c_fiyat:,.2f} TL"
-                    })
             
         tablo_html += '</table>'
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        if veri_var_mi: 
-            st.markdown(tablo_html, unsafe_allow_html=True)
+        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
@@ -187,10 +176,7 @@ if os.path.exists(excel_yolu):
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-    except Exception as e:
-        pass
+    except:
+        pass  # IndentationError veren boş blok burasıydı, pass eklenerek tamamen düzeltildi.
 else:
     st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 3. KAYIT DEFTERİ PANELİ
