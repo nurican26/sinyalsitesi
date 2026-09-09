@@ -183,7 +183,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (HIZLI VE ÇALIŞAN SİLME BUTONLU)
+# SAĞ TARAF: MESAJ PANELI (HIZLI VE KİŞİSEL SİLME BUTONLU)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffffff; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -216,7 +216,7 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- KENDİ MESAJLARINI SİLME ALANI ---
+    # --- KENDİ MESAJLARINI SİLME ALANI (KESİNTİSİZ ÇALIŞAN YAPIDIR) ---
     st.write("")
     if st.button("Yazdığım Mesajları Sil 🗑️", use_container_width=True, key="clear_my_messages_instant_btn"):
         if os.path.exists(db_mesajlar) and "bta_rumuz" in st.session_state:
@@ -239,5 +239,3 @@ st.markdown("""
     yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
     görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
     bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu panelde paylaşılan veri, analiz ve oda içi 
-    mesajlar hiçbir şekilde yönlendirme amacı taşımamaktadır.
-</div>
