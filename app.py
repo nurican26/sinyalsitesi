@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -62,7 +62,6 @@ else:
         df_oda = pd.concat([df_oda, yeni_sinyal], ignore_index=True)
         df_oda = df_oda[df_oda["son_gorulme"] > (simdi - 15)]
         df_oda.to_csv(db_ortak_oda, index=False)
-        
         aktif_listesi = df_oda["rumuz"].unique().tolist()
         canli_oda_sayisi = len(aktif_listesi)
     except:
@@ -76,7 +75,6 @@ else:
         with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
             st.caption(", ".join(aktif_listesi))
 
-    # --- GERÇEK YILDIZ BEĞENİSİ MOTORU ---
     with col_ust2:
         try:
             df_yildiz_oku = pd.read_csv(db_yildizlar)
@@ -84,7 +82,7 @@ else:
         except:
             begenen_listesi = []
             df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
-            
+        
         toplam_gercek_begeni = len(begenen_listesi)
         kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
         buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
@@ -96,7 +94,6 @@ else:
             else:
                 yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
                 df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
-                
             df_yildiz_oku.to_csv(db_yildizlar, index=False)
             st.rerun()
 
@@ -125,12 +122,12 @@ else:
     # ===================================================================== #
     st.write("---")
     tum_hisseler = [] 
+    veri_var_mi = False
 
     if os.path.exists(excel_yolu):
         try:
             df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
             tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
-            veri_var_mi = False
             
             for idx in range(min(10, len(df))):
                 ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -171,11 +168,17 @@ else:
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
             if veri_var_mi: 
                 st.markdown(tablo_html, unsafe_allow_html=True)
-                
-            # --- BORSA ARAMA MOTORU (TÜM GİRİNTİLER TEMİZLENDİ VE GÜVENCEYE ALINDI) ---
-            st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+            
             if len(df.columns) >= 5:
-                # Verileri tamamen güvenli çekmek için list comprehension basitleştirildi
                 ham_liste = df.iloc[:, 4].dropna().unique()
                 tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
-                
+        except:
+            st.warning("⚠️ Excel verileri işlenirken bir sorun oluştu.")
+    else:
+        st.error("Excel bulunamadı.")
+
+    # --- TAMAMEN İZOLE BİST HİSSE ARAMA MOTORU ---
+    st.write("---")
+    st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+    if len(tum_hisseler) > 0:
+        try:
