@@ -43,9 +43,8 @@ if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 # Değişim yönlerini hesaplamak için yardımcı fonksiyon
-def fiyat_ve_yon_getir(ticker_kod, is_forex=False):
+def fiyat_ve_yon_getir(ticker_kod):
     try:
-        # Son 2 günün verisini çekiyoruz (Değişimi anlamak için)
         ticker = yf.Ticker(ticker_kod)
         hist = ticker.history(period="2d", timeout=2)
         if len(hist) >= 2:
@@ -68,7 +67,7 @@ ons_f, ons_ok = fiyat_ve_yon_getir("GC=F")
 usd_f, usd_ok = fiyat_ve_yon_getir("TRY=X")
 eur_f, eur_ok = fiyat_ve_yon_getir("EURTRY=X")
 
-# Gram altın hesaplaması ve yön tayini (Dolar ve Ons yönüne göre ortak yön tayini)
+# Gram altın hesaplaması ve yön tayini
 gram_f = (ons_f / 31.1034768) * usd_f if usd_f > 0 else 0.0
 gram_ok = usd_ok if (usd_ok == ons_ok) else (usd_ok if usd_ok != '<span class="notr">▪</span>' else ons_ok)
 
@@ -180,3 +179,6 @@ with col_not2:
         sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
 
     if os.path.exists(db_notlar):
+        df_notlar_oku = pd.read_csv(db_notlar)
+        if not df_notlar_oku.empty:
+            df_notlar_oku = df_notlar_oku.iloc[::-1]
