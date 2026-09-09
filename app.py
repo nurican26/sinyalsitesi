@@ -92,12 +92,11 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. YENİ YER: TARİHLİ OTOMATİK HİSSE KAYIT DEFTERİ (EN ÜSTTE)
+# 3. TARİHLİ OTOMATİK HİSSE KAYIT DEFTERİ (EN ÜSTTE)
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📅 Tarihli Otomatik Hisse Kayıt Defteri (Asla Silinmez Arşiv)</p>', unsafe_allow_html=True)
 
-# Önce Excel verilerini arka planda okuyup yeni hisse var mı kontrol edelim ve kaydedelim
 yeni_kayitlar_listesi = []
 if os.path.exists(excel_yolu):
     try:
@@ -112,8 +111,11 @@ if os.path.exists(excel_yolu):
             
             if ha_c != "" and ha_c not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 p_temiz_c = f"{float(puan_d_c):.2f}" if isinstance(puan_d_c, (int, float)) else str(puan_d_c).strip()
-                try: maliyet_c = float(alim_c_c.replace(",", "."))
-                except: maliyet_c = 0.0
+                
+                try:
+                    maliyet_c = float(alim_c_c.replace(",", "."))
+                except:
+                    maliyet_c = 0.0
                 
                 zaten_var_mi = df_kayitli_defter_check[(df_kayitli_defter_check["hisse"] == ha_c) & (df_kayitli_defter_check["tarih"] == bugunun_tarihi_check)]
                 if zaten_var_mi.empty:
@@ -134,7 +136,6 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# Güncellenmiş arşivi ekrana basma alanı (En yeni hisse en üstte görünür)
 df_gosterilecek_defter = pd.read_csv(db_hisse_defteri)
 if not df_gosterilecek_defter.empty:
     for idx, row in df_gosterilecek_defter.iterrows():
@@ -170,5 +171,9 @@ if os.path.exists(excel_yolu):
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                    try: maliyet = float(alim_c.replace(",", "."))
-                    except: maliyet = 0.0
+                    
+                    try:
+                        maliyet = float(alim_c.replace(",", "."))
+                    except:
+                        maliyet = 0.0
+                    
