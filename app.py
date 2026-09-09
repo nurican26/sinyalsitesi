@@ -98,27 +98,7 @@ with col_ust2:
         st.rerun()
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
-# ===================================================================== #
-st.write("---")
-try:
-    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    gram_f = (ons_f / 31.1034768) * usd_f
-    
-    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
-    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
-    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
-    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
-    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
-except:
-    st.info("⏳ Finansal Veriler Güncelleniyor...")
-
-# ===================================================================== #
-# 3. ANA VERİ MOTORU VE TABLOLAR
+# 2. ANA VERİ MOTORU VE TABLOLAR (YUKARI TAŞINDI)
 # ===================================================================== #
 st.write("---")
 if os.path.exists(excel_yolu):
@@ -177,6 +157,26 @@ if os.path.exists(excel_yolu):
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
     except:
-        pass  # IndentationError veren boş blok burasıydı, pass eklenerek tamamen düzeltildi.
+        pass
 else:
     st.error("Excel bulunamadı.")
+
+# ===================================================================== #
+# 3. CANLI ALTIN VE BIST 100 PİYASA ALANI (AŞAĞIYA ALINDI)
+# ===================================================================== #
+st.write("---")
+try:
+    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
+    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    gram_f = (ons_f / 31.1034768) * usd_f
+    
+    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
+    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
+    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
+    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
+    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
+except:
+    st.info("⏳ Finansal Veriler Güncelleniyor...")
