@@ -146,10 +146,9 @@ with col_not2:
                     baslik = f"📌 {hisse_adi}{fiyat_metni}{alarm_durumu}"
                     with st.expander(baslik):
                         st.info(row["not"])
-                        
-                        # --- YALNIZCA YÖNETİCİYE ÖZEL SİLME YETKİSİ ---
                         silme_paneli_ac = st.checkbox("Notu Silme Panelini Aç", key=f"panel_{not_id}")
                         if silme_paneli_ac:
                             yonetici_sifresi = st.text_input("Yönetici Şifresi:", type="password", key=f"sifre_{not_id}")
                             if st.button("Notu Kalıcı Olarak Sil ❌", use_container_width=True, key=f"sil_id_{not_id}"):
-                                # 'bta123' kısmını kendi gizli şifrenizle değiştirebilirsiniz
+                                if yonetici_sifresi == "bta123":
+                                    df_notlar_oku["id"] = df_notlar_oku["id"].astype(str)
