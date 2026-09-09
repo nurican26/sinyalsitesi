@@ -34,13 +34,11 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 </style>
 ''', unsafe_allow_html=True)
 
-# 5 saniyede bir otomatik yenileme motoru
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 
-# CSV Veritabanı kontrolü ve oluşturma
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
@@ -88,6 +86,7 @@ marquee_html = f'''
 '''
 st.markdown(marquee_html, unsafe_allow_html=True)
 
+# Başlık kayan yazının altına taşındı
 st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
 
 st.write("---")
@@ -144,9 +143,7 @@ if len(tum_hisseler) > 0:
             pass
 
 st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir...</p>', unsafe_allow_html=True)
-
-# 💡 DÜZELTME BAŞLANGICI: İki sütun yapısını ve veri listelemesini senkronize hale getirdik.
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri dikkate alınarak kişiye özel sunulmaktadır.Burada yer alan yorum ve tavsiyeler ise genel niteliktedir. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.</p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
 
 with col_not1:
@@ -158,7 +155,6 @@ with col_not1:
         not_hisse = not_hisse_secim
     not_hedef_fiyat = st.number_input("Hedef Fiyat (TL):", min_value=0.0, value=0.0, step=1.0, key="not_hedef_fiyat_input")
     hisse_notu = st.text_area("Hisse Hakkındaki Notunuz:", max_chars=500, placeholder="Stratejinizi yazın...", key="hisse_notu_metni")
-    
     if st.button("Notu Kaydet 💾", use_container_width=True, key="notu_kaydet_butonu"):
         if not_hisse and hisse_notu.strip():
             try:
@@ -168,23 +164,21 @@ with col_not1:
                 yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
                 df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
                 df_notlar.to_csv(db_notlar, index=False)
-                st.success("Not başarıyla kaydedildi!")
-                # Yeniden yüklemeden önce kısa bir bekleme ve direkt tetikleme
-                time.sleep(0.2)
+                st.success("Not kaydedildi!")
+                time.sleep(0.5)
                 st.rerun()
-            except Exception as e:
-                st.error(f"Hata oluştu: {e}")
+            except:
+                pass
 
 with col_not2:
-    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold; margin-bottom:10px;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
+    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
     
-    admin_paneli = st.checkbox("Yönetici Modu (Not Silme)", key="admin_modu_check")
+    admin_paneli = st.checkbox("Yönetici Modu (Not Silme)")
     sifre_kontrol = ""
     if admin_paneli:
         sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
 
-    # Ekrana basma işlemini döngünün en güncel anında tetiklemek için burada okuyoruz
     if os.path.exists(db_notlar):
         df_notlar_oku = pd.read_csv(db_notlar)
         if not df_notlar_oku.empty:
-            # En son eklenen notun en üstte görünmesi için ters çeviriyoruz
+            df_notlar_oku = df_notlar_oku.iloc[::-1]
