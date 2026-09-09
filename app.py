@@ -140,6 +140,7 @@ st.write("---")
 
 st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">Odadaki Kişi: {gercek_kisi_sayisi}</span>)</div>', unsafe_allow_html=True)
 
+# Güvenli kelime filtresi listesi
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
 garantili_bip_html = """
@@ -160,28 +161,30 @@ garantili_bip_html = """
 </script>
 """
 
-# MESAJ LİSTELEME VE KONTROL MOTORU
+# VERİTABANI VE HAFIZA MOTORU
 df_sohbet_oku = pd.read_csv(db_sohbet)
 mesaj_sayisi_su_an = len(df_sohbet_oku)
 
-# Oturum durumunu (Session State) güvenli şekilde başlat ve sesi sadece gerçek artışta tetikle
 if "hafiza_mesaj_sayisi" not in st.session_state:
     st.session_state["hafiza_mesaj_sayisi"] = mesaj_sayisi_su_an
 
+# Yeni gerçek mesaj kontrolü (Sadece artışta bip çalar)
 if mesaj_sayisi_su_an > st.session_state["hafiza_mesaj_sayisi"]:
     st.components.v1.html(garantili_bip_html, height=0, width=0)
     st.session_state["hafiza_mesaj_sayisi"] = mesaj_sayisi_su_an
-else:
+elif mesaj_sayisi_su_an < st.session_state["hafiza_mesaj_sayisi"]:
     st.session_state["hafiza_mesaj_sayisi"] = mesaj_sayisi_su_an
 
+# FORM ALANI
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
+    submit_btn = st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True)
+    
+    if submit_btn and y_is.strip() and y_me.strip():
         m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
         i_kucuk = y_is.lower().replace(" ", "")
         
+        # Küfür kontrolü
         if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
             df_s = pd.read_csv(db_sohbet)
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
