@@ -85,7 +85,7 @@ else:
             begenen_listesi = []
             df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
             
-            toplam_gercek_begeni = len(begenen_listesi)
+        toplam_gercek_begeni = len(begenen_listesi)
         kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
         buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
         
@@ -169,7 +169,8 @@ else:
                 
             tablo_html += '</table>'
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-            if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+            if veri_var_mi: 
+                st.markdown(tablo_html, unsafe_allow_html=True)
             
             # --- BORSA ARAMA MOTORU ---
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
