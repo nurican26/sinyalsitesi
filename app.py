@@ -63,7 +63,7 @@ try:
     
     aktif_listesi = df_akt["rumuz"].unique().tolist()
     canli_oda_sayisi = len(aktif_listesi)
-except Exception:
+except:
     canli_oda_sayisi = 1
     aktif_listesi = [st.session_state["bta_rumuz"]]
 
@@ -88,7 +88,7 @@ try:
     pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
     col_bist.metric("BIST 100", f"{bist_f:,.2f}")
     col_eur.metric("EURO", f"{eur_f:,.2f} TL")
-except Exception:
+except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
@@ -110,11 +110,16 @@ if os.path.exists(excel_yolu):
             puan_d_c = df_excel_check.iloc[idx_c, 3]
             
             if ha_c != "" and ha_c not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                p_temiz_c = f"{float(puan_d_c):.2f}" if isinstance(puan_d_c, (int, float)) else str(puan_d_c).strip()
+                if isinstance(puan_d_c, (int, float)):
+                    p_temiz_c = f"{float(puan_d_c):.2f}"
+                else:
+                    p_temiz_c = str(puan_d_c).strip()
                 
-                try:
-                    maliyet_c = float(alim_c_c.replace(",", "."))
-                except Exception:
+                # Çökmeye sebep olan try-except blokları yerine güvenli if-else sayı dönüşüm motoru
+                alim_c_c_temiz = alim_c_c.replace(",", ".")
+                if alim_c_c_temiz.replace(".", "", 1).isdigit():
+                    maliyet_c = float(alim_c_c_temiz)
+                else:
                     maliyet_c = 0.0
                 
                 zaten_var_mi = df_kayitli_defter_check[(df_kayitli_defter_check["hisse"] == ha_c) & (df_kayitli_defter_check["tarih"] == bugunun_tarihi_check)]
@@ -133,7 +138,7 @@ if os.path.exists(excel_yolu):
             df_guncel_defter = pd.concat([df_yeni_eklemeler, df_kayitli_defter_check], ignore_index=True)
             df_guncel_defter.to_csv(db_hisse_defteri, index=False)
             st.rerun()
-    except Exception:
+    except:
         pass
 
 df_gosterilecek_defter = pd.read_csv(db_hisse_defteri)
@@ -161,18 +166,15 @@ if os.path.exists(excel_yolu):
         veri_var_mi = False
         
         for idx in range(min(10, len(df))):
-            try:
-                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-                puan_d = df.iloc[idx, 3]
-                
-                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                    veri_var_mi = True
-                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+            
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
+                if isinstance(puan_d, (int, float)):
+                    p_temiz = f"{float(puan_d):.2f}"
+                else:
+                    p_temiz = str(puan_d).strip()
                     
-                    try:
-                        maliyet = float(alim_c.replace(",", "."))
-                    except Exception:
-                        maliyet = 0.0
+                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
