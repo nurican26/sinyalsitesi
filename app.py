@@ -172,12 +172,10 @@ else:
             if veri_var_mi: 
                 st.markdown(tablo_html, unsafe_allow_html=True)
                 
-        except:
-            pass
-
-        # --- GÜVENLİ VE İZOLE BORSA ARAMA MOTORU ---
-        try:
+            # --- BORSA ARAMA MOTORU (TÜM GİRİNTİLER TEMİZLENDİ VE GÜVENCEYE ALINDI) ---
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
             if len(df.columns) >= 5:
-                tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
-                if tum_hisseler:
+                # Verileri tamamen güvenli çekmek için list comprehension basitleştirildi
+                ham_liste = df.iloc[:, 4].dropna().unique()
+                tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+                
