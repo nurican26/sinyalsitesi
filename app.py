@@ -7,235 +7,176 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. EN SADE VE HIZLI STANDART TEMA (CSS)
+# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-st.markdown("""
+st.markdown('''
 <style>
-/* Kasma yapmayan, dümdüz koyu arka plan */
-.stApp { 
-    background-color: #0d1117 !important; 
-}
-
-/* Tüm paneller standart gri ve sade hale getirildi */
-div[data-testid="stMetric"], div[data-testid="stExpander"] { 
-    background-color: #161b22 !important; 
-    border: 1px solid #30363d !important; 
-    border-radius: 6px !important; 
-    padding: 10px !important; 
-}
-input, textarea, select { 
-    background-color: #0d1117 !important; 
-    color: #ffffff !important; 
-    border: 1px solid #30363d !important; 
-    border-radius: 6px !important; 
-}
-.stButton>button { 
-    background-color: #21262d !important; 
-    color: #ffffff !important; 
-    border: 1px solid #30363d !important; 
-    border-radius: 6px !important; 
-    font-weight: bold !important; 
-}
-
-/* Standart ve Hafif Borsa Tablosu */
-.borsa-tablo { 
-    width: 100%; 
-    border-collapse: collapse; 
-    margin: 10px 0; 
-    font-size: 14px; 
-    background-color: #161b22; 
-    border-radius: 6px; 
-    overflow: hidden; 
-    border: 1px solid #30363d;
-}
-.borsa-tablo th { 
-    background-color: #21262d; 
-    color: #ffffff; 
-    text-align: left; 
-    padding: 8px; 
-}
-.borsa-tablo td { 
-    padding: 8px; 
-    color: #ffffff; 
-    border-bottom: 1px solid #21262d; 
-}
-
-/* Sade Mesaj Paneli Alanı */
-.mesaj-kutusu { 
-    background-color: #0d1117; 
-    border: 1px solid #30363d; 
-    padding: 12px; 
-    border-radius: 6px; 
-    max-height: 220px; 
-    overflow-y: auto; 
-    color: #ffffff;
-    font-size: 14px; 
-    margin-bottom: 10px; 
-}
-
-/* Sade SPK Uyarı Alanı */
-.spk-uyari-alani { 
-    border: 1px dashed #30363d; 
-    padding: 12px; 
-    border-radius: 6px; 
-    margin-top: 30px; 
-    font-size: 11px; 
-    color: #8b949e; 
-    text-align: justify; 
-    line-height: 1.4; 
-    display: block !important; 
-    clear: both !important; 
-}
-
-div[data-testid="stForm"] { border: none !important; padding: 0 !important; margin: 0 !important; }
+.stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
+div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
+input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
+.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
+.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+.oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
 </style>
-<h1 style="text-align:center; color:#ffffff; font-family:sans-serif; font-size:32px; margin-bottom:10px;">BTA MERKEZ</h1>
-""", unsafe_allow_html=True)
+<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
+''', unsafe_allow_html=True)
 
-# Hız için otomatik yenileme motoru (5 Saniyede Bir)
-st_autorefresh(interval=5 * 1000, key="bta_en_hizli_senkronize_motoru")
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Fiyatları ve Canlı Odayı Tazeler)
+st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_mesajlar = "bta_hafif_mesaj_panosu.csv"
+db_yildizlar = "bta_yildiz_begenileri_db.csv"
+db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
 
-# Mesaj veritabanını başlat
-if not os.path.exists(db_mesajlar):
-    pd.DataFrame(columns=["rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
+# KALICI VERİTABANLARI BAŞLATMA
+if not os.path.exists(db_yildizlar):
+    pd.DataFrame(columns=["rumuz"]).to_csv(db_yildizlar, index=False)
 
-# --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
-def mesajı_sansurle(metin):
-    kara_liste = [
-        "serefsiz", "şerefsiz", "amk", "aq", "sik", "piç", "pic", "orospu", "göt", "got", 
-        "yarrak", "amcık", "amcik", "siktir", "pezevenk", "kahpe", "yavşak", "yavsak"
-    ]
-    orijinal_metin = metin
-    kucuk_metin = metin.replace("İ", "i").replace("I", "ı").replace("Ş", "ş").replace("Ç", "ç").replace("Ğ", "ğ").replace("Ü", "ü").replace("Ö", "ö").lower()
-    
-    for kufur in kara_liste:
-        if kufur in kucuk_metin:
-            start_idx = 0
-            while True:
-                start_idx = kucuk_metin.find(kufur, start_idx)
-                if start_idx == -1:
-                    break
-                uzunluk = len(kufur)
-                orijinal_metin = orijinal_metin[:start_idx] + ("*" * uzunluk) + orijinal_metin[start_idx + uzunluk:]
-                kucuk_metin = kucuk_metin[:start_idx] + ("*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
-                start_idx += uzunluk
-                
-    return orijinal_metin
+if not os.path.exists(db_ortak_oda):
+    pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
 
 # ===================================================================== #
-# RUMUZ GİRİŞ SİSTEMİ (ENTER DESTEKLİ FORM)
+# RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
 # ===================================================================== #
 if "bta_rumuz" not in st.session_state:
-    st.markdown("<h3 style='text-align:center; color:#ffffff;'>Giriş Yapın</h3>", unsafe_allow_html=True)
-    with st.form("giris_formu", clear_on_submit=False):
-        giriş_rumuz = st.text_input("Rumuz (Ad):", max_chars=15, key="rumuz_input")
-        giriş_butonu = st.form_submit_button("Bağlan 🚀", use_container_width=True)
-        if giriş_butonu and giriş_rumuz.strip():
-            st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
-            st.rerun()
+    st.markdown("<h3 style='text-align:center; color:#fff;'>BTA Merkez Paneline Giriş</h3>", unsafe_allow_html=True)
+    giriş_rumuz = st.text_input("Lütfen Panel için bir Rumuz (Ad) giriniz:", max_chars=20, key="rumuz_input")
+    if st.button("Panele Bağlan 🚀") and giriş_rumuz.strip():
+        st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
+        st.rerun()
     st.stop()
 
-# Üst Bilgi Satırı
-st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}**")
-
-# İki Kolonlu Ana Düzen
-col_sol, col_sag = st.columns(2)
-
-# ===================================================================== #
-# SOL TARAF: TÜM ALGORİTMİK HİSSELER (ADET SINIRSIZ TAM LİSTE)
-# ===================================================================== #
-with col_sol:
-    st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff; margin-bottom:2px;">📈 BTA ALGORİTMİK HİSSE</p>', unsafe_allow_html=True)
+# --- HERKESİN BİRBİRİNİ GÖRDÜĞÜ ORTAK DOSYA TABANLI CANLI ODA MOTORU ---
+simdi = time.time()
+try:
+    df_oda = pd.read_csv(db_ortak_oda)
+    df_oda = df_oda[df_oda["rumuz"] != st.session_state["bta_rumuz"]]
+    yeni_sinyal = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
+    df_oda = pd.concat([df_oda, yeni_sinyal], ignore_index=True)
+    df_oda = df_oda[df_oda["son_gorulme"] > (simdi - 15)]
+    df_oda.to_csv(db_ortak_oda, index=False)
     
-    if os.path.exists(excel_yolu):
-        try:
-            df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-            
-            tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th></tr>'
-            veri_var_mi = False
-            
-            for idx in range(len(df)):
-                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-                puan_d = df.iloc[idx, 3]
-                
-                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                    veri_var_mi = True
-                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                    fiyat_str = alim_c if "TL" in alim_c else f"{alim_c} TL"
-                    
-                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{fiyat_str}</td></tr>'
-            
-            tablo_html += '</table>'
-            
-            if veri_var_mi:
-                st.markdown(tablo_html, unsafe_allow_html=True)
-            else:
-                st.info("Gösterilecek uygun hisse verisi bulunamadı.")
-        except Exception as e:
-            st.error("Excel okunurken hata oluştu.")
-    else:
-        st.error("nurican.xls.xlsm dosyası bulunamadı.")
+    aktif_listesi = df_oda["rumuz"].unique().tolist()
+    canli_oda_sayisi = len(aktif_listesi)
+except:
+    canli_oda_sayisi = 1
+    aktif_listesi = [st.session_state["bta_rumuz"]]
 
-# ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (HIZLI VE KİŞİSEL SİLME BUTONLU)
-# ===================================================================== #
-with col_sag:
-    st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffffff; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
-    
-    # Mesajları Oku
+col_ust1, col_ust2 = st.columns(2)
+
+with col_ust1:
+    st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
+    with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
+        st.caption(", ".join(aktif_listesi))
+
+# --- GERÇEK YILDIZ BEĞENİSİ MOTORU ---
+with col_ust2:
     try:
-        df_msg = pd.read_csv(db_mesajlar)
-        msg_lines = []
-        for idx, row in df_msg.tail(10).iloc[::-1].iterrows():  
-            msg_lines.append(f"{row['rumuz']}: {row['mesaj']}")
-        
-        mesaj_govde = "<br>".join(msg_lines) if msg_lines else "Henüz mesaj yok..."
-        st.markdown(f'<div class="mesaj-kutusu">{mesaj_govde}</div>', unsafe_allow_html=True)
+        df_yildiz_oku = pd.read_csv(db_yildizlar)
+        begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
     except:
-        st.markdown('<div class="mesaj-kutusu" style="color:#ff3344;">Mesajlar yüklenemedi.</div>', unsafe_allow_html=True)
-    
-    # Enter Tuşuyla Gönderim Sağlayan Form Yapısı
-    with st.form("mesaj_formu", clear_on_submit=True):
-        yeni_mesaj = st.text_input("Mesajınız:", max_chars=70, placeholder="Yazın ve Enter'a basın...", key="msg_input")
-        gonder_butonu = st.form_submit_button("Gönder 📩", use_container_width=True)
+        begenen_listesi = []
+        df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
         
-        if gonder_butonu and yeni_mesaj.strip():
-            filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
-            df_yeni_msg = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
-            try:
-                df_eski_msg = pd.read_csv(db_mesajlar)
-                df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
-                df_toplam_msg.to_csv(db_mesajlar, index=False)
-            except:
-                df_yeni_msg.to_csv(db_mesajlar, index=False)
-            st.rerun()
-
-    # --- KENDİ MESAJLARINI SİLME ALANI (KESİNTİSİZ ÇALIŞAN YAPIDIR) ---
-    st.write("")
-    if st.button("Yazdığım Mesajları Sil 🗑️", use_container_width=True, key="clear_my_messages_instant_btn"):
-        if os.path.exists(db_mesajlar) and "bta_rumuz" in st.session_state:
-            try:
-                df_curr = pd.read_csv(db_mesajlar)
-                df_filtered = df_curr[df_curr["rumuz"] != st.session_state["bta_rumuz"]]
-                df_filtered.to_csv(db_mesajlar, index=False)
-                st.rerun()
-            except:
-                pass
+    toplam_gercek_begeni = len(begenen_listesi)
+    kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
+    buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
+    
+    st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Gerçek Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
+    if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
+        if kullanici_begenmis_mi:
+            df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
+        else:
+            yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
+            df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
+            
+        df_yildiz_oku.to_csv(db_yildizlar, index=False)
+        st.rerun()
 
 # ===================================================================== #
-# 4. YASAL SPK UYARI METNİ (SAYFA ALTI)
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
 st.write("---")
-st.markdown("""
-<div class="spk-uyari-alani">
-    <strong>⚠️ ÖNEMLİ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-    Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak 
-    yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
-    görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
-    bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu panelde paylaşılan veri, analiz ve oda içi 
+try:
+    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
+    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    gram_f = (ons_f / 31.1034768) * usd_f
+    
+    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
+    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
+    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
+    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
+    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
+except:
+    st.info("⏳ Finansal Veriler Güncelleniyor...")
+
+# ===================================================================== #
+# 3. ANA VERİ MOTORU VE TABLOLAR
+# ===================================================================== #
+st.write("---")
+if os.path.exists(excel_yolu):
+    try:
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
+        veri_var_mi = False
+        
+        for idx in range(min(10, len(df))):
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+            
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
+                if isinstance(puan_d, (int, float)):
+                    p_temiz = f"{float(puan_d):.2f}"
+                else:
+                    p_temiz = str(puan_d).strip()
+                    
+                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                if len(h_veri) > 0:
+                    c_fiyat = float(h_veri['Close'].iloc[-1])
+                else:
+                    c_fiyat = 0.0
+                
+                alim_c_temiz = alim_c.replace(",", ".")
+                if alim_c_temiz.replace(".", "", 1).isdigit():
+                    maliyet = float(alim_c_temiz)
+                else:
+                    maliyet = 0.0
+                
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    if or_dg >= 0:
+                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
+                    else:
+                        kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
+                
+                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            
+        tablo_html += '</table>'
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+        
+        # --- BORSA ARAMA MOTORU ---
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        if len(df.columns) >= 5:
+            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
+            if tum_hisseler:
+                aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
+                if aranan_hisse != "Seçiniz...":
+                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
+                    if len(h_detay_veri) > 0:
+                        st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
+    except:
+        pass  # IndentationError veren boş blok burasıydı, pass eklenerek tamamen düzeltildi.
+else:
+    st.error("Excel bulunamadı.")
