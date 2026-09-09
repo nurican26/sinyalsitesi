@@ -71,14 +71,18 @@ eur_f, eur_ok = fiyat_ve_yon_getir("EURTRY=X")
 gram_f = (ons_f / 31.1034768) * usd_f if usd_f > 0 else 0.0
 gram_ok = usd_ok if (usd_ok == ons_ok) else (usd_ok if usd_ok != '<span class="notr">▪</span>' else ons_ok)
 
+# Çeyrek ve Yarım Altın için piyasa standartlarına uygun has altın katsayıları (1.754 ve 3.508 gram)
+ceyrek_f = gram_f * 1.754
+yarim_f = gram_f * 3.508
+
 # Üst Kayan Yazı HTML İçeriği
 marquee_html = f'''
 <div class="kayan-bilgi-bandi">
     <marquee behavior="scroll" direction="left" scrollamount="6">
         <span>BIST 100: {bist_f:,.2f} {bist_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
         <span>GRAM ALTIN: {gram_f:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>ÇEYREK ALTIN: {gram_f * 1.63:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>YARIM ALTIN: {gram_f * 3.26:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>ÇEYREK ALTIN: {ceyrek_f:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>YARIM ALTIN: {yarim_f:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
         <span>USD/TRY: {usd_f:,.2f} TL {usd_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
         <span>EUR/TRY: {eur_f:,.2f} TL {eur_ok}</span>
     </marquee>
@@ -119,7 +123,7 @@ if os.path.exists(excel_yolu):
                     kz_str = "<span>-</span>"
                 tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
         tablo_html += '</table>'
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>', unsafe_allow_html=True)
         if veri_var_mi: 
             st.markdown(tablo_html, unsafe_allow_html=True)
         if len(df.columns) >= 5:
@@ -130,7 +134,7 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel bulunamadı.")
 
-# GÜNCELLENMİŞ VE TAM KORUMA SAĞLAYAN TABLO ALTI YASAL UYARI METNİ
+# SPK MEVZUATINA TAM UYUMLU GÜNCELLENMİŞ TABLO ALTI YASAL UYARI BÖLÜMÜ
 st.markdown('''
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
     <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -162,3 +166,8 @@ if len(tum_hisseler) > 0:
 
 st.write("---")
 col_not1, col_not2 = st.columns(2)
+
+with col_not1:
+    st.markdown('<p style="font-size:14px; font-weight:bold; color:#fff;">Yeni Not Ekle</p>', unsafe_allow_html=True)
+    not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
+    if not_hisse_secim == "Manuel Gir...":
