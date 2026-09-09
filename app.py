@@ -133,7 +133,7 @@ with col_not2:
     # Giriş şifresi kutusu (Varsayılan olarak "1905" ayarladım, aşağıdan değiştirebilirsiniz)
     admin_sifre = st.text_input("Görmek ve silmek için Yönetici Şifresini girin:", type="password", key="not_paneli_giris_sifresi")
     
-    if admin_sifre == "1905":  # <--- ŞİFRENİZ BURADA
+    if admin_sifre == "n3015":  # <--- ŞİFRENİZ BURADA
         st.success("Yönetici girişi başarılı. Notlar listeleniyor.")
         if os.path.exists(db_notlar):
             df_notlar_oku = pd.read_csv(db_notlar)
