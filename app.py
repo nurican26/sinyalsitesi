@@ -33,6 +33,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 8px; }
 .borsa-tablo td { padding: 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+.spk-uyari-alani { background-color: rgba(255, 51, 68, 0.05); border: 1px dashed #ff3344; padding: 12px; border-radius: 8px; margin-top: 30px; font-size: 11px; color: #cccccc; text-align: justify; line-height: 1.4; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:36px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
@@ -46,6 +47,19 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 # Mesaj veritabanını başlat
 if not os.path.exists(db_mesajlar):
     pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
+
+# --- SANSÜR FONKSİYONU ---
+def mesajı_sansurle(metin):
+    # Yaygın kelime ve ek türevlerini kapsayan kara liste
+    kara_liste = ["amk", "aq", "sik", "piç", "orospu", "pç", "göt", "yarrak", "amcık", "siktir", "pezevenk", "orospu çocuğu", "kahpe", "yavşak"]
+    temiz_metin = metin.lower()
+    for kufur in kara_liste:
+        if kufur in temiz_metin:
+            # Kelimenin uzunluğu kadar yıldız koyar (Örn: "amk" -> "***")
+            metin = metin.replace(kufur, "*" * len(kufur))
+            # Büyük harfli yazımları da yakalamak için kontrol
+            metin = metin.replace(kufur.upper(), "*" * len(kufur))
+    return metin
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ
@@ -85,7 +99,6 @@ with col_sol:
                 if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                     veri_var_mi = True
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                    
                     fiyat_str = alim_c if "TL" in alim_c else f"{alim_c} TL"
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{fiyat_str}</td></tr>'
@@ -118,7 +131,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: KOTA DOSTU MESAJ PANELI (YENİ MESAJ EN ÜSTTE)
+# SAĞ TARAF: KOTA DOSTU MESAJ PANELI (SANSÜRLÜ VE EN YENİ EN ÜSTTE)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -128,7 +141,6 @@ with col_sag:
         df_msg = pd.read_csv(db_mesajlar)
         msg_lines = []
         
-        # .iloc[::-1] kullanarak son 10 mesajı tersten (en yeni ilk gelecek şekilde) tarıyoruz
         for _, row in df_msg.tail(10).iloc[::-1].iterrows():  
             msg_lines.append(f"<span style='color:#0d9488;'>[{row['zaman']}]</span> <b style='color:#ffcc00;'>{row['rumuz']}:</b> <span style='color:#fff;'>{row['mesaj']}</span>")
         
@@ -140,8 +152,11 @@ with col_sag:
     # Mesaj Gönderme Formu
     yeni_mesaj = st.text_input("Mesajınız:", max_chars=70, placeholder="Yazın ve Gönder'e basın...", key="msg_input")
     if st.button("Gönder 📩", use_container_width=True) and yeni_mesaj.strip():
+        # Küfür kontrolü ve yıldızlama
+        filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
+        
         saat_str = datetime.datetime.now().strftime("%H:%M")
-        df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": yeni_mesaj.strip()}])
+        df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
         try:
             df_eski_msg = pd.read_csv(db_mesajlar)
             df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
@@ -149,3 +164,17 @@ with col_sag:
         except:
             df_yeni_msg.to_csv(db_mesajlar, index=False)
         st.rerun()
+
+# ===================================================================== #
+# 4. YASAL SPK UYARI METNİ (SAYFA ALTI)
+# ===================================================================== #
+st.markdown('''
+<div class="spk-uyari-alani">
+    <strong>⚠️ ÖNEMLİ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
+    Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak 
+    yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
+    görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
+    bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu panelde paylaşılan veri, analiz ve oda içi 
+    mesajlar hiçbir şekilde yönlendirme amacı taşımamaktadır.
+</div>
+''', unsafe_allow_html=True)
