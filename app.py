@@ -94,7 +94,7 @@ div[data-testid="stForm"] { border: none !important; padding: 0 !important; marg
 <h1 style="text-align:center; color:#ffffff; font-family:sans-serif; font-size:32px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
 
-# Hız için otomatik yenilemeyi 5 saniyeye geri aldık
+# Hız için otomatik yenilemeyi 5 saniyede tutuyoruz
 st_autorefresh(interval=5 * 1000, key="bta_en_hizli_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
@@ -104,17 +104,7 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 if not os.path.exists(db_mesajlar):
     pd.DataFrame(columns=["rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
-# --- SADECE KENDİ YAZDIKLARINI SİLME FONKSİYONU ---
-def kendi_mesajlarimi_temizle():
-    if os.path.exists(db_mesajlar) and "bta_rumuz" in st.session_state:
-        try:
-            df_curr = pd.read_csv(db_mesajlar)
-            df_filtered = df_curr[df_curr["rumuz"] != st.session_state["bta_rumuz"]]
-            df_filtered.to_csv(db_mesajlar, index=False)
-        except:
-            pass
-
-# --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
+# --- SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
     kara_liste = [
         "serefsiz", "şerefsiz", "amk", "aq", "sik", "piç", "pic", "orospu", "göt", "got", 
@@ -153,7 +143,7 @@ if "bta_rumuz" not in st.session_state:
 # Üst Bilgi Satırı
 st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}**")
 
-# İki Kolonlu Main Düzen
+# İki Kolonlu Ana Düzen
 col_sol, col_sag = st.columns(2)
 
 # ===================================================================== #
@@ -209,7 +199,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (EN HIZLI VE SİLME BUTONLU)
+# SAĞ TARAF: MESAJ PANELI (ANINDA TEPKİ VEREN SİLME ÖZELLİKLİ)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffffff; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -242,5 +232,11 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- SADECE KENDİ YAZDIKLARINI SİLME BUTONU ---
+    # --- KİŞİNİN SADECE KENDİ MESAJLARINI ANINDA SİLEN BUTON YAPISI ---
     st.write("")
+    if st.button("Yazdığım Mesajları Sil 🗑️", use_container_width=True, key="clear_my_messages_instant_btn"):
+        if os.path.exists(db_mesajlar) and "bta_rumuz" in st.session_state:
+            try:
+                df_curr = pd.read_csv(db_mesajlar)
+                # Sadece kendi yazdıklarını ayıklar ve dosyayı günceller
+                df_filtered = df_curr[df_curr["rumuz"] != st.session_state["bta_rumuz"]]
