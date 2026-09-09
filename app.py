@@ -122,8 +122,19 @@ with col_not1:
 
 with col_not2:
     st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
-    try:
-        if os.path.exists(db_notlar):
+    
+    admin_yetkisi = False
+    admin_paneli = st.checkbox("Yönetici Modu (Not Silme)")
+    if admin_paneli:
+        sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
+        if sifre_kontrol == "bta123":
+            admin_yetkisi = True
+            st.success("Silme yetkisi aktif!")
+        elif sifre_kontrol != "":
+            st.error("Hatalı Şifre!")
+
+    if os.path.exists(db_notlar):
+        try:
             df_notlar_oku = pd.read_csv(db_notlar)
             if not df_notlar_oku.empty:
                 df_notlar_oku = df_notlar_oku.iloc[::-1]
@@ -136,19 +147,17 @@ with col_not2:
                         not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
                     except:
                         not_anlik_fiyat = 0.0
+                    
                     alarm_durumu = ""
                     if hedef_f > 0.0 and not_anlik_fiyat > 0.0:
                         if not_anlik_fiyat >= hedef_f:
                             alarm_durumu = " 🟢 HEDEF GÖRÜLDÜ"
                         else:
                             alarm_durumu = f" ⏳ Hedef Bekleniyor ({hedef_f:.2f} TL)"
+                    
                     fiyat_metni = f" | Anlık: {not_anlik_fiyat:.2f} TL" if not_anlik_fiyat > 0 else ""
                     baslik = f"📌 {hisse_adi}{fiyat_metni}{alarm_durumu}"
+                    
                     with st.expander(baslik):
                         st.info(row["not"])
-                        silme_paneli_ac = st.checkbox("Notu Silme Panelini Aç", key=f"panel_{not_id}")
-                        if silme_paneli_ac:
-                            yonetici_sifresi = st.text_input("Yönetici Şifresi:", type="password", key=f"sifre_{not_id}")
-                            if st.button("Notu Kalıcı Olarak Sil ❌", use_container_width=True, key=f"sil_id_{not_id}"):
-                                if yonetici_sifresi == "bta123":
-                                    df_notlar_oku["id"] = df_notlar_oku["id"].astype(str)
+                        if admin_yetkisi:
