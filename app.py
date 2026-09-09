@@ -33,52 +33,32 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Fiyatları ve Canlı Odayı Tazeler)
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_yildizlar = "bta_yildiz_begenileri_db.csv"
-db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
 db_notlar = "bta_ortak_notlar_db.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_yildizlar):
     pd.DataFrame(columns=["rumuz"]).to_csv(db_yildizlar, index=False)
 
-if not os.path.exists(db_ortak_oda):
-    pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
-
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["Tarih", "Yazan", "Hisse", "Hedef", "Not"]).to_csv(db_notlar, index=False)
 
-# ===================================================================== #
-# RUMUZ GİRİŞ SİSTEMİ İPTAL EDİLDİ - VARSAYILAN ATAMA YAPILDI
-# ===================================================================== #
+# RUMUZ VE BAĞLANTI SİSTEMLERİ İPTAL EDİLDİ - SABİT DEĞER ATANDI
 if "bta_rumuz" not in st.session_state:
     st.session_state["bta_rumuz"] = "ZİYARETÇİ"
 
-# --- HERKESİN BİRBİRİNİ GÖRDÜĞÜ ORTAK DOSYA TABANLI CANLI ODA MOTORU ---
-simdi = time.time()
-try:
-    df_oda = pd.read_csv(db_ortak_oda)
-    df_oda = df_oda[df_oda["rumuz"] != st.session_state["bta_rumuz"]]
-    yeni_sinyal = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
-    df_oda = pd.concat([df_oda, yeni_sinyal], ignore_index=True)
-    df_oda = df_oda[df_oda["son_gorulme"] > (simdi - 15)]
-    df_oda.to_csv(db_ortak_oda, index=False)
-    
-    aktif_listesi = df_oda["rumuz"].unique().tolist()
-    canli_oda_sayisi = len(aktif_listesi)
-except:
-    canli_oda_sayisi = 1
-    aktif_listesi = [st.session_state["bta_rumuz"]]
+# CANLI ODA SAYISI ARTIK YÖNETİCİ TARAFINDAN MANUEL BELİRLENİYOR
+canli_oda_sayisi = 1  # <-- Panelde görünmesini istediğiniz kişi sayısını buraya yazabilirsiniz
 
 # ===================================================================== #
 # CANLI PİYASA VERİ ÇEKİMİ VE YÜZDESEL DEĞİŞİM HESAPLAMA MOTORU
 # ===================================================================== #
 kayan_yazi_html = ""
 try:
-    # Verileri Çek
     bist_t = yf.Ticker("XU100.IS").history(period="2d", timeout=2)
     usd_t = yf.Ticker("TRY=X").history(period="2d", timeout=2)
     eur_t = yf.Ticker("EURTRY=X").history(period="2d", timeout=2)
@@ -88,13 +68,11 @@ try:
         if len(df_ticker) >= 2:
             guncel = float(df_ticker['Close'].iloc[-1])
             onceki = float(df_ticker['Close'].iloc[-2])
-            
             if is_gold and usd_df is not None:
                 guncel_usd = float(usd_df['Close'].iloc[-1])
                 onceki_usd = float(usd_df['Close'].iloc[-2])
                 guncel = (guncel / 31.1034768) * guncel_usd
                 onceki = (onceki / 31.1034768) * onceki_usd
-                
             yuzde = ((guncel - onceki) / onceki) * 100
             if yuzde > 0:
                 return f"▲ %{yuzde:.2f}", "yukselis", guncel
@@ -107,7 +85,6 @@ try:
     eur_ok, eur_durum, eur_f = hesapla_degisim(eur_t)
     gram_ok, gram_durum, gram_f = hesapla_degisim(ons_t, is_gold=True, usd_df=usd_t)
 
-    # HTML Kayan yazı metnini inşa et
     kayan_yazi_html = f'''
     <div class="kayan-yazi-bandi">
         <div class="kayan-icerik">
@@ -121,7 +98,7 @@ try:
 except Exception as e:
     kayan_yazi_html = '<div class="kayan-yazi-bandi"><div class="kayan-icerik"><span class="piyasa-notr">⏳ Canlı Finansal Veriler Güncelleniyor...</span></div></div>'
 
-# Kayan Yazıyı En Üste Bas
+# Kayan Yazıyı Bas
 st.markdown(kayan_yazi_html, unsafe_allow_html=True)
 st.write("")
 
@@ -129,15 +106,13 @@ st.write("")
 col_ust1, col_ust2 = st.columns(2)
 
 with col_ust1:
-    st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Kişi Aktif</div></div>', unsafe_allow_html=True)
-    with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
-        st.caption(", ".join(aktif_listesi))
+    st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
 
 with col_ust2:
     try:
         df_yildiz_oku = pd.read_csv(db_yildizlar)
         begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
-    except:
+    except Exception as e:
         begenen_listesi = []
         df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
         
@@ -152,12 +127,11 @@ with col_ust2:
         else:
             yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
             df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
-            
         df_yildiz_oku.to_csv(db_yildizlar, index=False)
         st.rerun()
 
 # ===================================================================== #
-# 2. METRİK PANEL ALANI (STATİK YAN YANA GÖRÜNÜM)
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
 st.write("---")
 if 'gram_f' in locals():
@@ -168,7 +142,7 @@ if 'gram_f' in locals():
     col_bist.metric("BIST 100", f"{bist_f:,.2f}")
     col_eur.metric("EURO", f"{eur_f:,.2f} TL")
 else:
-    st.info("⏳ Finansal Metrikler Yükleniyor...")
+    st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
 # 3. ANA VERİ MOTORU VE TABLOLAR
@@ -193,3 +167,24 @@ if os.path.exists(excel_yolu):
                 else:
                     p_temiz = str(puan_d).strip()
                     
+                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                if len(h_veri) > 0:
+                    c_fiyat = float(h_veri['Close'].iloc[-1])
+                else:
+                    c_fiyat = 0.0
+                
+                alim_c_temiz = alim_c.replace(",", ".")
+                if alim_c_temiz.replace(".", "", 1).isdigit():
+                    maliyet = float(alim_c_temiz)
+                else:
+                    maliyet = 0.0
+                
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    if or_dg >= 0:
+                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
+                    else:
+                        kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
+                
