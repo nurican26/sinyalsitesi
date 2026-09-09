@@ -17,8 +17,21 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+
+/* Kayan Yazı (Marquee) Tasarımı */
+.kayan-bilgi-bandi {
+    background: linear-gradient(90deg, #121d33 0%, #1e2e4d 50%, #121d33 100%);
+    border-bottom: 2px solid #1e3a5f;
+    padding: 8px 0;
+    margin-bottom: 15px;
+    font-family: sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+}
+.pozitif { color: #00ff66; }
+.negatif { color: #ff3344; }
+.notr { color: #ffffff; }
 </style>
-<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
@@ -29,22 +42,53 @@ db_notlar = "bta_hisse_notlari_db.csv"
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-bist_f, ons_f, usd_f, eur_f = 0.0, 0.0, 0.0, 0.0
-try:
-    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-except:
-    pass
-gram_f = (ons_f / 31.1034768) * usd_f if usd_f > 0 else 0.0
+# Değişim yönlerini hesaplamak için yardımcı fonksiyon
+def fiyat_ve_yon_getir(ticker_kod, is_forex=False):
+    try:
+        # Son 2 günün verisini çekiyoruz (Değişimi anlamak için)
+        ticker = yf.Ticker(ticker_kod)
+        hist = ticker.history(period="2d", timeout=2)
+        if len(hist) >= 2:
+            guncel = float(hist['Close'].iloc[-1])
+            onceki = float(hist['Close'].iloc[-2])
+            degisim = guncel - onceki
+            if degisim > 0:
+                return guncel, '<span class="pozitif">🟢 ▲</span>'
+            elif degisim < 0:
+                return guncel, '<span class="negatif">🔴 ▼</span>'
+        elif len(hist) == 1:
+            return float(hist['Close'].iloc[-1]), '<span class="notr">▪</span>'
+    except:
+        pass
+    return 0.0, '<span class="notr">▪</span>'
 
-pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
-pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
-pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
-col_bist.metric("BIST 100", f"{bist_f:,.2f}")
-col_eur.metric("EURO", f"{eur_f:,.2f} TL")
+# Canlı verileri ve yön oklarını çekiyoruz
+bist_f, bist_ok = fiyat_ve_yon_getir("XU100.IS")
+ons_f, ons_ok = fiyat_ve_yon_getir("GC=F")
+usd_f, usd_ok = fiyat_ve_yon_getir("TRY=X")
+eur_f, eur_ok = fiyat_ve_yon_getir("EURTRY=X")
+
+# Gram altın hesaplaması ve yön tayini (Dolar ve Ons yönüne göre ortak yön tayini)
+gram_f = (ons_f / 31.1034768) * usd_f if usd_f > 0 else 0.0
+gram_ok = usd_ok if (usd_ok == ons_ok) else (usd_ok if usd_ok != '<span class="notr">▪</span>' else ons_ok)
+
+# Üst Kayan Yazı HTML İçeriği
+marquee_html = f'''
+<div class="kayan-bilgi-bandi">
+    <marquee behavior="scroll" direction="left" scrollamount="6">
+        <span>BIST 100: {bist_f:,.2f} {bist_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>GRAM ALTIN: {gram_f:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>ÇEYREK ALTIN: {gram_f * 1.63:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>YARIM ALTIN: {gram_f * 3.26:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>USD/TRY: {usd_f:,.2f} TL {usd_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+        <span>EUR/TRY: {eur_f:,.2f} TL {eur_ok}</span>
+    </marquee>
+</div>
+'''
+st.markdown(marquee_html, unsafe_allow_html=True)
+
+# Başlık kayan yazının altına taşındı
+st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
 
 st.write("---")
 tum_hisseler = [] 
@@ -136,40 +180,3 @@ with col_not2:
         sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
 
     if os.path.exists(db_notlar):
-        df_notlar_oku = pd.read_csv(db_notlar)
-        if not df_notlar_oku.empty:
-            df_notlar_oku = df_notlar_oku.iloc[::-1]
-            for index, row in df_notlar_oku.iterrows():
-                not_id = str(row["id"])
-                hisse_adi = str(row["hisse"])
-                hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
-                
-                not_anlik_fiyat = 0.0
-                try:
-                    canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
-                    not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
-                except:
-                    pass
-                
-                alarm_durumu = ""
-                if hedef_f > 0.0 and not_anlik_fiyat > 0.0:
-                    if not_anlik_fiyat >= hedef_f:
-                        alarm_durumu = " 🟢 HEDEF GÖRÜLDÜ"
-                    else:
-                        alarm_durumu = f" ⏳ Hedef Bekleniyor ({hedef_f:.2f} TL)"
-                
-                fiyat_metni = f" | Anlık: {not_anlik_fiyat:.2f} TL" if not_anlik_fiyat > 0 else ""
-                baslik = f"📌 {hisse_adi}{fiyat_metni}{alarm_durumu}"
-                
-                with st.expander(baslik):
-                    st.info(row["not"])
-                    silme_izni = (sifre_kontrol == "bta123")
-                    buton_etiketi = "Notu Kalıcı Olarak Sil ❌" if silme_izni else "🔒 SİLME YETKİNİZ YOK"
-                    if st.button(buton_etiketi, key=f"sil_{not_id}", use_container_width=True) and silme_izni:
-                        df_guncel = df_notlar_oku[df_notlar_oku["id"].astype(str) != not_id]
-                        df_guncel.to_csv(db_notlar, index=False)
-                        st.success("Silindi!")
-                        time.sleep(0.5)
-                        st.rerun()
-        else:
-            st.caption("Henüz kaydedilmiş bir hisse notu bulunmuyor.")
