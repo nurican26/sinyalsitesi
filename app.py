@@ -7,7 +7,7 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. EN SADE VE SIFIR KASMA YAPAN STANDART TEMA (CSS)
+# 1. EN SADE VE HIZLI STANDART TEMA (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
@@ -94,8 +94,8 @@ div[data-testid="stForm"] { border: none !important; padding: 0 !important; marg
 <h1 style="text-align:center; color:#ffffff; font-family:sans-serif; font-size:32px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik yenileme motoru (Kota ve performans için 30 saniye)
-st_autorefresh(interval=30 * 1000, key="bta_kota_dostu_motor")
+# Hız için otomatik yenilemeyi 5 saniyeye geri aldık
+st_autorefresh(interval=5 * 1000, key="bta_en_hizli_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_mesajlar = "bta_hafif_mesaj_panosu.csv"
@@ -109,7 +109,6 @@ def kendi_mesajlarimi_temizle():
     if os.path.exists(db_mesajlar) and "bta_rumuz" in st.session_state:
         try:
             df_curr = pd.read_csv(db_mesajlar)
-            # Aktif kullanıcının rumuzuna ait olmayan mesajları filtreleyerek geri kaydeder
             df_filtered = df_curr[df_curr["rumuz"] != st.session_state["bta_rumuz"]]
             df_filtered.to_csv(db_mesajlar, index=False)
         except:
@@ -152,9 +151,9 @@ if "bta_rumuz" not in st.session_state:
     st.stop()
 
 # Üst Bilgi Satırı
-st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}** | 🕒 30sn Otomatik Yenileme Aktif")
+st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}**")
 
-# İki Kolonlu Ana Düzen
+# İki Kolonlu Main Düzen
 col_sol, col_sag = st.columns(2)
 
 # ===================================================================== #
@@ -210,7 +209,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (KİŞİSEL TEMİZLEME ALANLI)
+# SAĞ TARAF: MESAJ PANELI (EN HIZLI VE SİLME BUTONLU)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffffff; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -241,3 +240,7 @@ with col_sag:
                 df_toplam_msg.to_csv(db_mesajlar, index=False)
             except:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
+            st.rerun()
+
+    # --- SADECE KENDİ YAZDIKLARINI SİLME BUTONU ---
+    st.write("")
