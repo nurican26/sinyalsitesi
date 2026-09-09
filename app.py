@@ -31,6 +31,7 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_yildizlar = "bta_yildiz_begenileri_db.csv"
 db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
+db_kayit_defteri = "bta_kayit_defteri.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_yildizlar):
@@ -38,6 +39,9 @@ if not os.path.exists(db_yildizlar):
 
 if not os.path.exists(db_ortak_oda):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
+
+if not os.path.exists(db_kayit_defteri):
+    pd.DataFrame(columns=["Tarih", "Hisse", "Algoritmik Fiyat", "Anlık Canlı Fiyat"]).to_csv(db_kayit_defteri, index=False)
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
@@ -107,6 +111,9 @@ if os.path.exists(excel_yolu):
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
+        yeni_kayitlar = []
+        su_an = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -141,10 +148,29 @@ if os.path.exists(excel_yolu):
                     kz_str = "<span>-</span>"
                 
                 tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+                
+                # Kayıt Defteri Veri Toplama
+                if ha and (maliyet > 0 or c_fiyat > 0):
+                    yeni_kayitlar.append({
+                        "Tarih": su_an,
+                        "Hisse": ha,
+                        "Algoritmik Fiyat": f"{maliyet:,.2f} TL",
+                        "Anlık Canlı Fiyat": f"{c_fiyat:,.2f} TL"
+                    })
             
         tablo_html += '</table>'
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+        if veri_var_mi: 
+            st.markdown(tablo_html, unsafe_allow_html=True)
+            
+            # Verileri Kayıt Defteri Dosyasına Ekleme
+            if yeni_kayitlar:
+                df_eski_kayitlar = pd.read_csv(db_kayit_defteri)
+                df_yeni = pd.DataFrame(yeni_kayitlar)
+                df_toplam_kayit = pd.concat([df_eski_kayitlar, df_yeni], ignore_index=True)
+                # Aynı tarihte mükerrer basımı engellemek için son 200 kaydı koruyup temizleyelim
+                df_toplam_kayit.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
+                df_toplam_kayit.tail(500).to_csv(db_kayit_defteri, index=False)
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
@@ -159,24 +185,3 @@ if os.path.exists(excel_yolu):
     except:
         pass
 else:
-    st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 3. CANLI ALTIN VE BIST 100 PİYASA ALANI (AŞAĞIYA ALINDI)
-# ===================================================================== #
-st.write("---")
-try:
-    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    gram_f = (ons_f / 31.1034768) * usd_f
-    
-    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
-    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
-    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
-    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
-    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
-except:
-    st.info("⏳ Finansal Veriler Güncelleniyor...")
