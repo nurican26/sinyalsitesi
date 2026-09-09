@@ -44,7 +44,7 @@ if not os.path.exists(db_kayit_defteri):
     pd.DataFrame(columns=["Tarih", "Hisse", "Algoritmik Fiyat", "Anlık Canlı Fiyat"]).to_csv(db_kayit_defteri, index=False)
 
 
-# GÜVENLİ VERİ YAZMA FONKSİYONU (Syntax ve Girinti Hatalarını Önlemek İçin İzole Edildi)
+# GÜVENLİ VERİ YAZMA FONKSİYONU
 def guvenli_deftere_kaydet(yeni_veriler):
     if not yeni_veriler:
         return
@@ -54,7 +54,7 @@ def guvenli_deftere_kaydet(yeni_veriler):
         df_toplam = pd.concat([df_eski, df_yeni], ignore_index=True)
         df_toplam.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
         df_toplam.tail(500).to_csv(db_kayit_defteri, index=False)
-    except:
+    except Exception as e:
         pass
 
 
@@ -187,7 +187,7 @@ if os.path.exists(excel_yolu):
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-    except:
+    except Exception as e:
         pass
 else:
     st.error("Excel bulunamadı.")
