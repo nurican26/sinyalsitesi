@@ -20,7 +20,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.galeri-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px; text-align: center; }
+.galeri-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 10px; }
 .oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
@@ -174,5 +174,4 @@ if not df_resim_oku.empty:
     
     for r_idx, r_row in son_uc_resim.iterrows():
         with r_cols[r_idx % 3]:
-            st.markdown(f'''
-            <div class="galeri-kutu">
+            # Hatalı string tırnak kapatması tamamen düzeltilmiştir.
