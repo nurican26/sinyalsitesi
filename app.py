@@ -33,7 +33,9 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 8px; }
 .borsa-tablo td { padding: 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; }
-.spk-uyari-alani { background-color: rgba(255, 51, 68, 0.05); border: 1px dashed #ff3344; padding: 12px; border-radius: 8px; margin-top: 30px; font-size: 11px; color: #cccccc; text-align: justify; line-height: 1.4; }
+.spk-uyari-alani { background-color: rgba(255, 51, 68, 0.05); border: 1px dashed #ff3344; padding: 12px; border-radius: 8px; margin-top: 30px; font-size: 11px; color: #cccccc; text-align: justify; line-height: 1.4; display: block !important; }
+/* Form kutusunun kenarlıklarını temizlemek için */
+div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:36px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
@@ -50,12 +52,10 @@ if not os.path.exists(db_mesajlar):
 
 # --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
-    # Genişletilmiş kara liste
     kara_liste = [
         "serefsiz", "şerefsiz", "amk", "aq", "sik", "piç", "pic", "orospu", "göt", "got", 
         "yarrak", "amcık", "amcik", "siktir", "pezevenk", "kahpe", "yavşak", "yavsak"
     ]
-    
     orijinal_metin = metin
     kucuk_metin = metin.replace('İ', 'i').replace('I', 'ı').replace('Ş', 'ş').replace('Ç', 'ç').replace('Ğ', 'ğ').replace('Ü', 'ü').replace('Ö', 'ö').lower()
     
@@ -74,14 +74,16 @@ def mesajı_sansurle(metin):
     return orijinal_metin
 
 # ===================================================================== #
-# RUMUZ GİRİŞ SİSTEMİ
+# RUMUZ GİRİŞ SİSTEMİ (ENTER DESTEKLİ FORM)
 # ===================================================================== #
 if "bta_rumuz" not in st.session_state:
     st.markdown("<h3 style='text-align:center; color:#fff;'>Giriş Yapın</h3>", unsafe_allow_html=True)
-    giriş_rumuz = st.text_input("Rumuz (Ad):", max_chars=15, key="rumuz_input")
-    if st.button("Bağlan 🚀") and giriş_rumuz.strip():
-        st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
-        st.rerun()
+    with st.form("giris_formu", clear_on_submit=False):
+        giriş_rumuz = st.text_input("Rumuz (Ad):", max_chars=15, key="rumuz_input")
+        giriş_butonu = st.form_submit_button("Bağlan 🚀", use_container_width=True)
+        if giriş_butonu and giriş_rumuz.strip():
+            st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
+            st.rerun()
     st.stop()
 
 # Üst Bilgi Satırı
@@ -143,16 +145,15 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: KOTA DOSTU MESAJ PANELI (YENİ MESAJ EN ÜSTTE)
+# SAĞ TARAF: MESAJ PANELI (ENTER DESTEKLİ VE GİZLİ TEMİZLEME BUTONLU)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
     
-    # Mesajları Oku ve En Yeniyi En Üste Gelecek Şekilde Listele
+    # Mesajları Oku
     try:
         df_msg = pd.read_csv(db_mesajlar)
         msg_lines = []
-        
         for _, row in df_msg.tail(10).iloc[::-1].iterrows():  
             msg_lines.append(f"<span style='color:#0d9488;'>[{row['zaman']}]</span> <b style='color:#ffcc00;'>{row['rumuz']}:</b> <span style='color:#fff;'>{row['mesaj']}</span>")
         
@@ -161,15 +162,15 @@ with col_sag:
     except:
         st.markdown('<div class="mesaj-kutusu"><span style="color:#ff3344;">Mesajlar yüklenemedi.</span></div>', unsafe_allow_html=True)
     
-    # Mesaj Gönderme Formu
-    yeni_mesaj = st.text_input("Mesajınız:", max_chars=70, placeholder="Yazın ve Gönder'e basın...", key="msg_input")
-    
-    col_gonder, col_temizle = st.columns(2)
-    with col_gonder:
-        if st.button("Gönder 📩", use_container_width=True) and yeni_mesaj.strip():
+    # Enter Tuşu Çalışması İçin Form Yapısı
+    with st.form("mesaj_formu", clear_on_submit=True):
+        yeni_mesaj = st.text_input("Mesajınız:", max_chars=70, placeholder="Yazın ve Enter'a basın...", key="msg_input")
+        gonder_butonu = st.form_submit_button("Gönder 📩", use_container_width=True)
+        
+        if gonder_butonu and yeni_mesaj.strip():
             filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
             saat_str = datetime.datetime.now().strftime("%H:%M")
-            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_metin if 'filtrelenmis_metin' in locals() else filtrelenmis_mesaj}])
+            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
             try:
                 df_eski_msg = pd.read_csv(db_mesajlar)
                 df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
@@ -178,12 +179,6 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU (Hizalama Düzeltildi) ---
+    # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU (Formun Dışında Sabit Satır) ---
     if st.session_state["bta_rumuz"] == "CC":
-        with col_temizle:
-            if st.button("Temizle 🗑️", use_container_width=True, help="Odadaki tüm mesaj geçmişini sıfırlar."):
-                pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
-                st.rerun()
-
-# ===================================================================== #
-# 4. YASAL SPK UYARI METNİ (SAYFA ALTI)
+        st.write("")
