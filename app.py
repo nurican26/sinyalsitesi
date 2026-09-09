@@ -31,6 +31,7 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_yildizlar = "bta_yildiz_begenileri_db.csv"
 db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
+db_notlar = "bta_hisse_notlari_db.csv"  # YENİ: Hisse Not Defteri Veritabanı
 
 # KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_yildizlar):
@@ -38,6 +39,9 @@ if not os.path.exists(db_yildizlar):
 
 if not os.path.exists(db_ortak_oda):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
+
+if not os.path.exists(db_notlar):
+    pd.DataFrame(columns=["id", "rumuz", "tarih", "hisse", "not"]).to_csv(db_notlar, index=False)
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
@@ -121,6 +125,8 @@ except:
 # 3. ANA VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 st.write("---")
+tum_hisseler = [] # Not defterinde selectbox için doldurulacak havuz
+
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -171,12 +177,13 @@ if os.path.exists(excel_yolu):
         if len(df.columns) >= 5:
             tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
             if tum_hisseler:
-                aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
+                aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler, key="arama_motoru_select")
                 if aranan_hisse != "Seçiniz...":
                     h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
     except:
-        pass  # IndentationError veren boş blok burasıydı, pass eklenerek tamamen düzeltildi.
+        pass
 else:
     st.error("Excel bulunamadı.")
+
