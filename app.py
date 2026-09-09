@@ -17,20 +17,6 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-
-/* Kayan Yazı (Marquee) Tasarımı */
-.kayan-bilgi-bandi {
-    background: linear-gradient(90deg, #121d33 0%, #1e2e4d 50%, #121d33 100%);
-    border-bottom: 2px solid #1e3a5f;
-    padding: 8px 0;
-    margin-bottom: 15px;
-    font-family: sans-serif;
-    font-size: 16px;
-    font-weight: bold;
-}
-.pozitif { color: #00ff66; }
-.negatif { color: #ff3344; }
-.notr { color: #ffffff; }
 </style>
 ''', unsafe_allow_html=True)
 
@@ -42,55 +28,7 @@ db_notlar = "bta_hisse_notlari_db.csv"
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# Değişim yönlerini hesaplamak için yardımcı fonksiyon
-def fiyat_ve_yon_getir(ticker_kod):
-    try:
-        ticker = yf.Ticker(ticker_kod)
-        hist = ticker.history(period="2d", timeout=2)
-        if len(hist) >= 2:
-            guncel = float(hist['Close'].iloc[-1])
-            onceki = float(hist['Close'].iloc[-2])
-            degisim = guncel - onceki
-            if degisim > 0:
-                return guncel, '<span class="pozitif">🟢 ▲</span>'
-            elif degisim < 0:
-                return guncel, '<span class="negatif">🔴 ▼</span>'
-        elif len(hist) == 1:
-            return float(hist['Close'].iloc[-1]), '<span class="notr">▪</span>'
-    except:
-        pass
-    return 0.0, '<span class="notr">▪</span>'
-
-# Canlı verileri ve yön oklarını çekiyoruz
-bist_f, bist_ok = fiyat_ve_yon_getir("XU100.IS")
-ons_f, ons_ok = fiyat_ve_yon_getir("GC=F")
-usd_f, usd_ok = fiyat_ve_yon_getir("TRY=X")
-eur_f, eur_ok = fiyat_ve_yon_getir("EURTRY=X")
-
-# Gram altın hesaplaması ve yön tayini
-gram_f = (ons_f / 31.1034768) * usd_f if usd_f > 0 else 0.0
-gram_ok = usd_ok if (usd_ok == ons_ok) else (usd_ok if usd_ok != '<span class="notr">▪</span>' else ons_ok)
-
-# Çeyrek ve Yarım Altın için piyasa standartlarına uygun has altın katsayıları (1.754 ve 3.508 gram)
-ceyrek_f = gram_f * 1.754
-yarim_f = gram_f * 3.508
-
-# Üst Kayan Yazı HTML İçeriği
-marquee_html = f'''
-<div class="kayan-bilgi-bandi">
-    <marquee behavior="scroll" direction="left" scrollamount="6">
-        <span>BIST 100: {bist_f:,.2f} {bist_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>GRAM ALTIN: {gram_f:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>ÇEYREK ALTIN: {ceyrek_f:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>YARIM ALTIN: {yarim_f:,.2f} TL {gram_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>USD/TRY: {usd_f:,.2f} TL {usd_ok}</span> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
-        <span>EUR/TRY: {eur_f:,.2f} TL {eur_ok}</span>
-    </marquee>
-</div>
-'''
-st.markdown(marquee_html, unsafe_allow_html=True)
-
-# Başlık kayan yazının altına taşındı
+# Başlık
 st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
 
 st.write("---")
@@ -141,11 +79,11 @@ st.markdown('''
         ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
-        Bu tabloda og platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
+        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
         Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin-top:8px; margin-bottom:0;">
-        Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişilerin mali durumları ile risk ve getiri tercihleri dikkate alınarak kişiye özel sunulan yasal bir hizmettir. 
+        Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişilerin mali durumları ile risk og getiri tercihleri dikkate alınarak kişiye özel sunulan yasal bir hizmettir. 
         Sistemdeki gecikmeli algoritmik çıktılar, mali durumunuza veya risk iştahınıza uygun olmayabilir ve sadece bu gecikmeli verilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. 
         Geçmiş döneme ait matematiksel başarılar veya geriye dönük test sonuçları, gelecekteki piyasa performansının kesin bir garantisi değildir. Veri sağlayıcılardan kaynaklanan teknik hatalardan, kesintilerden, sistem gecikmelerinden veya sitemizdeki verilere dayanılarak yapılan işlemlerden doğabilecek doğrudan ya da dolaylı zararlardan bu platform hiçbir şekilde sorumlu tutulamaz.
     </p>
@@ -172,3 +110,35 @@ with col_not1:
     not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
     
     if not_hisse_secim == "Manuel Gir...":
+        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", max_chars=10, key="not_manuel_hisse_kod").strip().upper()
+    else:
+        not_hisse = not_hisse_secim
+        
+    not_hedef_fiyat = st.number_input("Hedef Fiyat (TL):", min_value=0.0, value=0.0, step=1.0, key="not_hedef_fiyat_input")
+    hisse_notu = st.text_area("Hisse Hakkındaki Notunuz:", max_chars=500, placeholder="Stratejinizi yazın...", key="hisse_notu_metni")
+    
+    if st.button("Notu Kaydet 💾", use_container_width=True, key="notu_kaydet_butonu"):
+        if not_hisse and hisse_notu.strip():
+            try:
+                df_notlar = pd.read_csv(db_notlar)
+                yeni_id = str(int(time.time() * 1000))
+                su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+                yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
+                df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
+                df_notlar.to_csv(db_notlar, index=False)
+                st.success("Not kaydedildi!")
+                time.sleep(0.5)
+                st.rerun()
+            except:
+                pass
+
+with col_not2:
+    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
+    if os.path.exists(db_notlar):
+        df_notlar_oku = pd.read_csv(db_notlar)
+        if not df_notlar_oku.empty:
+            df_notlar_oku = df_notlar_oku.iloc[::-1]
+            for i, row in df_notlar_oku.iterrows():
+                with st.expander(f"📌 {row['hisse']} - {row['tarih']}"):
+                    st.write(f"**Not:** {row['not']}")
+                    st.write(f"**Hedef Fiyat:** {row['hedef_fiyat']} TL")
