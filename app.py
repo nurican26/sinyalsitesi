@@ -11,7 +11,7 @@ from streamlit_autorefresh import st_autorefresh
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-st.markdown('''
+st.markdown("""
 <style>
 /* Kasma yapmayan, dümdüz koyu arka plan */
 .stApp { 
@@ -92,7 +92,7 @@ input, textarea, select {
 div[data-testid="stForm"] { border: none !important; padding: 0 !important; margin: 0 !important; }
 </style>
 <h1 style="text-align:center; color:#ffffff; font-family:sans-serif; font-size:32px; margin-bottom:10px;">BTA MERKEZ</h1>
-''', unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # Hız için otomatik yenileme motoru (5 Saniyede Bir)
 st_autorefresh(interval=5 * 1000, key="bta_en_hizli_senkronize_motoru")
@@ -232,7 +232,7 @@ with col_sag:
 # 4. YASAL SPK UYARI METNİ (SAYFA ALTI)
 # ===================================================================== #
 st.write("---")
-st.markdown('''
+st.markdown("""
 <div class="spk-uyari-alani">
     <strong>⚠️ ÖNEMLİ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
     Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak 
