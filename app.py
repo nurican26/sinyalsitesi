@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import uuid
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
@@ -31,7 +30,6 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-db_aktifler = "bta_aktif_kullanicilar.csv"
 
 # KALICI SOHBET VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
@@ -39,32 +37,6 @@ if not os.path.exists(db_sohbet):
 
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
-
-# ANLIK ODA KULLANICI TAKİP MOTORU (Hata vermemesi için kilit korumalı)
-if "cihaz_id" not in st.session_state:
-    st.session_state["cihaz_id"] = str(uuid.uuid4())
-
-simdi = datetime.datetime.now()
-gercek_kisi_sayisi = 1
-
-try:
-    if os.path.exists(db_aktifler):
-        df_akt = pd.read_csv(db_aktifler)
-        df_akt["zaman"] = pd.to_datetime(df_akt["zaman"])
-        # Son 15 saniyede aktif olanları filtrele
-        df_akt = df_akt[df_akt["zaman"] > (simdi - datetime.timedelta(seconds=15))]
-    else:
-        df_akt = pd.DataFrame(columns=["id", "zaman"])
-    
-    # Kendi cihazımızı listeden çıkarıp güncel saati ekliyoruz
-    df_akt = df_akt[df_akt["id"] != st.session_state["cihaz_id"]]
-    yeni_aktif = pd.DataFrame([{"id": st.session_state["cihaz_id"], "zaman": simdi}])
-    df_akt = pd.concat([df_akt, yeni_aktif], ignore_index=True)
-    df_akt.to_csv(db_aktifler, index=False)
-    gercek_kisi_sayisi = len(df_akt)
-except:
-    # Eğer o saniye dosya kilitliyse çökme, en azından 1 kişi göster
-    gercek_kisi_sayisi = 1
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -74,10 +46,10 @@ def formatla_tl(deger):
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
 # ===================================================================== #
 try:
-    bist_f = float(yf.Ticker("XU100.IS").history(period="1d")['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d")['Close'].iloc[-1])
+    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
+    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
     gram_f = (ons_f / 31.1034768) * usd_f
     
     pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
@@ -107,7 +79,7 @@ if os.path.exists(excel_yolu):
                 if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                     veri_var_mi = True
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d")
+                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
                     try: maliyet = float(alim_c.replace(",", "."))
                     except: maliyet = 0.0
@@ -131,7 +103,7 @@ if os.path.exists(excel_yolu):
             if tum_hisseler:
                 aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
                 if aranan_hisse != "Seçiniz...":
-                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d")
+                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
     except: st.error("Veri yüklenemedi.")
@@ -141,48 +113,64 @@ else: st.error("Excel bulunamadı.")
 # 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
 # ===================================================================== #
 st.write("---")
-st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">Odadaki Kişi: {gercek_kisi_sayisi}</span>)</div>', unsafe_allow_html=True)
+st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
+# İnternet bağlantısı gerektirmeyen, doğrudan tarayıcının kendi ürettiği Bip Sesi (Web Audio API)
 garantili_bip_html = """
 <script>
     (function() {
-        try {
-            var AudioContext = window.AudioContext || window.webkitAudioContext;
-            var context = new AudioContext();
-            var osc = context.createOscillator();
-            var gain = context.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(600, context.currentTime);
-            gain.gain.setValueAtTime(0.1, context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.2);
-            osc.connect(gain);
-            gain.connect(context.destination);
-            osc.start();
-            osc.stop(context.currentTime + 0.2);
-        } catch(e) { console.log(e); }
+        var context = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = context.createOscillator();
+        var gain = context.createGain();
+        osc.connect(gain);
+        gain.connect(context.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 830; // Sesin incelik ayarı (Hz)
+        gain.gain.setValueAtTime(0.1, context.currentTime); // Ses seviyesi (0.1 ideal)
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); // 0.15 saniye sürer
+        osc.stop(context.currentTime + 0.16);
     })();
 </script>
 """
 
-# Sohbet Giriş Formu
-with st.form("sohbet_formu", clear_on_submit=True):
-    kullanici_adi = st.text_input("İsminiz", max_chars=20, value="Anonim")
-    mesaj = st.text_area("Yorumunuz", max_chars=150)
-    gonder = st.form_submit_button("Gönder")
-
-    if gonder and mesaj.strip():
-        temiz_mesaj = mesaj.lower()
-        if not any(kelime in temiz_mesaj for kelime in yasakli):
-            try:
-                yeni_mesaj = pd.DataFrame([{"isim": kullanici_adi, "saat": datetime.datetime.now().strftime("%H:%M:%S"), "yorum": mesaj.strip()}])
-                yeni_mesaj.to_csv(db_sohbet, mode='a', header=not os.path.exists(db_sohbet), index=False)
-                
-                # Ses tetikleyici HTML'i ekrana basıyoruz
-                st.markdown(garantili_bip_html, unsafe_allow_html=True)
-                st.success("Mesaj gönderildi!")
-                st.rerun()
-            except Exception as e:
-                st.error("Mesaj gönderilirken bir hata oluştu, lütfen tekrar deneyin.")
+with st.form(key="s_frm", clear_on_submit=True):
+    y_is = st.text_input("Adınız:", max_chars=25)
+    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
+    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
+        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
+        i_kucuk = y_is.lower().replace(" ", "")
+        
+        if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
+            df_s = pd.read_csv(db_sohbet)
+            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
+            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
+            st.rerun()
         else:
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+
+with st.expander("🛠 Yönetici"):
+    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
+
+# MESAJ LİSTELEME VE KONTROL MOTORU
+df_sohbet_oku = pd.read_csv(db_sohbet)
+
+if "son_mesaj_sayisi" not in st.session_state:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+# Yeni mesaj geldiğinde yerel ses tetiklenir
+if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
+    st.components.v1.html(garantili_bip_html, height=0, width=0)
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
+    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
+
+for s in range(len(df_sohbet_oku)):
+    sh = df_sohbet_oku.iloc[s]
+    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
+    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
+        df_sl = pd.read_csv(db_sohbet)
+        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
+        st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
