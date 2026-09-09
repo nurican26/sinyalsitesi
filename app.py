@@ -48,18 +48,33 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 if not os.path.exists(db_mesajlar):
     pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
-# --- SANSÜR FONKSİYONU ---
+# --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
-    # Yaygın kelime ve ek türevlerini kapsayan kara liste
-    kara_liste = ["amk", "aq", "sik", "piç", "orospu", "pç", "göt", "yarrak", "amcık", "siktir", "pezevenk", "orospu çocuğu", "kahpe", "yavşak"]
-    temiz_metin = metin.lower()
+    # Görselde yazdığınız kelime dahil genişletilmiş liste
+    kara_liste = [
+        "serefsiz", "şerefsiz", "amk", "aq", "sik", "piç", "pic", "orospu", "göt", "got", 
+        "yarrak", "amcık", "amcik", "siktir", "pezevenk", "kahpe", "yavşak", "yavsak"
+    ]
+    
+    # Türkçe harfleri küçültürken hata olmaması için harf harf dönüşüm
+    orijinal_metin = metin
+    kucuk_metin = metin.replace('İ', 'i').replace('I', 'ı').replace('Ş', 'ş').replace('Ç', 'ç').replace('Ğ', 'ğ').replace('Ü', 'ü').replace('Ö', 'ö').lower()
+    
     for kufur in kara_liste:
-        if kufur in temiz_metin:
-            # Kelimenin uzunluğu kadar yıldız koyar (Örn: "amk" -> "***")
-            metin = metin.replace(kufur, "*" * len(kufur))
-            # Büyük harfli yazımları da yakalamak için kontrol
-            metin = metin.replace(kufur.upper(), "*" * len(kufur))
-    return metin
+        if kufur in kucuk_metin:
+            # Kelime metin içinde nerede geçiyorsa sansürle (Büyük/küçük harf fark etmeksizin)
+            start_idx = 0
+            while True:
+                start_idx = kucuk_metin.find(kufur, start_idx)
+                if start_idx == -1:
+                    break
+                # Orijinal metindeki ilgili kısmı yıldızla değiştir
+                uzunluk = len(kufur)
+                orijinal_metin = orijinal_metin[:start_idx] + ("*" * uzunluk) + orijinal_metin[start_idx + uzunluk:]
+                kucuk_metin = kucuk_metin[:start_idx] + ("*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
+                start_idx += uzunluk
+                
+    return orijinal_metin
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ
@@ -131,7 +146,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: KOTA DOSTU MESAJ PANELI (SANSÜRLÜ VE EN YENİ EN ÜSTTE)
+# SAĞ TARAF: KOTA DOSTU MESAJ PANELI (YENİ MESAJ EN ÜSTTE)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -151,30 +166,23 @@ with col_sag:
     
     # Mesaj Gönderme Formu
     yeni_mesaj = st.text_input("Mesajınız:", max_chars=70, placeholder="Yazın ve Gönder'e basın...", key="msg_input")
-    if st.button("Gönder 📩", use_container_width=True) and yeni_mesaj.strip():
-        # Küfür kontrolü ve yıldızlama
-        filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
-        
-        saat_str = datetime.datetime.now().strftime("%H:%M")
-        df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
-        try:
-            df_eski_msg = pd.read_csv(db_mesajlar)
-            df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
-            df_toplam_msg.to_csv(db_mesajlar, index=False)
-        except:
-            df_yeni_msg.to_csv(db_mesajlar, index=False)
-        st.rerun()
+    
+    col_gonder, col_temizle = st.columns([3, 1])
+    with col_gonder:
+        if st.button("Gönder 📩", use_container_width=True) and yeni_mesaj.strip():
+            # Güçlendirilmiş sansür kontrolü
+            filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
+            
+            saat_str = datetime.datetime.now().strftime("%H:%M")
+            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
+            try:
+                df_eski_msg = pd.read_csv(db_mesajlar)
+                df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
+                df_toplam_msg.to_csv(db_mesajlar, index=False)
+            except:
+                df_yeni_msg.to_csv(db_mesajlar, index=False)
+            st.rerun()
 
-# ===================================================================== #
-# 4. YASAL SPK UYARI METNİ (SAYFA ALTI)
-# ===================================================================== #
-st.markdown('''
-<div class="spk-uyari-alani">
-    <strong>⚠️ ÖNEMLİ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-    Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak 
-    yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
-    görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
-    bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu panelde paylaşılan veri, analiz ve oda içi 
-    mesajlar hiçbir şekilde yönlendirme amacı taşımamaktadır.
-</div>
-''', unsafe_allow_html=True)
+    # --- SADECE 'CC' RUMUZUNA ÖZEL GİZLİ SİLME BUTONU ---
+    if st.session_state["bta_rumuz"] == "CC":
+        with col_temizle:
