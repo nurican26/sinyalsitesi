@@ -145,7 +145,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (ENTER DESTEKLİ VE GİZLİ TEMİZLEME BUTONLU)
+# SAĞ TARAF: MESAJ PANELI (SABİTLENMİŞ VE HATALARI GİDERİLMİŞ)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -154,7 +154,7 @@ with col_sag:
     try:
         df_msg = pd.read_csv(db_mesajlar)
         msg_lines = []
-        for _, row in df_msg.tail(10).iloc[::-1].iterrows():  
+        for idx, row in df_msg.tail(10).iloc[::-1].iterrows():  
             msg_lines.append(f"<span style='color:#0d9488;'>[{row['zaman']}]</span> <b style='color:#ffcc00;'>{row['rumuz']}:</b> <span style='color:#fff;'>{row['mesaj']}</span>")
         
         mesaj_govde = "<br>".join(msg_lines) if msg_lines else "<span style='color:#666;'>Henüz mesaj yok...</span>"
@@ -179,6 +179,7 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU (Formun Dışında Sabit Satır) ---
+    # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU ---
     if st.session_state["bta_rumuz"] == "CC":
         st.write("")
+        if st.button("Temizle 🗑️", use_container_width=True, key="admin_clear_btn"):
