@@ -61,8 +61,8 @@ if "bta_rumuz" not in st.session_state:
 # Üst Bilgi Satırı
 st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}** | 🕒 30sn Otomatik Yenileme Aktif")
 
-# İki Kolonlu Ana Düzen
-col_sol, col_sag = st.columns()
+# İki Kolonlu Ana Düzen (Parametre hatası düzeltildi)
+col_sol, col_sag = st.columns(2)
 
 # ===================================================================== #
 # SOL TARAF: HİSSELERİM VE ARAMA MOTORU
@@ -86,7 +86,10 @@ with col_sol:
                     veri_var_mi = True
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     
-                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{alim_c} TL</td></tr>'
+                    # Eğer fiyatta zaten TL yazmıyorsa sonuna ekle
+                    fiyat_str = alim_c if "TL" in alim_c else f"{alim_c} TL"
+                    
+                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{fiyat_str}</td></tr>'
             
             tablo_html += '</table>'
             
