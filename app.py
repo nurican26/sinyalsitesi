@@ -30,10 +30,14 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_yildizlar = "bta_yildiz_begenileri_db.csv"
+db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_yildizlar):
     pd.DataFrame(columns=["rumuz"]).to_csv(db_yildizlar, index=False)
+
+if not os.path.exists(db_ortak_oda):
+    pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
@@ -46,23 +50,29 @@ if "bta_rumuz" not in st.session_state:
         st.rerun()
     st.stop()
 
-# --- %100 KİLİTLENMEYEN ORTAK HAVUZ CANLI ODA MOTORU ---
-if "global_aktiflik_havuzu" not in st.session_state:
-    st.session_state["global_aktiflik_havuzu"] = {}
-
+# --- HERKESİN BİRBİRİNİ GÖRDÜĞÜ ORTAK DOSYA TABANLI CANLI ODA MOTORU ---
 simdi = time.time()
-st.session_state["global_aktiflik_havuzu"][st.session_state["bta_rumuz"]] = simdi
+try:
+    # Ortak dosyayı yükle
+    df_oda = pd.read_csv(db_ortak_oda)
+    # Kendi rumuzumuzun eski kaydı varsa temizle
+    df_oda = df_oda[df_oda["rumuz"] != st.session_state["bta_rumuz"]]
+    # Yeni zaman damgasıyla kendini ekle
+    yeni_sinyal = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
+    df_oda = pd.concat([df_oda, yeni_sinyal], ignore_index=True)
+    # Son 15 saniye içinde aktif olmayan (çıkış yapan) herkesi temizle
+    df_oda = df_oda[df_oda["son_gorulme"] > (simdi - 15)]
+    # Ortak dosyaya güvenli bir şekilde kaydet
+    df_oda.to_csv(db_ortak_oda, index=False)
+    
+    # Odadaki tüm benzersiz kişilerin listesi
+    aktif_listesi = df_oda["rumuz"].unique().tolist()
+    canli_oda_sayisi = len(aktif_listesi)
+except:
+    canli_oda_sayisi = 1
+    aktif_listesi = [st.session_state["bta_rumuz"]]
 
-aktif_listesi = []
-for rmz, son_sinyal in list(st.session_state["global_aktiflik_havuzu"].items()):
-    if simdi - son_sinyal < 15:
-        aktif_listesi.append(rmz)
-    else:
-        st.session_state["global_aktiflik_havuzu"].pop(rmz, None)
-
-canli_oda_sayisi = len(aktif_listesi)
-
-# TypeError Hatasına sebep olan st.columns() alanı st.columns(2) yapılarak tamamen düzeltildi
+# Üst Kısımdaki Gösterge Düzeni (Sadece Oda ve Yıldız Beğenisi Kaldı)
 col_ust1, col_ust2 = st.columns(2)
 
 with col_ust1:
@@ -174,12 +184,3 @@ if os.path.exists(excel_yolu):
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
     except:
-        st.error("Veri yüklenemedi.")
-else:
-    st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 4. YÖNETİCİ GİRİŞİ
-# ===================================================================== #
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
