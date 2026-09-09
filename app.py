@@ -43,6 +43,21 @@ if not os.path.exists(db_ortak_oda):
 if not os.path.exists(db_kayit_defteri):
     pd.DataFrame(columns=["Tarih", "Hisse", "Algoritmik Fiyat", "Anlık Canlı Fiyat"]).to_csv(db_kayit_defteri, index=False)
 
+
+# GÜVENLİ VERİ YAZMA FONKSİYONU (Syntax ve Girinti Hatalarını Önlemek İçin İzole Edildi)
+def guvenli_deftere_kaydet(yeni_veriler):
+    if not yeni_veriler:
+        return
+    try:
+        df_eski = pd.read_csv(db_kayit_defteri)
+        df_yeni = pd.DataFrame(yeni_veriler)
+        df_toplam = pd.concat([df_eski, df_yeni], ignore_index=True)
+        df_toplam.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
+        df_toplam.tail(500).to_csv(db_kayit_defteri, index=False)
+    except:
+        pass
+
+
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
 # ===================================================================== #
@@ -178,14 +193,4 @@ else:
     st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 3. KORUMALI VERİ YAZMA VE KAYIT DEFTERİ PANELİ
-# ===================================================================== #
-st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📒 BTA ANLIK GELİŞİM KAYIT DEFTERİ</p>', unsafe_allow_html=True)
-
-if yeni_kayitlar:
-    try:
-        df_eski_kayitlar = pd.read_csv(db_kayit_defteri)
-        df_yeni = pd.DataFrame(yeni_kayitlar)
-        df_toplam_kayit = pd.concat([df_eski_kayitlar, df_yeni], ignore_index=True)
-        df_toplam_kayit.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
+# 3. KAYIT DEFTERİ PANELİ
