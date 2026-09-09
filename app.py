@@ -176,9 +176,8 @@ with col_not2:
     if admin_paneli:
         sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
 
-    # Çökme korumalı not okuma mekanizması
-    try:
-        if os.path.exists(db_notlar):
+    if os.path.exists(db_notlar):
+        try:
             df_notlar_oku = pd.read_csv(db_notlar)
             if not df_notlar_oku.empty:
                 df_notlar_oku = df_notlar_oku.iloc[::-1]
@@ -192,3 +191,4 @@ with col_not2:
                         canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
                         not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
                     except:
+                        pass
