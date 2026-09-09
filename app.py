@@ -198,7 +198,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI
+# SAĞ TARAF: MESAJ PANELI (HERKESE AÇIK ONAYLI SİLME BUTONLU)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -232,6 +232,5 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- HATA VERMEYEN GÜVENLİ SİLME MANTIĞI ---
+    # --- HERKESE AÇIK VE GÜVENLİ ÇİFT AŞAMALI SİLME BUTONU ---
     st.write("")
-    is_admin = (st.session_state.get("bta_rumuz", "") == "CC")
