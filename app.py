@@ -171,7 +171,7 @@ with col_not1:
                 pass
 
 with col_not2:
-    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
+    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Yasal Uyarı: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri genel nitelikte olup yatırım danışmanlığı kapsamında değildir; mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir.</div>', unsafe_allow_html=True)
     
     admin_paneli = st.checkbox("Yönetici Modu (Not Silme)")
     sifre_kontrol = ""
