@@ -174,7 +174,7 @@ if os.path.exists(excel_yolu):
                 </div>
                 '''
                 
-                # Kartları sırayla yan yana kolonlara dağıtıyoruz (Biri sola, biri sağa)
+                # Kartları sırayla 2 kolona dağıtarak yan yana basıyoruz
                 if aktif_kart_sayisi % 2 == 0:
                     kart_sutun1.markdown(dikey_kart_html, unsafe_allow_html=True)
                 else:
