@@ -172,5 +172,8 @@ if not df_resim_oku.empty:
     son_uc_resim = df_resim_oku.head(3)
     r_cols = st.columns(3)
     
-    for r_idx, r_row in son_uc_resim.iterrows():
-        with r_cols[r_idx % 3]:
+    # Girinti hatası vermeyen, düzleştirilmiş güvenli yeni yapı
+    for r_idx in range(len(son_uc_resim)):
+        r_row = son_uc_resim.iloc[r_idx]
+        col_secimi = r_cols[r_idx % 3]
+        
