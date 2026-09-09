@@ -6,9 +6,6 @@ import os
 import time
 from streamlit_autorefresh import st_autorefresh
 
-# ===================================================================== #
-# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
-# ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
@@ -20,42 +17,32 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+.oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 
-# Veritabanını en temiz haliyle başlatıyoruz
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
-# ===================================================================== #
-try:
-    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-    gram_f = (ons_f / 31.1034768) * usd_f
-    
-    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
-    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
-    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
-    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
-    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
-except:
-    st.info("⏳ Finansal Veriler Güncelleniyor...")
+bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
+usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+gram_f = (ons_f / 31.1034768) * usd_f
 
-# ===================================================================== #
-# 3. ANA VERİ MOTORU VE TABLOLAR (SADECE OKUMA)
-# ===================================================================== #
+pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
+pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
+pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
+pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
+col_bist.metric("BIST 100", f"{bist_f:,.2f}")
+col_eur.metric("EURO", f"{eur_f:,.2f} TL")
+
 st.write("---")
 tum_hisseler = [] 
 veri_var_mi = False
@@ -64,7 +51,6 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
-        
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -94,7 +80,6 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel bulunamadı.")
 
-# --- BORSA ARAMA MOTORU ---
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
 if len(tum_hisseler) > 0:
@@ -107,9 +92,6 @@ if len(tum_hisseler) > 0:
         except:
             pass
 
-# ===================================================================== #
-# 4. HİSSE NOT DEFTERİ KAYIT PANELİ
-# ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️ BTA HİSSE NOT DEFTERİ</p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
@@ -139,7 +121,7 @@ with col_not1:
                 pass
 
 with col_not2:
-    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Kayıtlı Notlar</div>', unsafe_allow_html=True)
+    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
     try:
         if os.path.exists(db_notlar):
             df_notlar_oku = pd.read_csv(db_notlar)
@@ -169,3 +151,9 @@ with col_not2:
                             df_guncel_notlar = df_notlar_oku[df_notlar_oku["id"] != not_id]
                             df_guncel_notlar.to_csv(db_notlar, index=False)
                             st.success("Not silindi!")
+                            time.sleep(0.5)
+                            st.rerun()
+            else:
+                st.caption("Henüz kaydedilmiş bir hisse notu bulunmuyor.")
+    except:
+        pass
