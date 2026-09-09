@@ -162,12 +162,3 @@ if len(tum_hisseler) > 0:
 
 st.write("---")
 col_not1, col_not2 = st.columns(2)
-
-with col_not1:
-    st.markdown('<p style="font-size:14px; font-weight:bold; color:#fff;">Yeni Not Ekle</p>', unsafe_allow_html=True)
-    not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
-    if not_hisse_secim == "Manuel Gir...":
-        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", max_chars=10, key="not_manuel_hisse_kod").strip().upper()
-    else:
-        not_hisse = not_hisse_secim
-    not_hedef_fiyat = st.number_input("Hedef Fiyat (TL):", min_value=0.0, value=0.0, step=1.0, key="not_hedef_fiyat_input")
