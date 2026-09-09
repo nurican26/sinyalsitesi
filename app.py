@@ -140,7 +140,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. YÖNETİCİ GİRİŞİ (SADECE RESİM SİLME YETKİSİ İÇİN)
+# 4. YÖNETİCİ GİRİŞİ (ŞİFRE: bta123)
 # ===================================================================== #
 with st.expander("🛠 Yönetici"):
     adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
@@ -152,10 +152,15 @@ st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📅 Tarihli Resim Kayıt Defteri (Son 3 Görsel)</p>', unsafe_allow_html=True)
 
 with st.expander("🖼 Kayıt Defterine Yeni Resim Linki Ekle"):
-    r_url = st.text_input("Resim URL (Web Adresi veya Bulut Linki):")
+    r_url = st.text_input("Resim URL (.png, .jpg veya .webp uzantılı gerçek link):", placeholder="Örn: https://site.com")
     r_not = st.text_input("Resim Notu / Açıklama:", max_chars=100)
     if st.button("Resmi Kaydet 💾") and r_url.strip():
-        df_r = pd.read_csv(db_resimler)
+        # Veritabanını güvenli bir şekilde açıp ekleme yapıyoruz
+        if os.path.exists(db_resimler):
+            df_r = pd.read_csv(db_resimler)
+        else:
+            df_r = pd.DataFrame(columns=["tarih", "saat", "resim_url", "not"])
+            
         y_resim = pd.DataFrame([{
             "tarih": datetime.datetime.now().strftime("%d.%m.%Y"),
             "saat": datetime.datetime.now().strftime("%H:%M"),
@@ -163,17 +168,7 @@ with st.expander("🖼 Kayıt Defterine Yeni Resim Linki Ekle"):
             "not": r_not.strip()
         }])
         pd.concat([y_resim, df_r], ignore_index=True).to_csv(db_resimler, index=False)
-        st.success("Resim başarıyla galeriye eklendi!")
+        st.success("Resim başarıyla ortak kayıt defterine eklendi! Sayfa yenileniyor...")
+        time.sleep(1)
         st.rerun()
 
-df_resim_oku = pd.read_csv(db_resimler)
-
-if not df_resim_oku.empty:
-    son_uc_resim = df_resim_oku.head(3)
-    r_cols = st.columns(3)
-    
-    # Girinti hatası vermeyen, düzleştirilmiş güvenli yeni yapı
-    for r_idx in range(len(son_uc_resim)):
-        r_row = son_uc_resim.iloc[r_idx]
-        col_secimi = r_cols[r_idx % 3]
-        
