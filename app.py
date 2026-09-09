@@ -53,26 +53,19 @@ if "bta_rumuz" not in st.session_state:
 # --- HERKESİN BİRBİRİNİ GÖRDÜĞÜ ORTAK DOSYA TABANLI CANLI ODA MOTORU ---
 simdi = time.time()
 try:
-    # Ortak dosyayı yükle
     df_oda = pd.read_csv(db_ortak_oda)
-    # Kendi rumuzumuzun eski kaydı varsa temizle
     df_oda = df_oda[df_oda["rumuz"] != st.session_state["bta_rumuz"]]
-    # Yeni zaman damgasıyla kendini ekle
     yeni_sinyal = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
     df_oda = pd.concat([df_oda, yeni_sinyal], ignore_index=True)
-    # Son 15 saniye içinde aktif olmayan (çıkış yapan) herkesi temizle
     df_oda = df_oda[df_oda["son_gorulme"] > (simdi - 15)]
-    # Ortak dosyaya güvenli bir şekilde kaydet
     df_oda.to_csv(db_ortak_oda, index=False)
     
-    # Odadaki tüm benzersiz kişilerin listesi
     aktif_listesi = df_oda["rumuz"].unique().tolist()
     canli_oda_sayisi = len(aktif_listesi)
 except:
     canli_oda_sayisi = 1
     aktif_listesi = [st.session_state["bta_rumuz"]]
 
-# Üst Kısımdaki Gösterge Düzeni (Sadece Oda ve Yıldız Beğenisi Kaldı)
 col_ust1, col_ust2 = st.columns(2)
 
 with col_ust1:
@@ -184,3 +177,6 @@ if os.path.exists(excel_yolu):
                     if len(h_detay_veri) > 0:
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
     except:
+        pass  # IndentationError veren boş blok burasıydı, pass eklenerek tamamen düzeltildi.
+else:
+    st.error("Excel bulunamadı.")
