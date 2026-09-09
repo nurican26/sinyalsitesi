@@ -143,9 +143,5 @@ if len(tum_hisseler) > 0:
             pass
 
 st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri dikkate alınarak kişiye özel sunulmaktadır.Burada yer alan yorum ve tavsiyeler ise genel niteliktedir. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️"ÖNEMLİ YASAL UYARI: Bu tabloda yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az 15 dakika gecikmeli veriler kullanılarak otomatik olarak üretilmektedir. Sitemiz tamamen ücretsiz ve herkese açık bir genel bilgilendirme platformu olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişiye özel sunulan yasal bir hizmettir. Bu tablodaki gecikmeli algoritmik çıktılar, mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Sadece gecikmeli verilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Veri sağlayıcılardan kaynaklanan teknik hatalardan, gecikmelerden veya sitemizdeki verilere dayanılarak yapılan işlemlerden doğabilecek doğrudan ya da dolaylı zararlardan bu platform hiçbir şekilde sorumlu tutulamaz."</p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
-
-with col_not2:
-    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
-    # Sağ sütundaki tüm eski liste ve şifre kod bloğu tamamen temizlendi.
