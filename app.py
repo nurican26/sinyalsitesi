@@ -7,20 +7,32 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTA DOSTU TASARIM VE ŞİMŞEK ARKA PLAN EFEKTİ (CSS)
+# 1. KOTA DOSTU TASARIM VE KESİN ÇALIŞAN NEON ŞİMŞEK ARKA PLAN (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Kotayı ve sunucuyu etkilemeyen tarayıcı tabanlı şimşek arka planı */
+/* Harici linke bağımlı olmayan, tarayıcıda doğrudan çizilen garantili şimşek/yıldırım teması */
 .stApp { 
-    background-color: #000000 !important;
-    background-image: url("https://unsplash.com") !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
+    background-color: #030712 !important; 
+    background-image: 
+        radial-gradient(at 30% 20%, rgba(0, 255, 204, 0.15) 0px, transparent 40%),
+        radial-gradient(at 80% 40%, rgba(30, 144, 255, 0.12) 0px, transparent 50%),
+        linear-gradient(135deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(45deg, rgba(0, 255, 204, 0.02) 2px, transparent 2px) !important;
+    background-size: 100% 100%, 100% 100%, 40px 40px, 60px 60px !important;
+    position: relative;
+}
+
+/* Sayfaya derinlik ve şimşek çakma efekti hissi veren neon ışık kırılmaları */
+.stApp::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.08) 0%, transparent 60%) !important;
+    pointer-events: none;
+    z-index: 0;
 }
 
 div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: rgba(18, 29, 51, 0.85) !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; padding: 10px !important; }
@@ -167,15 +179,3 @@ with col_sag:
         if gonder_butonu and yeni_mesaj.strip():
             filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
             saat_str = datetime.datetime.now().strftime("%H:%M")
-            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
-            try:
-                df_eski_msg = pd.read_csv(db_mesajlar)
-                df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
-                df_toplam_msg.to_csv(db_mesajlar, index=False)
-            except:
-                df_yeni_msg.to_csv(db_mesajlar, index=False)
-            st.rerun()
-
-    # --- HATA VERMEYEN YENİ SİLME MANTIĞI ---
-    st.write("")
-    is_admin = (st.session_state.get("bta_rumuz", "") == "CC")
