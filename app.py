@@ -7,14 +7,25 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTA DOSTU TASARIM VE CSS (HAFİF VE ŞIK)
+# 1. KOTA DOSTU TASARIM VE HAREKETLİ ARKA PLAN EFEKTİ (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# Görselleri ve ağır efektleri kaldırıp düz renklerle kotayı koruyoruz
 st.markdown('''
 <style>
-.stApp { background-color: #0b111e !important; }
+/* Kotayı etkilemeyen tarayıcı tabanlı akıcı renk geçişi efekti */
+.stApp { 
+    background: linear-gradient(-45deg, #0b111e, #14213d, #091220, #0d9488) !important;
+    background-size: 400% 400% !important;
+    animation: borsaDalgalanma 15s ease infinite !important;
+}
+
+@keyframes borsaDalgalanma {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; padding: 10px !important; }
 input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
 .stButton>button { background: #0d9488 !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
@@ -26,7 +37,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:36px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik yenilemeyi 30 saniyeye çektik (Kota tasarrufu için en kritik ayar)
+# Otomatik yenileme motoru (Kota tasarrufu için 30 saniye)
 st_autorefresh(interval=30 * 1000, key="bta_kota_dostu_motor")
 
 excel_yolu = "nurican.xls.xlsm"
@@ -51,20 +62,19 @@ if "bta_rumuz" not in st.session_state:
 st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}** | 🕒 30sn Otomatik Yenileme Aktif")
 
 # İki Kolonlu Ana Düzen
-col_sol, col_sag = st.columns([2, 1])
+col_sol, col_sag = st.columns()
 
 # ===================================================================== #
 # SOL TARAF: HİSSELERİM VE ARAMA MOTORU
 # ===================================================================== #
 with col_sol:
-    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF; margin-bottom:2px;">📈 HİSSELERİM (Excel Verisi)</p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF; margin-bottom:2px;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
     
     if os.path.exists(excel_yolu):
         try:
             df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
             
-            # Kota aşımını önlemek için Excel tablosunu ham gösteriyoruz (yfinance sorgularını kaldırdık)
-            tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYAT</th></tr>'
+            tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th></tr>'
             veri_var_mi = False
             
             for idx in range(min(15, len(df))):
@@ -76,7 +86,7 @@ with col_sol:
                     veri_var_mi = True
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     
-                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{alim_c}</td></tr>'
+                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{alim_c} TL</td></tr>'
             
             tablo_html += '</table>'
             
@@ -85,7 +95,7 @@ with col_sol:
             else:
                 st.info("Gösterilecek uygun hisse verisi bulunamadı.")
                 
-            # --- BORSA ARAMA MOTORU (Yalnızca tıklandığında veri çeker - Tam kota dostu) ---
+            # --- BORSA ARAMA MOTORU (Kota dostu düzen) ---
             st.write("---")
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500; margin-bottom:2px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
             
@@ -94,7 +104,6 @@ with col_sol:
                 if tum_hisseler:
                     aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
                     if aranan_hisse != "Seçiniz...":
-                        # Sadece tek bir hisse seçildiğinde internete bağlanır, hafızayı şişirmez
                         h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=3)
                         if len(h_detay_veri) > 0:
                             guncel_fiyat = float(h_detay_veri['Close'].iloc[-1])
@@ -116,7 +125,6 @@ with col_sag:
     try:
         df_msg = pd.read_csv(db_mesajlar)
         msg_lines = []
-        # Sadece son 10 mesajı çekerek ağ trafiğini ve RAM'i sıfıra indiriyoruz
         for _, row in df_msg.tail(10).iterrows():  
             msg_lines.append(f"<span style='color:#0d9488;'>[{row['zaman']}]</span> <b style='color:#ffcc00;'>{row['rumuz']}:</b> <span style='color:#fff;'>{row['mesaj']}</span>")
         
@@ -132,7 +140,6 @@ with col_sag:
         df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": yeni_mesaj.strip()}])
         try:
             df_eski_msg = pd.read_csv(db_mesajlar)
-            # Dosyanın satır sayısını her zaman 20'de sınırlandırarak disk kotasını koruyoruz
             df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
             df_toplam_msg.to_csv(db_mesajlar, index=False)
         except:
