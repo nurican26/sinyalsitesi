@@ -163,7 +163,6 @@ garantili_bip_html = """
 df_sohbet_oku = pd.read_csv(db_sohbet)
 mevcut_adet = len(df_sohbet_oku)
 
-# SES MOTORU: İlk açılışta veya sayfa yenilenmesinde çalmaz, sadece yeni satır eklendiğinde çalar.
 if "eski_adet" not in st.session_state:
     st.session_state["eski_adet"] = mevcut_adet
 
@@ -172,7 +171,7 @@ if mevcut_adet > st.session_state["eski_adet"]:
 
 st.session_state["eski_adet"] = mevcut_adet
 
-# MESAJ FORMU (Orijinal yapı kilitlenmeyecek şekilde düzeltildi)
+# GÜVENLİ HİZALANMIŞ FORM ALANI
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
@@ -188,3 +187,7 @@ with st.form(key="s_frm", clear_on_submit=True):
             pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
             st.rerun()
         else:
+            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
+
+# YÖNETİCİ PANELİ
+if "yonetici_oldu" not in st.session_state:
