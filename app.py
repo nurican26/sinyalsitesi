@@ -105,14 +105,14 @@ with col_ust2:
 # 2. ANA VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 st.write("---")
+yeni_kayitlar = []
+su_an = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
-        
-        yeni_kayitlar = []
-        su_an = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -149,7 +149,7 @@ if os.path.exists(excel_yolu):
                 
                 tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
                 
-                # Kayıt Defteri Veri Toplama
+                # Geçici listeye güvenli bir şekilde append ediyoruz
                 if ha and (maliyet > 0 or c_fiyat > 0):
                     yeni_kayitlar.append({
                         "Tarih": su_an,
@@ -162,14 +162,6 @@ if os.path.exists(excel_yolu):
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: 
             st.markdown(tablo_html, unsafe_allow_html=True)
-            
-            # Verileri Kayıt Defteri Dosyasına Ekleme
-            if yeni_kayitlar:
-                df_eski_kayitlar = pd.read_csv(db_kayit_defteri)
-                df_yeni = pd.DataFrame(yeni_kayitlar)
-                df_toplam_kayit = pd.concat([df_eski_kayitlar, df_yeni], ignore_index=True)
-                df_toplam_kayit.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
-                df_toplam_kayit.tail(500).to_csv(db_kayit_defteri, index=False)
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
@@ -187,4 +179,13 @@ else:
     st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 3. KAYIT DEFTERİ PANELİ
+# 3. KORUMALI VERİ YAZMA VE KAYIT DEFTERİ PANELİ (GARANTİ ALAN)
+# ===================================================================== #
+st.write("---")
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📒 BTA ANLIK GELİŞİM KAYIT DEFTERİ</p>', unsafe_allow_html=True)
+
+# Dosyaya veri kaydetme işlemini ana tablodan izole ettik, çökme ihtimali kalmadı
+if yeni_kayitlar:
+    try:
+        df_eski_kayitlar = pd.read_csv(db_kayit_defteri)
+        df_yeni = pd.DataFrame(yeni_kayitlar)
