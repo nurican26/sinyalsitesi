@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
@@ -21,6 +22,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
+.online-indicator { height: 10px; width: 10px; background-color: #00ff66; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 8px #00ff66; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -31,16 +33,47 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
 db_arsiv = "bta_hisse_arsiv_db.csv"
+db_aktifler = "bta_aktif_kullanicilar_db.csv" # YENİ: Çevrimiçi Takip DB
 
-# KALICI SOHBET VE ARŞİV VERİTABANI BAŞLATMA
+# GEREKLİ VERİTABANLARINI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
 if not os.path.exists(db_arsiv):
     pd.DataFrame(columns=["tarih_saat", "bta_puani", "hisse", "algoritmik_fiyat", "guncel_fiyat", "kz_orani"]).to_csv(db_arsiv, index=False)
 
+if not os.path.exists(db_aktifler):
+    pd.DataFrame(columns=["kullanici_id", "takma_ad", "son_aktiflik"]).to_csv(db_aktifler, index=False)
+
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
+
+# YENİ: Tarayıcı oturumuna özel eşsiz bir ID atama (Kimlerin çevrimiçi olduğunu ayırt etmek için)
+if "kullanici_id" not in st.session_state:
+    st.session_state["kullanici_id"] = f"USER_{int(time.time())}_{st.session_state['topham_sayac']}"
+if "mevcut_kullanici_adi" not in st.session_state:
+    st.session_state["mevcut_kullanici_adi"] = "Ziyaretçi"
+
+# YENİ: ÇEVRİMİÇİ SİNYAL MOTORU (Her yenilemede aktiflik süresini günceller)
+try:
+    df_ak = pd.read_csv(db_aktifler)
+    su an = int(time.time())
+    
+    # Mevcut kullanıcının kaydını güncelle veya ekle
+    df_ak = df_ak[df_ak["kullanici_id"] != st.session_state["kullanici_id"]] # Eski kaydı temizle
+    yeni_aktif_satir = pd.DataFrame([{
+        "kullanici_id": st.session_state["kullanici_id"],
+        "takma_ad": st.session_state["mevcut_kullanici_adi"],
+        "son_aktiflik": su_an
+    }])
+    df_ak = pd.concat([df_ak, yeni_aktif_satir], ignore_index=True)
+    
+    # Son 15 saniye boyunca sinyal vermeyen pasif kullanıcıları temizle
+    df_ak = df_ak[df_ak["son_aktiflik"] >= (su_an - 15)]
+    df_ak.to_csv(db_aktifler, index=False)
+    aktif_kisi_sayisi = len(df_ak)
+except:
+    aktif_kisi_sayisi = 1
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -64,6 +97,25 @@ try:
     col_eur.metric("EURO", f"{eur_f:,.2f} TL")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
+
+# ===================================================================== #
+# YENİ PANEL: KİMLER ÇEVRİMİÇİ? (ÜST BÖLÜME ENTEGRE)
+# ===================================================================== #
+st.write("---")
+st.markdown(f'<p style="font-size:18px; font-weight:bold; color:#00ffcc;"><span class="online-indicator"></span> 🟢 KİMLER ÇEVRİMİÇİ? (Canlı Odadaki Kişi Sayısı: {aktif_kisi_sayisi})</p>', unsafe_allow_html=True)
+
+try:
+    df_goster = pd.read_csv(db_aktifler)
+    if not df_goster.empty:
+        # İsimleri yan yana şık buton/etiket tarzı yazdırma
+        isimler_listesi = df_goster["takma_ad"].unique()
+        on_html = '<div style="background-color: #121d33; padding: 10px; border-radius: 8px; border: 1px solid #1e3a5f; color: #fff;">'
+        for isim in isimler_listesi:
+            on_html += f'<span style="background-color: #1e2e4d; padding: 4px 10px; border-radius: 15px; margin-right: 8px; border: 1px solid #00ffcc; font-size: 13px;">👤 {isim}</span>'
+        on_html += '</div>'
+        st.markdown(on_html, unsafe_allow_html=True)
+except:
+    pass
 
 # ===================================================================== #
 # 3. VERİ MOTORU VE TABLOLAR
@@ -126,47 +178,3 @@ if os.path.exists(excel_yolu):
                         yeni_kayitlar.append(h_bilgi)
                     else:
                         son_kayit = hisse_eski_kayitlar.iloc[-1]
-                        if (str(son_kayit["algoritmik_fiyat"]) != str(h_bilgi["algoritmik_fiyat"])) or (str(son_kayit["bta_puani"]) != str(h_bilgi["bta_puani"])):
-                            yeni_kayitlar.append(h_bilgi)
-                
-                if yeni_kayitlar:
-                    df_yeni = pd.DataFrame(yeni_kayitlar)
-                    pd.concat([df_arsiv_oku, df_yeni], ignore_index=True).to_csv(db_arsiv, index=False)
-            except Exception as e:
-                pass
-        
-        # --- BORSA ARAMA MOTORU ---
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        if len(df.columns) >= 5:
-            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
-            if tum_hisseler:
-                aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
-                if aranan_hisse != "Seçiniz...":
-                    h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
-                    if len(h_detay_veri) > 0:
-                        st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-    except: st.error("Veri yüklenemedi.")
-else: st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 3.5 KALICI KALDIRILAMAZ HİSSE KAYIT DEFTERİ PANELİ
-# ===================================================================== #
-st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📖 BTA KALICI HİSSE KAYIT DEFTERİ (SİLİNMEZ)</p>', unsafe_allow_html=True)
-
-try:
-    df_defter = pd.read_csv(db_arsiv)
-    if not df_defter.empty:
-        defter_html = '<table class="borsa-tablo"><tr><th>KAYIT TARİHİ</th><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>ANLIK FİYAT</th><th>K/Z</th></tr>'
-        for i in range(len(df_defter)-1, -1, -1):
-            satir = df_defter.iloc[i]
-            kz_renk = '#00ff66' if '▲' in str(satir["kz_orani"]) else ('#ff3344' if '▼' in str(satir["kz_orani"]) else '#ffffff')
-            defter_html += f'<tr><td>{satir["tarih_saat"]}</td><td>{satir["bta_puani"]}</td><td>{satir["hisse"]}</td><td>{satir["algoritmik_fiyat"]}</td><td>{satir["guncel_fiyat"]}</td><td style="color:{kz_renk};">{satir["kz_orani"]}</td></tr>'
-        defter_html += '</table>'
-        st.markdown(defter_html, unsafe_allow_html=True)
-    else:
-        st.info("Deftere henüz kayıtlı bir hisse bulunmuyor. Algoritmaya yeni veri düştüğünde otomatik işlenecektir.")
-except:
-    st.error("Kayıt defteri okunamadı.")
-
-# ===================================================================== #
