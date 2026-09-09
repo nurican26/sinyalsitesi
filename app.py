@@ -17,7 +17,11 @@ st.markdown('''
 div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
 input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
 .stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
+.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
+.mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -26,15 +30,15 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_yildizlar = "bta_yildiz_begenileri_db.csv"
 db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
+db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
-if not os.path.exists(db_yildizlar):
-    pd.DataFrame(columns=["rumuz"]).to_csv(db_yildizlar, index=False)
-
 if not os.path.exists(db_ortak_oda):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
+
+if not os.path.exists(db_mesajlar):
+    pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
 # ===================================================================== #
 # RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
@@ -70,29 +74,37 @@ with col_ust1:
     with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
         st.caption(", ".join(aktif_listesi))
 
-# --- GERÇEK YILDIZ BEĞENİSİ MOTORU ---
+# --- DÜŞÜK KOTALI CANLI MESAJ PANAROMASI ---
 with col_ust2:
-    try:
-        df_yildiz_oku = pd.read_csv(db_yildizlar)
-        begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
-    except:
-        begenen_listesi = []
-        df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
-        
-    toplam_gercek_begeni = len(begenen_listesi)
-    kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
-    buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
+    st.markdown('<p style="font-size:14px; font-weight:bold; color:#00ffcc; margin-bottom:2px; margin-top:-5px;">💬 Oda İçi Hafif Mesaj Paneli</p>', unsafe_allow_html=True)
     
-    st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
-    if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
-        if kullanici_begenmis_mi:
-            df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
-        else:
-            yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
-            df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
-            
-        df_yildiz_oku.to_csv(db_yildizlar, index=False)
-        st.rerun()
+    # Mesaj Oku ve Göster
+    try:
+        df_msg = pd.read_csv(db_mesajlar)
+        msg_lines = []
+        for _, row in df_msg.tail(15).iterrows():  # Sadece son 15 mesaj (Kota dostu)
+            msg_lines.append(f"<span style='color:#0d9488;'>[{row['zaman']}]</span> <b style='color:#ffcc00;'>{row['rumuz']}:</b> <span style='color:#fff;'>{row['mesaj']}</span>")
+        
+        mesaj_govde = "<br>".join(msg_lines) if msg_lines else "<span style='color:#666;'>Henüz mesaj yok...</span>"
+        st.markdown(f'<div class="mesaj-kutusu">{mesaj_govde}</div>', unsafe_allow_html=True)
+    except:
+        st.markdown('<div class="mesaj-kutusu"><span style='color:#ff3344;'>Mesajlar yüklenemedi.</span></div>', unsafe_allow_html=True)
+    
+    # Mesaj Gönderme Formu (Tek satırda sıkışık düzen)
+    col_msg_in, col_msg_btn = st.columns([4, 1])
+    with col_msg_in:
+        yeni_mesaj = st.text_input("", max_chars=100, placeholder="Mesaj yazın...", label_visibility="collapsed", key="msg_input_field")
+    with col_msg_btn:
+        if st.button("Gönder", use_container_width=True, key="msg_send_btn") and yeni_mesaj.strip():
+            saat_str = datetime.datetime.now().strftime("%H:%M")
+            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": yeni_mesaj.strip()}])
+            try:
+                df_eski_msg = pd.read_csv(db_mesajlar)
+                df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(30) # Dosya boyutunu hep küçük tutar
+                df_toplam_msg.to_csv(db_mesajlar, index=False)
+            except:
+                df_yeni_msg.to_csv(db_mesajlar, index=False)
+            st.rerun()
 
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
@@ -115,21 +127,14 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. ANA VERİ MOTORU VE DİKEY YAN YANA BÜYÜTÜLMÜŞ KARTLAR
+# 3. ANA VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 st.write("---")
-
-# Sabit yedek liste (Hata riskini sıfırlamak için)
-tum_hisseler = ["THYAO", "ASELS", "EREGL", "TUPRS", "AKBNK", "GARAN", "SISE", "BIMAS", "SAHOL", "KCHOL"]
-
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        st.markdown('<p style="font-size:22px; font-weight:bold; color:#1E90FF; margin-bottom:15px;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-        
-        kart_sutun1, kart_sutun2 = st.columns(2)
-        aktif_kart_sayisi = 0
-        excel_hisseleri = []
+        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
+        veri_var_mi = False
         
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -137,51 +142,39 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
             
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                excel_hisseleri.append(ha)
-                    
+                veri_var_mi = True
                 if isinstance(puan_d, (int, float)):
                     p_temiz = f"{float(puan_d):.2f}"
                 else:
                     p_temiz = str(puan_d).strip()
                     
                 h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+                if len(h_veri) > 0:
+                    c_fiyat = float(h_veri['Close'].iloc[-1])
+                else:
+                    c_fiyat = 0.0
                 
                 alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                if alim_c_temiz.replace(".", "", 1).isdigit():
+                    maliyet = float(alim_c_temiz)
+                else:
+                    maliyet = 0.0
                 
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    kz_str = f'<span style="color:#00ff66; font-size:18px;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344; font-size:18px;">▼ %{or_dg:.2f}</span>'
+                    if or_dg >= 0:
+                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
+                    else:
+                        kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 else:
-                    kz_str = "<span style='font-size:18px;'>-</span>"
+                    kz_str = "<span>-</span>"
                 
-                dikey_kart_html = f'''
-                <div style="background-color: #121d33; border: 2px solid #1e3a5f; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);">
-                    <div style="font-size: 24px; color: #00ffcc; border-bottom: 2px solid #1e2e4d; padding-bottom: 8px; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px;">📍 {ha} HİSSE BİLGİLERİ</div>
-                    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 18px; color: #ffffff;">
-                        <div><b>BTA PUANI:</b> <span style="color: #00ffcc; font-size: 20px; font-weight: bold;">{p_temiz}</span></div>
-                        <div><b>ALGORİTMİK FİYATI:</b> <span style="font-weight: bold; color: #e2e8f0;">{maliyet:,.2f} TL</span></div>
-                        <div><b>GÜNCEL FİYAT:</b> <span style="font-weight: bold; color: #e2e8f0;">{c_fiyat:,.2f} TL</span></div>
-                        <div><b>KÂR / ZARAR:</b> <b>{kz_str}</b></div>
-                    </div>
-                </div>
-                '''
-                
-                if aktif_kart_sayisi % 2 == 0:
-                    kart_sutun1.markdown(dikey_kart_html, unsafe_allow_html=True)
-                else:
-                    kart_sutun2.markdown(dikey_kart_html, unsafe_allow_html=True)
-                aktif_kart_sayisi += 1
-                
-        if len(excel_hisseleri) > 0:
-            tum_hisseler = excel_hisseleri
-    except Exception as e:
-        pass
-else:
-    st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 4. BORSA ARAMA MOTORU (SIFIR HIZALAMA - ASLA HATA VERMEZ)
-# ===================================================================== #
-st.write("---")
+                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            
+        tablo_html += '</table>'
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
+        
+        # --- BORSA ARAMA MOTORU ---
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+        if len(df.columns) >= 5:
