@@ -85,7 +85,7 @@ else:
             begenen_listesi = []
             df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
             
-        toplam_gercek_begeni = len(begenen_listesi)
+            toplam_gercek_begeni = len(begenen_listesi)
         kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
         buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
         
