@@ -119,6 +119,7 @@ except:
 # ===================================================================== #
 st.write("---")
 
+# Güvenli dinamik liste oluşturma
 tum_hisseler = []
 
 if os.path.exists(excel_yolu):
@@ -130,15 +131,16 @@ if os.path.exists(excel_yolu):
         kart_sutun1, kart_sutun2 = st.columns(2)
         aktif_kart_sayisi = 0
         
-        if len(df.columns) >= 5:
-            tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
-        
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
             
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                # Arama motoru listesine ekle
+                if ha not in tum_hisseler:
+                    tum_hisseler.append(ha)
+                    
                 if isinstance(puan_d, (int, float)):
                     p_temiz = f"{float(puan_d):.2f}"
                 else:
@@ -156,7 +158,7 @@ if os.path.exists(excel_yolu):
                 else:
                     kz_str = "<span style='font-size:18px;'>-</span>"
                 
-                # BÜYÜTÜLMÜŞ ve OKUNAKLI Kart HTML Tasarımı (font-size değerleri artırıldı)
+                # BÜYÜTÜLMÜŞ Kart HTML Tasarımı
                 dikey_kart_html = f'''
                 <div style="background-color: #121d33; border: 2px solid #1e3a5f; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);">
                     <div style="font-size: 24px; color: #00ffcc; border-bottom: 2px solid #1e2e4d; padding-bottom: 8px; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px;">📍 {ha} HİSSE BİLGİLERİ</div>
@@ -180,7 +182,6 @@ else:
     st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. BORSA ARAMA MOTORU
+# 4. BORSA ARAMA MOTORU (GARANTİLİ & EN ALTA HİZALANMIŞ DURUMDA)
 # ===================================================================== #
-if tum_hisseler:
-    st.write("---")
+if len(tum_hisseler) > 0:
