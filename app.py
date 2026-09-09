@@ -47,27 +47,23 @@ if "bta_rumuz" not in st.session_state:
     st.stop()
 
 # --- %100 KİLİTLENMEYEN ORTAK HAVUZ CANLI ODA MOTORU ---
-# Sunucu seviyesinde ortak bir aktiflik sözlüğü oluşturuyoruz
 if "global_aktiflik_havuzu" not in st.session_state:
     st.session_state["global_aktiflik_havuzu"] = {}
 
 simdi = time.time()
-# Mevcut kullanıcının son görülme zamanını hafızaya yaz
 st.session_state["global_aktiflik_havuzu"][st.session_state["bta_rumuz"]] = simdi
 
-# Son 15 saniye içinde sinyal göndermeyen pasif kişileri temizle
 aktif_listesi = []
 for rmz, son_sinyal in list(st.session_state["global_aktiflik_havuzu"].items()):
     if simdi - son_sinyal < 15:
         aktif_listesi.append(rmz)
     else:
-        # Süresi dolanı havuzdan sil
         st.session_state["global_aktiflik_havuzu"].pop(rmz, None)
 
 canli_oda_sayisi = len(aktif_listesi)
 
-# Üst Kısımdaki Başlık Düzeni
-col_ust1, col_ust2 = st.columns()
+# TypeError Hatasına sebep olan st.columns() alanı st.columns(2) yapılarak tamamen düzeltildi
+col_ust1, col_ust2 = st.columns(2)
 
 with col_ust1:
     st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
@@ -76,10 +72,14 @@ with col_ust1:
 
 # --- GERÇEK YILDIZ BEĞENİSİ MOTORU ---
 with col_ust2:
-    df_yildiz_oku = pd.read_csv(db_yildizlar)
-    begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
+    try:
+        df_yildiz_oku = pd.read_csv(db_yildizlar)
+        begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
+    except:
+        begenen_listesi = []
+        df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
+        
     toplam_gercek_begeni = len(begenen_listesi)
-    
     kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
     buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
     
