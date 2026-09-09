@@ -123,7 +123,7 @@ if os.path.exists(excel_yolu):
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         
-        # Yan yana iki kart basmak için 2 adet kolon oluşturuyoruz
+        # Yan yana iki kart düzeni için kolonlar
         kart_sutun1, kart_sutun2 = st.columns(2)
         veri_var_mi = False
         aktif_kart_sayisi = 0
@@ -174,7 +174,7 @@ if os.path.exists(excel_yolu):
                 </div>
                 '''
                 
-                # Kartları sırayla sola ve sağa dağıtarak yan yana listeliyoruz
+                # Kartları sırayla sola ve sağa dağıtarak yan yana basıyoruz
                 if aktif_kart_sayisi % 2 == 0:
                     kart_sutun1.markdown(dikey_kart_html, unsafe_allow_html=True)
                 else:
