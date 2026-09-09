@@ -134,7 +134,7 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel bulunamadı.")
 
-# SPK MEVZUATINA TAM UYUMLU GÜNCELLENMİŞ TABLO ALTI YASAL UYARI BÖLÜMÜ
+# SPK MEVZUATINA TAM UYUMLU TABLO ALTI YASAL UYARI BÖLÜMÜ
 st.markdown('''
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
     <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -142,7 +142,7 @@ st.markdown('''
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
         Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
-        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
+        Sitemiz tamamen ücretsiz, herkese açık og genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin-top:8px; margin-bottom:0;">
         Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişilerin mali durumları ile risk ve getiri tercihleri dikkate alınarak kişiye özel sunulan yasal bir hizmettir. 
@@ -170,4 +170,5 @@ col_not1, col_not2 = st.columns(2)
 with col_not1:
     st.markdown('<p style="font-size:14px; font-weight:bold; color:#fff;">Yeni Not Ekle</p>', unsafe_allow_html=True)
     not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
+    
     if not_hisse_secim == "Manuel Gir...":
