@@ -41,70 +41,44 @@ if not os.path.exists(db_ortak_oda):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
 
 if not os.path.exists(db_notlar):
-    pd.DataFrame(columns=["id", "rumuz", "tarih", "hisse", "not"]).to_csv(db_notlar, index=False)
+    pd.DataFrame(columns=["id", "tarih", "hisse", "not"]).to_csv(db_notlar, index=False)
 
-# ===================================================================== #
-# RUMUZ GİRİŞ SİSTEMİ (ORİJİNAL ÇALIŞAN KURGU)
-# ===================================================================== #
-if "bta_rumuz" not in st.session_state:
-    st.markdown("<h3 style='text-align:center; color:#fff;'>BTA Merkez Paneline Giriş</h3>", unsafe_allow_html=True)
-    giriş_rumuz = st.text_input("Rumuz girip klavyeden ENTER tuşuna basınız:", max_chars=20, key="rumuz_input")
-    if giriş_rumuz.strip():
-        st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
-        st.rerun()
-    st.stop()
-
-# --- HERKESİN BİRBİRİNİ GÖRDÜĞÜ ORTAK DOSYA TABANLI CANLI ODA MOTORU ---
+# --- CANLI ODA MOTORU (RUMUZSUZ GEÇİCİ KİMLİKLE AKTİFLİK SAYAR) ---
 simdi = time.time()
 try:
     df_oda = pd.read_csv(db_ortak_oda)
-    df_oda = df_oda[df_oda["rumuz"] != st.session_state["bta_rumuz"]]
-    yeni_sinyal = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
-    df_oda = pd.concat([df_oda, yeni_sinyal], ignore_index=True)
     df_oda = df_oda[df_oda["son_gorulme"] > (simdi - 15)]
-    df_oda.to_csv(db_ortak_oda, index=False)
-    
-    aktif_listesi = df_oda["rumuz"].unique().tolist()
-    canli_oda_sayisi = len(aktif_listesi)
+    canli_oda_sayisi = len(df_oda["rumuz"].unique()) + 1
 except:
     canli_oda_sayisi = 1
-    aktif_listesi = [st.session_state["bta_rumuz"]]
 
 col_ust1, col_ust2 = st.columns(2)
 
 with col_ust1:
     st.markdown(f'<div style="text-align:left;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
-    with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
-        st.caption(", ".join(aktif_listesi))
 
 # --- GERÇEK YILDIZ BEĞENİSİ MOTORU ---
 with col_ust2:
     try:
         df_yildiz_oku = pd.read_csv(db_yildizlar)
-        begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
+        toplam_gercek_begeni = len(df_yildiz_oku["rumuz"].unique())
     except:
-        begenen_listesi = []
+        toplam_gercek_begeni = 0
         df_yildiz_oku = pd.DataFrame(columns=["rumuz"])
         
-    toplam_gercek_begeni = len(begenen_listesi)
-    kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
-    buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
-    
     st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Gerçek Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
-    if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
-        if kullanici_begenmis_mi:
-            df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
-        else:
-            yeni_begeni = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"]}])
+    if st.button("⭐ Panele Yıldız Bırak", use_container_width=True, key="yildiz_butonu"):
+        try:
+            yeni_begeni = pd.DataFrame([{"rumuz": str(int(time.time()))}])
             df_yildiz_oku = pd.concat([df_yildiz_oku, yeni_begeni], ignore_index=True)
-            
-        df_yildiz_oku.to_csv(db_yildizlar, index=False)
-        st.rerun()
+            df_yildiz_oku.to_csv(db_yildizlar, index=False)
+            st.rerun()
+        except:
+            pass
 
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
-st.write("---")
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
     ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
@@ -181,7 +155,7 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel bulunamadı.")
 
-# --- BORSA ARAMA MOTORU (DOĞRUDAN ANA AKIŞTA - GÜVENLİ) ---
+# --- BORSA ARAMA MOTORU ---
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
 if len(tum_hisseler) > 0:
@@ -195,3 +169,31 @@ if len(tum_hisseler) > 0:
             pass
 
 # ===================================================================== #
+# 4. HİSSE NOT DEFTERİ KAYIT PANELİ (DIREKT AÇIK VE GÖRÜNÜR)
+# ===================================================================== #
+st.write("---")
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️ BTA HİSSE NOT DEFTERİ</p>', unsafe_allow_html=True)
+
+col_not1, col_not2 = st.columns(2)
+
+with col_not1:
+    st.markdown('<p style="font-size:14px; font-weight:bold; color:#fff;">Yeni Not Ekle</p>', unsafe_allow_html=True)
+    not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
+    
+    if not_hisse_secim == "Manuel Gir...":
+        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", max_chars=10, key="not_manuel_hisse_kod").strip().upper()
+    else:
+        not_hisse = not_hisse_secim
+        
+    hisse_notu = st.text_area("Hisse Hakkındaki Notunuz:", max_chars=500, placeholder="Hedef fiyat, alım bölgesi veya stratejinizi yazın...", key="hisse_notu_metni")
+    
+    if st.button("Notu Kaydet 💾", use_container_width=True, key="notu_kaydet_butonu"):
+        if not_hisse and hisse_notu.strip():
+            try:
+                df_notlar = pd.read_csv(db_notlar)
+                yeni_id = str(int(time.time() * 1000))
+                su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+                
+                yeni_not_veri = pd.DataFrame([{
+                    "id": yeni_id,
+                    "tarih": su_an_tarih,
