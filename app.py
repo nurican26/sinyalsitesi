@@ -32,10 +32,10 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; background-color: #121d33; border-radius: 8px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 8px; }
 .borsa-tablo td { padding: 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; }
-.spk-uyari-alani { background-color: rgba(255, 51, 68, 0.05); border: 1px dashed #ff3344; padding: 12px; border-radius: 8px; margin-top: 30px; font-size: 11px; color: #cccccc; text-align: justify; line-height: 1.4; display: block !important; }
+.mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 10px; }
+.spk-uyari-alani { background-color: rgba(255, 51, 68, 0.05); border: 1px dashed #ff3344; padding: 12px; border-radius: 8px; margin-top: 30px; font-size: 11px; color: #cccccc; text-align: justify; line-height: 1.4; display: block !important; clear: both !important; }
 /* Form kutusunun kenarlıklarını temizlemek için */
-div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
+div[data-testid="stForm"] { border: none !important; padding: 0 !important; margin: 0 !important; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:sans-serif; font-size:36px; margin-bottom:10px;">BTA MERKEZ</h1>
 ''', unsafe_allow_html=True)
@@ -50,7 +50,7 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 if not os.path.exists(db_mesajlar):
     pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
-# --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
+# --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU (YENİLENDİ) ---
 def mesajı_sansurle(metin):
     kara_liste = [
         "serefsiz", "şerefsiz", "amk", "aq", "sik", "piç", "pic", "orospu", "göt", "got", 
@@ -67,7 +67,6 @@ def mesajı_sansurle(metin):
                 if start_idx == -1:
                     break
                 uzunluk = len(kufur)
-                orijinal_metin = original_metin if 'original_metin' in locals() else orijinal_metin
                 orijinal_metin = orijinal_metin[:start_idx] + ("*" * uzunluk) + orijinal_metin[start_idx + uzunluk:]
                 kucuk_metin = kucuk_metin[:start_idx] + ("*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
                 start_idx += uzunluk
@@ -146,7 +145,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (SABİTLENMİŞ VE HATALARI GİDERİLMİŞ)
+# SAĞ TARAF: MESAJ PANELI (YENİLENDİ)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -163,7 +162,7 @@ with col_sag:
     except:
         st.markdown('<div class="mesaj-kutusu"><span style="color:#ff3344;">Mesajlar yüklenemedi.</span></div>', unsafe_allow_html=True)
     
-    # Enter Tuşu Çalışması İçin Form Yapısı
+    # Enter Tuşuyla Gönderim Sağlayan Form Yapısı
     with st.form("mesaj_formu", clear_on_submit=True):
         yeni_mesaj = st.text_input("Mesajınız:", max_chars=70, placeholder="Yazın ve Enter'a basın...", key="msg_input")
         gonder_butonu = st.form_submit_button("Gönder 📩", use_container_width=True)
