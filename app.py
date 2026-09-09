@@ -30,14 +30,13 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
-db_arsiv = "bta_hisse_arsiv_db.csv" # YENİ: Kalıcı Defter Veritabanı
+db_arsiv = "bta_hisse_arsiv_db.csv"
 
 # KALICI SOHBET VE ARŞİV VERİTABANI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
 if not os.path.exists(db_arsiv):
-    # YENİ: Arşiv dosyası yoksa oluşturuyoruz
     pd.DataFrame(columns=["tarih_saat", "bta_puani", "hisse", "algoritmik_fiyat", "guncel_fiyat", "kz_orani"]).to_csv(db_arsiv, index=False)
 
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
@@ -75,7 +74,6 @@ if os.path.exists(excel_yolu):
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
         
-        # Aktif döngüdeki güncel hisse verilerini geçici olarak tutmak ve arşive eklemek için liste
         anlik_gelen_hisseler = []
         
         for idx in range(min(10, len(df))):
@@ -102,7 +100,6 @@ if os.path.exists(excel_yolu):
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.1f} TL</td><td>{c_fiyat:,.1f} TL</td><td>{kz_str}</td></tr>'
                     
-                    # YENİ: Arşive kaydedilecek veriyi yapılandırıyoruz
                     anlik_gelen_hisseler.append({
                         "tarih_saat": datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
                         "bta_puani": p_temiz,
@@ -118,22 +115,16 @@ if os.path.exists(excel_yolu):
         if veri_var_mi: 
             st.markdown(tablo_html, unsafe_allow_html=True)
             
-            # ===================================================================== #
-            # YENİ: OTOMATİK ARŞİVLEME MOTORU (DEFERE KAYIT)
-            # ===================================================================== #
             try:
                 df_arsiv_oku = pd.read_csv(db_arsiv)
                 yeni_kayitlar = []
                 
                 for h_bilgi in anlik_gelen_hisseler:
-                    # Aynı hisse koduna ait en son kayıt kontrol edilir
                     hisse_eski_kayitlar = df_arsiv_oku[df_arsiv_oku["hisse"] == h_bilgi["hisse"]]
                     
                     if hisse_eski_kayitlar.empty:
-                        # Hisse arşivde hiç yoksa ilk defa ekle
                         yeni_kayitlar.append(h_bilgi)
                     else:
-                        # Hisse var ise fiyatı veya puanı değişmiş mi kontrol et (kopya kaydı önlemek için)
                         son_kayit = hisse_eski_kayitlar.iloc[-1]
                         if (str(son_kayit["algoritmik_fiyat"]) != str(h_bilgi["algoritmik_fiyat"])) or (str(son_kayit["bta_puani"]) != str(h_bilgi["bta_puani"])):
                             yeni_kayitlar.append(h_bilgi)
@@ -142,7 +133,7 @@ if os.path.exists(excel_yolu):
                     df_yeni = pd.DataFrame(yeni_kayitlar)
                     pd.concat([df_arsiv_oku, df_yeni], ignore_index=True).to_csv(db_arsiv, index=False)
             except Exception as e:
-                pass # Arşivleme hatası ana ekranı kilitlemesin
+                pass
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
@@ -158,7 +149,7 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# YENİ: 3.5 KALICI KALDIRILAMAZ HİSSE KAYIT DEFTERİ PANELİ
+# 3.5 KALICI KALDIRILAMAZ HİSSE KAYIT DEFTERİ PANELİ
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📖 BTA KALICI HİSSE KAYIT DEFTERİ (SİLİNMEZ)</p>', unsafe_allow_html=True)
@@ -166,4 +157,16 @@ st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📖 BT
 try:
     df_defter = pd.read_csv(db_arsiv)
     if not df_defter.empty:
-        # En yeni eklenen hisseleri en üstte göstermek için listeyi ters çeviriyoruz
+        defter_html = '<table class="borsa-tablo"><tr><th>KAYIT TARİHİ</th><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>ANLIK FİYAT</th><th>K/Z</th></tr>'
+        for i in range(len(df_defter)-1, -1, -1):
+            satir = df_defter.iloc[i]
+            kz_renk = '#00ff66' if '▲' in str(satir["kz_orani"]) else ('#ff3344' if '▼' in str(satir["kz_orani"]) else '#ffffff')
+            defter_html += f'<tr><td>{satir["tarih_saat"]}</td><td>{satir["bta_puani"]}</td><td>{satir["hisse"]}</td><td>{satir["algoritmik_fiyat"]}</td><td>{satir["guncel_fiyat"]}</td><td style="color:{kz_renk};">{satir["kz_orani"]}</td></tr>'
+        defter_html += '</table>'
+        st.markdown(defter_html, unsafe_allow_html=True)
+    else:
+        st.info("Deftere henüz kayıtlı bir hisse bulunmuyor. Algoritmaya yeni veri düştüğünde otomatik işlenecektir.")
+except:
+    st.error("Kayıt defteri okunamadı.")
+
+# ===================================================================== #
