@@ -176,20 +176,19 @@ with col_not2:
     if admin_paneli:
         sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
 
-    if os.path.exists(db_notlar):
-        df_notlar_oku = pd.read_csv(db_notlar)
-        if not df_notlar_oku.empty:
-            df_notlar_oku = df_notlar_oku.iloc[::-1]
-            for index, row in df_notlar_oku.iterrows():
-                not_id = str(row["id"])
-                hisse_adi = str(row["hisse"])
-                hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
-                
-                not_anlik_fiyat = 0.0
-                try:
-                    canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
-                    not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
-                except:
-                    pass
-                
-                alarm_durumu = ""
+    # Çökme korumalı not okuma mekanizması
+    try:
+        if os.path.exists(db_notlar):
+            df_notlar_oku = pd.read_csv(db_notlar)
+            if not df_notlar_oku.empty:
+                df_notlar_oku = df_notlar_oku.iloc[::-1]
+                for index, row in df_notlar_oku.iterrows():
+                    not_id = str(row["id"])
+                    hisse_adi = str(row["hisse"])
+                    hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
+                    
+                    not_anlik_fiyat = 0.0
+                    try:
+                        canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
+                        not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
+                    except:
