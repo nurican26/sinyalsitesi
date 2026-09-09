@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
+import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
@@ -22,8 +23,9 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 .galeri-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px; text-align: center; }
+.oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
 </style>
-<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
+<h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
 # Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
@@ -32,6 +34,7 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
 db_resimler = "bta_resim_kayit_db.csv"
+db_aktiflik = "bta_aktiflik_db.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_sohbet):
@@ -40,8 +43,33 @@ if not os.path.exists(db_sohbet):
 if not os.path.exists(db_resimler):
     pd.DataFrame(columns=["tarih", "saat", "resim_url", "not"]).to_csv(db_resimler, index=False)
 
+if not os.path.exists(db_aktiflik):
+    pd.DataFrame(columns=["session_id", "son_gorulme"]).to_csv(db_aktiflik, index=False)
+
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
+
+# --- ANLIK CANLI ODA SAYISI MOTORU ---
+# Her tarayıcı sekmesine özel geçici bir kimlik atayıp kalıcı veritabanında güncelliyoruz
+if "bta_kullanici_id" not in st.session_state:
+    st.session_state["bta_kullanici_id"] = str(time.time())
+
+try:
+    df_akt = pd.read_csv(db_aktiflik)
+    simdi = time.time()
+    # Mevcut kullanıcının zamanını güncelle veya ekle
+    df_akt = df_akt[df_akt["session_id"] != st.session_state["bta_kullanici_id"]]
+    yeni_akt = pd.DataFrame([{"session_id": st.session_state["bta_kullanici_id"], "son_gorulme": simdi}])
+    df_akt = pd.concat([df_akt, yeni_akt], ignore_index=True)
+    # Son 15 saniye içinde aktif olmayan (sayfadan çıkan) kişileri temizle
+    df_akt = df_akt[df_akt["son_gorulme"] > (simdi - 15)]
+    df_akt.to_csv(db_aktiflik, index=False)
+    canli_oda_sayisi = len(df_akt)
+except:
+    canli_oda_sayisi = 1
+
+# Oda sayısını en tepede şık bir rozet olarak gösteriyoruz
+st.markdown(f'<div style="text-align:center;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Aktif Kullanıcı</div></div>', unsafe_allow_html=True)
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
@@ -118,7 +146,7 @@ else: st.error("Excel bulunamadı.")
 # 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
 # ===================================================================== #
 st.write("---")
-# DÜZELTİLEN ALAN: unsafe_allow_index hatası unsafe_allow_html olarak güncellendi.
+# Kırmızı hataya sebep olan unsafe_allow_index=True kısmı burada unsafe_allow_html=True olarak tamamen düzeltildi.
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
@@ -147,30 +175,3 @@ with st.form(key="s_frm", clear_on_submit=True):
     if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
         m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
         i_kucuk = y_is.lower().replace(" ", "")
-        
-        if not any(z in m_kucuk or z in i_kucuk for z in yasakli):
-            df_s = pd.read_csv(db_sohbet)
-            y_satir = pd.DataFrame([{"isim": y_is.strip(), "saat": datetime.datetime.now().strftime("%H:%M"), "yorum": y_me.strip()}])
-            pd.concat([y_satir, df_s], ignore_index=True).to_csv(db_sohbet, index=False)
-            st.rerun()
-        else:
-            st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
-
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-# MESAJ LİSTELEME VE KONTROL MOTORU
-df_sohbet_oku = pd.read_csv(db_sohbet)
-
-if "son_mesaj_sayisi" not in st.session_state:
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-
-if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
-    st.components.v1.html(garantili_bip_html, height=0, width=0)
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
-    st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
-
-for s in range(len(df_sohbet_oku)):
-    sh = df_sohbet_oku.iloc[s]
-    st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
