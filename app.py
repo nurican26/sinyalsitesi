@@ -86,7 +86,7 @@ with col_ust2:
     kullanici_begenmis_mi = st.session_state["bta_rumuz"] in begenen_listesi
     buton_metni = "🌟 Sistem Favorilerimde! (Beğenildi)" if kullanici_begenmis_mi else "⭐ Panele Yıldız Bırak"
     
-    st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Gerçek Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:right; font-size:16px; font-weight:bold; color:#ffcc00; margin-bottom:5px;">📊 Yıldız Beğenisi: {toplam_gercek_begeni} Kişi</div>', unsafe_allow_html=True)
     if st.button(buton_metni, use_container_width=True, key="yildiz_butonu"):
         if kullanici_begenmis_mi:
             df_yildiz_oku = df_yildiz_oku[df_yildiz_oku["rumuz"] != st.session_state["bta_rumuz"]]
