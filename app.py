@@ -15,31 +15,25 @@ st.markdown('''
 <style>
 .stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
 div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
-.sohbet-kutu { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 15px !important; margin-bottom: 15px; }
 input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
 .stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 .galeri-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px; text-align: center; }
 .oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Mesajları ve Fiyatları Tazeler)
-st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Fiyatları ve Canlı Odayı Tazeler)
+st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_sohbet = "bta_sohbet_db.csv"
 db_resimler = "bta_resim_kayit_db.csv"
 db_aktiflik = "bta_aktiflik_db.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
-if not os.path.exists(db_sohbet):
-    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
-
 if not os.path.exists(db_resimler):
     pd.DataFrame(columns=["tarih", "saat", "resim_url", "not"]).to_csv(db_resimler, index=False)
 
@@ -51,7 +45,7 @@ if not os.path.exists(db_aktiflik):
 # ===================================================================== #
 if "bta_rumuz" not in st.session_state:
     st.markdown("<h3 style='text-align:center; color:#fff;'>BTA Merkez Paneline Giriş</h3>", unsafe_allow_html=True)
-    giriş_rumuz = st.text_input("Lütfen Sohbet ve Panel için bir Rumuz (Ad) giriniz:", max_chars=20, key="rumuz_input")
+    giriş_rumuz = st.text_input("Lütfen Panel için bir Rumuz (Ad) giriniz:", max_chars=20, key="rumuz_input")
     if st.button("Panele Bağlan 🚀") and giriş_rumuz.strip():
         st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
         st.rerun()
@@ -75,7 +69,7 @@ except:
 
 st.markdown(f'<div style="text-align:center;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
 
-with st.expander(f"👥 Odadakileri Gör ({canli_oda_sayisi})"):
+with st.expander(f"👥 Odadaki Bağlantıları Gör ({canli_oda_sayisi})"):
     st.caption(", ".join(aktif_listesi))
 
 # ===================================================================== #
@@ -146,22 +140,39 @@ if os.path.exists(excel_yolu):
 else: st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. GÜVENLİ SOHBET ALANI VE SES SİNYAL MOTORU
+# 4. YÖNETİCİ GİRİŞİ (SADECE RESİM SİLME YETKİSİ İÇİN)
+# ===================================================================== #
+with st.expander("🛠 Yönetici"):
+    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
+
+# ===================================================================== #
+# 5. TARİHLİ 3 RESİMLİK KAYIT DEFTERİ (GALERİ) ALANI
 # ===================================================================== #
 st.write("---")
-st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📅 Tarihli Resim Kayıt Defteri (Son 3 Görsel)</p>', unsafe_allow_html=True)
 
-yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
+with st.expander("🖼 Kayıt Defterine Yeni Resim Linki Ekle"):
+    r_url = st.text_input("Resim URL (Web Adresi veya Bulut Linki):")
+    r_not = st.text_input("Resim Notu / Açıklama:", max_chars=100)
+    if st.button("Resmi Kaydet 💾") and r_url.strip():
+        df_r = pd.read_csv(db_resimler)
+        y_resim = pd.DataFrame([{
+            "tarih": datetime.datetime.now().strftime("%d.%m.%Y"),
+            "saat": datetime.datetime.now().strftime("%H:%M"),
+            "resim_url": r_url.strip(),
+            "not": r_not.strip()
+        }])
+        pd.concat([y_resim, df_r], ignore_index=True).to_csv(db_resimler, index=False)
+        st.success("Resim başarıyla galeriye eklendi!")
+        st.rerun()
 
-# SyntaxError hatasını düzelten, tek satıra indirgenmiş temiz Web Audio API JS bloğu
-garantili_bip_html = "<script>(function(){var c=new(window.AudioContext||window.webkitAudioContext)();var o=c.createOscillator();var g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=850;g.gain.setValueAtTime(0.15,c.currentTime);o.start();g.gain.exponentialRampToValueAtTime(0.00001,c.currentTime+0.20);o.stop(c.currentTime+0.22);})();</script>"
+df_resim_oku = pd.read_csv(db_resimler)
 
-st.markdown('<div class="sohbet-kutu">', unsafe_allow_html=True)
-st.write(f"✍️ **Gönderici:** {st.session_state['bta_rumuz']}")
-y_me = st.text_area("Mesajınız:", max_chars=300, height=70, key="mesaj_alani")
-
-if st.button("Mesajı Yayınla 📨", use_container_width=True):
-    if y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-        r_kucuk = st.session_state["bta_rumuz"].lower().replace(" ", "")
-        
+if not df_resim_oku.empty:
+    son_uc_resim = df_resim_oku.head(3)
+    r_cols = st.columns(3)
+    
+    for r_idx, r_row in son_uc_resim.iterrows():
+        with r_cols[r_idx % 3]:
+            st.markdown(f'''
+            <div class="galeri-kutu">
