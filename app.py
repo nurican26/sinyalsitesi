@@ -21,6 +21,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
+.galeri-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px; text-align: center; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -30,10 +31,14 @@ st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
+db_resimler = "bta_resim_kayit_db.csv"
 
-# KALICI SOHBET VERİTABANI BAŞLATMA
+# KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_sohbet):
     pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
+
+if not os.path.exists(db_resimler):
+    pd.DataFrame(columns=["tarih", "saat", "resim_url", "not"]).to_csv(db_resimler, index=False)
 
 if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
@@ -53,10 +58,10 @@ try:
     gram_f = (ons_f / 31.1034768) * usd_f
     
     pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-    pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
-    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.1f} TL")
-    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.1f} TL")
-    col_bist.metric("BIST 100", f"{bist_f:,.1f}")
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")  # Hassasiyet artırıldı
+    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
+    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
+    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
     col_eur.metric("EURO", f"{eur_f:,.2f} TL")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
@@ -86,10 +91,11 @@ if os.path.exists(excel_yolu):
                     
                     if maliyet > 0 and c_fiyat > 0:
                         or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.1f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.1f}</span>'
+                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                     else: kz_str = "<span>-</span>"
                     
-                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.1f} TL</td><td>{c_fiyat:,.1f} TL</td><td>{kz_str}</td></tr>'
+                    # Yuvarlama engellendi: :,.1f olan yerler :,.2f yapıldı
+                    tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
             except: continue
             
         tablo_html += '</table>'
@@ -113,11 +119,10 @@ else: st.error("Excel bulunamadı.")
 # 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
 # ===================================================================== #
 st.write("---")
-st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
+st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_index=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# İnternet bağlantısı gerektirmeyen, doğrudan tarayıcının kendi ürettiği Bip Sesi (Web Audio API)
 garantili_bip_html = """
 <script>
     (function() {
@@ -127,10 +132,10 @@ garantili_bip_html = """
         osc.connect(gain);
         gain.connect(context.destination);
         osc.type = 'sine';
-        osc.frequency.value = 830; // Sesin incelik ayarı (Hz)
-        gain.gain.setValueAtTime(0.1, context.currentTime); // Ses seviyesi (0.1 ideal)
+        osc.frequency.value = 830;
+        gain.gain.setValueAtTime(0.1, context.currentTime);
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15); // 0.15 saniye sürer
+        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15);
         osc.stop(context.currentTime + 0.16);
     })();
 </script>
@@ -160,7 +165,6 @@ df_sohbet_oku = pd.read_csv(db_sohbet)
 if "son_mesaj_sayisi" not in st.session_state:
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
 
-# Yeni mesaj geldiğinde yerel ses tetiklenir
 if len(df_sohbet_oku) > st.session_state["son_mesaj_sayisi"]:
     st.components.v1.html(garantili_bip_html, height=0, width=0)
     st.session_state["son_mesaj_sayisi"] = len(df_sohbet_oku)
@@ -170,7 +174,3 @@ elif len(df_sohbet_oku) < st.session_state["son_mesaj_sayisi"]:
 for s in range(len(df_sohbet_oku)):
     sh = df_sohbet_oku.iloc[s]
     st.markdown(f'<div style="background-color: #121d33; padding: 10px; border-radius: 8px; margin-bottom: 6px; border-left: 5px solid #00ffcc;"><b>👤 {sh["isim"]}</b> <span style="font-size:11px; color:#aaa; float:right;">⏱ {sh["saat"]}</span><p style="margin-top:4px; color:#fff;">{sh["yorum"]}</p></div>', unsafe_allow_html=True)
-    if adm_mod and st.button(f"Sil ❌ (Sıra: {s+1})", key=f"sl_{s}"):
-        df_sl = pd.read_csv(db_sohbet)
-        df_sl.drop(s).reset_index(drop=True).to_csv(db_sohbet, index=False)
-        st.session_state["son_mesaj_sayisi"] = len(df_sl) - 1
