@@ -129,7 +129,7 @@ else:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. ANA VERİ MOTORU VE TABLOLAR (HİZALAMA DÜZELTİLDİ)
+# 3. ANA VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 st.write("---")
 df = None
