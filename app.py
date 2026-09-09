@@ -7,29 +7,26 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTA DOSTU TASARIM VE HAREKETLİ ARKA PLAN EFEKTİ (CSS)
+# 1. KOTA DOSTU TASARIM VE ŞİMŞEK ARKA PLAN EFEKTİ (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Kotayı etkilemeyen tarayıcı tabanlı akıcı renk geçişi efekti */
+/* Kotayı ve sunucuyu etkilemeyen tarayıcı tabanlı şimşek arka planı */
 .stApp { 
-    background: linear-gradient(-45deg, #0b111e, #14213d, #091220, #0d9488) !important;
-    background-size: 400% 400% !important;
-    animation: borsaDalgalanma 15s ease infinite !important;
+    background-color: #000000 !important;
+    background-image: url("https://unsplash.com") !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
 }
 
-@keyframes borsaDalgalanma {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; padding: 10px !important; }
+div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: rgba(18, 29, 51, 0.85) !important; border: 1px solid #1e3a5f !important; border-radius: 8px !important; padding: 10px !important; }
 input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
 .stButton>button { background: #0d9488 !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
-.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; background-color: #121d33; border-radius: 8px; overflow: hidden; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; background-color: rgba(18, 29, 51, 0.85); border-radius: 8px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 8px; }
 .borsa-tablo td { padding: 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .mesaj-kutusu { background-color: #090f1a; border: 1px solid #1e3a5f; padding: 8px; border-radius: 6px; max-height: 180px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 10px; }
