@@ -146,30 +146,6 @@ st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri dikkate alınarak kişiye özel sunulmaktadır.Burada yer alan yorum ve tavsiyeler ise genel niteliktedir. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.</p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
 
-with col_not1:
-    st.markdown('<p style="font-size:14px; font-weight:bold; color:#fff;">Yeni Not Ekle</p>', unsafe_allow_html=True)
-    not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
-    if not_hisse_secim == "Manuel Gir...":
-        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", max_chars=10, key="not_manuel_hisse_kod").strip().upper()
-    else:
-        not_hisse = not_hisse_secim
-    not_hedef_fiyat = st.number_input("Hedef Fiyat (TL):", min_value=0.0, value=0.0, step=1.0, key="not_hedef_fiyat_input")
-    hisse_notu = st.text_area("Hisse Hakkındaki Notunuz:", max_chars=500, placeholder="Stratejinizi yazın...", key="hisse_notu_metni")
-    if st.button("Notu Kaydet 💾", use_container_width=True, key="notu_kaydet_butonu"):
-        if not_hisse and hisse_notu.strip():
-            try:
-                df_notlar = pd.read_csv(db_notlar)
-                yeni_id = str(int(time.time() * 1000))
-                su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-                yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
-                df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
-                df_notlar.to_csv(db_notlar, index=False)
-                st.success("Not kaydedildi!")
-                time.sleep(0.5)
-                st.rerun()
-            except:
-                pass
-
 with col_not2:
     st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
     # Sağ sütundaki tüm eski liste ve şifre kod bloğu tamamen temizlendi.
