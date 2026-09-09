@@ -50,25 +50,22 @@ if not os.path.exists(db_mesajlar):
 
 # --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
-    # Görselde yazdığınız kelime dahil genişletilmiş liste
+    # Genişletilmiş kara liste
     kara_liste = [
         "serefsiz", "şerefsiz", "amk", "aq", "sik", "piç", "pic", "orospu", "göt", "got", 
         "yarrak", "amcık", "amcik", "siktir", "pezevenk", "kahpe", "yavşak", "yavsak"
     ]
     
-    # Türkçe harfleri küçültürken hata olmaması için harf harf dönüşüm
     orijinal_metin = metin
     kucuk_metin = metin.replace('İ', 'i').replace('I', 'ı').replace('Ş', 'ş').replace('Ç', 'ç').replace('Ğ', 'ğ').replace('Ü', 'ü').replace('Ö', 'ö').lower()
     
     for kufur in kara_liste:
         if kufur in kucuk_metin:
-            # Kelime metin içinde nerede geçiyorsa sansürle (Büyük/küçük harf fark etmeksizin)
             start_idx = 0
             while True:
                 start_idx = kucuk_metin.find(kufur, start_idx)
                 if start_idx == -1:
                     break
-                # Orijinal metindeki ilgili kısmı yıldızla değiştir
                 uzunluk = len(kufur)
                 orijinal_metin = orijinal_metin[:start_idx] + ("*" * uzunluk) + orijinal_metin[start_idx + uzunluk:]
                 kucuk_metin = kucuk_metin[:start_idx] + ("*" * uzunluk) + kucuk_metin[start_idx + uzunluk:]
@@ -167,14 +164,12 @@ with col_sag:
     # Mesaj Gönderme Formu
     yeni_mesaj = st.text_input("Mesajınız:", max_chars=70, placeholder="Yazın ve Gönder'e basın...", key="msg_input")
     
-    col_gonder, col_temizle = st.columns([3, 1])
+    col_gonder, col_temizle = st.columns(2)
     with col_gonder:
         if st.button("Gönder 📩", use_container_width=True) and yeni_mesaj.strip():
-            # Güçlendirilmiş sansür kontrolü
             filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
-            
             saat_str = datetime.datetime.now().strftime("%H:%M")
-            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
+            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_metin if 'filtrelenmis_metin' in locals() else filtrelenmis_mesaj}])
             try:
                 df_eski_msg = pd.read_csv(db_mesajlar)
                 df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
@@ -183,6 +178,12 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- SADECE 'CC' RUMUZUNA ÖZEL GİZLİ SİLME BUTONU ---
+    # --- SADECE 'CC' RUMUZUNA ÖZEL SİLME BUTONU (Hizalama Düzeltildi) ---
     if st.session_state["bta_rumuz"] == "CC":
         with col_temizle:
+            if st.button("Temizle 🗑️", use_container_width=True, help="Odadaki tüm mesaj geçmişini sıfırlar."):
+                pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
+                st.rerun()
+
+# ===================================================================== #
+# 4. YASAL SPK UYARI METNİ (SAYFA ALTI)
