@@ -155,6 +155,7 @@ with col_not2:
                     
                     with st.expander(baslik):
                         st.info(row["not"])
-                        buton_metni = "Notu Kalıcı Olarak Sil ❌" if sifre_kontrol == "bta123" else "🔒 SİLME YETKİNİZ YOK"
-                        if st.button(buton_metni, key=f"sil_{not_id}", use_container_width=True):
-                            if sifre_kontrol == "bta123":
+                        
+                        # Hatalı olan iç içe if yapısını kaldırıp tek satırda güvenli kontrol sağladık
+                        silme_izni = (sifre_kontrol == "bta123")
+                        buton_etiketi = "Notu Kalıcı Olarak Sil ❌" if silme_izni else "🔒 SİLME YETKİNİZ YOK"
