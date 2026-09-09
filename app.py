@@ -130,6 +130,24 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel bulunamadı.")
 
+# GÜNCELLENMİŞ VE TAM KORUMA SAĞLAYAN TABLO ALTI YASAL UYARI METNİ
+st.markdown('''
+<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
+    <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
+        ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
+    </p>
+    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
+        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
+        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
+    </p>
+    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin-top:8px; margin-bottom:0;">
+        Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişilerin mali durumları ile risk ve getiri tercihleri dikkate alınarak kişiye özel sunulan yasal bir hizmettir. 
+        Sistemdeki gecikmeli algoritmik çıktılar, mali durumunuza veya risk iştahınıza uygun olmayabilir ve sadece bu gecikmeli verilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. 
+        Geçmiş döneme ait matematiksel başarılar veya geriye dönük test sonuçları, gelecekteki piyasa performansının kesin bir garantisi değildir. Veri sağlayıcılardan kaynaklanan teknik hatalardan, kesintilerden, sistem gecikmelerinden veya sitemizdeki verilere dayanılarak yapılan işlemlerden doğabilecek doğrudan ya da dolaylı zararlardan bu platform hiçbir şekilde sorumlu tutulamaz.
+    </p>
+</div>
+''', unsafe_allow_html=True)
+
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
 if len(tum_hisseler) > 0:
@@ -138,10 +156,18 @@ if len(tum_hisseler) > 0:
         try:
             h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
             if len(h_detay_veri) > 0:
-                st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
+                st.metric("Güncel Fiyat (15 Dk Gecikmeli)", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
         except:
             pass
 
 st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️"ÖNEMLİ YASAL UYARI: Bu tabloda yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az 15 dakika gecikmeli veriler kullanılarak otomatik olarak üretilmektedir. Sitemiz tamamen ücretsiz ve herkese açık bir genel bilgilendirme platformu olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişiye özel sunulan yasal bir hizmettir. Bu tablodaki gecikmeli algoritmik çıktılar, mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Sadece gecikmeli verilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Veri sağlayıcılardan kaynaklanan teknik hatalardan, gecikmelerden veya sitemizdeki verilere dayanılarak yapılan işlemlerden doğabilecek doğrudan ya da dolaylı zararlardan bu platform hiçbir şekilde sorumlu tutulamaz."</p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
+
+with col_not1:
+    st.markdown('<p style="font-size:14px; font-weight:bold; color:#fff;">Yeni Not Ekle</p>', unsafe_allow_html=True)
+    not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
+    if not_hisse_secim == "Manuel Gir...":
+        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", max_chars=10, key="not_manuel_hisse_kod").strip().upper()
+    else:
+        not_hisse = not_hisse_secim
+    not_hedef_fiyat = st.number_input("Hedef Fiyat (TL):", min_value=0.0, value=0.0, step=1.0, key="not_hedef_fiyat_input")
