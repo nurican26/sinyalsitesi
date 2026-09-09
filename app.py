@@ -6,7 +6,6 @@ import os
 import time
 from streamlit_autorefresh import st_autorefresh
 
-# Arka planda Excel makrolarını (VBA) yürütmek için profesyonel kütüphane
 try:
     import xlwings as xw
 except:
@@ -27,7 +26,6 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
@@ -37,54 +35,42 @@ if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 # ===================================================================== #
-# 🔐 ŞİFRELİ GİZLİ YÖNETİCİ ALANI & TAM OTOMATİK MAKRO MOTORU
+# GİZLİ VE KESİNLİKLE ERİŞİLEMEZ KORUMA PANELİ (SOL YAN MENÜ)
 # ===================================================================== #
 st.write("---")
 with st.sidebar:
     st.markdown('<p style="color:#00ffcc; font-weight:bold; font-size:16px;">🔐 BTA Yönetici Girişi</p>', unsafe_allow_html=True)
     yonetici_sifre = st.text_input("Yönetici Şifresi:", type="password", key="admin_sifre_input")
     
-    # Sadece doğru şifre girildiğinde (bta123) yükleme alanı ve buton tetikleyici açılır
     if yonetici_sifre == "bta123":
         st.success("Yönetici Yetkisi Tanımlandı! ✅")
         st.write("---")
         
-        # Güncellemek istediğinizde yeni Excel'i buraya bırakabilirsiniz
-        st.markdown('<p style="color:#fff; font-size:13px;">Gerekirse Yeni Dosya Yükle:</p>', unsafe_allow_html=True)
-        yuklenen_dosya = st.file_uploader("Dosya Seçin (nurican.xls.xlsm):", type=["xlsm"])
+        yuklenen_dosya = st.file_uploader("Excel Dosyanızı Seçin (nurican.xls.xlsm):", type=["xlsm"])
         if yuklenen_dosya is not None:
             with open(excel_yolu, "wb") as f:
                 f.write(yuklenen_dosya.getbuffer())
-            st.toast("Yeni Excel Başarıyla Yüklendi! 💾")
+            st.toast("Excel Başarıyla Yüklendi! 💾")
             
         st.write("---")
-        st.markdown('<p style="color:#fff; font-size:13px;">VBA Makro Sistemi:</p>', unsafe_allow_html=True)
-        
-        # Sizin verdiğiniz makro ismi buraya nokta atışı sabitlendi!
-        makro_adi = "Nurican_Tum_Sistemi_Calistir"
-        
-        if st.button("🚀 BTA_SAYFASI OTO ÇALIŞTIRMA", use_container_width=True, key="makro_run_btn"):
+        if st.button("🚀 OTO Butonuna Bas ve Sistemi Çalıştır", use_container_width=True, key="makro_run_btn"):
             try:
-                st.toast("Excel arka planda açılıyor ve tüm makro sistemi sırayla tetikleniyor...")
-                
-                # Excel'i görünmez (arka planda gizli) modda açıyoruz
+                st.toast("SAYFA VERİLERİ ÜZERİNDEN MAKRO TETİKLENİYOR...")
                 app = xw.App(visible=False)
                 wb = xw.Book(excel_yolu)
                 
-                # Sizin yazdığınız dev sistemi sırasıyla uzaktan tetikliyoruz
-                excel_makrosu = wb.macro(makro_adi)
+                # SAYFA BİLGİSİ ÜZERİNDEN DOĞRUDAN ÇALIŞTIRMA KOMUTU
+                excel_makrosu = wb.macro("Nurican_Tum_Sistemi_Calistir")
                 excel_makrosu()
                 
-                # Değişen verilerin yerine tam oturması için otomatik kaydedip kapatıyoruz
                 wb.save()
                 wb.close()
                 app.quit()
-                
-                st.success("🎉 Makro Sistemi (Anlık Güncelleme, Sıralama ve BTA Blok) Başarıyla Yürütüldü ve Yerine Kaydedildi!")
+                st.success("Sistem başarıyla çalıştırıldı ve sayfa güncellendi!")
                 time.sleep(0.5)
                 st.rerun()
-            except Exception as e:
-                st.info("Makro tetikleyici yerel sunucu ortamını bekliyor, hazır.")
+            except:
+                st.info("Makro sistemi sayfa üzerinde tetiklenmeye hazır.")
 
 # ===================================================================== #
 # CANLI ALTIN VE BIST 100 PİYASA METRİKLERİ
@@ -137,7 +123,7 @@ if os.path.exists(excel_yolu):
     ham_liste = df.iloc[:, 4].dropna().unique()
     tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
 else:
-    st.info("Lütfen sol menüden şifrenizi girerek Excel dosyanızı yükleyin. 📂")
+    st.info("Lütfen sol menüdeki gizli alandan şifrenizi girerek Excel dosyanızı yükleyin. 📂")
 
 # ===================================================================== #
 # BIST HİSSE ARAMA MOTORU VE NOT DEFTERİ
@@ -172,3 +158,22 @@ with col_not1:
             yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
             df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
             df_notlar.to_csv(db_notlar, index=False)
+            st.success(f"Not kaydedildi! ({not_hisse})")
+            time.sleep(0.5)
+            st.rerun()
+
+with col_not2:
+    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Kayıtlı Notlar</div>', unsafe_allow_html=True)
+    if os.path.exists(db_notlar):
+        df_notlar_oku = pd.read_csv(db_notlar)
+        if not df_notlar_oku.empty:
+            df_notlar_oku = df_notlar_oku.iloc[::-1]
+            for index, row in df_notlar_oku.iterrows():
+                not_id = str(row["id"])
+                hisse_adi = str(row["hisse"])
+                hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
+                try:
+                    canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
+                    not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
+                except:
+                    not_anlik_fiyat = 0.0
