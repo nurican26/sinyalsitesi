@@ -174,4 +174,3 @@ if not df_resim_oku.empty:
     
     for r_idx, r_row in son_uc_resim.iterrows():
         with r_cols[r_idx % 3]:
-            # Hatalı string tırnak kapatması tamamen düzeltilmiştir.
