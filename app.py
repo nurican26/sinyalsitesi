@@ -143,7 +143,7 @@ if len(tum_hisseler) > 0:
             pass
 
 st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri dikkate alınarak kişiye özel sunulmaktadır.Burada yer alan yorum ve tavsiyeler ise genel niteliktedir. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.</p>', unsafe_allow_html=True)
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;"> </p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
 
 with col_not1:
