@@ -55,34 +55,28 @@ if "bta_rumuz" not in st.session_state:
     if st.button("Panele Bağlan 🚀") and giriş_rumuz.strip():
         st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
         st.rerun()
-    st.stop()  # Rumuz girilene kadar uygulamanın kalanını çalıştırma
+    st.stop()
 
 # --- ANLIK CANLI ODA SAYISI MOTORU (GERÇEK RUMUZ TABANLI) ---
 simdi = time.time()
 try:
     df_akt = pd.read_csv(db_aktiflik)
-    # Mevcut kullanıcının zaman damgasını güncelle veya ekle
     df_akt = df_akt[df_akt["rumuz"] != st.session_state["bta_rumuz"]]
     yeni_akt = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
     df_akt = pd.concat([df_akt, yeni_akt], ignore_index=True)
-    # Son 12 saniye içinde sinyal vermeyen (sayfayı kapatan) kişileri odadan düşür
     df_akt = df_akt[df_akt["son_gorulme"] > (simdi - 12)]
     df_akt.to_csv(db_aktiflik, index=False)
     
-    # Odadaki benzersiz gerçek kişilerin listesi ve sayısı
     aktif_listesi = df_akt["rumuz"].unique().tolist()
     canli_oda_sayisi = len(aktif_listesi)
 except:
     canli_oda_sayisi = 1
     aktif_listesi = [st.session_state["bta_rumuz"]]
 
-# Üst Bilgi Rozeti
 st.markdown(f'<div style="text-align:center;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
 
-# Sayacın üzerine gelindiğinde odadaki kişileri görebilmek için ufak bir bilgi alanı
 with st.expander(f"👥 Odadakileri Gör ({canli_oda_sayisi})"):
     st.caption(", ".join(aktif_listesi))
-
 
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
@@ -102,7 +96,6 @@ try:
     col_eur.metric("EURO", f"{eur_f:,.2f} TL")
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
-
 
 # ===================================================================== #
 # 3. VERİ MOTORU VE TABLOLAR (YUVARLAMASIZ)
@@ -152,25 +145,23 @@ if os.path.exists(excel_yolu):
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
-
 # ===================================================================== #
-# 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES VE GÖNDERİM)
+# 4. GÜVENLİ SOHBET ALANI VE SES SİNYAL MOTORU
 # ===================================================================== #
 st.write("---")
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
-# Kesin çalışan tarayıcı tabanlı ses kodu
-garantili_bip_html = """
-<script>
-    (function() {
-        var context = new (window.AudioContext || window.webkitAudioContext)();
-        var osc = context.createOscillator();
-        var gain = context.createGain();
-        osc.connect(gain);
-        gain.connect(context.destination);
-        osc.type = 'sine';
-        osc.frequency.value = 850; 
-        gain.gain.setValueAtTime(0.15, context.currentTime); 
-        osc.start();
+# SyntaxError hatasını düzelten, tek satıra indirgenmiş temiz Web Audio API JS bloğu
+garantili_bip_html = "<script>(function(){var c=new(window.AudioContext||window.webkitAudioContext)();var o=c.createOscillator();var g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=850;g.gain.setValueAtTime(0.15,c.currentTime);o.start();g.gain.exponentialRampToValueAtTime(0.00001,c.currentTime+0.20);o.stop(c.currentTime+0.22);})();</script>"
+
+st.markdown('<div class="sohbet-kutu">', unsafe_allow_html=True)
+st.write(f"✍️ **Gönderici:** {st.session_state['bta_rumuz']}")
+y_me = st.text_area("Mesajınız:", max_chars=300, height=70, key="mesaj_alani")
+
+if st.button("Mesajı Yayınla 📨", use_container_width=True):
+    if y_me.strip():
+        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
+        r_kucuk = st.session_state["bta_rumuz"].lower().replace(" ", "")
+        
