@@ -74,8 +74,8 @@ try:
     gram_ok, gram_durum, gram_f = hesapla_degisim(ons_t, is_gold=True, usd_df=usd_t)
 
     kayan_yazi_html = f'''
-    <div style="background: #121d33; border-bottom: 2px solid #1e3a5f; padding: 8px 0; overflow: hidden; white-space: nowrap; font-family: monospace; font-size: 16px; font-weight: bold;">
-        <div style="display: inline-block; padding-left: 100%; animation: bta_marquee 25s linear infinite;">
+    <div class="kayan-yazi-bandi" style="background: #121d33; border-bottom: 2px solid #1e3a5f; padding: 8px 0; overflow: hidden; white-space: nowrap; font-family: monospace; font-size: 16px; font-weight: bold;">
+        <div class="kayan-icerik" style="display: inline-block; padding-left: 100%; animation: bta_marquee 25s linear infinite;">
             <span style="color:{'#00ff66' if bist_durum=='yukselis' else '#ff3344' if bist_durum=='dusis' else '#ffffff'}; margin-right: 30px;">BIST 100: {bist_f:,.2f} {bist_ok}</span>
             <span style="color:{'#00ff66' if gram_durum=='yukselis' else '#ff3344' if gram_durum=='dusis' else '#ffffff'}; margin-right: 30px;">GRAM ALTIN: {gram_f:,.2f} TL {gram_ok}</span>
             <span style="color:{'#00ff66' if usd_durum=='yukselis' else '#ff3344' if usd_durum=='dusis' else '#ffffff'}; margin-right: 30px;">DOLAR (USD): {usd_f:,.2f} TL {usd_ok}</span>
@@ -93,7 +93,7 @@ except Exception as e:
 st.markdown(kayan_yazi_html, unsafe_allow_html=True)
 st.write("")
 
-# Üst Sağ Yıldız Paneli (Canlı oda silindi, sadece yıldız beğenisi kaldı)
+# Üst Sağ Yıldız Paneli
 try:
     df_yildiz_oku = pd.read_csv(db_yildizlar)
     begenen_listesi = df_yildiz_oku["rumuz"].unique().tolist()
@@ -129,7 +129,7 @@ else:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. ANA VERİ MOTORU VE TABLOLAR (HATASIZ HİZALAMA)
+# 3. ANA VERİ MOTORU VE TABLOLAR (HİZALAMA DÜZELTİLDİ)
 # ===================================================================== #
 st.write("---")
 df = None
