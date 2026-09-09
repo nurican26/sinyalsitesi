@@ -88,10 +88,10 @@ with col_ust2:
         mesaj_govde = "<br>".join(msg_lines) if msg_lines else "<span style='color:#666;'>Henüz mesaj yok...</span>"
         st.markdown(f'<div class="mesaj-kutusu">{mesaj_govde}</div>', unsafe_allow_html=True)
     except:
-        st.markdown('<div class="mesaj-kutusu"><span style='color:#ff3344;'>Mesajlar yüklenemedi.</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="mesaj-kutusu"><span style="color:#ff3344;">Mesajlar yüklenemedi.</span></div>', unsafe_allow_html=True)
     
     # Mesaj Gönderme Formu (Tek satırda sıkışık düzen)
-    col_msg_in, col_msg_btn = st.columns([4, 1])
+    col_msg_in, col_msg_btn = st.columns()
     with col_msg_in:
         yeni_mesaj = st.text_input("", max_chars=100, placeholder="Mesaj yazın...", label_visibility="collapsed", key="msg_input_field")
     with col_msg_btn:
@@ -177,4 +177,3 @@ if os.path.exists(excel_yolu):
         
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-        if len(df.columns) >= 5:
