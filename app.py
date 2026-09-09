@@ -129,11 +129,10 @@ else:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. ANA VERİ MOTORU VE TABLOLAR (SÜPER HİZALAMA VE GARANTİLİ BLOCK)
+# 3. ANA VERİ MOTORU VE TABLOLAR (KUSURSUZ YENİ YAPI)
 # ===================================================================== #
 st.write("---")
-df = None
-tum_hisseler = []
+hisse_secenekleri = ["AKFGY", "THYAO", "ASELS", "EREGL", "TUPRS", "BIMAS"]
 
 if os.path.exists(excel_yolu):
     try:
@@ -181,4 +180,5 @@ if os.path.exists(excel_yolu):
         if veri_var_mi: 
             st.markdown(tablo_html, unsafe_allow_html=True)
             
+        # Excel'den hisse listesini güvenle çek
         if len(df.columns) >= 5:
