@@ -115,7 +115,7 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. ANA VERİ MOTORU VE DİKEY YAN YANA KARTLAR
+# 3. ANA VERİ MOTORU VE DİKEY YAN YANA BÜYÜTÜLMÜŞ KARTLAR
 # ===================================================================== #
 st.write("---")
 
@@ -124,13 +124,12 @@ tum_hisseler = []
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:22px; font-weight:bold; color:#1E90FF; margin-bottom:15px;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         
         # Yan yana iki kart basmak için kolonlar
         kart_sutun1, kart_sutun2 = st.columns(2)
         aktif_kart_sayisi = 0
         
-        # Arama motoru listesini hazırlama (İç içe girintiden kurtarmak için öne aldık)
         if len(df.columns) >= 5:
             tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
         
@@ -153,19 +152,19 @@ if os.path.exists(excel_yolu):
                 
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                    kz_str = f'<span style="color:#00ff66; font-size:18px;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344; font-size:18px;">▼ %{or_dg:.2f}</span>'
                 else:
-                    kz_str = "<span>-</span>"
+                    kz_str = "<span style='font-size:18px;'>-</span>"
                 
-                # Kart HTML Tasarımı
+                # BÜYÜTÜLMÜŞ ve OKUNAKLI Kart HTML Tasarımı (font-size değerleri artırıldı)
                 dikey_kart_html = f'''
-                <div style="background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 10px; padding: 15px; margin-bottom: 15px;">
-                    <div style="font-size: 18px; color: #00ffcc; border-bottom: 1px solid #1e2e4d; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold;">📍 {ha} HİSSE BİLGİLERİ</div>
-                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 15px; color: #ffffff;">
-                        <div><b>BTA PUANI:</b> <span style="color: #00ffcc;">{p_temiz}</span></div>
-                        <div><b>ALGORİTMİK FİYATI:</b> {maliyet:,.2f} TL</div>
-                        <div><b>FİYAT:</b> {c_fiyat:,.2f} TL</div>
-                        <div><b>K/Z:</b> {kz_str}</div>
+                <div style="background-color: #121d33; border: 2px solid #1e3a5f; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);">
+                    <div style="font-size: 24px; color: #00ffcc; border-bottom: 2px solid #1e2e4d; padding-bottom: 8px; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px;">📍 {ha} HİSSE BİLGİLERİ</div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 18px; color: #ffffff;">
+                        <div><b>BTA PUANI:</b> <span style="color: #00ffcc; font-size: 20px; font-weight: bold;">{p_temiz}</span></div>
+                        <div><b>ALGORİTMİK FİYATI:</b> <span style="font-weight: bold; color: #e2e8f0;">{maliyet:,.2f} TL</span></div>
+                        <div><b>GÜNCEL FİYAT:</b> <span style="font-weight: bold; color: #e2e8f0;">{c_fiyat:,.2f} TL</span></div>
+                        <div><b>KÂR / ZARAR:</b> <b>{kz_str}</b></div>
                     </div>
                 </div>
                 '''
@@ -181,9 +180,7 @@ else:
     st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. BORSA ARAMA MOTORU (SIFIR HATA İÇİN EN ALTTA BAĞIMSIZ HİZALANDI)
+# 4. BORSA ARAMA MOTORU
 # ===================================================================== #
 if tum_hisseler:
     st.write("---")
-    st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-    aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
