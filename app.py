@@ -141,8 +141,8 @@ st.markdown('''
         ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
-        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
-        Sitemiz tamamen ücretsiz, herkese açık og genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
+        Bu tabloda og platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
+        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin-top:8px; margin-bottom:0;">
         Yatırım danışmanlığı hizmeti; yetkili aracı kurumlar, portföy yönetim şirketleri veya bankalar tarafından kişilerin mali durumları ile risk ve getiri tercihleri dikkate alınarak kişiye özel sunulan yasal bir hizmettir. 
