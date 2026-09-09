@@ -171,7 +171,7 @@ if mevcut_adet > st.session_state["eski_adet"]:
 
 st.session_state["eski_adet"] = mevcut_adet
 
-# GÜVENLİ HİZALANMIŞ FORM ALANI
+# MESAJ FORMU
 with st.form(key="s_frm", clear_on_submit=True):
     y_is = st.text_input("Adınız:", max_chars=25)
     y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
@@ -189,5 +189,4 @@ with st.form(key="s_frm", clear_on_submit=True):
         else:
             st.error("⚠ Argo/Küfür içerikli kelimeler engellendi!")
 
-# YÖNETİCİ PANELİ
-if "yonetici_oldu" not in st.session_state:
+# YÖNETİCİ PANELİ DURUMU (Form bloğu dışında, en soldan sıfır girintili)
