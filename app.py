@@ -102,7 +102,7 @@ with col_ust2:
         st.rerun()
 
 # ===================================================================== #
-# 2. ANA VERİ MOTORU VE TABLOLAR (YUKARI TAŞINDI)
+# 2. ANA VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 st.write("---")
 if os.path.exists(excel_yolu):
@@ -168,7 +168,6 @@ if os.path.exists(excel_yolu):
                 df_eski_kayitlar = pd.read_csv(db_kayit_defteri)
                 df_yeni = pd.DataFrame(yeni_kayitlar)
                 df_toplam_kayit = pd.concat([df_eski_kayitlar, df_yeni], ignore_index=True)
-                # Aynı tarihte mükerrer basımı engellemek için son 200 kaydı koruyup temizleyelim
                 df_toplam_kayit.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
                 df_toplam_kayit.tail(500).to_csv(db_kayit_defteri, index=False)
         
@@ -185,3 +184,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 else:
+    st.error("Excel bulunamadı.")
+
+# ===================================================================== #
+# 3. KAYIT DEFTERİ PANELİ
