@@ -31,7 +31,7 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_yildizlar = "bta_yildiz_begenileri_db.csv"
 db_ortak_oda = "bta_ortak_oda_aktiflik.csv"
-db_notlar = "bta_hisse_notlari_db.csv"  # YENİ: Hisse Not Defteri Veritabanı
+db_notlar = "bta_hisse_notlari_db.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
 if not os.path.exists(db_yildizlar):
@@ -40,6 +40,7 @@ if not os.path.exists(db_yildizlar):
 if not os.path.exists(db_ortak_oda):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
 
+# Not tablosunu id string tipinde olacak şekilde temiz açıyoruz
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "rumuz", "tarih", "hisse", "not"]).to_csv(db_notlar, index=False)
 
@@ -125,7 +126,7 @@ except:
 # 3. ANA VERİ MOTORU VE TABLOLAR
 # ===================================================================== #
 st.write("---")
-tum_hisseler = [] # Not defterinde selectbox için doldurulacak havuz
+tum_hisseler = [] 
 
 if os.path.exists(excel_yolu):
     try:
