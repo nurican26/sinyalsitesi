@@ -119,17 +119,17 @@ except:
 # ===================================================================== #
 st.write("---")
 
-# Güvenli dinamik liste oluşturma
-tum_hisseler = []
+# Sabit yedek liste (Hata riskini sıfırlamak için)
+tum_hisseler = ["THYAO", "ASELS", "EREGL", "TUPRS", "AKBNK", "GARAN", "SISE", "BIMAS", "SAHOL", "KCHOL"]
 
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         st.markdown('<p style="font-size:22px; font-weight:bold; color:#1E90FF; margin-bottom:15px;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         
-        # Yan yana iki kart basmak için kolonlar
         kart_sutun1, kart_sutun2 = st.columns(2)
         aktif_kart_sayisi = 0
+        excel_hisseleri = []
         
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -137,9 +137,7 @@ if os.path.exists(excel_yolu):
             puan_d = df.iloc[idx, 3]
             
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                # Arama motoru listesine ekle
-                if ha not in tum_hisseler:
-                    tum_hisseler.append(ha)
+                excel_hisseleri.append(ha)
                     
                 if isinstance(puan_d, (int, float)):
                     p_temiz = f"{float(puan_d):.2f}"
@@ -158,7 +156,6 @@ if os.path.exists(excel_yolu):
                 else:
                     kz_str = "<span style='font-size:18px;'>-</span>"
                 
-                # BÜYÜTÜLMÜŞ Kart HTML Tasarımı
                 dikey_kart_html = f'''
                 <div style="background-color: #121d33; border: 2px solid #1e3a5f; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);">
                     <div style="font-size: 24px; color: #00ffcc; border-bottom: 2px solid #1e2e4d; padding-bottom: 8px; margin-bottom: 12px; font-weight: bold; letter-spacing: 1px;">📍 {ha} HİSSE BİLGİLERİ</div>
@@ -176,12 +173,15 @@ if os.path.exists(excel_yolu):
                 else:
                     kart_sutun2.markdown(dikey_kart_html, unsafe_allow_html=True)
                 aktif_kart_sayisi += 1
+                
+        if len(excel_hisseleri) > 0:
+            tum_hisseler = excel_hisseleri
     except Exception as e:
         pass
 else:
     st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 4. BORSA ARAMA MOTORU (GARANTİLİ & EN ALTA HİZALANMIŞ DURUMDA)
+# 4. BORSA ARAMA MOTORU (SIFIR HIZALAMA - ASLA HATA VERMEZ)
 # ===================================================================== #
-if len(tum_hisseler) > 0:
+st.write("---")
