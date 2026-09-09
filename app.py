@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -7,29 +7,26 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 # ===================================================================== #
-# 1. KOTA DOSTU TASARIM VE KORUNAKLI KARANLIK TEMA (CSS)
+# 1. KOTA DOSTU TASARIM VE SADE DÜZ SİYAH TEMA (CSS)
 # ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
 <style>
-/* Ön plan elemanlarını kapatmayan, göze hitap eden karanlık borsa teması */
+/* Arka planı tamamen düz koyu borsa siyahı yapıyoruz */
 .stApp { 
-    background-color: #050b14 !important; 
-    background-image: radial-gradient(at 0% 0%, rgba(0, 255, 204, 0.12) 0px, transparent 45%), 
-                      radial-gradient(at 100% 0%, rgba(30, 144, 255, 0.1) 0px, transparent 40%) !important;
-    background-attachment: fixed !important;
+    background-color: #080d16 !important; 
 }
 
 /* Kutu tasarımları ve görünürlük ayarları */
 div[data-testid="stMetric"], div[data-testid="stExpander"] { 
-    background-color: #0c1524 !important; 
+    background-color: #0e1726 !important; 
     border: 1px solid #1e3a5f !important; 
     border-radius: 8px !important; 
     padding: 10px !important; 
 }
 input, textarea, select { 
-    background-color: #060b12 !important; 
+    background-color: #050910 !important; 
     color: #00ffcc !important; 
     border: 1px solid #1e3a5f !important; 
     border-radius: 6px !important; 
@@ -42,32 +39,32 @@ input, textarea, select {
     font-weight: bold !important; 
 }
 
-/* Borsa Tablosu Düzenlemeleri */
+/* Borsa Tablo Düzenlemeleri */
 .borsa-tablo { 
     width: 100%; 
     border-collapse: collapse; 
     margin: 10px 0; 
     font-size: 14px; 
-    background-color: #0c1524; 
+    background-color: #0e1726; 
     border-radius: 8px; 
     overflow: hidden; 
     border: 1px solid #1e3a5f;
 }
 .borsa-tablo th { 
-    background-color: #16243a; 
+    background-color: #17243c; 
     color: #00ffcc; 
     text-align: left; padding: 8px; 
 }
 .borsa-tablo td { 
     padding: 8px; 
     color: #ffffff; 
-    border-bottom: 1px solid #16243a; 
+    border-bottom: 1px solid #17243c; 
     font-weight: bold; 
 }
 
 /* Mesaj ve SPK Alanı */
 .mesaj-kutusu { 
-    background-color: #060b12; 
+    background-color: #050910; 
     border: 1px solid #1e3a5f; 
     padding: 8px; 
     border-radius: 6px; 
@@ -201,7 +198,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (YENİLENDİ)
+# SAĞ TARAF: MESAJ PANELI
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -232,3 +229,9 @@ with col_sag:
                 df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
                 df_toplam_msg.to_csv(db_mesajlar, index=False)
             except:
+                df_yeni_msg.to_csv(db_mesajlar, index=False)
+            st.rerun()
+
+    # --- HATA VERMEYEN GÜVENLİ SİLME MANTIĞI ---
+    st.write("")
+    is_admin = (st.session_state.get("bta_rumuz", "") == "CC")
