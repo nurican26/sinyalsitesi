@@ -20,8 +20,8 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.galeri-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 10px; }
 .oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
+.defter-kutu { background-color: #121d33; border-left: 5px solid #ffa500; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
 </style>
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
@@ -30,12 +30,12 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
-db_resimler = "bta_resim_kayit_db.csv"
+db_hisse_defteri = "bta_hisse_kayit_defteri_db.csv"
 db_aktiflik = "bta_aktiflik_db.csv"
 
 # KALICI VERİTABANLARI BAŞLATMA
-if not os.path.exists(db_resimler):
-    pd.DataFrame(columns=["tarih", "saat", "resim_url", "not"]).to_csv(db_resimler, index=False)
+if not os.path.exists(db_hisse_defteri):
+    pd.DataFrame(columns=["tarih", "saat", "hisse", "bta_puani", "algoritmik_fiyat"]).to_csv(db_hisse_defteri, index=False)
 
 if not os.path.exists(db_aktiflik):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_aktiflik, index=False)
@@ -92,13 +92,17 @@ except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR (YUVARLAMASIZ)
+# 3. VERİ MOTORU VE TABLOLAR (AUTOMATIC OTOMATİK HAFIZA VE KAYIT MOTORU)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         veri_var_mi = False
+        
+        # Otomatik Hafıza Defterini Yüklüyoruz
+        df_kayitli_defter = pd.read_csv(db_hisse_defteri)
+        yeni_kayitlar_listesi = []
         
         for idx in range(min(10, len(df))):
             try:
@@ -120,12 +124,35 @@ if os.path.exists(excel_yolu):
                     else: kz_str = "<span>-</span>"
                     
                     tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+                    
+                    # --- OTOMATİK AKILLI TAKİP VE GÜVENLİ ARŞİV MOTORU ---
+                    # Eğer bu hisse kodu, aynı günün kayıtlı arşivinde daha önce hiç yoksa hafızaya ekle
+                    bugunun_tarihi = datetime.datetime.now().strftime("%d.%m.%Y")
+                    zaten_var_mi = df_kayitli_defter[(df_kayitli_defter["hisse"] == ha) & (df_kayitli_defter["tarih"] == bugunun_tarihi)]
+                    
+                    if zaten_var_mi.empty:
+                        # Daha önce aynı gün kaydedilmediyse yeni bir satır oluşturup listeye atıyoruz
+                        yeni_satir = {
+                            "tarih": bugunun_tarihi,
+                            "saat": datetime.datetime.now().strftime("%H:%M"),
+                            "hisse": ha,
+                            "bta_puani": p_temiz,
+                            "algoritmik_fiyat": f"{maliyet:,.2f} TL"
+                        }
+                        yeni_kayitlar_listesi.append(yeni_satir)
             except: continue
             
         tablo_html += '</table>'
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: st.markdown(tablo_html, unsafe_allow_html=True)
         
+        # Eğer yakalanan yeni ve benzersiz bir hisse varsa veritabanına ekle ve dosyayı güncelle
+        if yeni_kayitlar_listesi:
+            df_yeni_eklemeler = pd.DataFrame(yeni_kayitlar_listesi)
+            df_guncel_defter = pd.concat([df_yeni_eklemeler, df_kayitli_defter], ignore_index=True)
+            df_guncel_defter.to_csv(db_hisse_defteri, index=False)
+            st.rerun() # Yeni hisseyi hafızaya alıp sayfayı tazeleyelim
+            
         # --- BORSA ARAMA MOTORU ---
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
         if len(df.columns) >= 5:
@@ -138,37 +165,4 @@ if os.path.exists(excel_yolu):
                         st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
-
-# ===================================================================== #
-# 4. YÖNETİCİ GİRİŞİ (ŞİFRE: bta123)
-# ===================================================================== #
-with st.expander("🛠 Yönetici"):
-    adm_mod = st.text_input("Şifre:", type="password", key="adm") == "bta123"
-
-# ===================================================================== #
-# 5. TARİHLİ 3 RESİMLİK KAYIT DEFTERİ (GALERİ) ALANI
-# ===================================================================== #
-st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📅 Tarihli Resim Kayıt Defteri (Son 3 Görsel)</p>', unsafe_allow_html=True)
-
-with st.expander("🖼 Kayıt Defterine Yeni Resim Linki Ekle"):
-    r_url = st.text_input("Resim URL (.png, .jpg veya .webp uzantılı gerçek link):", placeholder="Örn: https://site.com")
-    r_not = st.text_input("Resim Notu / Açıklama:", max_chars=100)
-    if st.button("Resmi Kaydet 💾") and r_url.strip():
-        # Veritabanını güvenli bir şekilde açıp ekleme yapıyoruz
-        if os.path.exists(db_resimler):
-            df_r = pd.read_csv(db_resimler)
-        else:
-            df_r = pd.DataFrame(columns=["tarih", "saat", "resim_url", "not"])
-            
-        y_resim = pd.DataFrame([{
-            "tarih": datetime.datetime.now().strftime("%d.%m.%Y"),
-            "saat": datetime.datetime.now().strftime("%H:%M"),
-            "resim_url": r_url.strip(),
-            "not": r_not.strip()
-        }])
-        pd.concat([y_resim, df_r], ignore_index=True).to_csv(db_resimler, index=False)
-        st.success("Resim başarıyla ortak kayıt defterine eklendi! Sayfa yenileniyor...")
-        time.sleep(1)
-        st.rerun()
 
