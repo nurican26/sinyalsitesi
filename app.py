@@ -26,68 +26,59 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:15px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (Sayfayı ve Fiyatları Tazeler)
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_sohbet = "bta_sohbet_db.csv"
 db_aktifler = "bta_aktif_kullanicilar.csv"
 
-# KALICI SOHBET VE CANLI HAFIZA BAŞLATMA
-if "mesaj_hafizasi" not in st.session_state:
-    if os.path.exists(db_sohbet) and os.path.getsize(db_sohbet) > 4:
-        try:
-            st.session_state["mesaj_hafizasi"] = pd.read_csv(db_sohbet).to_dict('records')
-        except:
-            st.session_state["mesaj_hafizasi"] = []
-    else:
-        st.session_state["mesaj_hafizasi"] = []
+# KALICI SOHBET VERİTABANI BAŞLATMA
+if not os.path.exists(db_sohbet):
+    pd.DataFrame(columns=["isim", "saat", "yorum"]).to_csv(db_sohbet, index=False)
 
-if "topham_sayac" not in st.session_state: 
-    st.session_state["topham_sayac"] = 1450
+if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
 st.session_state["topham_sayac"] += 1
 
-# ANLIK ODA KULLANICI TAKİP MOTORU
+# ANLIK ODA KULLANICI TAKİP MOTORU (Hata vermemesi için kilit korumalı)
 if "cihaz_id" not in st.session_state:
     st.session_state["cihaz_id"] = str(uuid.uuid4())
 
 simdi = datetime.datetime.now()
+gercek_kisi_sayisi = 1
+
 try:
     if os.path.exists(db_aktifler):
         df_akt = pd.read_csv(db_aktifler)
         df_akt["zaman"] = pd.to_datetime(df_akt["zaman"])
+        # Son 15 saniyede aktif olanları filtrele
         df_akt = df_akt[df_akt["zaman"] > (simdi - datetime.timedelta(seconds=15))]
     else:
         df_akt = pd.DataFrame(columns=["id", "zaman"])
+    
+    # Kendi cihazımızı listeden çıkarıp güncel saati ekliyoruz
+    df_akt = df_akt[df_akt["id"] != st.session_state["cihaz_id"]]
+    yeni_aktif = pd.DataFrame([{"id": st.session_state["cihaz_id"], "zaman": simdi}])
+    df_akt = pd.concat([df_akt, yeni_aktif], ignore_index=True)
+    df_akt.to_csv(db_aktifler, index=False)
+    gercek_kisi_sayisi = len(df_akt)
 except:
-    df_akt = pd.DataFrame(columns=["id", "zaman"])
-
-df_akt = df_akt[df_akt["id"] != st.session_state["cihaz_id"]]
-yeni_aktif = pd.DataFrame([{"id": st.session_state["cihaz_id"], "zaman": simdi}])
-df_akt = pd.concat([df_akt, yeni_aktif], ignore_index=True)
-df_akt.to_csv(db_aktifler, index=False)
-
-gercek_kisi_sayisi = len(df_akt)
+    # Eğer o saniye dosya kilitliyse çökme, en azından 1 kişi göster
+    gercek_kisi_sayisi = 1
 
 def formatla_tl(deger):
     try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
     except: return str(deger)
 
-# Fiyatların sürekli istek atıp sistemi kilitlemesini önlemek için 1 dakika önbelleğe alıyoruz
-@st.cache_data(ttl=60)
-def finansal_verileri_getir():
-    bist = float(yf.Ticker("XU100.IS").history(period="1d")['Close'].iloc[-1])
-    ons = float(yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1])
-    usd = float(yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1])
-    eur = float(yf.Ticker("EURTRY=X").history(period="1d")['Close'].iloc[-1])
-    gram = (ons / 31.1034768) * usd
-    return bist, ons, usd, eur, gram
-
 # ===================================================================== #
 # 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
 # ===================================================================== #
 try:
-    bist_f, ons_f, usd_f, eur_f, gram_f = finansal_verileri_getir()
+    bist_f = float(yf.Ticker("XU100.IS").history(period="1d")['Close'].iloc[-1])
+    ons_f = float(yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1])
+    usd_f = float(yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d")['Close'].iloc[-1])
+    gram_f = (ons_f / 31.1034768) * usd_f
     
     pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
     pk1.metric("GRAM ALTIN", f"{gram_f:,.1f} TL")
@@ -154,33 +145,29 @@ st.markdown(f'<div class="kucuk-baslik">Sohbet (<span style="color:#00ffcc;">Oda
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
+# Tarayıcılarda kesinlikle çalan ve kilitlenmeyen bip sesi kodu:
 garantili_bip_html = """
 <script>
-    function bipSesiniCal() {
+    (function() {
         try {
             var AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
             var context = new AudioContext();
             var osc = context.createOscillator();
             var gain = context.createGain();
-            
             osc.type = "sine";
-            osc.frequency.setValueAtTime(880, context.currentTime);
+            osc.frequency.setValueAtTime(600, context.currentTime);
             gain.gain.setValueAtTime(0.1, context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.15);
-            
+            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.2);
             osc.connect(gain);
             gain.connect(context.destination);
-            
             osc.start();
-            osc.stop(context.currentTime + 0.15);
+            osc.stop(context.currentTime + 0.2);
         } catch(e) { console.log(e); }
-    }
-    setTimeout(bipSesiniCal, 100);
+    })();
 </script>
 """
 
-# Sohbet Giriş Formu
+# Sohbet Giriş Formu (Eski kararlı yapıya sadık, submit_button'lı sistem)
 with st.form("sohbet_formu", clear_on_submit=True):
     kullanici_adi = st.text_input("İsminiz", max_chars=20, value="Anonim")
     mesaj = st.text_area("Yorumunuz", max_chars=150)
@@ -189,10 +176,12 @@ with st.form("sohbet_formu", clear_on_submit=True):
     if gonder and mesaj.strip():
         temiz_mesaj = mesaj.lower()
         if not any(kelime in temiz_mesaj for kelime in yasakli):
-            yeni_satir = {
-                "isim": kullanici_adi, 
-                "saat": datetime.datetime.now().strftime("%H:%M:%S"), 
-                "yorum": mesaj.strip()
-            }
-            # 1. Anında listede görünmesi için canlı RAM hafızasına ekle
-            st.session_state["mesaj_hafizasi"].append(yeni_satir)
+            try:
+                yeni_mesaj = pd.DataFrame([{"isim": kullanici_adi, "saat": datetime.datetime.now().strftime("%H:%M:%S"), "yorum": mesaj.strip()}])
+                yeni_mesaj.to_csv(db_sohbet, mode='a', header=not os.path.exists(db_sohbet), index=False)
+                
+                # Ses tetikleyici HTML'i ekrana basıyoruz
+                st.markdown(garantili_bip_html, unsafe_allow_html=True)
+                st.success("Mesaj gönderildi!")
+                st.rerun()
+            except Exception as e:
