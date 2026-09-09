@@ -111,7 +111,7 @@ def mesajı_sansurle(metin):
         "yarrak", "amcık", "amcik", "siktir", "pezevenk", "kahpe", "yavşak", "yavsak"
     ]
     orijinal_metin = metin
-    kucuk_metin = metin.replace('İ', 'i').replace('I', 'ı').replace('Ş', 'ş').replace('Ç', 'ç').replace('Ğ', 'ğ').replace('Ü', 'ü').replace('Ö', 'ö').lower()
+    kucuk_metin = metin.replace("İ", "i").replace("I", "ı").replace("Ş", "ş").replace("Ç", "ç").replace("Ğ", "ğ").replace("Ü", "ü").replace("Ö", "ö").lower()
     
     for kufur in kara_liste:
         if kufur in kucuk_metin:
@@ -159,7 +159,6 @@ with col_sol:
             tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th></tr>'
             veri_var_mi = False
             
-            # min(15, len(df)) kaldırıldı, Excel'deki tüm satırları çeker
             for idx in range(len(df)):
                 ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
                 alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -240,3 +239,5 @@ st.markdown('''
     yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
     görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
     bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu panelde paylaşılan veri, analiz ve oda içi 
+    mesajlar hiçbir şekilde yönlendirme amacı taşımamaktadır.
+</div>
