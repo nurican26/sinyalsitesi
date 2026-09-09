@@ -40,7 +40,6 @@ if not os.path.exists(db_yildizlar):
 if not os.path.exists(db_ortak_oda):
     pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_ortak_oda, index=False)
 
-# Not tablosunu id string tipinde olacak şekilde temiz açıyoruz
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "rumuz", "tarih", "hisse", "not"]).to_csv(db_notlar, index=False)
 
@@ -188,3 +187,4 @@ if os.path.exists(excel_yolu):
 else:
     st.error("Excel bulunamadı.")
 
+# ===================================================================== #
