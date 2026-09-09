@@ -173,10 +173,7 @@ with col_not1:
 with col_not2:
     st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Odadaki Tüm Kayıtlı Notlar</div>', unsafe_allow_html=True)
     
-    admin_paneli = st.checkbox("Yönetici Modu (Not Silme)")
-    sifre_kontrol = ""
-    if admin_paneli:
-        sifre_kontrol = st.text_input("Yönetici Şifresi:", type="password", key="admin_master_sifre")
+    # Yönetici modu onay kutusu ve şifre alanı bu alandan kaldırıldı.
 
     if os.path.exists(db_notlar):
         df_notlar_oku = pd.read_csv(db_notlar)
