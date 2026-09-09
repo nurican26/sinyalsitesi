@@ -129,10 +129,12 @@ else:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# 3. ANA VERİ MOTORU VE TABLOLAR
+# 3. ANA VERİ MOTORU VE TABLOLAR (SÜPER HİZALAMA VE GARANTİLİ BLOCK)
 # ===================================================================== #
 st.write("---")
 df = None
+tum_hisseler = []
+
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -178,6 +180,5 @@ if os.path.exists(excel_yolu):
         st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
         if veri_var_mi: 
             st.markdown(tablo_html, unsafe_allow_html=True)
-        
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
+            
         if len(df.columns) >= 5:
