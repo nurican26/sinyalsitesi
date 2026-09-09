@@ -27,8 +27,15 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 
+# Eğer eski veritabanı varsa yeni sütun (hedef_fiyat) için kontrol edip güncelliyoruz
 if not os.path.exists(db_notlar):
-    pd.DataFrame(columns=["id", "tarih", "hisse", "not"]).to_csv(db_notlar, index=False)
+    pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
+else:
+    # Geçmiş notların bozulmaması için hedef_fiyat sütunu kontrolü
+    yedek_df = pd.read_csv(db_notlar)
+    if "hedef_fiyat" not in yedek_df.columns:
+        yedek_df["hedef_fiyat"] = 0.0
+        yedek_df.to_csv(db_notlar, index=False)
 
 bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
 ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
@@ -91,13 +98,17 @@ with col_not1:
         not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", max_chars=10, key="not_manuel_hisse_kod").strip().upper()
     else:
         not_hisse = not_hisse_secim
+        
+    # 2. ÖZELLİK: HEDEF FİYAT GİRİŞ ALANI
+    not_hedef_fiyat = st.number_input("Hedef Fiyat (Alarm için - Opsiyonel):", min_value=0.0, value=0.0, step=0.1, key="not_hedef_fiyat_input")
+    
     hisse_notu = st.text_area("Hisse Hakkındaki Notunuz:", max_chars=500, placeholder="Stratejinizi yazın...", key="hisse_notu_metni")
     if st.button("Notu Kaydet 💾", use_container_width=True, key="notu_kaydet_butonu"):
         if not_hisse and hisse_notu.strip():
             df_notlar = pd.read_csv(db_notlar)
             yeni_id = str(int(time.time() * 1000))
             su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-            yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip())]], columns=["id", "tarih", "hisse", "not"])
+            yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
             df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
             df_notlar.to_csv(db_notlar, index=False)
             st.success(f"Not kaydedildi! ({not_hisse})")
@@ -111,10 +122,30 @@ with col_not2:
         df_notlar_oku = df_notlar_oku.iloc[::-1]
         for index, row in df_notlar_oku.iterrows():
             not_id = str(row["id"])
-            baslik = f"📌 {row['hisse']} - {row['tarih']}"
+            hisse_adi = str(row["hisse"])
+            hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
+            
+            # 1. ÖZELLİK: NOT AÇILDIĞINDA ANLIK FİYATI ARKA PLANDA ÇEKME
+            try:
+                canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
+                not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
+            except:
+                not_anlik_fiyat = 0.0
+            
+            # ALARM DURUM KONTROLÜ
+            alarm_durumu = ""
+            if hedef_f > 0.0 and not_anlik_fiyat > 0.0:
+                if not_anlik_fiyat >= hedef_f:
+                    alarm_durumu = " 🟢 HEDEF GÖRÜLDÜ (ALARM)"
+                else:
+                    alarm_durumu = f" ⏳ Hedef Bekleniyor (Hedef: {hedef_f:.2f} TL)"
+            
+            fiyat_metni = f" | Anlık: {not_anlik_fiyat:.2f} TL" if not_anlik_fiyat > 0 else ""
+            baslik = f"📌 {hisse_adi}{fiyat_metni}{alarm_durumu} - {row['tarih']}"
+            
             with st.expander(baslik):
                 st.info(row["not"])
-                if st.button(" Bu Notu Sil", key=f"sil_id_{not_id}"):
+                if st.button("Bu Notu Sil", key=f"sil_id_{not_id}"):
                     df_notlar_oku["id"] = df_notlar_oku["id"].astype(str)
                     df_guncel_notlar = df_notlar_oku[df_notlar_oku["id"] != not_id]
                     df_guncel_notlar.to_csv(db_notlar, index=False)
