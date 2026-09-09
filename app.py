@@ -63,7 +63,7 @@ try:
     
     aktif_listesi = df_akt["rumuz"].unique().tolist()
     canli_oda_sayisi = len(aktif_listesi)
-except:
+except Exception:
     canli_oda_sayisi = 1
     aktif_listesi = [st.session_state["bta_rumuz"]]
 
@@ -88,7 +88,7 @@ try:
     pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
     col_bist.metric("BIST 100", f"{bist_f:,.2f}")
     col_eur.metric("EURO", f"{eur_f:,.2f} TL")
-except:
+except Exception:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
@@ -112,7 +112,6 @@ if os.path.exists(excel_yolu):
             if ha_c != "" and ha_c not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 p_temiz_c = f"{float(puan_d_c):.2f}" if isinstance(puan_d_c, (int, float)) else str(puan_d_c).strip()
                 
-                # Hatalı tek satırlık try-except blokları standart güvenli yapıya çekildi
                 try:
                     maliyet_c = float(alim_c_c.replace(",", "."))
                 except Exception:
@@ -142,7 +141,7 @@ if not df_gosterilecek_defter.empty:
     for idx, row in df_gosterilecek_defter.iterrows():
         st.markdown(f'''
         <div class="defter-kutu">
-            <span style="color:#aaa; font-size:12px;">⏱ {row["tarih"]} - {row["saat"]}</span> &nbsp;&nbsp;&nbsp; 
+            <span style="color:#aaa; font-size:12px;">📅 {row["tarih"]} - {row["saat"]}</span> &nbsp;&nbsp;&nbsp; 
             <span style="color:#00ffcc; font-size:15px; font-weight:bold;">🔥 {row["hisse"]}</span> &nbsp;&nbsp;&nbsp; 
             <span style="color:#fff;">BTA Puanı: <b>{row["bta_puani"]}</b></span> &nbsp;&nbsp;&nbsp; 
             <span style="color:#fff;">Algoritmik Fiyat: <b style="color:#00ff66;">{row["algoritmik_fiyat"]}</b></span>
@@ -175,3 +174,5 @@ if os.path.exists(excel_yolu):
                     
                     try:
                         maliyet = float(alim_c.replace(",", "."))
+                    except Exception:
+                        maliyet = 0.0
