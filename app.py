@@ -48,9 +48,7 @@ if not os.path.exists(db_notlar):
 # ===================================================================== #
 if "bta_rumuz" not in st.session_state:
     st.markdown("<h3 style='text-align:center; color:#fff;'>BTA Merkez Paneline Giriş</h3>", unsafe_allow_html=True)
-    
     giriş_rumuz = st.text_input("Rumuz girip klavyeden ENTER tuşuna basınız:", max_chars=20, key="rumuz_input")
-    
     if giriş_rumuz.strip():
         st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
         st.rerun()
@@ -173,10 +171,13 @@ else:
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
             if veri_var_mi: 
                 st.markdown(tablo_html, unsafe_allow_html=True)
-            
-            # --- BORSA ARAMA MOTORU ---
+                
+        except:
+            pass
+
+        # --- GÜVENLİ VE İZOLE BORSA ARAMA MOTORU ---
+        try:
             st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
             if len(df.columns) >= 5:
                 tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
                 if tum_hisseler:
-                    aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler, key="arama_motoru_select")
