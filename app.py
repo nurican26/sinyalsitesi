@@ -171,7 +171,7 @@ with col_not1:
                 pass
 
 with col_not2:
-    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Yasal Uyarı: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri genel nitelikte olup yatırım danışmanlığı kapsamında değildir; mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir.</div>', unsafe_allow_html=True)
+    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;"> YASAL UYARI: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde kişiye özel sunulmaktadır. Burada yer alan yorum ve tavsiyeler, tamamen kişisel görüşlerime/eğitim amaçlı analizlerime dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Paylaşılan içeriklerin uygulanması sonucunda doğabilecek doğrudan veya dolaylı zararlardan sayfamız sorumlu tutulamaz.</div>', unsafe_allow_html=True)
     
     admin_paneli = st.checkbox("Yönetici Modu (Not Silme)")
     sifre_kontrol = ""
