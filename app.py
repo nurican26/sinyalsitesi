@@ -169,7 +169,7 @@ if len(tum_hisseler) > 0:
             pass
 
 # ===================================================================== #
-# 4. HİSSE NOT DEFTERİ KAYIT PANELİ (PARANTEZ RİSKİ SIFIRLANMIŞ YENİ SÜRÜM)
+# 4. HİSSE NOT DEFTERİ KAYIT PANELİ
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️ BTA HİSSE NOT DEFTERİ</p>', unsafe_allow_html=True)
@@ -194,4 +194,4 @@ with col_not1:
                 yeni_id = str(int(time.time() * 1000))
                 su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
                 
-                # PARANTEZ HATASI VERMEYEN EN GÜVENLİ LİSTE METHODU
+                # Süslü parantez riski taşımayan düz liste kurgusu
