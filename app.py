@@ -47,7 +47,7 @@ if "kullanici_id" not in st.session_state:
 if "kullanici_adi" not in st.session_state:
     st.session_state["kullanici_adi"] = "Ziyaretçi"
 
-# Giriş Formu (Üst Köşede Şık Bir Alan)
+# Giriş Formu (Sol menüde adınızı girdiğiniz alan)
 with st.sidebar:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc;">👤 Kullanıcı Girişi</p>', unsafe_allow_html=True)
     yeni_ad = st.text_input("Adınız:", value=st.session_state["kullanici_adi"], max_chars=20)
@@ -68,7 +68,7 @@ try:
     }])
     df_aktif = pd.concat([df_aktif, yeni_aktif_satir], ignore_index=True)
     
-    # 20 saniyedir sesi çıkmayan (aktif olmayan) kullanıcıları listeden düşür
+    # 20 saniyedir aktif olmayan kullanıcıları temizle
     df_aktif = df_aktif[df_aktif["son_aktiflik"] > (su_an - 20)]
     df_aktif.to_csv(db_aktif_kullanicilar, index=False)
     canli_uye_sayisi = len(df_aktif)
