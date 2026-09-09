@@ -147,7 +147,7 @@ st.write(f"👤 Aktif Kullanıcı: **{st.session_state['bta_rumuz']}**")
 col_sol, col_sag = st.columns(2)
 
 # ===================================================================== #
-# SOL TARAF: HİSSELERİM VE ARAMA MOTORU
+# SOL TARAF: TÜM ALGORİTMİK HİSSELER (ADET SINIRSIZ TAM LİSTE)
 # ===================================================================== #
 with col_sol:
     st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff; margin-bottom:2px;">📈 BTA ALGORİTMİK HİSSE</p>', unsafe_allow_html=True)
@@ -159,7 +159,8 @@ with col_sol:
             tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th></tr>'
             veri_var_mi = False
             
-            for idx in range(min(15, len(df))):
+            # min(15, len(df)) kaldırıldı, Excel'deki tüm satırları çeker
+            for idx in range(len(df)):
                 ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
                 alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
                 puan_d = df.iloc[idx, 3]
@@ -177,22 +178,6 @@ with col_sol:
                 st.markdown(tablo_html, unsafe_allow_html=True)
             else:
                 st.info("Gösterilecek uygun hisse verisi bulunamadı.")
-                
-            # --- BORSA ARAMA MOTORU ---
-            st.write("---")
-            st.markdown('<p style="font-size:18px; font-weight:bold; color:#ffffff; margin-bottom:2px;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-            
-            if len(df.columns) >= 5:
-                tum_hisseler = sorted([str(h).strip().upper() for h in df.iloc[:, 4].dropna().unique() if str(h).strip().upper() not in ["HİSSE", "HİSSELER", ""]])
-                if tum_hisseler:
-                    aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler)
-                    if aranan_hisse != "Seçiniz...":
-                        h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=3)
-                        if len(h_detay_veri) > 0:
-                            guncel_fiyat = float(h_detay_veri['Close'].iloc[-1])
-                            st.metric(label=f"{aranan_hisse} Güncel Fiyat", value=f"{guncel_fiyat:,.2f} TL")
-                        else:
-                            st.warning("Fiyat verisi alınamadı.")
         except Exception as e:
             st.error("Excel okunurken hata oluştu.")
     else:
@@ -232,7 +217,7 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
-    # --- KENDİ MESAJLARINI SİLME ALANI (GİRİNTİ DÜZELTİLDİ) ---
+    # --- KENDİ MESAJLARINI SİLME ALANI ---
     st.write("")
     if st.button("Yazdığım Mesajları Sil 🗑️", use_container_width=True, key="clear_my_messages_instant_btn"):
         if os.path.exists(db_mesajlar) and "bta_rumuz" in st.session_state:
@@ -241,3 +226,17 @@ with col_sag:
                 df_filtered = df_curr[df_curr["rumuz"] != st.session_state["bta_rumuz"]]
                 df_filtered.to_csv(db_mesajlar, index=False)
                 st.rerun()
+            except:
+                pass
+
+# ===================================================================== #
+# 4. YASAL SPK UYARI METNİ (SAYFA ALTI)
+# ===================================================================== #
+st.write("---")
+st.markdown('''
+<div class="spk-uyari-alani">
+    <strong>⚠️ ÖNEMLİ SPK YASAL UYARI:</strong> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
+    Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak 
+    yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
+    görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
+    bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu panelde paylaşılan veri, analiz ve oda içi 
