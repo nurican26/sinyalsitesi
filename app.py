@@ -86,7 +86,6 @@ marquee_html = f'''
 '''
 st.markdown(marquee_html, unsafe_allow_html=True)
 
-# Başlık kayan yazının altına taşındı
 st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
 
 st.write("---")
@@ -143,7 +142,6 @@ if len(tum_hisseler) > 0:
             pass
 
 st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti, yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri dikkate alınarak kişiye özel sunulmaktadır.Burada yer alan yorum ve tavsiyeler ise genel niteliktedir. Bu tavsiyeler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir.</p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
 
 with col_not1:
@@ -182,3 +180,16 @@ with col_not2:
         df_notlar_oku = pd.read_csv(db_notlar)
         if not df_notlar_oku.empty:
             df_notlar_oku = df_notlar_oku.iloc[::-1]
+            for index, row in df_notlar_oku.iterrows():
+                not_id = str(row["id"])
+                hisse_adi = str(row["hisse"])
+                hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
+                
+                not_anlik_fiyat = 0.0
+                try:
+                    canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
+                    not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
+                except:
+                    pass
+                
+                alarm_durumu = ""
