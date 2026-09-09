@@ -66,12 +66,12 @@ input, textarea, select {
 .mesaj-kutusu { 
     background-color: #050910; 
     border: 1px solid #1e3a5f; 
-    padding: 8px; 
+    padding: 12px; 
     border-radius: 6px; 
-    max-height: 180px; 
+    max-height: 220px; 
     overflow-y: auto; 
-    font-family: monospace; 
-    font-size: 12px; 
+    font-family: sans-serif; 
+    font-size: 14px; 
     margin-bottom: 10px; 
 }
 .spk-uyari-alani { 
@@ -101,11 +101,11 @@ db_mesajlar = "bta_hafif_mesaj_panosu.csv"
 
 # Mesaj veritabanını başlat
 if not os.path.exists(db_mesajlar):
-    pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
+    pd.DataFrame(columns=["rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
 # --- MESAJLARI TEMİZLEME FONKSİYONU ---
 def sohbeti_tamamen_temizle():
-    pd.DataFrame(columns=["zaman", "rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
+    pd.DataFrame(columns=["rumuz", "mesaj"]).to_csv(db_mesajlar, index=False)
 
 # --- GELİŞMİŞ TÜRKÇE KARAKTER DUYARLI SANSÜR FONKSİYONU ---
 def mesajı_sansurle(metin):
@@ -202,7 +202,7 @@ with col_sol:
         st.error("nurican.xls.xlsm dosyası bulunamadı.")
 
 # ===================================================================== #
-# SAĞ TARAF: MESAJ PANELI (DÖNGÜSÜZ ANLIK SİLME BUTONLU)
+# SAĞ TARAF: MESAJ PANELI (KASMA YAPMAYAN DÜZ YAZI VE SAATSİZ TASARIM)
 # ===================================================================== #
 with col_sag:
     st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">💬 Canlı Mesaj Paneli</p>', unsafe_allow_html=True)
@@ -211,13 +211,14 @@ with col_sag:
     try:
         df_msg = pd.read_csv(db_mesajlar)
         msg_lines = []
+        # En sade düz metin yapısına geçildi, kasma yapacak HTML yükleri atıldı
         for idx, row in df_msg.tail(10).iloc[::-1].iterrows():  
-            msg_lines.append(f"<span style='color:#0d9488;'>[{row['zaman']}]</span> <b style='color:#ffcc00;'>{row['rumuz']}:</b> <span style='color:#fff;'>{row['mesaj']}</span>")
+            msg_lines.append(f"{row['rumuz']}: {row['mesaj']}")
         
-        mesaj_govde = "<br>".join(msg_lines) if msg_lines else "<span style='color:#666;'>Henüz mesaj yok...</span>"
-        st.markdown(f'<div class="mesaj-kutusu">{mesaj_govde}</div>', unsafe_allow_html=True)
+        mesaj_govde = "<br>".join(msg_lines) if msg_lines else "Henüz mesaj yok..."
+        st.markdown(f'<div class="mesaj-kutusu" style="color:#ffffff; font-weight:bold;">{mesaj_govde}</div>', unsafe_allow_html=True)
     except:
-        st.markdown('<div class="mesaj-kutusu"><span style="color:#ff3344;">Mesajlar yüklenemedi.</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="mesaj-kutusu" style="color:#ff3344;">Mesajlar yüklenemedi.</div>', unsafe_allow_html=True)
     
     # Enter Tuşuyla Gönderim Sağlayan Form Yapısı
     with st.form("mesaj_formu", clear_on_submit=True):
@@ -226,8 +227,7 @@ with col_sag:
         
         if gonder_butonu and yeni_mesaj.strip():
             filtrelenmis_mesaj = mesajı_sansurle(yeni_mesaj.strip())
-            saat_str = datetime.datetime.now().strftime("%H:%M")
-            df_yeni_msg = pd.DataFrame([{"zaman": saat_str, "rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
+            df_yeni_msg = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "mesaj": filtrelenmis_mesaj}])
             try:
                 df_eski_msg = pd.read_csv(db_mesajlar)
                 df_toplam_msg = pd.concat([df_eski_msg, df_yeni_msg], ignore_index=True).tail(20)
@@ -236,3 +236,5 @@ with col_sag:
                 df_yeni_msg.to_csv(db_mesajlar, index=False)
             st.rerun()
 
+    # --- KESİN VE ANINDA ÇALIŞAN SİLME BUTONU ---
+    st.write("")
