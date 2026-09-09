@@ -149,7 +149,6 @@ if os.path.exists(excel_yolu):
                 
                 tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
                 
-                # Geçici listeye güvenli bir şekilde append ediyoruz
                 if ha and (maliyet > 0 or c_fiyat > 0):
                     yeni_kayitlar.append({
                         "Tarih": su_an,
@@ -179,13 +178,14 @@ else:
     st.error("Excel bulunamadı.")
 
 # ===================================================================== #
-# 3. KORUMALI VERİ YAZMA VE KAYIT DEFTERİ PANELİ (GARANTİ ALAN)
+# 3. KORUMALI VERİ YAZMA VE KAYIT DEFTERİ PANELİ
 # ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📒 BTA ANLIK GELİŞİM KAYIT DEFTERİ</p>', unsafe_allow_html=True)
 
-# Dosyaya veri kaydetme işlemini ana tablodan izole ettik, çökme ihtimali kalmadı
 if yeni_kayitlar:
     try:
         df_eski_kayitlar = pd.read_csv(db_kayit_defteri)
         df_yeni = pd.DataFrame(yeni_kayitlar)
+        df_toplam_kayit = pd.concat([df_eski_kayitlar, df_yeni], ignore_index=True)
+        df_toplam_kayit.drop_duplicates(subset=["Tarih", "Hisse"], keep="last", inplace=True)
