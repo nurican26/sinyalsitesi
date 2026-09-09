@@ -14,13 +14,13 @@ st.set_page_config(page_title="BTA Merkez", layout="wide")
 st.markdown('''
 <style>
 .stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
-div[data-testid="stMetric"], div[data-testid="stForm"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
+div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
+.sohbet-kutu { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 15px !important; margin-bottom: 15px; }
 input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
 .stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; }
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.kucuk-sayac { font-size: 14px !important; color: #00ffcc !important; text-align: center; margin-top: 15px; font-weight: bold; }
 .kucuk-baslik { font-size: 15px !important; color: #ffffff !important; font-weight: bold; margin-bottom: 5px; }
 .galeri-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 10px; text-align: center; }
 .oda-sayici { background: linear-gradient(90deg, #1e3a5f 0%, #121d33 100%); color: #00ffcc; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #00ffcc; margin-bottom: 15px; }
@@ -28,7 +28,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
-# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı ve Fiyatları Tazeler)
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Mesajları ve Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_sohbet_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
@@ -44,39 +44,48 @@ if not os.path.exists(db_resimler):
     pd.DataFrame(columns=["tarih", "saat", "resim_url", "not"]).to_csv(db_resimler, index=False)
 
 if not os.path.exists(db_aktiflik):
-    pd.DataFrame(columns=["session_id", "son_gorulme"]).to_csv(db_aktiflik, index=False)
-
-if "topham_sayac" not in st.session_state: st.session_state["topham_sayac"] = 1450
-st.session_state["topham_sayac"] += 1
-
-# --- ANLIK CANLI ODA SAYISI MOTORU ---
-# Her tarayıcı sekmesine özel geçici bir kimlik atayıp kalıcı veritabanında güncelliyoruz
-if "bta_kullanici_id" not in st.session_state:
-    st.session_state["bta_kullanici_id"] = str(time.time())
-
-try:
-    df_akt = pd.read_csv(db_aktiflik)
-    simdi = time.time()
-    # Mevcut kullanıcının zamanını güncelle veya ekle
-    df_akt = df_akt[df_akt["session_id"] != st.session_state["bta_kullanici_id"]]
-    yeni_akt = pd.DataFrame([{"session_id": st.session_state["bta_kullanici_id"], "son_gorulme": simdi}])
-    df_akt = pd.concat([df_akt, yeni_akt], ignore_index=True)
-    # Son 15 saniye içinde aktif olmayan (sayfadan çıkan) kişileri temizle
-    df_akt = df_akt[df_akt["son_gorulme"] > (simdi - 15)]
-    df_akt.to_csv(db_aktiflik, index=False)
-    canli_oda_sayisi = len(df_akt)
-except:
-    canli_oda_sayisi = 1
-
-# Oda sayısını en tepede şık bir rozet olarak gösteriyoruz
-st.markdown(f'<div style="text-align:center;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Aktif Kullanıcı</div></div>', unsafe_allow_html=True)
-
-def formatla_tl(deger):
-    try: return f"{float(deger):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
-    except: return str(deger)
+    pd.DataFrame(columns=["rumuz", "son_gorulme"]).to_csv(db_aktiflik, index=False)
 
 # ===================================================================== #
-# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI (SABİTLENMİŞ GÖSTERGELER)
+# RUMUZ GİRİŞ SİSTEMİ (GERÇEK KİŞİ DOĞRULAMA)
+# ===================================================================== #
+if "bta_rumuz" not in st.session_state:
+    st.markdown("<h3 style='text-align:center; color:#fff;'>BTA Merkez Paneline Giriş</h3>", unsafe_allow_html=True)
+    giriş_rumuz = st.text_input("Lütfen Sohbet ve Panel için bir Rumuz (Ad) giriniz:", max_chars=20, key="rumuz_input")
+    if st.button("Panele Bağlan 🚀") and giriş_rumuz.strip():
+        st.session_state["bta_rumuz"] = giriş_rumuz.strip().upper()
+        st.rerun()
+    st.stop()  # Rumuz girilene kadar uygulamanın kalanını çalıştırma
+
+# --- ANLIK CANLI ODA SAYISI MOTORU (GERÇEK RUMUZ TABANLI) ---
+simdi = time.time()
+try:
+    df_akt = pd.read_csv(db_aktiflik)
+    # Mevcut kullanıcının zaman damgasını güncelle veya ekle
+    df_akt = df_akt[df_akt["rumuz"] != st.session_state["bta_rumuz"]]
+    yeni_akt = pd.DataFrame([{"rumuz": st.session_state["bta_rumuz"], "son_gorulme": simdi}])
+    df_akt = pd.concat([df_akt, yeni_akt], ignore_index=True)
+    # Son 12 saniye içinde sinyal vermeyen (sayfayı kapatan) kişileri odadan düşür
+    df_akt = df_akt[df_akt["son_gorulme"] > (simdi - 12)]
+    df_akt.to_csv(db_aktiflik, index=False)
+    
+    # Odadaki benzersiz gerçek kişilerin listesi ve sayısı
+    aktif_listesi = df_akt["rumuz"].unique().tolist()
+    canli_oda_sayisi = len(aktif_listesi)
+except:
+    canli_oda_sayisi = 1
+    aktif_listesi = [st.session_state["bta_rumuz"]]
+
+# Üst Bilgi Rozeti
+st.markdown(f'<div style="text-align:center;"><div class="oda-sayici">🟢 Canlı Oda Sayısı: {canli_oda_sayisi} Gerçek Kişi Aktif</div></div>', unsafe_allow_html=True)
+
+# Sayacın üzerine gelindiğinde odadaki kişileri görebilmek için ufak bir bilgi alanı
+with st.expander(f"👥 Odadakileri Gör ({canli_oda_sayisi})"):
+    st.caption(", ".join(aktif_listesi))
+
+
+# ===================================================================== #
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
 try:
     bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
@@ -94,8 +103,9 @@ try:
 except:
     st.info("⏳ Finansal Veriler Güncelleniyor...")
 
+
 # ===================================================================== #
-# 3. VERİ MOTORU VE TABLOLAR
+# 3. VERİ MOTORU VE TABLOLAR (YUVARLAMASIZ)
 # ===================================================================== #
 if os.path.exists(excel_yolu):
     try:
@@ -142,15 +152,16 @@ if os.path.exists(excel_yolu):
     except: st.error("Veri yüklenemedi.")
 else: st.error("Excel bulunamadı.")
 
+
 # ===================================================================== #
-# 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES)
+# 4. GÜVENLİ SOHBET FORMU VE YEREL SES SİNYALİ (GARANTİLİ SES VE GÖNDERİM)
 # ===================================================================== #
 st.write("---")
-# Kırmızı hataya sebep olan unsafe_allow_index=True kısmı burada unsafe_allow_html=True olarak tamamen düzeltildi.
 st.markdown('<div class="kucuk-baslik">Sohbet</div>', unsafe_allow_html=True)
 
 yasakli = ["orosu", "orospu", "amk", "oç", "oc", "siktir", "piç", "salak", "sik", "göt", "amına"]
 
+# Kesin çalışan tarayıcı tabanlı ses kodu
 garantili_bip_html = """
 <script>
     (function() {
@@ -160,18 +171,6 @@ garantili_bip_html = """
         osc.connect(gain);
         gain.connect(context.destination);
         osc.type = 'sine';
-        osc.frequency.value = 830;
-        gain.gain.setValueAtTime(0.1, context.currentTime);
+        osc.frequency.value = 850; 
+        gain.gain.setValueAtTime(0.15, context.currentTime); 
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.15);
-        osc.stop(context.currentTime + 0.16);
-    })();
-</script>
-"""
-
-with st.form(key="s_frm", clear_on_submit=True):
-    y_is = st.text_input("Adınız:", max_chars=25)
-    y_me = st.text_area("Mesajınız:", max_chars=300, height=80)
-    if st.form_submit_button("Mesajı Yayınla 📨", use_container_width=True) and y_is.strip() and y_me.strip():
-        m_kucuk = y_me.lower().replace(" ", "").replace("@", "a").replace("0", "o")
-        i_kucuk = y_is.lower().replace(" ", "")
