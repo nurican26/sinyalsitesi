@@ -6,11 +6,9 @@ import os
 import time
 from streamlit_autorefresh import st_autorefresh
 
-try:
-    import xlwings as xw
-except:
-    pass
-
+# ===================================================================== #
+# 1. BORSA TEMASI VE STİLLER (CSS - OKUNAKLI & KÜÇÜK)
+# ===================================================================== #
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
 st.markdown('''
@@ -26,117 +24,92 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 <h1 style="text-align:center; color:#00ffcc; font-family:'Brush Script MT', cursive, sans-serif; font-size:50px; margin-bottom:5px;">BTA</h1>
 ''', unsafe_allow_html=True)
 
+# Otomatik Yenileme Motoru (5 Saniyede Bir Ekranı, Fiyatları Tazeler)
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 
+# Veritabanını en temiz haliyle başlatıyoruz
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 # ===================================================================== #
-# GİZLİ VE KESİNLİKLE ERİŞİLEMEZ KORUMA PANELİ (SOL YAN MENÜ)
+# 2. CANLI ALTIN VE BIST 100 PİYASA ALANI
 # ===================================================================== #
-st.write("---")
-with st.sidebar:
-    st.markdown('<p style="color:#00ffcc; font-weight:bold; font-size:16px;">🔐 BTA Yönetici Girişi</p>', unsafe_allow_html=True)
-    yonetici_sifre = st.text_input("Yönetici Şifresi:", type="password", key="admin_sifre_input")
+try:
+    bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
+    ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
+    usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
+    gram_f = (ons_f / 31.1034768) * usd_f
     
-    if yonetici_sifre == "bta123":
-        st.success("Yönetici Yetkisi Tanımlandı! ✅")
-        st.write("---")
-        
-        yuklenen_dosya = st.file_uploader("Excel Dosyanızı Seçin (nurican.xls.xlsm):", type=["xlsm"])
-        if yuklenen_dosya is not None:
-            with open(excel_yolu, "wb") as f:
-                f.write(yuklenen_dosya.getbuffer())
-            st.toast("Excel Başarıyla Yüklendi! 💾")
-            
-        st.write("---")
-        if st.button("🚀 OTO Butonuna Bas ve Sistemi Çalıştır", use_container_width=True, key="makro_run_btn"):
-            try:
-                st.toast("SAYFA VERİLERİ ÜZERİNDEN MAKRO TETİKLENİYOR...")
-                app = xw.App(visible=False)
-                wb = xw.Book(excel_yolu)
-                
-                # SAYFA BİLGİSİ ÜZERİNDEN DOĞRUDAN ÇALIŞTIRMA KOMUTU
-                excel_makrosu = wb.macro("Nurican_Tum_Sistemi_Calistir")
-                excel_makrosu()
-                
-                wb.save()
-                wb.close()
-                app.quit()
-                st.success("Sistem başarıyla çalıştırıldı ve sayfa güncellendi!")
-                time.sleep(0.5)
-                st.rerun()
-            except:
-                st.info("Makro sistemi sayfa üzerinde tetiklenmeye hazır.")
+    pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
+    pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
+    pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
+    pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
+    col_bist.metric("BIST 100", f"{bist_f:,.2f}")
+    col_eur.metric("EURO", f"{eur_f:,.2f} TL")
+except:
+    st.info("⏳ Finansal Veriler Güncelleniyor...")
 
 # ===================================================================== #
-# CANLI ALTIN VE BIST 100 PİYASA METRİKLERİ
+# 3. ANA VERİ MOTORU VE TABLOLAR (SADECE OKUMA)
 # ===================================================================== #
-bist_f = float(yf.Ticker("XU100.IS").history(period="1d", timeout=2)['Close'].iloc[-1])
-ons_f = float(yf.Ticker("GC=F").history(period="1d", timeout=2)['Close'].iloc[-1])
-usd_f = float(yf.Ticker("TRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-eur_f = float(yf.Ticker("EURTRY=X").history(period="1d", timeout=2)['Close'].iloc[-1])
-gram_f = (ons_f / 31.1034768) * usd_f
-
-pk1, pk2, pk3, col_bist, col_eur = st.columns(5)
-pk1.metric("GRAM ALTIN", f"{gram_f:,.2f} TL")
-pk2.metric("ÇEYREK ALTIN", f"{gram_f * 1.63:,.2f} TL")
-pk3.metric("YARIM ALTIN", f"{gram_f * 3.26:,.2f} TL")
-col_bist.metric("BIST 100", f"{bist_f:,.2f}")
-col_eur.metric("EURO", f"{eur_f:,.2f} TL")
-
 st.write("---")
-
-# ===================================================================== #
-# EXCEL OKUMA VE ANALİZ TABLOSU MOTORU
-# ===================================================================== #
-tum_hisseler = []
+tum_hisseler = [] 
 veri_var_mi = False
 
 if os.path.exists(excel_yolu):
-    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
-    for idx in range(min(10, len(df))):
-        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-        puan_d = df.iloc[idx, 3]
-        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-            veri_var_mi = True
-            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-            h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-            c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-            alim_c_temiz = alim_c.replace(",", ".")
-            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-            if maliyet > 0 and c_fiyat > 0:
-                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-            else:
-                kz_str = "<span>-</span>"
-            tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-    tablo_html += '</table>'
-    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
-    if veri_var_mi:
-        st.markdown(tablo_html, unsafe_allow_html=True)
-    ham_liste = df.iloc[:, 4].dropna().unique()
-    tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+    try:
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
+        
+        for idx in range(min(10, len(df))):
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
+                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+                alim_c_temiz = alim_c.replace(",", ".")
+                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
+                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+        tablo_html += '</table>'
+        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE </p>', unsafe_allow_html=True)
+        if veri_var_mi: 
+            st.markdown(tablo_html, unsafe_allow_html=True)
+        if len(df.columns) >= 5:
+            ham_liste = df.iloc[:, 4].dropna().unique()
+            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+    except:
+        pass
 else:
-    st.info("Lütfen sol menüdeki gizli alandan şifrenizi girerek Excel dosyanızı yükleyin. 📂")
+    st.error("Excel bulunamadı.")
 
-# ===================================================================== #
-# BIST HİSSE ARAMA MOTORU VE NOT DEFTERİ
-# ===================================================================== #
+# --- BORSA ARAMA MOTORU ---
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
 if len(tum_hisseler) > 0:
     aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler, key="arama_motoru_select")
     if aranan_hisse != "Seçiniz...":
-        h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
-        if len(h_detay_veri) > 0:
-            st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
+        try:
+            h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
+            if len(h_detay_veri) > 0:
+                st.metric("Güncel Fiyat", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
+        except:
+            pass
 
+# ===================================================================== #
+# 4. HİSSE NOT DEFTERİ KAYIT PANELİ
+# ===================================================================== #
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">🗒️ BTA HİSSE NOT DEFTERİ</p>', unsafe_allow_html=True)
 col_not1, col_not2 = st.columns(2)
@@ -152,28 +125,47 @@ with col_not1:
     hisse_notu = st.text_area("Hisse Hakkındaki Notunuz:", max_chars=500, placeholder="Stratejinizi yazın...", key="hisse_notu_metni")
     if st.button("Notu Kaydet 💾", use_container_width=True, key="notu_kaydet_butonu"):
         if not_hisse and hisse_notu.strip():
-            df_notlar = pd.read_csv(db_notlar)
-            yeni_id = str(int(time.time() * 1000))
-            su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-            yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
-            df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
-            df_notlar.to_csv(db_notlar, index=False)
-            st.success(f"Not kaydedildi! ({not_hisse})")
-            time.sleep(0.5)
-            st.rerun()
+            try:
+                df_notlar = pd.read_csv(db_notlar)
+                yeni_id = str(int(time.time() * 1000))
+                su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+                yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
+                df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
+                df_notlar.to_csv(db_notlar, index=False)
+                st.success(f"Not kaydedildi! ({not_hisse})")
+                time.sleep(0.5)
+                st.rerun()
+            except:
+                pass
 
 with col_not2:
     st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold;">Kayıtlı Notlar</div>', unsafe_allow_html=True)
-    if os.path.exists(db_notlar):
-        df_notlar_oku = pd.read_csv(db_notlar)
-        if not df_notlar_oku.empty:
-            df_notlar_oku = df_notlar_oku.iloc[::-1]
-            for index, row in df_notlar_oku.iterrows():
-                not_id = str(row["id"])
-                hisse_adi = str(row["hisse"])
-                hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
-                try:
-                    canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
-                    not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
-                except:
-                    not_anlik_fiyat = 0.0
+    try:
+        if os.path.exists(db_notlar):
+            df_notlar_oku = pd.read_csv(db_notlar)
+            if not df_notlar_oku.empty:
+                df_notlar_oku = df_notlar_oku.iloc[::-1]
+                for index, row in df_notlar_oku.iterrows():
+                    not_id = str(row["id"])
+                    hisse_adi = str(row["hisse"])
+                    hedef_f = float(row["hedef_fiyat"]) if "hedef_fiyat" in row and pd.notna(row["hedef_fiyat"]) else 0.0
+                    try:
+                        canli_h_veri = yf.Ticker(f"{hisse_adi}.IS").history(period="1d", timeout=1)
+                        not_anlik_fiyat = float(canli_h_veri['Close'].iloc[-1]) if len(canli_h_veri) > 0 else 0.0
+                    except:
+                        not_anlik_fiyat = 0.0
+                    alarm_durumu = ""
+                    if hedef_f > 0.0 and not_anlik_fiyat > 0.0:
+                        if not_anlik_fiyat >= hedef_f:
+                            alarm_durumu = " 🟢 HEDEF GÖRÜLDÜ"
+                        else:
+                            alarm_durumu = f" ⏳ Hedef Bekleniyor ({hedef_f:.2f} TL)"
+                    fiyat_metni = f" | Anlık: {not_anlik_fiyat:.2f} TL" if not_anlik_fiyat > 0 else ""
+                    baslik = f"📌 {hisse_adi}{fiyat_metni}{alarm_durumu}"
+                    with st.expander(baslik):
+                        st.info(row["not"])
+                        if st.button("Bu Notu Sil", key=f"sil_id_{not_id}"):
+                            df_notlar_oku["id"] = df_notlar_oku["id"].astype(str)
+                            df_guncel_notlar = df_notlar_oku[df_notlar_oku["id"] != not_id]
+                            df_guncel_notlar.to_csv(db_notlar, index=False)
+                            st.success("Not silindi!")
