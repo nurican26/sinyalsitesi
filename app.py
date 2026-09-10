@@ -17,6 +17,8 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+/* Tebrik Paneli Stili */
+.tebrik-kutusu { background: linear-gradient(135deg, #111827 0%, #0d9488 100%); border: 1px solid #00ffcc; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0, 255, 204, 0.2); }
 </style>
 ''', unsafe_allow_html=True)
 
@@ -34,11 +36,13 @@ st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Sc
 st.write("---")
 tum_hisseler = [] 
 veri_var_mi = False
+basarili_hisseler = [] # %9 ve üzeri olanları toplamak için liste
 
+# ÖNCE VERİLERİ ÇEKİP ANALİZ EDİYORUZ (Tebrik panelini tablonun üstünde gösterebilmek için)
+tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>'
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -54,22 +58,45 @@ if os.path.exists(excel_yolu):
                     pass
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    # GEÇERLİ HİSSE %9 VE ÜZERİNDEYSE LİSTEYE EKLE
+                    if or_dg >= 9.0:
+                        basariliHisse_adi = ha.replace(".IS", "")
+                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                    
                     kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 else:
                     kz_str = "<span>-</span>"
-                tablo_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-        tablo_html += '</table>'
-        st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>', unsafe_allow_html=True)
-        if veri_var_mi: 
-            st.markdown(tablo_html, unsafe_allow_html=True)
+                
+                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+        
         if len(df.columns) >= 5:
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
     except:
         pass
-else:
+
+# 1. BÖLÜM: DİNAMİK TEBRİK PANELİ (Eğer kriteri sağlayan hisse varsa görünür)
+if basarili_hisseler:
+    hisseler_str = ", ".join(basarili_hisseler)
+    tebrik_html = f'''
+    <div class="tebrik-kutusu">
+        <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:20px;">🎉 Algoritmik Başarı Kutlaması 🎉</h3>
+        <p style="color:#ffffff; font-size:16px; margin:0;">
+            Sistemimizde takip edilen {hisseler_str} algoritmik hedefine ulaşarak <b>%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
+        </p>
+    </div>
+    '''
+    st.markdown(tebrik_html, unsafe_allow_html=True)
+
+# 2. BÖLÜM: TABLONUN GÖSTERİLMESİ
+if veri_var_mi and tablo_rows_html != "":
+    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
+    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmeli veya canlı sinyal eşleniklidir.</span></p>', unsafe_allow_html=True)
+    st.markdown(tablo_html, unsafe_allow_html=True)
+elif not os.path.exists(excel_yolu):
     st.error("Excel bulunamadı.")
 
 # SPK YASAL UYARI BÖLÜMÜ
@@ -130,10 +157,9 @@ with col_not1:
 with col_not2:
     st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold; margin-bottom:10px;">🔒 Yönetici Not Paneli</div>', unsafe_allow_html=True)
     
-    # Giriş şifresi kutusu (Varsayılan olarak "1905" ayarladım, aşağıdan değiştirebilirsiniz)
     admin_sifre = st.text_input("Görmek ve silmek için Yönetici Şifresini girin:", type="password", key="not_paneli_giris_sifresi")
     
-    if admin_sifre == "n3015":  # <--- ŞİFRENİZ BURADA
+    if admin_sifre == "n3015":  
         st.success("Yönetici girişi başarılı. Notlar listeleniyor.")
         if os.path.exists(db_notlar):
             df_notlar_oku = pd.read_csv(db_notlar)
@@ -144,19 +170,3 @@ with col_not2:
                         st.write(f"**Not:** {row['not']}")
                         st.write(f"**Hedef Fiyat:** {row['hedef_fiyat']} TL")
                         
-                        # Her nota özel Kırmızı Silme Butonu
-                        if st.button(f"Bu Notu Kalıcı Olarak Sil ❌", key=f"sil_btn_{row['id']}", use_container_width=True):
-                            try:
-                                # Güncel CSV'yi tekrar oku ve ilgili ID'yi uçur
-                                df_guncel = pd.read_csv(db_notlar)
-                                df_guncel = df_guncel[df_guncel['id'].astype(str) != str(row['id'])]
-                                df_guncel.to_csv(db_notlar, index=False)
-                                st.error("Not silindi! Sayfa yenileniyor...")
-                                time.sleep(0.8)
-                                st.rerun()
-                            except:
-                                pass
-            else:
-                st.info("Kayıtlı hiçbir not bulunamadı.")
-    elif admin_sifre != "":
-        st.error("Hatalı yönetici şifresi! Erişim engellendi.")
