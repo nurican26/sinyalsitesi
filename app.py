@@ -10,51 +10,34 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Mobil Boşluklar ve Yıldızlar İçin Optimize Edildi)
-st.markdown('''
+# 2. ÖZEL CSS TASARIMI (Tırnak hatası riski sıfırlandı)
+css_kodu = """
 <style>
-/* Mobil Boşluk Azaltma ve Genel Arka Plan */
 .stApp { 
     background-color: #0b111e !important; 
     background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; 
 }
-/* Bloklar arası dikey boşlukları telefona göre daraltıyoruz */
 .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
 div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
-
-/* Kart ve Tablo Tasarımları */
 div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-
-/* Neon Paneller */
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
-
-/* 🌟 Yenilenen Siber Logo Tasarımı (Telefon boşluğu için üst-alt sıfırlandı) */
 .bta-siber-logo {
-    text-align: center;
-    font-weight: 900;
-    font-size: 55px;
-    letter-spacing: 7px;
+    text-align: center; font-weight: 900; font-size: 55px; letter-spacing: 7px;
     background: linear-gradient(135deg, #00ffcc 30%, #1e90ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     text-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-    margin-top: 0px !important;
-    margin-bottom: 0px !important;
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
-    line-height: 1;
+    margin: 0 !important; padding: 0 !important; line-height: 1;
 }
-
-/* ⭐ Parıldayan Yıldız Derecelendirmesi */
 .yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; }
 .neon-yildizlar { color: #ffcc00; font-size: 20px; text-shadow: 0 0 8px #ffcc00; font-weight: bold; }
 .yuzde-yazi { color: #00ffcc; font-weight: bold; font-size: 15px; margin-left: 5px; }
 </style>
-''', unsafe_allow_html=True)
+"""
+st.markdown(css_kodu, unsafe_allow_html=True)
 
 # 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
@@ -64,40 +47,32 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Not veri tabanı kontrolü
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# İstatistik veri tabanı kontrolü
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
-ziyaret = 0
-basarili = 0
-basarisiz = 0
-
+ziyaret, basarili, basarisiz = 0, 0, 0
 if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
             df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
-        
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
             df_ist.to_csv(db_istatistik, index=False)
             st.session_state["ziyaret_sayildi"] = True
-        
         ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
         basarili = int(df_ist.at[0, "basarili_oy"])
         basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
         pass
 
-# 6. YENİ MODERNIZE SİBER LOGO (Boşluksuz)
+# 6. LOGO VE TRADINGVIEW GÖRÜNÜMÜ
 st.markdown('<p class="bta-siber-logo">BTA</p>', unsafe_allow_html=True)
 
-# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
 bist_mini_widget = """
 <div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
   <div class="tradingview-widget-container__widget"></div>
@@ -115,15 +90,13 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🗓️ EXCEL DOSYASININ YÜKLENME TARİHİNİ BULMA MOTORU
 excel_guncelleme_tarihi = "Bilinmiyor"
 if os.path.exists(excel_yolu):
     try:
         dosya_zaman_damgasi = os.path.getmtime(excel_yolu)
         excel_tarih_objesi = datetime.datetime.fromtimestamp(dosya_zaman_damgasi)
         gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
-        gun_adi = gunler_tr[excel_tarih_objesi.weekday()]
-        excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gun_adi}")
+        excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
     except:
         pass
 
@@ -132,7 +105,6 @@ tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
         if len(df.columns) >= 5:
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
@@ -158,7 +130,6 @@ if os.path.exists(excel_yolu):
                     if or_dg >= 9.0:
                         basariliHisse_adi = ha.replace(".IS", "")
                         basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    
                     kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 else:
                     kz_str = "<span>-</span>"
@@ -167,40 +138,35 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# 8. OTOMATİK NEON IŞIKLI TEBRİK PANELI
+# 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'''
-    <div class="tebrik-kutusu">
-        <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; text-shadow: 0 0 10px #00ffcc; font-weight: bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3>
-        <p style="color:#ffffff; font-size:14px; margin:0; line-height: 1.5;">
-            Sistemimizde takip edilen {hisseler_str} algoritmik hedefine ulaşarak <b style="color:#00ffcc; text-shadow: 0 0 5px #00ffcc;">%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
-        </p>
-    </div>
-    '''
+    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. BORSA TABLOSU PANELİ VEYA GÜZEL EDEBİYATLI TARAMA PANELİ
+# 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    st.markdown(f'''
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;">
-        <p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p>
-        <p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;"> Son Yükleme: {excel_guncelleme_tarihi}</p>
-    </div>
-    ''', unsafe_allow_html=True)
+    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
+    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
+    st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 else:
-    # ✨ HİSSE YOKKEN ÇIKACAK GÜZEL EDEBİYATLI SİBER YAZI PANELİ
-    st.markdown('''
-    <div class="tarama-kutusu">
-        <div style="font-size: 32px; margin-bottom: 10px;">🔍</div>
-        <p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p>
-        <p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri ve sinyaller anında bu ekrana yansıtılacaktır.</p>
-    </div>
-    ''', unsafe_allow_html=True)
+    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri ve sinyaller anında bu ekrana yansıtılacaktır.</p></div>'
+    st.markdown(tarama_html, unsafe_allow_html=True)
 
 # 10. YASAL UYARI BÖLÜMÜ
-st.markdown('''
-<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;">
-    <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
+yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri yatırım tavsiyesi niteliği taşımamaktadır.</p></div>'
+st.markdown(yasal_html, unsafe_allow_html=True)
+
+# 11. ETKİLEŞİM VE YILDIZLI BEĞENİ ALANI
+st.write("---")
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+
+toplam_oy = basarili + basarisiz
+begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
+
+col_ist1, col_ist2 = st.columns(2)
+with col_ist1:
+    st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+
+with col_ist2:
