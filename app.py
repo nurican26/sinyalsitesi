@@ -25,6 +25,8 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
+
+/* ⭐ Parıldayan Yıldız Alanı Stili */
 .yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; margin-top: 5px; }
 .neon-yildizlar { color: #ffcc00; font-size: 20px; text-shadow: 0 0 8px #ffcc00; font-weight: bold; }
 .yuzde-yazi { color: #00ffcc; font-weight: bold; font-size: 15px; margin-left: 5px; }
@@ -158,17 +160,16 @@ if veri_var_mi and tablo_rows_html != "":
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri andında bu ekrana yansıtılacaktır.</p></div>'
+    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# 10. YASAL UYARI BÖLÜMÜ (Hata riski sıfır, güvenli uyarı kutusu)
+# 10. YASAL UYARI BÖLÜMÜ
 st.error("⚠️ YASAL UYARI: Bu tabloda yer alan fiyatlar en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.")
 
 # 11. ETKİLEŞİM VE YILDIZLI BEĞENİ ALANI
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
-# Toplam Ziyaret Sayacı Paneli (Geri Geldi)
+# Toplam Ziyaret Sayacı
 st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
 
-# Yıldızlı Beğeni Oranı Hesaplaması
