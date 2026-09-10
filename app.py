@@ -75,6 +75,12 @@ tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        
+        # Arama motoru ve not defteri için hisse listesini hafızaya al
+        if len(df.columns) >= 5:
+            ham_liste = df.iloc[:, 4].dropna().unique()
+            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+            
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -102,10 +108,6 @@ if os.path.exists(excel_yolu):
                     kz_str = "<span>-</span>"
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-        
-        if len(df.columns) >= 5:
-            ham_liste = df.iloc[:, 4].dropna().unique()
-            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
     except:
         pass
 
@@ -139,7 +141,7 @@ st.markdown('''
         ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
-        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
+        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları và algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
         Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
     </p>
 </div>
@@ -189,7 +191,5 @@ with col_btn2:
         except:
             pass
 
-# 11. HİSSE ARAMA MOTORU BÖLÜMÜ
+# 11. HİSSE ARAMA MOTORU BÖLÜMÜ (GERİ GELDİ)
 st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-
