@@ -29,7 +29,8 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
-excel_yolu = "nurican.xls.xlsm"
+# 👇 BURADAKİ DOSYA ADINI YENİ OLUŞTURDUĞUMUZ EXCEL ADIYLA GÜNCELLEDİK
+excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
@@ -153,7 +154,7 @@ if basarili_hisseler:
             ⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡
         </h3>
         <p style="color:#ffffff; font-size:16px; margin:0; line-height: 1.5;">
-            Sistemimizde takip edilen {hisseler_str} algoritmik fiyatın  <b style="color:#00ffcc; text-shadow: 0 0 5px #00ffcc;">%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
+            Sistemimizde takip edilen {hisseler_str} algoritmik hedefine ulaşarak <b style="color:#00ffcc; text-shadow: 0 0 5px #00ffcc;">%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
         </p>
     </div>
     '''
@@ -192,4 +193,3 @@ st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📊 PL
 col_ist1, col_ist2, col_ist3 = st.columns(3)
 with col_ist1:
     st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
-
