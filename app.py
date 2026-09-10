@@ -25,13 +25,6 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
-.bta-siber-logo {
-    text-align: center; font-weight: 900; font-size: 55px; letter-spacing: 7px;
-    background: linear-gradient(135deg, #00ffcc 30%, #1e90ff 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-    margin: 0 !important; padding: 0 !important; line-height: 1;
-}
 .yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; margin-top: 5px; }
 .neon-yildizlar { color: #ffcc00; font-size: 20px; text-shadow: 0 0 8px #ffcc00; font-weight: bold; }
 .yuzde-yazi { color: #00ffcc; font-weight: bold; font-size: 15px; margin-left: 5px; }
@@ -70,9 +63,26 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# 6. LOGO VE TRADINGVIEW GÖRÜNÜMÜ
-st.markdown('<p class="bta-siber-logo">BTA</p>', unsafe_allow_html=True)
+# 6. LOGO (Garantili Büyük ve Siber Tasarım)
+logo_html = """
+<div style="text-align: center; margin: 0; padding: 0; line-height: 1;">
+    <h1 style="
+        font-weight: 900; 
+        font-size: 65px; 
+        letter-spacing: 8px; 
+        background: linear-gradient(135deg, #00ffcc 30%, #1e90ff 100%); 
+        -webkit-background-clip: text; 
+        -webkit-text-fill-color: transparent; 
+        text-shadow: 0 0 25px rgba(0, 255, 204, 0.5); 
+        margin: 0 !important; 
+        padding: 0 !important;
+        font-family: sans-serif;
+    ">BTA</h1>
+</div>
+"""
+st.markdown(logo_html, unsafe_allow_html=True)
 
+# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
 bist_mini_widget = """
 <div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
   <div class="tradingview-widget-container__widget"></div>
@@ -158,13 +168,13 @@ else:
 yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri yatırım tavsiyesi niteliği taşımamaktadır.</p></div>'
 st.markdown(yasal_html, unsafe_allow_html=True)
 
-# 11. ETKİLEŞİM VE YILDIZLI BEĞENİ ALANI (Hata riski olan tüm 'with' sütunları silindi)
+# 11. ETKİLEŞİM VE YILDIZLI BEĞENİ ALANI
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 toplam_oy = basarili + basarisiz
 begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
 
-# İstatistikler alt alta düz ve hatasız listelenir
+# İstatistikler
 st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
 
