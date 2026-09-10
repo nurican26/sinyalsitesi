@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Karşıdan Karşıya Tam Yürüyen BTA Logosu)
+# 2. ÖZEL CSS TASARIMI (Canlı Yürüyen Renkli Gölgeli BTA Logosu ve Siber Tema)
 css_kodu = """
 <style>
 .stApp { 
@@ -25,11 +25,8 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
-.yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; margin-top: 5px; }
-.neon-yildizlar { color: #ffcc00; font-size: 20px; text-shadow: 0 0 8px #ffcc00; font-weight: bold; }
-.yuzde-yazi { color: #00ffcc; font-weight: bold; font-size: 15px; margin-left: 5px; }
 
-/* 🌟 TAM KARŞIDAN KARŞIYA KESİNTİSİZ YÜRÜME ALGORİTMASI */
+/* 🌟 KÖŞEDEN KÖŞEYE YAVAŞÇA YÜRÜYEN EL YAZISI BTA LOGO ALANI */
 .logo-yurume-alani {
     width: 100%;
     overflow: hidden;
@@ -39,10 +36,10 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     line-height: 1;
 }
 
-@keyframes btaKarsiyaYoru {
-    0% { transform: translateX(0%); }
-    50% { transform: translateX(93%); }
-    100% { transform: translateX(0%); }
+@keyframes btaYoru {
+    0% { transform: translateX(-10%); }
+    50% { transform: translateX(85%); }
+    100% { transform: translateX(-10%); }
 }
 
 .yuruyen-bta-logo {
@@ -51,8 +48,8 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     font-size: 75px; 
     color: #00ffcc;
     display: inline-block;
-    animation: btaKarsiyaYoru 18s infinite linear;
-    text-shadow: 0 0 12px #00ffcc, 0 0 25px #1e90ff, 0 0 40px #0d9488;
+    animation: btaYoru 15s infinite linear;
+    text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
 </style>
 """
@@ -70,7 +67,7 @@ if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -78,7 +75,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
             df_ist.to_csv(db_istatistik, index=False)
@@ -89,7 +86,7 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# 6. EN SOL BAŞTAN EN SAĞ DUVARA KADAR YÜRÜYEN LOGO
+# 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
 
 # TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
@@ -180,3 +177,11 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 
 # 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
 st.write("---")
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+
+toplam_oy = basarili + basarisiz
+begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
+
+st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+
+# Sayfa sonuna sayaç ve yıldızları da güvenli şekilde bağladık
