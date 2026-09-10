@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Sıfır Hata Garantili Yapı)
+# 2. ÖZEL CSS TASARIMI (Sürekli Parıldayan ve Renk Değiştiren Canlı BTA Logosu)
 css_kodu = """
 <style>
 .stApp { 
@@ -28,6 +28,36 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 .yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; margin-top: 5px; }
 .neon-yildizlar { color: #ffcc00; font-size: 20px; text-shadow: 0 0 8px #ffcc00; font-weight: bold; }
 .yuzde-yazi { color: #00ffcc; font-weight: bold; font-size: 15px; margin-left: 5px; }
+
+/* 🌟 BTA LOGOSU İÇİN CANLI NEON ANIMASYONU */
+@keyframes btaGlow {
+    0% {
+        text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+        transform: scale(1);
+    }
+    50% {
+        text-shadow: 0 0 25px #1e90ff, 0 0 40px #1e90ff, 0 0 60px #00ffcc;
+        transform: scale(1.03);
+    }
+    100% {
+        text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+        transform: scale(1);
+    }
+}
+
+.canli-bta-logo {
+    font-weight: 900; 
+    font-size: 65px; 
+    letter-spacing: 10px; 
+    background: linear-gradient(135deg, #00ffcc 30%, #1e90ff 100%); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+    margin: 0 !important; 
+    padding: 0 !important;
+    font-family: sans-serif;
+    display: inline-block;
+    animation: btaGlow 3s infinite ease-in-out;
+}
 </style>
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
@@ -63,24 +93,8 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# 6. LOGO (Garantili Büyük ve Siber Tasarım)
-logo_html = """
-<div style="text-align: center; margin: 0; padding: 0; line-height: 1;">
-    <h1 style="
-        font-weight: 900; 
-        font-size: 65px; 
-        letter-spacing: 8px; 
-        background: linear-gradient(135deg, #00ffcc 30%, #1e90ff 100%); 
-        -webkit-background-clip: text; 
-        -webkit-text-fill-color: transparent; 
-        text-shadow: 0 0 25px rgba(0, 255, 204, 0.5); 
-        margin: 0 !important; 
-        padding: 0 !important;
-        font-family: sans-serif;
-    ">BTA</h1>
-</div>
-"""
-st.markdown(logo_html, unsafe_allow_html=True)
+# 6. LOGO (Hareketli ve Parıldayan Yapı)
+st.markdown('<div style="text-align: center; margin: 0; padding: 0; line-height: 1;"><h1 class="canli-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
 
 # TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
 bist_mini_widget = """
@@ -164,17 +178,10 @@ else:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri ve sinyaller anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# 10. YASAL UYARI BÖLÜMÜ
-yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri yatırım tavsiyesi niteliği taşımamaktadır.</p></div>'
-st.markdown(yasal_html, unsafe_allow_html=True)
-
-# 11. ETKİLEŞİM VE YILDIZLI BEĞENİ ALANI
-st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-
-toplam_oy = basarili + basarisiz
-begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
-
-# İstatistikler
-st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
-
+# 10. YASAL UYARI BÖLÜMÜ (Tam Koruma Sağlayan Eski Uzun Metin Geri Getirildi)
+yasal_html = """
+<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
+    <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
+        ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
+    </p>
+    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
