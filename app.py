@@ -4,6 +4,7 @@ import datetime
 import yfinance as yf
 import os
 import time
+import streamlit.components.v1 as components
 from streamlit_autorefresh import st_autorefresh
 
 # 1. SAYFA AYARLARI
@@ -32,16 +33,13 @@ excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Excel boşsa veya okunamazsa arama motorunu koruyacak koruma listesi
-koruma_hisseleri = ["AKFGY", "KONYA", "THYAO", "ASELS", "EREGL", "TUPRS", "GARAN", "ISCTR", "SISE", "AKBNK"]
-
 # Not veri tabanı kontrolü
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 # İstatistik veri tabanı kontrolü
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret = 0
@@ -52,7 +50,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
@@ -67,19 +65,39 @@ if os.path.exists(db_istatistik):
 
 # LOGO VE BAŞLIK
 st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
+
+# YENİ ÖZELLİK: TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
+bist_mini_widget = """
+<div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
+  <div class="tradingview-widget-container__widget"></div>
+  <script type="text/javascript" src="https://tradingview.com" async>
+  {
+  "symbol": "BIST:XU100",
+  "width": "100%",
+  "height": "110",
+  "locale": "tr",
+  "dateRange": "1D",
+  "colorTheme": "dark",
+  "isTransparent": true,
+  "autosize": false,
+  "largeChartUrl": ""
+  }
+  </script>
+</div>
+"""
+components.html(bist_mini_widget, height=120)
 st.write("---")
 
 tum_hisseler = [] 
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🗓️ EXCEL DOSYASININ SİSTEME YÜKLENME (DEĞİŞTİRİLME) TARİHİNİ BULMA MOTORU
+# 🗓️ EXCEL DOSYASININ YÜKLENME TARİHİNİ BULMA MOTORU
 excel_guncelleme_tarihi = "Bilinmiyor"
 if os.path.exists(excel_yolu):
     try:
         dosya_zaman_damgasi = os.path.getmtime(excel_yolu)
         excel_tarih_objesi = datetime.datetime.fromtimestamp(dosya_zaman_damgasi)
-        
         gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
         gun_adi = gunler_tr[excel_tarih_objesi.weekday()]
         excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gun_adi}")
@@ -126,10 +144,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-if not tum_hisseler:
-    tum_hisseler = koruma_hisseleri
-
-# 7. NEON IŞIKLI VE ŞİMŞEKLİ OTOMATİK TEBRİK PANELİ
+# 7. OTOMATİK NEON IŞIKLI TEBRİK PANELI
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'''
@@ -144,7 +159,7 @@ if basarili_hisseler:
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 8. BORSA TABLOSU PANELİ (SABİT SON YÜKLEME ZAMANLI)
+# 8. BORSA TABLOSU PANELİ (YÜKLEME TARİHİ SAĞ ÜSTTE SABİT)
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     st.markdown(f'''
@@ -177,13 +192,4 @@ st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📊 PL
 col_ist1, col_ist2, col_ist3 = st.columns(3)
 with col_ist1:
     st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
-
-toplam_oy = basarili + basarisiz
-basari_yuzdesi = (basarili / toplam_oy * 100) if toplam_oy > 0 else 0.0
-basarisiz_yuzdesi = (basarisiz / toplam_oy * 100) if toplam_oy > 0 else 0.0
-
-with col_ist2:
-    st.metric("🎯 Algoritma Başarılı Oranı", f"%{basari_yuzdesi:.1f}", help=f"Toplam {basarili} kişi başarılı buldu.")
-with col_ist3:
-    st.metric("❌ Algoritma Başarısız Oranı", f"%{basarisiz_yuzdesi:.1f}", help=f"Toplam {basarisiz} kişi başarısız buldu.")
 
