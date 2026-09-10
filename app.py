@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Tırnak hatası riski sıfırlandı)
+# 2. ÖZEL CSS TASARIMI (Sıfır Hata Garantili Yapı)
 css_kodu = """
 <style>
 .stApp { 
@@ -32,7 +32,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     text-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
     margin: 0 !important; padding: 0 !important; line-height: 1;
 }
-.yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; }
+.yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; margin-top: 5px; }
 .neon-yildizlar { color: #ffcc00; font-size: 20px; text-shadow: 0 0 8px #ffcc00; font-weight: bold; }
 .yuzde-yazi { color: #00ffcc; font-weight: bold; font-size: 15px; margin-left: 5px; }
 </style>
@@ -158,15 +158,13 @@ else:
 yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri yatırım tavsiyesi niteliği taşımamaktadır.</p></div>'
 st.markdown(yasal_html, unsafe_allow_html=True)
 
-# 11. ETKİLEŞİM VE YILDIZLI BEĞENİ ALANI
+# 11. ETKİLEŞİM VE YILDIZLI BEĞENİ ALANI (Hata riski olan tüm 'with' sütunları silindi)
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 toplam_oy = basarili + basarisiz
 begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
 
-col_ist1, col_ist2 = st.columns(2)
-with col_ist1:
-    st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+# İstatistikler alt alta düz ve hatasız listelenir
+st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
 
-with col_ist2:
