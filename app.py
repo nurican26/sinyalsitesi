@@ -10,10 +10,10 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Orijinal Tasarımınız + Sadece Üst Boşluk Kapatma Ayarı)
-st.markdown("""
+# 2. ÖZEL CSS TASARIMI
+st.markdown('''
 <style>
-/* Sadece en üstteki gereksiz boşluğu silen sihirli satır */
+/* Sadece en üstteki gereksiz boşluğu sıfırlayan satır eklendi */
 .block-container { padding-top: 0rem !important; }
 
 .stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
@@ -26,7 +26,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 /* Işıklı Ve Parıltılı Yeni Neon Tebrik Paneli Stili */
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; }
 </style>
-""", unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
 # 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
@@ -182,8 +182,8 @@ st.markdown('''
         ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
-        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları og algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
-        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
+        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
+        Sitemiz tamamen ücretsiz, herkese açık og genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
     </p>
 </div>
 ''', unsafe_allow_html=True)
@@ -192,3 +192,5 @@ st.markdown('''
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
+col_ist1, col_ist2, col_ist3 = st.columns(3)
+with col_ist1:
