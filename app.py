@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Mobil Boşluklar Azaltıldı ve Modern Yıldızlar Eklendi)
+# 2. ÖZEL CSS TASARIMI (Mobil Boşluklar ve Yıldızlar İçin Optimize Edildi)
 st.markdown('''
 <style>
 /* Mobil Boşluk Azaltma ve Genel Arka Plan */
@@ -59,7 +59,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 # 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
-# 4. VERİ TABANLARI VE EXCEL YOLLARI (bta.xls.xlsm olarak güncellendi)
+# 4. VERİ TABANLARI VE EXCEL YOLLARI
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
@@ -70,7 +70,7 @@ if not os.path.exists(db_notlar):
 
 # İstatistik veri tabanı kontrolü
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret = 0
@@ -81,7 +81,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
@@ -97,7 +97,7 @@ if os.path.exists(db_istatistik):
 # 6. YENİ MODERNIZE SİBER LOGO (Boşluksuz)
 st.markdown('<p class="bta-siber-logo">BTA</p>', unsafe_allow_html=True)
 
-# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI (Boşluk daraltıldı)
+# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
 bist_mini_widget = """
 <div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
   <div class="tradingview-widget-container__widget"></div>
@@ -203,3 +203,4 @@ else:
 # 10. YASAL UYARI BÖLÜMÜ
 st.markdown('''
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;">
+    <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
