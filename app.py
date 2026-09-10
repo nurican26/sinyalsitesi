@@ -32,6 +32,9 @@ excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
+# Varsayılan Yedek Hisse Listesi (Arama motoru asla kaybolmasın diye)
+yedek_hisseler = ["AKFGY", "KONYA", "THYAO", "ASELS", "EREGL", "TUPRS", "GARAN", "ISCTR", "SISE", "AKBNK"]
+
 # Not veri tabanı kontrolü
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
@@ -76,7 +79,7 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # Arama motoru ve not defteri için hisse listesini hafızaya al
+        # Excel'den hisse listesini almaya çalış
         if len(df.columns) >= 5:
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
@@ -111,6 +114,10 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
+# Eğer excel boşsa veya okunmadıysa sistemi yedek listeyle besle (Arama motorunu korur)
+if not tum_hisseler:
+    tum_hisseler = yedek_hisseler
+
 # 7. OTOMATİK TEBRİK PANELI (IŞIKLI VE YENİ NEON LOGOLU)
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
@@ -126,10 +133,18 @@ if basarili_hisseler:
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
+# İSTENEN YENİ ÖZELLİK: ANLIK TARİH VE SAAT BİLGİSİ
+su_an_tarih_saat = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+
 # 8. BORSA TABLOSU PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>', unsafe_allow_html=True)
+    st.markdown(f'''
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <p style="font-size:18px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>
+        <p style="font-size:15px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:5px 12px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">🕒 {su_an_tarih_saat}</p>
+    </div>
+    ''', unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 elif not os.path.exists(excel_yolu):
     st.error("Excel bulunamadı.")
@@ -141,7 +156,7 @@ st.markdown('''
         ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
-        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları và algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
+        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
         Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
     </p>
 </div>
@@ -171,25 +186,3 @@ with col_btn1:
     if st.button("👍 Başarılı Buluyorum", use_container_width=True, key="btn_basarili_oy"):
         try:
             df_ist = pd.read_csv(db_istatistik)
-            df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.success("Oyunuz kaydedildi!")
-            time.sleep(0.5)
-            st.rerun()
-        except:
-            pass
-
-with col_btn2:
-    if st.button("👎 Başarısız Buluyorum", use_container_width=True, key="btn_basarisiz_oy"):
-        try:
-            df_ist = pd.read_csv(db_istatistik)
-            df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.error("Oyunuz kaydedildi!")
-            time.sleep(0.5)
-            st.rerun()
-        except:
-            pass
-
-# 11. HİSSE ARAMA MOTORU BÖLÜMÜ (GERİ GELDİ)
-st.write("---")
