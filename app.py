@@ -41,7 +41,7 @@ if not os.path.exists(db_notlar):
 
 # İstatistik veri tabanı kontrolü
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret = 0
@@ -52,7 +52,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
@@ -92,7 +92,6 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # Hata payını sıfırlamak için hisse listesini try dışında değil içinde dolduruyoruz
         if len(df.columns) >= 5:
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
@@ -127,11 +126,10 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# Koruma kalkanı: Liste boşsa arama motoru yok olmasın diye yedek listeyi devreye al
 if not tum_hisseler:
     tum_hisseler = koruma_hisseleri
 
-# 7. NEON IŞIKLI VE ŞİMŞEKLİ YENİ OTOMATİK TEBRİK PANELİ
+# 7. NEON IŞIKLI VE ŞİMŞEKLİ OTOMATİK TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'''
@@ -146,7 +144,7 @@ if basarili_hisseler:
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 8. BORSA TABLOSU PANELİ (YÜKLEME TARİHİ SAĞ ÜSTTE SABİT)
+# 8. BORSA TABLOSU PANELİ (SABİT SON YÜKLEME ZAMANLI)
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     st.markdown(f'''
@@ -185,3 +183,7 @@ basari_yuzdesi = (basarili / toplam_oy * 100) if toplam_oy > 0 else 0.0
 basarisiz_yuzdesi = (basarisiz / toplam_oy * 100) if toplam_oy > 0 else 0.0
 
 with col_ist2:
+    st.metric("🎯 Algoritma Başarılı Oranı", f"%{basari_yuzdesi:.1f}", help=f"Toplam {basarili} kişi başarılı buldu.")
+with col_ist3:
+    st.metric("❌ Algoritma Başarısız Oranı", f"%{basarisiz_yuzdesi:.1f}", help=f"Toplam {basarisiz} kişi başarısız buldu.")
+
