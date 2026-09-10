@@ -30,7 +30,7 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
 excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
-db_istatistik = "bta_site_istatistik_db.csv" # Yeni İstatistik Dosyası
+db_istatistik = "bta_site_istatistik_db.csv"
 
 # Not veri tabanı kontrolü
 if not os.path.exists(db_notlar):
@@ -138,7 +138,7 @@ st.markdown('''
 </div>
 ''', unsafe_allow_html=True)
 
-# 10. YENİ EKLENEN BÖLÜM: CANLI ETKİLEŞİM VE BAŞARI ORANI ANKETİ
+# 10. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
