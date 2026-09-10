@@ -192,4 +192,4 @@ with col_btn2:
 # 11. HİSSE ARAMA MOTORU BÖLÜMÜ
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
-if len(tum_hisseler) > 0:
+
