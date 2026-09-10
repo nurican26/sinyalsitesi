@@ -40,22 +40,24 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-# 5. ZİYARETÇİ SAYACINI TETİKLEME (Yenileme motorundan etkilenmez)
-try:
-    df_ist = pd.read_csv(db_istatistik)
-    if "ziyaret_sayildi" not in st.session_state:
+# 5. ZİYARETÇİ SAYACINI TETİKLEME
+ziyaret, basarili, basarisiz = 0, 0, 0
+if os.path.exists(db_istatistik):
+    try:
+        df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([[1, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
-        else:
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+        
+        if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
-        df_ist.to_csv(db_istatistik, index=False)
-        st.session_state["ziyaret_sayildi"] = True
-    
-    ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-    basarili = int(df_ist.at[0, "basarili_oy"])
-    basarisiz = int(df_ist.at[0, "basarisiz_oy"])
-except:
-    ziyaret, basarili, basarisiz = 0, 0, 0
+            df_ist.to_csv(db_istatistik, index=False)
+            st.session_state["ziyaret_sayildi"] = True
+        
+        ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+        basarili = int(df_ist.at[0, "basarili_oy"])
+        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+    except:
+        pass
 
 # LOGO VE BAŞLIK
 st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
@@ -133,7 +135,7 @@ st.markdown('''
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
         Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
-        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
+        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül và grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
     </p>
 </div>
 ''', unsafe_allow_html=True)
