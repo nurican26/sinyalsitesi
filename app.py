@@ -10,9 +10,23 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Hata Riski Sıfır Tek Satır Metot)
-css_kodlari = "<style>.block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; padding-left: 1rem !important; padding-right: 1rem !important; } #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} .stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; } div[data-testid='stMetric'], div[data-testid='stExpander'] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; } input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; } .stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; font-size: 14px !important; } .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0; } .borsa-tablo { width: 100%; border-collapse: collapse; font-size: 14px; background-color: #121d33; border-radius: 10px; overflow: hidden; min-width: 500px; } .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; } .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; } .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; } hr { margin-top: 1rem !important; margin-bottom: 1rem !important; }</style>"
-st.markdown(css_kodlari, unsafe_allow_html=True)
+# 2. ÖZEL CSS TASARIMI (Orijinal Tasarımınız + Sadece Üst Boşluk Kapatma Ayarı)
+st.markdown("""
+<style>
+/* Sadece en üstteki gereksiz boşluğu silen sihirli satır */
+.block-container { padding-top: 0rem !important; }
+
+.stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
+div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
+input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
+.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; font-size: 14px !important; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
+.borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
+.borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
+/* Işıklı Ve Parıltılı Yeni Neon Tebrik Paneli Stili */
+.tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; }
+</style>
+""", unsafe_allow_html=True)
 
 # 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
@@ -28,7 +42,7 @@ if not os.path.exists(db_notlar):
 
 # İstatistik veri tabanı kontrolü
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret = 0
@@ -39,7 +53,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
@@ -53,18 +67,35 @@ if os.path.exists(db_istatistik):
         pass
 
 # LOGO VE BAŞLIK
-st.markdown("<h1 style='text-align:center; color:#00ffcc; font-family:\"Brush Script MT\", cursive, sans-serif; font-size:38px; margin-top:0px; margin-bottom:5px; padding-top:0px;'>BTA</h1>", unsafe_allow_html=True)
+st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
 
-# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
-bist_mini_widget = "<div class='tradingview-widget-container' style='margin: auto; text-align: center; width: 100%; max-width: 100%;'><div class='tradingview-widget-container__widget'></div><script type='text/javascript' src='https://tradingview.com' async>{'symbol': 'BIST:XU100','width': '100%','height': '100','locale': 'tr','dateRange': '1D','colorTheme': 'dark','isTransparent': true,'autosize': true,'largeChartUrl': ''}</script></div>"
-components.html(bist_mini_widget, height=110)
+# YENİ ÖZELLİK: TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
+bist_mini_widget = """
+<div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
+  <div class="tradingview-widget-container__widget"></div>
+  <script type="text/javascript" src="https://tradingview.com" async>
+  {
+  "symbol": "BIST:XU100",
+  "width": "100%",
+  "height": "110",
+  "locale": "tr",
+  "dateRange": "1D",
+  "colorTheme": "dark",
+  "isTransparent": true,
+  "autosize": false,
+  "largeChartUrl": ""
+  }
+  </script>
+</div>
+"""
+components.html(bist_mini_widget, height=120)
 st.write("---")
 
 tum_hisseler = [] 
 veri_var_mi = False
 basarili_hisseler = []
 
-# EXCEL DOSYASININ YÜKLENME TARİHİNİ BULMA MOTORU
+# 🗓️ EXCEL DOSYASININ YÜKLENME TARİHİNİ BULMA MOTORU
 excel_guncelleme_tarihi = "Bilinmiyor"
 if os.path.exists(excel_yolu):
     try:
@@ -119,21 +150,45 @@ if os.path.exists(excel_yolu):
 # 7. OTOMATİK NEON IŞIKLI TEBRİK PANELI
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f"<div class='tebrik-kutusu'><h3 style='color:#00ffcc; margin:0 0 8px 0; font-size:20px; text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; font-weight: bold; letter-spacing: 1px;'>⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style='color:#ffffff; font-size:15px; margin:0; line-height: 1.4;'>Sistemimizde takip edilen {hisseler_str} algoritmik hedefine ulaşarak <b style='color:#00ffcc; text-shadow: 0 0 5px #00ffcc;'>%9 og üzeri</b> performans göstermiştir. Tebrik ederiz!</p></div>"
+    tebrik_html = f'''
+    <div class="tebrik-kutusu">
+        <h3 style="color:#00ffcc; margin:0 0 8px 0; font-size:22px; text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; font-weight: bold; letter-spacing: 1px;">
+            ⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡
+        </h3>
+        <p style="color:#ffffff; font-size:16px; margin:0; line-height: 1.5;">
+            Sistemimizde takip edilen {hisseler_str} algoritmik hedefine ulaşarak <b style="color:#00ffcc; text-shadow: 0 0 5px #00ffcc;">%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
+        </p>
+    </div>
+    '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 8. BORSA TABLOSU PANELİ
+# 8. BORSA TABLOSU PANELİ (YÜKLEME TARİHİ SAĞ ÜSTTE SABİT)
 if veri_var_mi and tablo_rows_html != "":
-    tablo_html = f"<div class='table-container'><table class='borsa-tablo'><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>{tablo_rows_html}</table></div>"
-    bilgi_paneli = f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 8px;'><p style='font-size:16px; font-weight:bold; color:#1E90FF; margin:0;'>📈 BTA ALGORİTMİK HİSSE <span style='font-size:11px; color:#ff3344; font-weight:normal; display:block;'>⚠️ Veriler en az 15 dk gecikmelidir.</span></p><p style='font-size:13px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:5px 12px; border-radius:8px; border:1px solid #1e3a5f; margin:0;'>🔄 Son Yükleme: {excel_guncelleme_tarihi}</p></div>"
-    st.markdown(bilgi_paneli, unsafe_allow_html=True)
+    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
+    st.markdown(f'''
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 10px;">
+        <p style="font-size:18px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>
+        <p style="font-size:14px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:6px 15px; border-radius:8px; border:1px solid #1e3a5f; margin:0; text-shadow: 0 0 5px rgba(0,255,204,0.5);">🔄 Son Yükleme: {excel_guncelleme_tarihi}</p>
+    </div>
+    ''', unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 elif not os.path.exists(excel_yolu):
     st.error("Excel bulunamadı.")
 
 # 9. YASAL UYARI BÖLÜMÜ
-yasal_uyari_html = "<div style='background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 12px; margin-top: 12px; margin-bottom: 12px;'><p style='font-size:12px; font-weight:bold; color:#ff3344; margin-bottom:6px; text-transform: uppercase; letter-spacing: 0.5px;'>⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)</p><p style='font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;'>Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>"
-st.markdown(yasal_uyari_html, unsafe_allow_html=True)
+st.markdown('''
+<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
+    <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
+        ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
+    </p>
+    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
+        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları og algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
+        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
+    </p>
+</div>
+''', unsafe_allow_html=True)
 
 # 10. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
 st.write("---")
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+
