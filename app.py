@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Mobil Uyumlaştırma ve Boşluk Azaltma)
+# 2. ÖZEL CSS TASARIMI (Mobil Uyumlaştırma ve Üst Boşluk Azaltma)
 st.markdown('''
 <style>
 /* Üst kısımdaki varsayılan Streamlit boşluklarını sıfırlama */
