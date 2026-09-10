@@ -19,7 +19,7 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-/* Işıklı Ve Parıltılı Yeni Tebrik Paneli Stili */
+/* Işıklı Ve Parıltılı Yeni Neon Tebrik Paneli Stili */
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; }
 </style>
 ''', unsafe_allow_html=True)
@@ -32,8 +32,8 @@ excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Excel boşsa veya okunamazsa arama motorunu koruyacak yedek liste
-yedek_hisseler = ["AKFGY", "KONYA", "THYAO", "ASELS", "EREGL", "TUPRS", "GARAN", "ISCTR", "SISE", "AKBNK"]
+# Excel boşsa veya okunamazsa arama motorunu koruyacak koruma listesi
+koruma_hisseleri = ["AKFGY", "KONYA", "THYAO", "ASELS", "EREGL", "TUPRS", "GARAN", "ISCTR", "SISE", "AKBNK"]
 
 # Not veri tabanı kontrolü
 if not os.path.exists(db_notlar):
@@ -73,13 +73,26 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
+# 🗓️ EXCEL DOSYASININ SİSTEME YÜKLENME (DEĞİŞTİRİLME) TARİHİNİ BULMA MOTORU
+excel_guncelleme_tarihi = "Bilinmiyor"
+if os.path.exists(excel_yolu):
+    try:
+        dosya_zaman_damgasi = os.path.getmtime(excel_yolu)
+        excel_tarih_objesi = datetime.datetime.fromtimestamp(dosya_zaman_damgasi)
+        
+        gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+        gun_adi = gunler_tr[excel_tarih_objesi.weekday()]
+        excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gun_adi}")
+    except:
+        pass
+
 # 6. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # Arama motorunun kaybolmasını önlemek için listedeki tüm hisseleri topla
+        # Hata payını sıfırlamak için hisse listesini try dışında değil içinde dolduruyoruz
         if len(df.columns) >= 5:
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
@@ -114,11 +127,11 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# Excel'den veri gelmediyse arama motorunu korumak için yedek listeyi devreye sok
+# Koruma kalkanı: Liste boşsa arama motoru yok olmasın diye yedek listeyi devreye al
 if not tum_hisseler:
-    tum_hisseler = yedek_hisseler
+    tum_hisseler = koruma_hisseleri
 
-# 7. OTOMATİK TEBRİK PANELI (IŞIKLI VE YENİ NEON LOGOLU)
+# 7. NEON IŞIKLI VE ŞİMŞEKLİ YENİ OTOMATİK TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'''
@@ -133,19 +146,13 @@ if basarili_hisseler:
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 🗓️ TÜRKÇE GÜN, TARİH VE SAAT GÜNCELLEME MOTORU
-gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
-su_an = datetime.datetime.now()
-gun_adi = gunler_tr[su_an.weekday()]
-tarih_saat_metni = su_an.strftime(f"%d.%m.%Y - %H:%M:%S | {gun_adi}")
-
-# 8. BORSA TABLOSU PANELİ
+# 8. BORSA TABLOSU PANELİ (YÜKLEME TARİHİ SAĞ ÜSTTE SABİT)
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     st.markdown(f'''
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 10px;">
         <p style="font-size:18px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>
-        <p style="font-size:15px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:6px 15px; border-radius:8px; border:1px solid #1e3a5f; margin:0; text-shadow: 0 0 5px rgba(0,255,204,0.5);">🕒 {tarih_saat_metni}</p>
+        <p style="font-size:14px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:6px 15px; border-radius:8px; border:1px solid #1e3a5f; margin:0; text-shadow: 0 0 5px rgba(0,255,204,0.5);">🔄 Son Yükleme: {excel_guncelleme_tarihi}</p>
     </div>
     ''', unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
@@ -178,8 +185,3 @@ basari_yuzdesi = (basarili / toplam_oy * 100) if toplam_oy > 0 else 0.0
 basarisiz_yuzdesi = (basarisiz / toplam_oy * 100) if toplam_oy > 0 else 0.0
 
 with col_ist2:
-    st.metric("🎯 Algoritma Başarılı Oranı", f"%{basari_yuzdesi:.1f}", help=f"Toplam {basarili} kişi başarılı buldu.")
-with col_ist3:
-    st.metric("❌ Algoritma Başarısız Oranı", f"%{basarisiz_yuzdesi:.1f}", help=f"Toplam {basarisiz} kişi başarısız buldu.")
-
-st.markdown('<p style="font-size:14px; font-weight:bold; color:#ffffff; margin-bottom:5px;">Sizce BTA algoritmik analizleri başarılı mı?</p>', unsafe_allow_html=True)
