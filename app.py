@@ -6,8 +6,10 @@ import os
 import time
 from streamlit_autorefresh import st_autorefresh
 
+# 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
+# 2. ÖZEL CSS TASARIMI
 st.markdown('''
 <style>
 .stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
@@ -22,23 +24,48 @@ input, textarea, select { background-color: #090f1a !important; color: #00ffcc !
 </style>
 ''', unsafe_allow_html=True)
 
+# 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
+# 4. VERİ TABANLARI VE EXCEL YOLLARI
 excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
+db_istatistik = "bta_site_istatistik_db.csv" # Yeni İstatistik Dosyası
 
+# Not veri tabanı kontrolü
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# Başlık
-st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
+# İstatistik veri tabanı kontrolü (Ziyaretçi ve Oylar)
+if not os.path.exists(db_istatistik):
+    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
+# 5. ZİYARETÇİ SAYACINI TETİKLEME (Yenileme motorundan etkilenmez)
+try:
+    df_ist = pd.read_csv(db_istatistik)
+    if "ziyaret_sayildi" not in st.session_state:
+        if df_ist.empty:
+            df_ist = pd.DataFrame([[1, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+        else:
+            df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["ziyaret_sayildi"] = True
+    
+    ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+    basarili = int(df_ist.at[0, "basarili_oy"])
+    basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+except:
+    ziyaret, basarili, basarisiz = 0, 0, 0
+
+# LOGO VE BAŞLIK
+st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
 st.write("---")
+
 tum_hisseler = [] 
 veri_var_mi = False
-basarili_hisseler = [] # %9 ve üzeri olanları toplamak için liste
+basarili_hisseler = []
 
-# ÖNCE VERİLERİ ÇEKİP ANALİZ EDİYORUZ (Tebrik panelini tablonun üstünde gösterebilmek için)
+# 6. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
@@ -61,7 +88,6 @@ if os.path.exists(excel_yolu):
                 
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    # GEÇERLİ HİSSE %9 VE ÜZERİNDEYSE LİSTEYE EKLE
                     if or_dg >= 9.0:
                         basariliHisse_adi = ha.replace(".IS", "")
                         basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
@@ -78,7 +104,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# 1. BÖLÜM: DİNAMİK TEBRİK PANELİ (Eğer kriteri sağlayan hisse varsa görünür)
+# 7. OTOMATİK TEBRİK PANELI
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'''
@@ -91,15 +117,15 @@ if basarili_hisseler:
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 2. BÖLÜM: TABLONUN GÖSTERİLMESİ
+# 8. BORSA TABLOSU PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmeli veya canlı sinyal eşleniklidir.</span></p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size:18px; font-weight:bold; color:#1E90FF;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>', unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 elif not os.path.exists(excel_yolu):
     st.error("Excel bulunamadı.")
 
-# SPK YASAL UYARI BÖLÜMÜ
+# 9. YASAL UYARI BÖLÜMÜ
 st.markdown('''
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
     <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -112,61 +138,54 @@ st.markdown('''
 </div>
 ''', unsafe_allow_html=True)
 
+# 10. YENİ EKLENEN BÖLÜM: CANLI ETKİLEŞİM VE BAŞARI ORANI ANKETİ
+st.write("---")
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+
+col_ist1, col_ist2, col_ist3 = st.columns(3)
+with col_ist1:
+    st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+
+toplam_oy = basarili + basarisiz
+basari_yuzdesi = (basarili / toplam_oy * 100) if toplam_oy > 0 else 0.0
+basarisiz_yuzdesi = (basarisiz / toplam_oy * 100) if toplam_oy > 0 else 0.0
+
+with col_ist2:
+    st.metric("🎯 Algoritma Başarılı Oranı", f"%{basari_yuzdesi:.1f}", help=f"Toplam {basarili} kişi başarılı buldu.")
+with col_ist3:
+    st.metric("❌ Algoritma Başarısız Oranı", f"%{basarisiz_yuzdesi:.1f}", help=f"Toplam {basarisiz} kişi başarısız buldu.")
+
+st.markdown('<p style="font-size:14px; font-weight:bold; color:#ffffff; margin-bottom:5px;">Sizce BTA algoritmik analizleri başarılı mı?</p>', unsafe_allow_html=True)
+col_btn1, col_btn2 = st.columns(2)
+
+with col_btn1:
+    if st.button("👍 Başarılı Buluyorum", use_container_width=True, key="btn_basarili_oy"):
+        try:
+            df_ist = pd.read_csv(db_istatistik)
+            df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
+            df_ist.to_csv(db_istatistik, index=False)
+            st.success("Oyunuz kaydedildi!")
+            time.sleep(0.5)
+            st.rerun()
+        except:
+            pass
+
+with col_btn2:
+    if st.button("👎 Başarısız Buluyorum", use_container_width=True, key="btn_basarisiz_oy"):
+        try:
+            df_ist = pd.read_csv(db_istatistik)
+            df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
+            df_ist.to_csv(db_istatistik, index=False)
+            st.error("Oyunuz kaydedildi!")
+            time.sleep(0.5)
+            st.rerun()
+        except:
+            pass
+
+# 11. HİSSE ARAMA MOTORU BÖLÜMÜ
 st.write("---")
 st.markdown('<p style="font-size:18px; font-weight:bold; color:#FFA500;">🔍 BIST HİSSE ARAMA MOTORU</p>', unsafe_allow_html=True)
 if len(tum_hisseler) > 0:
     aranan_hisse = st.selectbox("Hisse seçin", ["Seçiniz..."] + tum_hisseler, key="arama_motoru_select")
     if aranan_hisse != "Seçiniz...":
         try:
-            h_detay_veri = yf.Ticker(f"{aranan_hisse}.IS").history(period="1d", timeout=2)
-            if len(h_detay_veri) > 0:
-                st.metric("Güncel Fiyat (15 Dk Gecikmeli)", f"{float(h_detay_veri['Close'].iloc[-1]):,.2f} TL")
-        except:
-            pass
-
-st.write("---")
-col_not1, col_not2 = st.columns(2)
-
-with col_not1:
-    st.markdown('<p style="font-size:14px; font-weight:bold; color:#fff;">Yeni Not Ekle</p>', unsafe_allow_html=True)
-    not_hisse_secim = st.selectbox("Not Alınacak Hisse", ["Manuel Gir..."] + tum_hisseler if tum_hisseler else ["Manuel Gir..."], key="not_hisse_v_sec")
-    
-    if not_hisse_secim == "Manuel Gir...":
-        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", max_chars=10, key="not_manuel_hisse_kod").strip().upper()
-    else:
-        not_hisse = not_hisse_secim
-        
-    not_hedef_fiyat = st.number_input("Hedef Fiyat (TL):", min_value=0.0, value=0.0, step=1.0, key="not_hedef_fiyat_input")
-    hisse_notu = st.text_area("Hisse Hakkındaki Notunuz:", max_chars=500, placeholder="Stratejinizi yazın...", key="hisse_notu_metni")
-    
-    if st.button("Notu Kaydet 💾", use_container_width=True, key="notu_kaydet_butonu"):
-        if not_hisse and hisse_notu.strip():
-            try:
-                df_notlar = pd.read_csv(db_notlar)
-                yeni_id = str(int(time.time() * 1000))
-                su_an_tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-                yeni_not_veri = pd.DataFrame([[yeni_id, su_an_tarih, str(not_hisse), str(hisse_notu.strip()), float(not_hedef_fiyat)]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
-                df_notlar = pd.concat([df_notlar, yeni_not_veri], ignore_index=True)
-                df_notlar.to_csv(db_notlar, index=False)
-                st.success("Not kaydedildi!")
-                time.sleep(0.5)
-                st.rerun()
-            except:
-                pass
-
-with col_not2:
-    st.markdown('<div style="color:#fff; font-size:14px; font-weight:bold; margin-bottom:10px;">🔒 Yönetici Not Paneli</div>', unsafe_allow_html=True)
-    
-    admin_sifre = st.text_input("Görmek ve silmek için Yönetici Şifresini girin:", type="password", key="not_paneli_giris_sifresi")
-    
-    if admin_sifre == "n3015":  
-        st.success("Yönetici girişi başarılı. Notlar listeleniyor.")
-        if os.path.exists(db_notlar):
-            df_notlar_oku = pd.read_csv(db_notlar)
-            if not df_notlar_oku.empty:
-                df_notlar_oku = df_notlar_oku.iloc[::-1]
-                for i, row in df_notlar_oku.iterrows():
-                    with st.expander(f"📌 {row['hisse']} - {row['tarih']}"):
-                        st.write(f"**Not:** {row['not']}")
-                        st.write(f"**Hedef Fiyat:** {row['hedef_fiyat']} TL")
-                        
