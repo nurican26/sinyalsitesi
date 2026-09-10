@@ -32,7 +32,7 @@ excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Varsayılan Yedek Hisse Listesi (Arama motoru asla kaybolmasın diye)
+# Excel boşsa veya okunamazsa arama motorunu koruyacak yedek liste
 yedek_hisseler = ["AKFGY", "KONYA", "THYAO", "ASELS", "EREGL", "TUPRS", "GARAN", "ISCTR", "SISE", "AKBNK"]
 
 # Not veri tabanı kontrolü
@@ -41,7 +41,7 @@ if not os.path.exists(db_notlar):
 
 # İstatistik veri tabanı kontrolü
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret = 0
@@ -52,7 +52,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
@@ -79,7 +79,7 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # Excel'den hisse listesini almaya çalış
+        # Arama motorunun kaybolmasını önlemek için listedeki tüm hisseleri topla
         if len(df.columns) >= 5:
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
@@ -114,7 +114,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# Eğer excel boşsa veya okunmadıysa sistemi yedek listeyle besle (Arama motorunu korur)
+# Excel'den veri gelmediyse arama motorunu korumak için yedek listeyi devreye sok
 if not tum_hisseler:
     tum_hisseler = yedek_hisseler
 
@@ -133,16 +133,19 @@ if basarili_hisseler:
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# İSTENEN YENİ ÖZELLİK: ANLIK TARİH VE SAAT BİLGİSİ
-su_an_tarih_saat = datetime.datetime.now().strftime("%d.%m.%Y - %H:%M:%S")
+# 🗓️ TÜRKÇE GÜN, TARİH VE SAAT GÜNCELLEME MOTORU
+gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+su_an = datetime.datetime.now()
+gun_adi = gunler_tr[su_an.weekday()]
+tarih_saat_metni = su_an.strftime(f"%d.%m.%Y - %H:%M:%S | {gun_adi}")
 
 # 8. BORSA TABLOSU PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     st.markdown(f'''
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 10px;">
         <p style="font-size:18px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>
-        <p style="font-size:15px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:5px 12px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">🕒 {su_an_tarih_saat}</p>
+        <p style="font-size:15px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:6px 15px; border-radius:8px; border:1px solid #1e3a5f; margin:0; text-shadow: 0 0 5px rgba(0,255,204,0.5);">🕒 {tarih_saat_metni}</p>
     </div>
     ''', unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
@@ -180,9 +183,3 @@ with col_ist3:
     st.metric("❌ Algoritma Başarısız Oranı", f"%{basarisiz_yuzdesi:.1f}", help=f"Toplam {basarisiz} kişi başarısız buldu.")
 
 st.markdown('<p style="font-size:14px; font-weight:bold; color:#ffffff; margin-bottom:5px;">Sizce BTA algoritmik analizleri başarılı mı?</p>', unsafe_allow_html=True)
-col_btn1, col_btn2 = st.columns(2)
-
-with col_btn1:
-    if st.button("👍 Başarılı Buluyorum", use_container_width=True, key="btn_basarili_oy"):
-        try:
-            df_ist = pd.read_csv(db_istatistik)
