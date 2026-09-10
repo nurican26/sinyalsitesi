@@ -33,41 +33,43 @@ excel_yolu = "nurican.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Not veri tabanı kontrolü
+# Veri tabanı dosyaları yoksa hatasız ve varsayılan değerlerle sıfırdan oluştur
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# İstatistik veri tabanı kontrolü (Beğeni sütunu 'begeni_sayisi' olarak eklendi)
 if not os.path.exists(db_istatistik):
     pd.DataFrame([[0, 0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy", "begeni_sayisi"]).to_csv(db_istatistik, index=False)
 
-# 5. ZİYARETÇİ SAYACINI TETİKLEME
+# 5. ZİYARETÇİ VE BEĞENİ SAYAÇLARINI OKUMA/YAZMA MOTORU
 ziyaret = 0
 basarili = 0
 basarisiz = 0
 begeni = 0
 
-if os.path.exists(db_istatistik):
-    try:
-        df_ist = pd.read_csv(db_istatistik)
-        # Eğer eski dosyada begeri_sayisi sütunu yoksa otomatik ekle
-        if "begeni_sayisi" not in df_ist.columns:
-            df_ist["begeni_sayisi"] = 0
-            
-        if df_ist.empty:
-            df_ist = pd.DataFrame([[0, 0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy", "begeni_sayisi"])
-        
-        if "ziyaret_sayildi" not in st.session_state:
-            df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.session_state["ziyaret_sayildi"] = True
-        
-        ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-        basarili = int(df_ist.at[0, "basarili_oy"])
-        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
-        begeni = int(df_ist.at[0, "begeni_sayisi"])
-    except:
-        pass
+try:
+    df_ist = pd.read_csv(db_istatistik)
+    
+    # Dosya boş kalmışsa veya çökmüşse kurtarma satırı ekle
+    if df_ist.empty or len(df_ist) == 0:
+        df_ist = pd.DataFrame([[0, 0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy", "begeni_sayisi"])
+    
+    # Eksik sütun kontrolü (Beğeni sütunu yoksa ekler)
+    if "begeni_sayisi" not in df_ist.columns:
+        df_ist["begeni_sayisi"] = 0
+
+    # Gerçek yeni girişi say, otomatik yenilemeleri es geç
+    if "ziyaret_sayildi" not in st.session_state:
+        df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["ziyaret_sayildi"] = True
+
+    ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+    basarili = int(df_ist.at[0, "basarili_oy"])
+    basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+    begeni = int(df_ist.at[0, "begeni_sayisi"])
+except:
+    # Herhangi bir aksilikte sistemin kapanmasını önleyen yedek değerler
+    ziyaret, basarili, basarisiz, bebeni = 1, 0, 0, 0
 
 # LOGO VE BAŞLIK
 st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
@@ -165,7 +167,7 @@ if basarili_hisseler:
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 8. BORSA TABLOSU PANELİ (YÜKLEME TARİHİ SAĞ UTSTE SABİT)
+# 8. BORSA TABLOSU PANELİ (YÜKLEME TARİHİ SAĞ ÜSTTE SABİT)
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     st.markdown(f'''
@@ -186,8 +188,3 @@ st.markdown('''
     </p>
     <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
         Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
-        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
-    </p>
-</div>
-''', unsafe_allow_html=True)
-
