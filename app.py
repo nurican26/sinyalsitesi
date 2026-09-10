@@ -153,7 +153,7 @@ if basarili_hisseler:
             ⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡
         </h3>
         <p style="color:#ffffff; font-size:16px; margin:0; line-height: 1.5;">
-            Sistemimizde takip edilen {hisseler_str} algoritmik fiyatın üzerine <b style="color:#00ffcc; text-shadow: 0 0 5px #00ffcc;">%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
+            Sistemimizde takip edilen {hisseler_str} algoritmik fiyatın  <b style="color:#00ffcc; text-shadow: 0 0 5px #00ffcc;">%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
         </p>
     </div>
     '''
