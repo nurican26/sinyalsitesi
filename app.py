@@ -107,11 +107,11 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
+# 🚀 GÜNCELLENEN KISIM: Excel yüklendiğinde/okunduğunda bugünün anlık tarih ve saatini alır.
 excel_guncelleme_tarihi = "Bilinmiyor"
 if os.path.exists(excel_yolu):
     try:
-        dosya_zaman_damgasi = os.path.getmtime(excel_yolu)
-        excel_tarih_objesi = datetime.datetime.fromtimestamp(dosya_zaman_damgasi)
+        excel_tarih_objesi = datetime.datetime.now()
         gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
         excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
     except:
@@ -183,5 +183,3 @@ toplam_oy = basarili + basarisiz
 begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
 
 st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
-
-# Sayfa sonuna sayaç ve yıldızları da güvenli şekilde bağladık
