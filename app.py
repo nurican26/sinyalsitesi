@@ -106,7 +106,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ BURADA HATA RİSKİ OLMADAN, KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -114,7 +114,6 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
-    # Eğer Excel'i okurken hata oluşursa ekranda kırmızı renkte hatayı göreceksiniz.
     df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
     if len(df.columns) >= 5:
         ham_liste = df.iloc[:, 4].dropna().unique()
