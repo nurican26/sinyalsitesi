@@ -10,26 +10,56 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI
+# 2. ÖZEL CSS TASARIMI (Mobil Boşluklar Azaltıldı ve Modern Yıldızlar Eklendi)
 st.markdown('''
 <style>
-.stApp { background-color: #0b111e !important; background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; }
+/* Mobil Boşluk Azaltma ve Genel Arka Plan */
+.stApp { 
+    background-color: #0b111e !important; 
+    background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; 
+}
+/* Bloklar arası dikey boşlukları telefona göre daraltıyoruz */
+.block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
+
+/* Kart ve Tablo Tasarımları */
 div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
-input, textarea, select { background-color: #090f1a !important; color: #00ffcc !important; border: 1px solid #1e3a5f !important; border-radius: 6px !important; }
-.stButton>button { background: linear-gradient(135deg, #111827 0%, #0d9488 100%) !important; color: #fff !important; border: 1px solid #00ffcc !important; border-radius: 6px !important; font-weight: bold !important; font-size: 14px !important; }
-.borsa-tablo { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
+.borsa-tablo { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-/* Işıklı Ve Parıltılı Yeni Neon Tebrik Paneli Stili */
-.tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 20px; }
+
+/* Neon Paneller */
+.tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
+.tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
+
+/* 🌟 Yenilenen Siber Logo Tasarımı (Telefon boşluğu için üst-alt sıfırlandı) */
+.bta-siber-logo {
+    text-align: center;
+    font-weight: 900;
+    font-size: 55px;
+    letter-spacing: 7px;
+    background: linear-gradient(135deg, #00ffcc 30%, #1e90ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    line-height: 1;
+}
+
+/* ⭐ Parıldayan Yıldız Derecelendirmesi */
+.yildiz-alani { display: flex; align-items: center; gap: 8px; background: #121d33; padding: 10px 15px; border-radius: 8px; border: 1px solid #1e3a5f; width: max-content; }
+.neon-yildizlar { color: #ffcc00; font-size: 20px; text-shadow: 0 0 8px #ffcc00; font-weight: bold; }
+.yuzde-yazi { color: #00ffcc; font-weight: bold; font-size: 15px; margin-left: 5px; }
 </style>
 ''', unsafe_allow_html=True)
 
 # 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
-# 4. VERİ TABANLARI VE EXCEL YOLLARI
-# 👇 BURADAKİ DOSYA ADINI YENİ OLUŞTURDUĞUMUZ EXCEL ADIYLA GÜNCELLEDİK
+# 4. VERİ TABANLARI VE EXCEL YOLLARI (bta.xls.xlsm olarak güncellendi)
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
@@ -64,30 +94,22 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# LOGO VE BAŞLIK
-st.markdown('<h1 style="text-align:center; color:#00ffcc; font-family:\'Brush Script MT\', cursive, sans-serif; font-size:42px; margin-top:5px; margin-bottom:5px;">BTA</h1>', unsafe_allow_html=True)
+# 6. YENİ MODERNIZE SİBER LOGO (Boşluksuz)
+st.markdown('<p class="bta-siber-logo">BTA</p>', unsafe_allow_html=True)
 
-# YENİ ÖZELLİK: TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
+# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI (Boşluk daraltıldı)
 bist_mini_widget = """
 <div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
   <div class="tradingview-widget-container__widget"></div>
   <script type="text/javascript" src="https://tradingview.com" async>
   {
-  "symbol": "BIST:XU100",
-  "width": "100%",
-  "height": "110",
-  "locale": "tr",
-  "dateRange": "1D",
-  "colorTheme": "dark",
-  "isTransparent": true,
-  "autosize": false,
-  "largeChartUrl": ""
+  "symbol": "BIST:XU100", "width": "100%", "height": "95", "locale": "tr",
+  "dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": false, "largeChartUrl": ""
   }
   </script>
 </div>
 """
-components.html(bist_mini_widget, height=120)
-st.write("---")
+components.html(bist_mini_widget, height=100)
 
 tum_hisseler = [] 
 veri_var_mi = False
@@ -105,7 +127,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# 6. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
+# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
@@ -145,51 +167,39 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# 7. OTOMATİK NEON IŞIKLI TEBRİK PANELI
+# 8. OTOMATİK NEON IŞIKLI TEBRİK PANELI
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'''
     <div class="tebrik-kutusu">
-        <h3 style="color:#00ffcc; margin:0 0 8px 0; font-size:22px; text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc; font-weight: bold; letter-spacing: 1px;">
-            ⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡
-        </h3>
-        <p style="color:#ffffff; font-size:16px; margin:0; line-height: 1.5;">
+        <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; text-shadow: 0 0 10px #00ffcc; font-weight: bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3>
+        <p style="color:#ffffff; font-size:14px; margin:0; line-height: 1.5;">
             Sistemimizde takip edilen {hisseler_str} algoritmik hedefine ulaşarak <b style="color:#00ffcc; text-shadow: 0 0 5px #00ffcc;">%9 ve üzeri</b> performans göstermiştir. Tebrik ederiz!
         </p>
     </div>
     '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 8. BORSA TABLOSU PANELİ (YÜKLEME TARİHİ SAĞ ÜSTTE SABİT)
+# 9. BORSA TABLOSU PANELİ VEYA GÜZEL EDEBİYATLI TARAMA PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th> ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     st.markdown(f'''
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 10px;">
-        <p style="font-size:18px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE <span style="font-size:12px; color:#ff3344; font-weight:normal; margin-left:10px;">⚠️ Veriler en az 15 dk gecikmelidir.</span></p>
-        <p style="font-size:14px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:6px 15px; border-radius:8px; border:1px solid #1e3a5f; margin:0; text-shadow: 0 0 5px rgba(0,255,204,0.5);">🔄 Son Yükleme: {excel_guncelleme_tarihi}</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;">
+        <p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p>
+        <p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;"> Son Yükleme: {excel_guncelleme_tarihi}</p>
     </div>
     ''', unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
-elif not os.path.exists(excel_yolu):
-    st.error("Excel bulunamadı.")
+else:
+    # ✨ HİSSE YOKKEN ÇIKACAK GÜZEL EDEBİYATLI SİBER YAZI PANELİ
+    st.markdown('''
+    <div class="tarama-kutusu">
+        <div style="font-size: 32px; margin-bottom: 10px;">🔍</div>
+        <p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p>
+        <p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri ve sinyaller anında bu ekrana yansıtılacaktır.</p>
+    </div>
+    ''', unsafe_allow_html=True)
 
-# 9. YASAL UYARI BÖLÜMÜ
+# 10. YASAL UYARI BÖLÜMÜ
 st.markdown('''
-<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 15px;">
-    <p style="font-size:13px; font-weight:bold; color:#ff3344; margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.5px;">
-        ⚠️ ÖNEMLİ YASAL UYARI (15 DAKİKA GECİKMELİ VERİ)
-    </p>
-    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
-        Bu tabloda ve platform genelinde yer alan tüm fiyatlar, K/Z oranları ve algoritmik hesaplamalar en az <b>15 dakika gecikmeli</b> veriler kullanılarak otomatik olarak üretilmektedir. 
-        Sitemiz tamamen ücretsiz, herkese açık ve genel bilgilendirme amacıyla yayın yapan bağımsız bir platform olup; burada yer alan 'BTA Puanı', 'Algoritmik Fiyat' veya diğer hiçbir veri, formül ve grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.
-    </p>
-</div>
-''', unsafe_allow_html=True)
-
-# 10. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
-st.write("---")
-st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-
-col_ist1, col_ist2, col_ist3 = st.columns(3)
-with col_ist1:
-    st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;">
