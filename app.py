@@ -63,10 +63,9 @@ ziyaret = 187
 basarili = 15
 basarisiz = 2
 
-# 5. PARILTILI BTA LOGO PANELİ
+# 5. LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
 
-# EN ÜSTE TAŞINAN ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 col_met1, col_met2, col_oy1, col_oy2 = st.columns(4)
@@ -83,7 +82,7 @@ with col_oy1:
 with col_oy2:
     st.button("👎 Başarısız Buldum", use_container_width=True)
 
-# SPK YASAL UYARI BÖLÜMÜ
+# SPK YASAL UYARI
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
@@ -109,16 +108,14 @@ tebrik_metni = ""
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
-# Excel Okuma Yapısı
 if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
         mevcut_sayfalar = excel_dosyasi.sheet_names
-        hedef_sayfa = mevcut_sayfalar
+        hedef_sayfa = mevcut_sayfalar[0]
         for sayfa in mevcut_sayfalar:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
-        # Başlık satırı karmaşasını çözmek için header=None ile saf veri olarak okuyoruz
         df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa, header=None)
     except:
         pass
@@ -131,15 +128,15 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Sütun koordinatları (A=0, C=2, D=3)
-hisse_col = 0
-maliyet_col = 2
-puan_col = 3
+# 🎯 GÖNDERDİĞİNİZ İMAJA GÖRE KESİNLEŞEN YENİ KOORDİNATLAR (B, C, D SÜTUNLARI)
+# Python'da: A=0, B=1, C=2, D=3 sütun indeksidir.
+hisse_col = 1   # B sütunu (Hisseleriniz burada duruyor)
+maliyet_col = 2 # C sütunu (BTA ALIM FİYATI)
+puan_col = 3    # D sütunu (BTA PUANI)
 
 if not df_excel.empty:
     for idx in range(len(df_excel)):
         try:
-            # Satırda veri var mı kontrol et, yoksa temiz metin üret
             ha = ""
             if pd.notna(df_excel.iloc[idx, hisse_col]):
                 ha = str(df_excel.iloc[idx, hisse_col]).strip().upper()
@@ -152,8 +149,8 @@ if not df_excel.empty:
             if pd.notna(df_excel.iloc[idx, puan_col]):
                 puan_d = str(df_excel.iloc[idx, puan_col]).strip()
             
-            # Başlık satırlarını veya gereksiz kelimeleri otomatik eliyoruz
-            if ha != "" and len(ha) <= 6 and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE", "BTA"]:
+            # Başlık satırlarını elemeli tarama motoru
+            if ha != "" and len(ha) <= 6 and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE", "BTA AL SAT", "AL SAT"]:
                 veri_var_mi = True
                 p_temiz = "-"
                 if puan_d != "" and puan_d.lower() not in ["nan", "none"]:
@@ -172,7 +169,7 @@ if not df_excel.empty:
                 except:
                     c_fiyat = 0.0
                 
-                # Maliyet metnini sayıya çevirme
+                # Maliyet dönüştürücü
                 alim_c_temiz = alim_c.replace(",", ".").strip()
                 maliyet = 0.0
                 try:
@@ -181,7 +178,7 @@ if not df_excel.empty:
                 except:
                     maliyet = 0.0
                 
-                # Not Defterine (Geçmişe) Akıllı Kayıt Mekanizması
+                # Not Defterine (Geçmişe) Akıllı Kayıt Motoru
                 if maliyet > 0:
                     is_exist = False
                     if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
@@ -189,7 +186,7 @@ if not df_excel.empty:
                     if not is_exist:
                         yeni_kayitlar.append({"Tarih": tarih_kisa, "BTA Puanı": p_temiz, "Hisse": ha, "Algoritmik Fiyat": maliyet})
 
-                # Kar / Zarar ve Tavan Hesaplama
+                # Kar / Zarar ve %9 Tavan Başarı Kontrolü
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
@@ -221,3 +218,4 @@ if tebrik_metni != "":
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
+    st.markdown(panel_html, unsafe_allow_html=True)
