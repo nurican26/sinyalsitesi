@@ -185,7 +185,7 @@ if os.path.exists(excel_yolu):
                 # Canlı Tablo Satırı Oluştur
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # MÜKERRER KAYIT KONTROLÜ: Aynı hisse bugün aynı fiyatla veritabanında yoksa ekle
+                # MÜKERRER KAYIT KONTROLÜ
                 if c_fiyat > 0 and not df_gecmis_db.empty:
                     mukerrer = df_gecmis_db[
                         (df_gecmis_db["Hisse"] == ha) & 
@@ -213,4 +213,4 @@ if os.path.exists(excel_yolu):
             
     except Exception as e:
         st.error(f"Excel okunurken veya veri kaydedilirken bir hata oluştu: {e}")
-
+else:
