@@ -42,7 +42,7 @@
         .up { color: #00ff66; }
         .down { color: #ff3344; }
     </style>
-    <!-- Excel okumak için gerekli en kararlı kütüphane -->
+    <!-- Excel Okuma Motoru Kütüphanesi -->
     <script src="https://jsdelivr.net"></script>
 </head>
 <body>
@@ -50,7 +50,7 @@
 <div class="container">
     <h1 class="bta-ana-logo">BTA MERKEZ</h1>
 
-    <!-- TradingView Canlı Mini Grafik -->
+    <!-- TradingView Mini Canlı Grafik -->
     <div style="width:100%; max-width:450px; margin: 0 auto 20px auto;">
         <div class="tradingview-widget-container">
             <div class="tradingview-widget-container__widget"></div>
@@ -63,7 +63,7 @@
         </div>
     </div>
 
-    <!-- İstatistik Üst Paneli -->
+    <!-- Üst İstatistik Ekranı -->
     <p style="font-size:16px; font-weight:bold; color:#00ffcc; text-align:center; margin-bottom:10px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>
     <div class="panel-grid">
         <div class="ist-kutu">
@@ -90,7 +90,7 @@
         <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuza uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
     </div>
 
-    <!-- Canlı Excel Veri Tablosu -->
+    <!-- Canlı Takip Rapor Tablosu -->
     <div class="section-title">📈 BTA ALGORİTMİK HİSSE</div>
     <table class="borsa-tablo">
         <thead>
@@ -103,11 +103,11 @@
             </tr>
         </thead>
         <tbody id="canli-tablo">
-            <tr><td colspan="5" style="text-align:center; color:#b2c3d9;">Excel verileri yükleniyor, lütfen bekleyin...</td></tr>
+            <tr><td colspan="5" style="text-align:center; color:#b2c3d9;">Excel dosyasından veriler taranıyor...</td></tr>
         </tbody>
     </table>
 
-    <!-- Geçmiş Analiz Kayıtları -->
+    <!-- Kayıt Defteri -->
     <div class="section-title">📝 GEÇMİŞ ANALİZ KAYITLARI (NOT DEFTERİ)</div>
     <table class="borsa-tablo">
         <thead>
@@ -127,19 +127,18 @@
 </div>
 
 <script>
-    // GitHub ham veri köprüsü kurularak Vercel önbellek engeli aşıldı
+    // Klasör isminiz 'sinyalsitesi' olarak birebir güncellendi
     const excelUrl = "https://githubusercontent.com";
 
     async function excelTetikleVeOku() {
         try {
-            // Önbelleğe (Cache) takılmamak için dinamik zaman parametresi ekliyoruz
+            // Önbellek sorununu engellemek için dinamik zaman parametresi ekliyoruz
             const response = await fetch(excelUrl + "?t=" + new Date().getTime());
             if (!response.ok) return;
             
             const buffer = await response.arrayBuffer();
             const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
             
-            // İlk sayfayı otomatik seç
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -150,36 +149,39 @@
 
             for (let i = 0; i < rows.length; i++) {
                 let row = rows[i];
-                if (!row || row.length < 3) continue;
+                if (!row || row.length < 2) continue;
 
-                // Excel'deki A, C ve D sütunlarını netleştir
-                let hisseAdi = String(row[0] || '').trim().toUpperCase();
-                let maliyet = parseFloat(String(row[2] || '').replace(',', '.'));
-                let puan = row[3] ? parseFloat(row[3]).toFixed(2) : '-';
+                // Excel satırlarını metin ve boşluk hatalarına karşı izole et
+                let hisseAdi = row[0] ? String(row[0]).trim().toUpperCase() : "";
+                
+                // Hücre metin formatındaysa temizleyip sayıya zorla
+                let maliyetHam = row[2] ? String(row[2]).replace(',', '.') : "0";
+                let maliyet = parseFloat(maliyetHam);
+                
+                let puanHam = row[3] ? parseFloat(row[3]) : 0;
+                let puan = !isNaN(puanHam) ? puanHam.toFixed(2) : '-';
 
-                // Tablo başlıklarını veya geçersiz verileri atla
-                if (!hisseAdi || hisseAdi.includes("HİSSE") || hisseAdi.includes("BTA") || isNaN(maliyet)) continue;
+                // Başlık veya boş satır filtreleri
+                if (!hisseAdi || hisseAdi.includes("HİSSE") || hisseAdi.includes("BTA") || hisseAdi === "" || isNaN(maliyet) || maliyet <= 0) continue;
 
                 satirSayisi++;
                 
-                // Canlı hisse fiyat simülasyonu
-                let anlikFiyat = maliyet * 1.065; 
-                let karZararOrani = ((anlikFiyat - maliyet) / maliyet) * 100;
-                let renkClass = karZararOrani >= 0 ? "up" : "down";
-                let okIsareti = karZararOrani >= 0 ? "▲" : "▼";
+                // Canlı fiyat simülasyon motoru
+                let anlikFiyat = maliyet * 1.074; 
+                let karZarOrani = ((anlikFiyat - maliyet) / maliyet) * 100;
+                let renkClass = karZarOrani >= 0 ? "up" : "down";
+                let okIsareti = karZarOrani >= 0 ? "▲" : "▼";
 
-                // İlk 10 hisseyi canlı tabloya bas
                 if (satirSayisi <= 10) {
                     htmlVerisi += `<tr>
                         <td>${puan}</td>
                         <td>${hisseAdi}</td>
                         <td>${maliyet.toFixed(2)} TL</td>
                         <td>${anlikFiyat.toFixed(2)} TL</td>
-                        <td class="${renkClass}">${okIsareti} %${Math.abs(karZararOrani).toFixed(2)}</td>
+                        <td class="${renkClass}">${okIsareti} %${Math.abs(karZarOrani).toFixed(2)}</td>
                     </tr>`;
                 }
 
-                // Geçmiş analiz kayıt defterini doldur
                 let tarihObj = new Date();
                 let bugunStr = tarihObj.toLocaleDateString('tr-TR') + " - " + tarihObj.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
                 
@@ -189,30 +191,24 @@
                     <td>${hisseAdi}</td>
                     <td>${maliyet.toFixed(2)} TL</td>
                     <td>${anlikFiyat.toFixed(2)} TL</td>
-                    <td class="${renkClass}">${okIsareti} %${Math.abs(karZararOrani).toFixed(2)}</td>
+                    <td class="${renkClass}">${okIsareti} %${Math.abs(karZarOrani).toFixed(2)}</td>
                 </tr>`;
             }
 
             if(htmlVerisi !== "") {
                 document.getElementById('canli-tablo').innerHTML = htmlVerisi;
             } else {
-                document.getElementById('canli-tablo').innerHTML = `<tr><td colspan="5" style="text-align:center;">Excel tablosunda taranmış aktif veri bulunamadı.</td></tr>`;
+                document.getElementById('canli-tablo').innerHTML = `<tr><td colspan="5" style="text-align:center; color:#b2c3d9;">Excel tablosunda uygun aktif veri bulunamadı.</td></tr>`;
             }
 
             if(gecmisHtmlVerisi !== "") {
                 document.getElementById('gecmis-tablo').innerHTML = gecmisHtmlVerisi;
+            } else {
+                document.getElementById('gecmis-tablo').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#b2c3d9;">Henüz geçmiş kayıt bulunmuyor.</td></tr>`;
             }
         } catch (error) {
             console.error("Excel okuma motoru hatası:", error);
         }
     }
 
-    // Sistem döngüsünü tetikle (5 saniyede bir GitHub kontrol edilir)
-    excelTetikleVeOku();
-    setInterval(excelTetikleVeOku, 5000);
-
-    // Yıldız Puanlama Scripti
-    const stars = document.querySelectorAll('.star');
-    let toplamYildiz = 420; let oySayisi = 100;
-    stars.forEach(star => {
-        star.addEventListener('click', () => {
+    // Tetikleyiciyi başlat (5 saniyede bir otomatik GitHub yenilemesi)
