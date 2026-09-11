@@ -65,9 +65,12 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
 
-# Hafıza yönetimini başlatma
-if "kaydedilen_sinyaller" not in st.session_state:
-    st.session_state["kaydedilen_sinyaller"] = set()
+# 🛠️ KİLİTLENMEYİ ÖNLEYEN ÖNBELLEK HAFIZASI
+@st.cache_resource
+def get_global_logged_signals():
+    return set()
+
+global_kayitlar = get_global_logged_signals()
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -113,8 +116,10 @@ excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 7. EXCEL VERİLERİNİ OKUMA, ANALİZ ETME VE OTOMATİK KAYIT
+# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
+otomatik_eklenecekler = []
+
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -150,38 +155,50 @@ if os.path.exists(excel_yolu):
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
-                # 📌 OTOMATİK KAYIT MEKANİZMASI (Her güncellemede buraya otomatik yazar)
-                # Benzersiz bir anahtar oluşturuyoruz (Örn: "KONYA_4100.0_4260.0")
-                sinyal_anahtari = f"{ha}_{maliyet}_{c_fiyat}_{p_temiz}"
+                # Döngüyü kilitlememek için listeye alıyoruz
+                otomatik_eklenecekler.append({
+                    "hisse": ha, "maliyet": maliyet, "c_fiyat": c_fiyat, "puan": p_temiz, "or_dg": or_dg
+                })
+    except:
+        pass
+
+# 🛠️ GÜVENLİ OTOMATİK LOGLAMA MOTORU (SAYFAYI ASLA YENİDEN TETİKLEMEZ)
+if otomatik_eklenecekler:
+    try:
+        df_notlar_mevcut = pd.read_csv(db_notlar)
+        dosya_guncellendi = False
+        
+        for item in otomatik_eklenecekler:
+            sinyal_anahtari = f"{item['hisse']}_{item['maliyet']}_{item['puan']}"
+            
+            if sinyal_anahtari not in global_kayitlar:
+                # Veritabanında mükerrer kayıt kontrolü
+                zaten_var = False
+                if not df_notlar_mevcut.empty:
+                    kontrol = df_notlar_mevcut[(df_notlar_mevcut["hisse"] == item['hisse']) & 
+                                               (df_notlar_mevcut["hedef_fiyat"] == f"{item['maliyet']:,.2f} TL")]
+                    if not kontrol.empty:
+                        zaten_var = True
                 
-                if sinyal_anahtari not in st.session_state["kaydedilen_sinyaller"]:
-                    try:
-                        df_notlar_mevcut = pd.read_csv(db_notlar)
-                        # Aynı hissenin aynı maliyet ve fiyatla son 1 dakika içinde eklenip eklenmediğini CSV'den de teyit et
-                        zaten_ekli = False
-                        if not df_notlar_mevcut.empty:
-                            son_ayni = df_notlar_mevcut[(df_notlar_mevcut["hisse"] == ha) & 
-                                                        (df_notlar_mevcut["hedef_fiyat"] == f"{maliyet:,.2f} TL")]
-                            if not son_ayni.empty:
-                                zaten_ekli = True
-                        
-                        if not zaten_ekli:
-                            yeni_id = int(df_notlar_mevcut["id"].max() + 1) if not df_notlar_mevcut.empty else 1
-                            su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-                            
-                            oto_not = f"🤖 BTA Algoritması tarafından otomatik olarak sisteme işlendi. Anlık Fiyat: {c_fiyat:,.2f} TL, K/Z Durumu: %{or_dg:.2f}"
-                            yeni_satir = pd.DataFrame([{
-                                "id": yeni_id,
-                                "tarih": su_an,
-                                "hisse": ha,
-                                "not": oto_not,
-                                "hedef_fiyat": f"{maliyet:,.2f} TL"
-                            }])
-                            df_notlar_guncel = pd.concat([df_notlar_mevcut, yeni_satir], ignore_index=True)
-                            df_notlar_guncel.to_csv(db_notlar, index=False)
-                            st.session_state["kaydedilen_sinyaller"].add(sinyal_anahtari)
-                    except:
-                        pass
+                if not zaten_var:
+                    yeni_id = int(df_notlar_mevcut["id"].max() + 1) if not df_notlar_mevcut.empty else 1
+                    su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+                    oto_not = f"🤖 BTA Algoritması tarafından otomatik olarak sisteme işlendi. Anlık Fiyat: {item['c_fiyat']:,.2f} TL, K/Z Durumu: %{item['or_dg']:.2f}"
+                    
+                    yeni_satir = pd.DataFrame([{
+                        "id": yeni_id,
+                        "tarih": su_an,
+                        "hisse": item['hisse'],
+                        "not": oto_not,
+                        "hedef_fiyat": f"{item['maliyet']:,.2f} TL"
+                    }])
+                    df_notlar_mevcut = pd.concat([df_notlar_mevcut, yeni_satir], ignore_index=True)
+                    dosya_guncellendi = True
+                
+                global_kayitlar.add(sinyal_anahtari)
+        
+        if dosya_guncellendi:
+            df_notlar_mevcut.to_csv(db_notlar, index=False)
     except:
         pass
 
