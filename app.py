@@ -90,7 +90,8 @@ st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-b
 toplam_oy = basarili + basarisiz
 begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
 
-col_met1, col_met2, col_oy1, col_oy2 = st.columns(4)
+# Sütun yapısı güvenli hale getirildi
+col_met1, col_met2, col_oy1, col_oy2 = st.columns([1, 1, 1, 1])
 
 with col_met1:
     st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">👁️ Toplam Ziyaret</span><br><b style="font-size:20px; color:#00ffcc;">{ziyaret} Kez</b></div>', unsafe_allow_html=True)
@@ -132,8 +133,8 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 
 st.write("---")
 
-# 🔄 VERİLERİ YENİLEME BUTONU
-col_btn, _ = st.columns()
+# 🔄 VERİLERİ YENİLEME BUTONU (Sütun yapısı hatasızlaştırıldı)
+col_btn = st.columns([1])[0]
 with col_btn:
     yenile_butonu = st.button("🔄 Verileri Yenile ve Kontrol Et", use_container_width=True)
 
@@ -178,12 +179,11 @@ if os.path.exists(excel_yolu):
                         if len(h_veri) > 0:
                             c_fiyat = float(h_veri['Close'].iloc[-1])
                     except:
-                        c_fiyat = 0.0 # Yahoo Finance hatası tablonun geri kalanını bozmasın diye izole edildi
+                        c_fiyat = 0.0
                     
                     alim_c_temiz = alim_c.replace(",", ".")
-                    maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                    maliyet = float(alim_c_metiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0 if 'alim_c_metiz' in locals() else (float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0)
                     
-                    # Geçmiş kayıt kontrolü
                     if maliyet > 0:
                         if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
                             yeni_kayitlar.append({
@@ -206,12 +206,10 @@ if os.path.exists(excel_yolu):
                     
                     tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
             except:
-                continue # Satır bazlı hatalar döngüyü ve sayfayı tamamen kilitlemesin
+                continue
 
         if yeni_kayitlar:
             df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
             df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
 
     except Exception as e:
-        st.error(f"Excel dosyası şu an sistem tarafından okunamadı. Lütfen dosyayı kapatıp tekrar deneyin.")
-
