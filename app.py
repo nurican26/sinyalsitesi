@@ -45,7 +45,7 @@ div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
 
-# 3. VERI TABANLARI VE EXCEL YOLLARI KONTROLÜ
+# 3. VERI TABANLARI KONTROLÜ
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
@@ -109,16 +109,17 @@ tebrik_metni = ""
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
-# 📌 DEĞİŞİKLİK: Sayfa adı ne olursa olsun Excel'deki ilk sayfayı zorla okuma sistemi aktif edildi
+# 📌 [KRİTİK DÜZELTME]: Excel'i başlık satırı olmadan (header=None) okuyoruz, böylece 3. satıra direkt ulaşabiliyoruz
 if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
         mevcut_sayfalar = excel_dosyasi.sheet_names
-        hedef_sayfa = mevcut_sayfalar[0] # Otomatik olarak ilk sekmeyi seçer
+        hedef_sayfa = mevcut_sayfalar[0]
         for sayfa in mevcut_sayfalar:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
-        df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa)
+        # header=None diyerek saf koordinat sistemine geçtik
+        df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa, header=None)
     except:
         pass
 
@@ -130,16 +131,15 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-hisse_col, maliyet_col, puan_col = 0, 2, 3
+# 🎯 SİZİN BELİRTTİĞİNİZ TAM KOORDİNAT SİSTEMİ (A3, C3, D3)
+# Python sıfırdan saydığı için: Satır 3 -> indeks 2, A -> 0, C -> 2, D -> 3 olur.
+hisse_col = 0   # A sütunu
+maliyet_col = 2 # C sütunu
+puan_col = 3    # D sütunu
+baslangic_satiri = 2 # 3. satır (A3, C3, D3)
 
 if not df_excel.empty:
-    s_isimler = [str(c).strip().upper() for c in df_excel.columns]
-    for i, col in enumerate(s_isimler):
-        if "HİSSE" in col or "HISSE" in col or "KOD" in col: hisse_col = i
-        if "MALİYET" in col or "MALIYET" in col or "FİYAT" in col or "FIYAT" in col or "ALIM" in col: maliyet_col = i
-        if "PUAN" in col or "BTA" in col or "SKOR" in col: puan_col = i
-
-    for idx in range(len(df_excel)):
+    for idx in range(baslangic_satiri, len(df_excel)):
         try:
             ha = str(df_excel.iloc[idx, hisse_col]).strip().upper() if pd.notna(df_excel.iloc[idx, hisse_col]) else ""
             alim_c = str(df_excel.iloc[idx, maliyet_col]).strip() if pd.notna(df_excel.iloc[idx, maliyet_col]) else ""
@@ -151,6 +151,7 @@ if not df_excel.empty:
                 if pd.notna(puan_d) and str(puan_d).strip() != "":
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 
+                # CANLI YFINANCE FIYAT MOTORU
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -163,6 +164,7 @@ if not df_excel.empty:
                 alim_c_temiz = alim_c.replace(",", ".").strip()
                 maliyet = float(alim_c_temiz) if alim_c_temiz != "" else 0.0
                 
+                # Not Defteri Kayıt Kontrolü
                 if maliyet > 0:
                     is_exist = False
                     if not df_gecmis.empty:
@@ -170,6 +172,7 @@ if not df_excel.empty:
                     if not is_exist:
                         yeni_kayitlar.append({"Tarih": tarih_kisa, "BTA Puanı": p_temiz, "Hisse": ha, "Algoritmik Fiyat": maliyet})
 
+                # Kar/Zarar ve Tavan Durumu Hesabı
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
