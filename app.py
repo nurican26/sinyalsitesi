@@ -42,6 +42,7 @@ div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
     padding: 10px;
     text-align: center;
     color: white;
+    height: 100%;
 }
 </style>
 """
@@ -52,23 +53,27 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
 excel_yolu = "bta.xls.xlsm"
-db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 
-if not os.path.exists(db_notlar):
-    pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
-
+# Veritabanı dosyalarını güvenli başlatma
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([{"ziyaret_sayisi": 187, "toplam_yildiz": 5, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
 
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Anlık Fiyat", "Kâr/Zarar Durumu"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# Sabit Sayaç Değerleri (İlk dosyadan korundu)
-ziyaret = 187
-basarili = 15
-basarisiz = 2
+# İstatistikleri Yükle ve Ziyaretçiyi 1 Artır (Session State ile döngü önleme)
+df_ist = pd.read_csv(db_istatistik)
+if "ziyaret_artirildi" not in st.session_state:
+    df_ist.loc[0, "ziyaret_sayisi"] += 1
+    df_ist.to_csv(db_istatistik, index=False)
+    st.session_state["ziyaret_artirildi"] = True
+
+ziyaret = int(df_ist.loc[0, "ziyaret_sayisi"])
+toplam_yildiz = float(df_ist.loc[0, "toplam_yildiz"])
+oy_sayisi = int(df_ist.loc[0, "oy_sayisi"])
+mevcut_puan = round(toplam_yildiz / oy_sayisi, 1) if oy_sayisi > 0 else 5.0
 
 # 5. PARILTILI BTA LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
@@ -90,19 +95,26 @@ components.html(bist_mini_widget, height=100)
 # ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
-col_met1, col_met2, col_oy1, col_oy2 = st.columns(4)
+col_met1, col_met2, col_oy = st.columns([1, 1, 2])
 
 with col_met1:
     st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">👁️ Toplam Ziyaret</span><br><b style="font-size:20px; color:#00ffcc;">{ziyaret} Kez</b></div>', unsafe_allow_html=True)
 
 with col_met2:
-    st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">🎯 Başarı/Beğeni Oranı</span><br><b style="font-size:20px; color:#00ffcc;">%88</b></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">⭐ Platform Puanı</span><br><b style="font-size:20px; color:#00ffcc;">{mevcut_puan} / 5</b></div>', unsafe_allow_html=True)
 
-with col_oy1:
-    st.button("👍 Başarılı Buldum", use_container_width=True)
-
-with col_oy2:
-    st.button("👎 Başarısız Buldum", use_container_width=True)
+with col_oy:
+    # 5 Yıldız Seçim Aracı
+    yildiz_secimi = st.feedback("stars", key="bta_yildiz_sistemi")
+    if yildiz_secimi is not None and f"oylandi_{yildiz_secimi}" not in st.session_state:
+        # feedback bileşeni 0-4 arası döndürdüğü için 1 ekliyoruz
+        verilen_puan = yildiz_secimi + 1
+        df_ist.loc[0, "toplam_yildiz"] += verilen_puan
+        df_ist.loc[0, "oy_sayisi"] += 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state[f"oylandi_{yildiz_secimi}"] = True
+        st.toast(f"🎉 {verilen_puan} Yıldız verdiniz. Teşekkürler!", icon="⭐")
+        st.rerun()
 
 # SPK YASAL UYARI BÖLÜMÜ
 yasal_html = """
@@ -121,13 +133,16 @@ gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
 tablo_rows_html = ""
-gecmis_rows_html = ""
 veri_var_mi = False
 basarili_hisseler = []
 
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        
+        # Kalıcı geçmiş kayıtları yükle
+        df_gecmis_db = pd.read_csv(db_gecmis_kayitlar)
+        yeni_kayitlar = []
         
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
@@ -154,37 +169,43 @@ if os.path.exists(excel_yolu):
                     if or_dg >= 9.0:
                         basariliHisse_adi = ha.replace(".IS", "")
                         basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                    kz_str = f'▲ %{or_dg:.2f}'
+                    kz_html = f'<span style="color:#00ff66;">{kz_str}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 else:
-                    kz_str = "<span>-</span>"
+                    kz_str = "-"
+                    kz_html = "<span>-</span>"
                 
                 # Canlı Tablo Satırı
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # Kayıt Defteri Satırı
-                gecmis_rows_html += f'<tr><td>{excel_guncelleme_tarihi}</td><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+                # Kalıcı Kayıt Defteri için Kontrol (Aynı hisse aynı fiyatta bugün kaydedilmemişse ekle)
+                bugun_tarih = excel_tarih_objesi.strftime("%d.%m.%Y")
+                mukerrer = df_gecmis_db[
+                    (df_gecmis_db["Hisse"] == ha) & 
+                    (df_gecmis_db["Tarih"].str.contains(bugun_tarih)) & 
+                    (df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL")
+                ]
+                
+                if len(mukerrer) == 0:
+                    yeni_kayitlar.append({
+                        "Tarih": excel_guncelleme_tarihi,
+                        "BTA Puanı": p_temiz,
+                        "Hisse": ha,
+                        "Algoritmik Fiyat": f"{maliyet:,.2f} TL",
+                        "Anlık Fiyat": f"{c_fiyat:,.2f} TL",
+                        "Kâr/Zarar Durumu": kz_str
+                    })
+                    
+        # Yeni veriler varsa veritabanına ekle ve diske kaydet
+        if yeni_kayitlar:
+            df_yeni = pd.DataFrame(yeni_kayitlar)
+            df_gecmis_db = pd.concat([df_gecmis_db, df_yeni], ignore_index=True)
+            # Sadece son 50 kaydı tutarak şişmesini engelleyelim
+            df_gecmis_db.tail(50).to_csv(db_gecmis_kayitlar, index=False)
+            
     except Exception as e:
-        st.error(f"Excel okunurken bir hata oluştu: {e}")
+        st.error(f"Excel okunurken veya veri kaydedilirken bir hata oluştu: {e}")
 
 # 7. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
-    st.markdown(tebrik_html, unsafe_allow_html=True)
-
-# 8. CANLI TABLO PANELİ
-if veri_var_mi and tablo_rows_html != "":
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Senkronizasyon: {excel_guncelleme_tarihi}</p></div>'
-    st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">"bta.xls.xlsm" dosyası aranıyor veya kriterlere uygun veri taranıyor. Uygun veri bulunduğunda analizler buraya yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 9. 📝 GEÇMİŞ ANALİZ KAYITLARI (NOT DEFTERİ) PANELİ
-st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#1E90FF; margin-bottom:8px;">📝 GEÇMİŞ ANALİZ KAYITLARI (NOT DEFTERİ)</p>', unsafe_allow_html=True)
-
-if gecmis_rows_html != "":
-    gecmis_tablo_html = '<table class="borsa-tablo"><tr><th>KAYIT TARİHİ</th><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYAT</th><th>ANLIK FİYAT</th><th>O GÜNKÜ KÂR/ZARAR</th></tr>' + gecmis_rows_html + '</table>'
