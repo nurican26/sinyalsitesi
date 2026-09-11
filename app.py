@@ -58,9 +58,8 @@ db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 
 # Veritabanı dosyalarını güvenli başlatma veya eski dosyayı otomatik dönüştürme
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([{"ziyaret_sayisi": 187, "toplam_yildiz": 5, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([{"ziyaret_sayisi": 196, "toplam_yildiz": 5, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
 else:
-    # Eski dosya varsa yapısını kontrol et ve eksik sütunları yamala
     try:
         df_eski_kontrol = pd.read_csv(db_istatistik)
         if "toplam_yildiz" not in df_eski_kontrol.columns:
@@ -146,6 +145,7 @@ basarili_hisseler = []
 
 if os.path.exists(excel_yolu):
     try:
+        # Excel dosyasını oku
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         df_gecmis_db = pd.read_csv(db_gecmis_kayitlar)
         yeni_kayitlar = []
@@ -155,11 +155,12 @@ if os.path.exists(excel_yolu):
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
             puan_d = df.iloc[idx, 3]
             
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG", "HİSELER KAYIT DEFTERİ"]:
                 veri_var_mi = True
                 p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 c_fiyat = 0.0
                 
+                # Canlı Fiyat Çekimi
                 try:
                     h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
@@ -174,39 +175,39 @@ if os.path.exists(excel_yolu):
                     if or_dg >= 9.0:
                         basariliHisse_adi = ha.replace(".IS", "")
                         basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'▲ %{or_dg:.2f}'
-                    kz_html = f'<span style="color:#00ff66;">{kz_str}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                    kz_str = f'▲ %{or_dg:.2f}' if or_dg >= 0 else f'▼ %{or_dg:.2f}'
+                    kz_html = f'<span style="color:#00ff66;">{kz_str}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">{kz_str}</span>'
                 else:
                     kz_str = "-"
                     kz_html = "<span>-</span>"
                 
+                # Canlı Tablo Satırı Oluştur
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                bugun_tarih = excel_tarih_objesi.strftime("%d.%m.%Y")
-                mukerrer = df_gecmis_db[
-                    (df_gecmis_db["Hisse"] == ha) & 
-                    (df_gecmis_db["Tarih"].str.contains(bugun_tarih)) & 
-                    (df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL")
-                ]
+                # MÜKERRER KAYIT KONTROLÜ: Son 1 saat içinde aynı fiyattan kaydedilmişse tekrar yazma
+                zaman_eski_sinir = excel_tarih_objesi - datetime.timedelta(hours=1)
                 
-                if len(mukerrer) == 0:
+                # Geçmiş veritabanında bu hisseye ait kayıtları filtrele
+                hisse_kayitlari = df_gecmis_db[df_gecmis_db["Hisse"] == ha]
+                mukerrer = False
+                
+                for _, k_row in hisse_kayitlari.iterrows():
+                    try:
+                        # Kayıt tarihini ayrıştır
+                        k_tarih_str = k_row["Tarih"].split(" | ")[0]
+                        k_tarih = datetime.datetime.strptime(k_tarih_str, "%d.%m.%Y - %H:%M")
+                        
+                        # Eğer 1 saatten daha yeniyse ve fiyat aynıysa mükerrer kabul et
+                        if k_tarih > zaman_eski_sinir and k_row["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL":
+                            mukerrer = True
+                            break
+                    except:
+                        pass
+                
+                if not mukerrer and c_fiyat > 0:
                     yeni_kayitlar.append({
                         "Tarih": excel_guncelleme_tarihi,
                         "BTA Puanı": p_temiz,
                         "Hisse": ha,
                         "Algoritmik Fiyat": f"{maliyet:,.2f} TL",
                         "Anlık Fiyat": f"{c_fiyat:,.2f} TL",
-                        "Kâr/Zarar Durumu": kz_str
-                    })
-                    
-        if yeni_kayitlar:
-            df_yeni = pd.DataFrame(yeni_kayitlar)
-            df_gecmis_db = pd.concat([df_gecmis_db, df_yeni], ignore_index=True)
-            df_gecmis_db.tail(50).to_csv(db_gecmis_kayitlar, index=False)
-            
-    except Exception as e:
-        st.error(f"Excel okunurken veya veri kaydedilirken bir hata oluştu: {e}")
-
-# 7. OTOMATİK BAŞARI TEBRİK PANELİ
-if basarili_hisseler:
-    hisseler_str = ", ".join(basarili_hisseler)
