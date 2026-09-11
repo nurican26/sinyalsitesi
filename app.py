@@ -115,7 +115,7 @@ if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
         mevcut_sayfalar = excel_dosyasi.sheet_names
-        hedef_sayfa = mevcut_sayfalar[0]
+        hedef_sayfa = mevcut_sayfalar[0] # Eğer WEB adında sayfa bulunamazsa otomatik ilk sayfayı seçer
         for sayfa in mevcut_sayfalar:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
@@ -131,25 +131,35 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Sabit Sütun Düzeni
+# Otomatik Esnek Sütun Tespiti
 hisse_col = 0
 maliyet_col = 2
 puan_col = 3
 
 if not df_excel.empty:
-    for idx in range(min(15, len(df_excel))):
+    sutun_isimleri = [str(c).strip().upper() for c in df_excel.columns]
+    for i, col in enumerate(sutun_isimleri):
+        if "HİSSE" in col or "HISSE" in col or "KOD" in col:
+            hisse_col = i
+        if "MALİYET" in col or "MALIYET" in col or "FİYAT" in col or "FIYAT" in col or "ALIM" in col:
+            maliyet_col = i
+        if "PUAN" in col or "BTA" in col or "SKOR" in col:
+            puan_col = i
+
+    for idx in range(len(df_excel)):
         try:
             ha = str(df_excel.iloc[idx, hisse_col]).strip().upper() if pd.notna(df_excel.iloc[idx, hisse_col]) else ""
             alim_c = str(df_excel.iloc[idx, maliyet_col]).strip() if pd.notna(df_excel.iloc[idx, maliyet_col]) else ""
             puan_d = df_excel.iloc[idx, puan_col] if pd.notna(df_excel.iloc[idx, puan_col]) else ""
             
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG", "KOD"]:
+            # Kelime engelleme filtresi gevşetildi, sadece bariz başlık satırları eleniyor
+            if ha != "" and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE"]:
                 veri_var_mi = True
                 p_temiz = "-"
                 if str(puan_d).strip() != "":
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 
-                # 🚀 İNTERNETTEN CANLI/GECİKMELİ BİST FİYATI ÇEKME
+                # İNTERNETTEN CANLI BİST FİYATI ÇEKME (yfinance)
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -159,7 +169,7 @@ if not df_excel.empty:
                 except:
                     c_fiyat = 0.0
                 
-                # Alım/Maliyet Fiyatını Temizleme
+                # Fiyat metinlerini sayıya dönüştürme
                 alim_c_temiz = alim_c.replace(",", ".").strip()
                 maliyet = 0.0
                 try:
@@ -168,7 +178,7 @@ if not df_excel.empty:
                 except:
                     maliyet = 0.0
                 
-                # Not Defterine (Geçmişe) Akıllı Kayıt Filtresi
+                # Geçmiş Not Defterine Kayıt Kontrolü
                 if maliyet > 0:
                     is_exist = False
                     if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
@@ -182,11 +192,9 @@ if not df_excel.empty:
                             "Algoritmik Fiyat": maliyet
                         })
 
-                # Dinamik K/Z Oranı Hesaplama
+                # Canlı K/Z ve %9 Tavan Tespiti
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    
-                    # ⚡ YENİ: %9 ve üzeri tavan durumunda listeye ekle
                     if or_dg >= 9.0:
                         basarili_hisseler.append(f"<b>{ha.replace('.IS', '')}</b> (%{or_dg:.2f})")
                         
@@ -195,13 +203,13 @@ if not df_excel.empty:
                     else:
                         kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 elif maliyet > 0 and c_fiyat == 0.0:
-                    kz_str = "<span style='color:#a2b4cc;'>Fiyat Alınıyor...</span>"
+                    kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
                 else:
                     kz_str = "<span>-</span>"
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
         except:
-            pass
+            continue
 
 if len(yeni_kayitlar) > 0:
     try:
@@ -210,12 +218,12 @@ if len(yeni_kayitlar) > 0:
     except:
         pass
 
-# 7. ⚡ ALGORİTMİK BAŞARI TAVAN TEBRİK PANELİ (Otomatik Yayında)
+# 7. ⚡ ALGORİTMİK TAVAN BAŞARI TEBRİK PANELİ
 if len(basarili_hisseler) > 0:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri tavan performansı göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
 # 8. CANLI TABLO PANELİ GÖSTERİMİ
-if veri_var_mi:
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
+if veri_var_mi and tablo_rows_html != "":
+ 
