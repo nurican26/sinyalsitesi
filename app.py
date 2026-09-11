@@ -138,6 +138,7 @@ st.write("---")
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
+bugun_tarih_str = excel_tarih_objesi.strftime("%d.%m.%Y")
 
 tablo_rows_html = ""
 veri_var_mi = False
@@ -184,25 +185,18 @@ if os.path.exists(excel_yolu):
                 # Canlı Tablo Satırı Oluştur
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # MÜKERRER KAYIT KONTROLÜ: Son 1 saat içinde aynı fiyattan kaydedilmişse tekrar yazma
-                zaman_eski_sinir = excel_tarih_objesi - datetime.timedelta(hours=1)
+                # MÜKERRER KAYIT KONTROLÜ: Aynı hisse bugün aynı fiyatla veritabanında yoksa ekle
+                if c_fiyat > 0 and not df_gecmis_db.empty:
+                    mukerrer = df_gecmis_db[
+                        (df_gecmis_db["Hisse"] == ha) & 
+                        (df_gecmis_db["Tarih"].str.contains(bugun_tarih_str)) & 
+                        (df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL")
+                    ]
+                    kaydedilsin_mi = len(mukerrer) == 0
+                else:
+                    kaydedilsin_mi = (c_fiyat > 0)
                 
-                # Geçmiş veritabanında bu hisseye ait kayıtları filtrele
-                hisse_kayitlari = df_gecmis_db[df_gecmis_db["Hisse"] == ha]
-                mukerrer = False
-                
-                for _, k_row in hisse_kayitlari.iterrows():
-                    try:
-                        k_tarih_str = k_row["Tarih"].split(" | ")[0] + " - " + k_row["Tarih"].split(" | ")[1]
-                        k_tarih = datetime.datetime.strptime(k_tarih_str, "%d.%m.%Y - %H:%M")
-                        
-                        if k_tarih > zaman_eski_sinir and k_row["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL":
-                            mukerrer = True
-                            break
-                    except:
-                        pass
-                
-                if not mukerrer and c_fiyat > 0:
+                if kaydedilsin_mi:
                     yeni_kayitlar.append({
                         "Tarih": excel_guncelleme_tarihi,
                         "BTA Puanı": p_temiz,
@@ -212,3 +206,11 @@ if os.path.exists(excel_yolu):
                         "Kâr/Zarar Durumu": kz_str
                     })
                     
+        if yeni_kayitlar:
+            df_yeni = pd.DataFrame(yeni_kayitlar)
+            df_gecmis_db = pd.concat([df_gecmis_db, df_yeni], ignore_index=True)
+            df_gecmis_db.tail(100).to_csv(db_gecmis_kayitlar, index=False)
+            
+    except Exception as e:
+        st.error(f"Excel okunurken veya veri kaydedilirken bir hata oluştu: {e}")
+
