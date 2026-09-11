@@ -45,18 +45,10 @@ div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
 
-# 3. VERI TABANLARI VE DOSYA YOLLARI KONTROLÜ
+# 3. VERI TABANLARI VE EXCEL YOLLARI KONTROLÜ
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
-
-# Otomatik dosya arama mekanizması (Büyük/küçük harf hatalarını engellemek için)
-excel_yolu = "bta.xls.xlsm"
-if not os.path.exists(excel_yolu):
-    for f in os.listdir("."):
-        if f.lower().startswith("bta") and (f.lower().endswith(".xlsm") or f.lower().endswith(".xlsx") or f.lower().endswith(".xls")):
-            excel_yolu = f
-            break
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
@@ -83,8 +75,10 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# 5. BAŞLIK VE İSTATİSTİK PANELİ GÖSTERİMİ
+# 5. PARILTILI BTA LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
+
+# EN ÜSTE TAŞINAN ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 toplam_oy = basarili + basarisiz
@@ -118,18 +112,19 @@ with col_oy2:
         except:
             pass
 
+# SPK YASAL UYARI BÖLÜMÜ
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
-        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuza uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
     </p>
 </div>
 """
 st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
-# 🔄 YENİLEME BUTONU
-yenile_butonu = st.button("🔄 Verileri Yenile ve Kontrol Et", use_container_width=True)
+# 🚀 [YENİ - SÜPER ÇÖZÜM]: DİREKT PANEL ÜZERİNDEN EXCEL YÜKLEME ALANI
+yuklenen_dosya = st.file_uploader("📁 Excel Dosyasını Buraya Yükleyin (.xlsm, .xlsx)", type=["xlsm", "xlsx"])
 
 # 6. ANA ANALİZ MOTORU
 excel_tarih_objesi = datetime.datetime.now()
@@ -144,12 +139,18 @@ basarili_hisseler = []
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
-# Excel Güvenli Okuma Alanı
-if os.path.exists(excel_yolu):
+# Eğer panelden dosya yüklendiyse onu oku, yüklenmediyse klasördeki eski bta.xls.xlsm'yi aramayı dene
+if yuklenen_dosya is not None:
     try:
-        df_excel = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    except Exception as e:
-        st.warning(f"Excel dosyası bulundu ({excel_yolu}) ancak okunurken bir hata oluştu. Dosyanın açık olmadığından emin olun.")
+        df_excel = pd.read_excel(yuklenen_dosya, sheet_name="WEB", engine="openpyxl")
+    except:
+        st.error("Yüklenen Excel dosyasında 'WEB' isimli bir çalışma sayfası bulunamadı.")
+else:
+    if os.path.exists("bta.xls.xlsm"):
+        try:
+            df_excel = pd.read_excel("bta.xls.xlsm", sheet_name="WEB", engine="openpyxl")
+        except:
+            pass
 
 if os.path.exists(db_gecmis_kayitlar):
     try:
@@ -159,7 +160,7 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Satır Analiz Aşaması
+# Satır Analiz Döngüsü
 if not df_excel.empty:
     for idx in range(min(10, len(df_excel))):
         try:
@@ -225,3 +226,4 @@ if yeni_kayitlar:
         pass
 
 # 7. TEBRİK PANELİ GÖSTERİMİ
+if len(basarili_hisseler) > 0:
