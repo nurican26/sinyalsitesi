@@ -68,7 +68,17 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-# 5. ZİYARETÇİ SAYACINI TETİKLEME
+# 5. HAFIZA (SESSION STATE) TANIMLAMALARI
+if "kayitli_otomatik_hisseler" not in st.session_state:
+    try:
+        df_init = pd.read_csv(db_notlar)
+        # Daha önce otomatik eklenmiş hisseleri hafızaya çekerek mükerrer kaydı engelliyoruz
+        auto_records = df_init[df_init["not"].str.contains("otomatik tespit edildi", na=False, case=False)]
+        st.session_state["kayitli_otomatik_hisseler"] = set(auto_records["hisse"].unique())
+    except:
+        st.session_state["kayitli_otomatik_hisseler"] = set()
+
+# 6. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
 if os.path.exists(db_istatistik):
     try:
@@ -85,7 +95,7 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
+# 7. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
 
 # TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
@@ -112,90 +122,87 @@ excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
+# 8. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
-    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    if len(df.columns) >= 5:
-        ham_liste = df.iloc[:, 4].dropna().unique()
-        tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
-        
-    for idx in range(min(10, len(df))):
-        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-        puan_d = df.iloc[idx, 3]
-        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-            veri_var_mi = True
-            aktif_tablo_hisseleri.append(ha)
+    try:
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        if len(df.columns) >= 5:
+            ham_liste = df.iloc[:, 4].dropna().unique()
+            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
-            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-            c_fiyat = 0.0
-            try:
-                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-            except:
-                pass
-            alim_c_temiz = alim_c.replace(",", ".")
-            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-            
-            if maliyet > 0 and c_fiyat > 0:
-                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                if or_dg >= 9.0:
-                    basariliHisse_adi = ha.replace(".IS", "")
-                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-            else:
-                kz_str = "<span>-</span>"
-            
-            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+        for idx in range(min(10, len(df))):
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
+                aktif_tablo_hisseleri.append(ha)
+                
+                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                c_fiyat = 0.0
+                try:
+                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+                except:
+                    pass
+                alim_c_temiz = alim_c.replace(",", ".")
+                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    if or_dg >= 9.0:
+                        basariliHisse_adi = ha.replace(".IS", "")
+                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
+                
+                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+    except Exception as e:
+        pass
 
-# 🤖 OTOMATİK ARKA PLAN KAYIT MOTORU
-try:
-    df_mevcut_notlar = pd.read_csv(db_notlar)
-except Exception:
-    df_mevcut_notlar = pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
-
-kayit_degisti_mi = False
-
-for hisse_kod in aktif_tablo_hisseleri:
-    zaten_kayitli = not df_mevcut_notlar[
-        (df_mevcut_notlar["hisse"] == hisse_kod) & 
-        (df_mevcut_notlar["not"].str.contains("Algoritma tarafından otomatik tespit edildi", na=False))
-    ].empty
-    
-    if not zaten_kayitli:
-        yeni_id = int(df_mevcut_notlar["id"].max() + 1) if not df_mevcut_notlar.empty else 1
-        su_an_zaman = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+# ====================================================================
+# 🤖 GÜVENLİ VE HAFIZA DESTEKLİ OTOMATİK ARKA PLAN KAYIT MOTORU
+# ====================================================================
+if aktif_tablo_hisseleri:
+    try:
+        df_mevcut_notlar = pd.read_csv(db_notlar)
+        kayit_degisti_mi = False
         
-        yeni_otomatik_satir = pd.DataFrame([{
-            "id": yeni_id,
-            "tarih": su_an_zaman,
-            "hisse": hisse_kod,
-            "not": f"🤖 Algoritma tarafından otomatik tespit edildi ve listeye eklendi.",
-            "hedef_fiyat": "-"
-        }])
-        
-        df_mevcut_notlar = pd.concat([df_mevcut_notlar, yeni_otomatik_satir], ignore_index=True)
-        kayit_degisti_mi = True
+        for hisse_kod in aktif_tablo_hisseleri:
+            # Hem yerel csv tablosundan hem de Streamlit oturum hafızasından kontrol et
+            kod_kayitli_mi = hisse_kod in st.session_state["kayitli_otomatik_hisseler"]
+            
+            if not kod_kayitli_mi:
+                yeni_id = int(df_mevcut_notlar["id"].max() + 1) if not df_mevcut_notlar.empty else 1
+                su_an_zaman = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+                
+                yeni_otomatik_satir = pd.DataFrame([{
+                    "id": yeni_id,
+                    "tarih": su_an_zaman,
+                    "hisse": hisse_kod,
+                    "not": "🤖 Algoritma tarafından otomatik tespit edildi ve listeye eklendi.",
+                    "hedef_fiyat": "-"
+                }])
+                
+                df_mevcut_notlar = pd.concat([df_mevcut_notlar, yeni_otomatik_satir], ignore_index=True)
+                st.session_state["kayitli_otomatik_hisseler"].add(hisse_kod)
+                kayit_degisti_mi = True
+                
+        if kayit_degisti_mi:
+            df_mevcut_notlar.to_csv(db_notlar, index=False)
+            st.toast("🚀 Algoritmaya yeni gelen hisse(ler) başarıyla kayıt defterine işlendi!")
+    except Exception as e:
+        pass
+# ====================================================================
 
-if kayit_degisti_mi:
-    df_mevcut_notlar.to_csv(db_notlar, index=False)
-    st.toast("🚀 Algoritmaya yeni gelen hisse(ler) başarıyla kayıt defterine işlendi!")
-
-# 8. OTOMATİK BAŞARI TEBRİK PANELİ
+# 9. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ
+# 10. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
-    st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 10. YASAL UYARI BÖLÜMÜ
