@@ -3,12 +3,11 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import streamlit.components.v1 as components
 
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Tüm Görsel Öğeler Düzeltildi)
+# 2. ÖZEL GÜVENLİ CSS TASARIMI
 css_kodu = """
 <style>
 .stApp { 
@@ -16,38 +15,25 @@ css_kodu = """
     background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; 
 }
 .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
+div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
 div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
+
+/* Sabit ve Şık BTA Logo Alanı */
+.bta-ana-logo {
+    text-align: center;
+    font-family: 'Brush Script MT', cursive, sans-serif !important;
+    font-weight: bold; 
+    font-size: 65px; 
+    color: #00ffcc;
+    margin: 10px 0 !important;
+    text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
+}
+
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
-
-.logo-yurume-alani {
-    width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-    margin: 10px 0 !important;
-    padding: 0 !important;
-    line-height: 1.2;
-}
-
-@keyframes btaYoru {
-    0% { transform: translateX(-10%); }
-    50% { transform: translateX(85%); }
-    100% { transform: translateX(-10%); }
-}
-
-.yuruyen-bta-logo {
-    font-family: 'Brush Script MT', cursive, sans-serif !important;
-    font-weight: bold; 
-    font-size: 75px; 
-    color: #00ffcc;
-    display: inline-block;
-    animation: btaYoru 15s infinite linear;
-    text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
-}
 </style>
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
@@ -86,26 +72,12 @@ if os.path.exists(db_istatistik):
     except:
         ziyaret, basarili, basarisiz = 174, 15, 2
 
-# 5. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU (Görünürlük Sabitlendi)
-st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
-
-# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
-bist_mini_widget = """
-<div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
-  <div class="tradingview-widget-container__widget"></div>
-  <script type="text/javascript" src="https://tradingview.com" async>
-  {
-  "symbol": "BIST:XU100", "width": "100%", "height": "95", "locale": "tr",
-  "dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": false, "largeChartUrl": ""
-  }
-  </script>
-</div>
-"""
-components.html(bist_mini_widget, height=100)
+# 5. PARILTILI BTA LOGO PANELİ (Kilitlenmeyi önlemek için sabitlendi)
+st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
 
 # 🔄 VERİLERİ YENİLEME BUTONU
 st.write("")
-col_btn, _ = st.columns([1, 3])
+col_btn, _ = st.columns([1, 2])
 with col_btn:
     yenile_butonu = st.button("🔄 Verileri Yenile ve Kontrol Et", use_container_width=True)
 
@@ -154,7 +126,7 @@ if os.path.exists(excel_yolu):
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                 
-                # Değişiklik kontrolü ve geçmiş kayıt (Not Defteri) entegrasyonu
+                # Değişiklik kontrolü ve geçmiş kayıt (Not Defteri)
                 if maliyet > 0:
                     if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
                         yeni_kayitlar.append({
@@ -181,7 +153,7 @@ if os.path.exists(excel_yolu):
             df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
 
     except Exception as e:
-        st.error(f"Excel dosyası şu an kilitli veya okunamıyor: {e}")
+        st.error(f"Excel dosyası okunamıyor veya biçimi hatalı: {e}")
 
 # Algoritmik Başarı Tebrik Paneli
 if basarili_hisseler:
@@ -199,3 +171,15 @@ else:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
+# 7. RESMİ SPK YASAL UYARI BÖLÜMÜ
+yasal_html = """
+<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 12px; margin-top: 15px;">
+    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
+        Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak 
+        yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
+        görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
+        bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Veriler en az 15 dakika gecikmelidir.
+    </p>
+</div>
+"""
