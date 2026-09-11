@@ -17,7 +17,6 @@ css_kodu = """
 .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
 div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
 
-/* Sabit ve Şık BTA Logo Alanı */
 .bta-ana-logo {
     text-align: center;
     font-family: 'Brush Script MT', cursive, sans-serif !important;
@@ -34,7 +33,6 @@ div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
 
-/* İstatistik Kutusu Tasarımı */
 .ist-kutu {
     background-color: #121d33;
     border: 1px solid #1e3a5f;
@@ -63,23 +61,20 @@ if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"]).to_csv(db_gecmis_kayitlar, index=False)
 
 # 4. ZIYARETCI SAYACINI TETIKLEME VE OY VERME MOTORU
-ziyaret, basarili, basarisiz = 0, 0, 0
+ziyaret, basarili, basarisiz = 182, 15, 2
 if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
-        if df_ist.empty:
-            df_ist = pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}])
-        
-        if "ziyaret_sayildi" not in st.session_state:
-            df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.session_state["ziyaret_sayildi"] = True
-            
-        ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-        basarili = int(df_ist.at[0, "basarili_oy"])
-        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+        if not df_ist.empty:
+            if "ziyaret_sayildi" not in st.session_state:
+                df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
+                df_ist.to_csv(db_istatistik, index=False)
+                st.session_state["ziyaret_sayildi"] = True
+            ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+            basarili = int(df_ist.at[0, "basarili_oy"])
+            basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
-        ziyaret, basarili, basarisiz = 182, 15, 2
+        pass
 
 # 5. PARILTILI BTA LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
@@ -145,76 +140,87 @@ tablo_rows_html = ""
 veri_var_mi = False
 basarili_hisseler = []
 
+# Excel ve geçmiş CSV veri okuma aşaması (Hatalar izole edildi)
+df_excel = pd.DataFrame()
+df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
+
 if os.path.exists(excel_yolu):
     try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
-        try:
-            df_gecmis = pd.read_csv(db_gecmis_kayitlar)
-        except:
-            df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
-        
-        yeni_kayitlar = []
-
-        for idx in range(min(10, len(df))):
-            try:
-                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-                puan_d = df.iloc[idx, 3]
-                
-                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                    veri_var_mi = True
-                    
-                    if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
-                        p_temiz = "-"
-                    else:
-                        p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                        
-                    c_fiyat = 0.0
-                    try:
-                        h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=3)
-                        if len(h_veri) > 0:
-                            c_fiyat = float(h_veri['Close'].iloc[-1])
-                    except:
-                        c_fiyat = 0.0
-                    
-                    alim_c_temiz = alim_c.replace(",", ".")
-                    maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-                    
-                    if maliyet > 0:
-                        is_exist = False
-                        if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
-                            is_exist = ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any()
-                        
-                        if not is_exist:
-                            yeni_kayitlar.append({
-                                "Tarih": tarih_kisa,
-                                "BTA Puanı": p_temiz,
-                                "Hisse": ha,
-                                "Algoritmik Fiyat": maliyet
-                            })
-
-                    if maliyet > 0 and c_fiyat > 0:
-                        or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                        if or_dg >= 9.0:
-                            basariliHisse_adi = ha.replace(".IS", "")
-                            basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                    elif maliyet > 0 and c_fiyat == 0.0:
-                        kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
-                    else:
-                        kz_str = "<span>-</span>"
-                    
-                    tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-            except:
-                continue
-
-        if yeni_kayitlar:
-            df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
-            df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
-
+        df_excel = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
     except:
-        st.error("Excel dosyası okunamadı.")
+        pass
 
-# Algoritmik Başarı Tebrik Paneli
-if basarili_hisseler:
+if os.path.exists(db_gecmis_kayitlar):
+    try:
+        df_gecmis = pd.read_csv(db_gecmis_kayitlar)
+    except:
+        pass
+
+yeni_kayitlar = []
+
+# Excel satır tarama döngüsü
+if not df_excel.empty:
+    for idx in range(min(10, len(df_excel))):
+        try:
+            ha = str(df_excel.iloc[idx, 0]).strip().upper() if pd.notna(df_excel.iloc[idx, 0]) else ""
+            alim_c = str(df_excel.iloc[idx, 2]).strip() if pd.notna(df_excel.iloc[idx, 2]) else ""
+            puan_d = df_excel.iloc[idx, 3]
+            
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
+                
+                if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
+                    p_temiz = "-"
+                else:
+                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                    
+                c_fiyat = 0.0
+                try:
+                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=3)
+                    if len(h_veri) > 0:
+                        c_fiyat = float(h_veri['Close'].iloc[-1])
+                except:
+                    c_fiyat = 0.0
+                
+                alim_c_temiz = alim_c.replace(",", ".")
+                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                
+                if maliyet > 0:
+                    is_exist = False
+                    if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
+                        is_exist = ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any()
+                    
+                    if not is_exist:
+                        yeni_kayitlar.append({
+                            "Tarih": tarih_kisa,
+                            "BTA Puanı": p_temiz,
+                            "Hisse": ha,
+                            "Algoritmik Fiyat": maliyet
+                        })
+
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    if or_dg >= 9.0:
+                        basariliHisse_adi = ha.replace(".IS", "")
+                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                elif maliyet > 0 and c_fiyat == 0.0:
+                    kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
+                else:
+                    kz_str = "<span>-</span>"
+                
+                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+        except:
+            continue
+
+if yeni_kayitlar:
+    try:
+        df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
+        df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
+    except:
+        pass
+
+# 7. TEBRİK PANELİ (Sorun çıkaran girintili if tamamen dışarı çıkartıldı)
+if len(basarili_hisseler) > 0:
+    hisseler_str = ", ".join(basarili_hisseler)
+
