@@ -146,7 +146,6 @@ basarili_hisseler = []
 
 if os.path.exists(excel_yolu):
     try:
-        # Excel dosyasını oku
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         df_gecmis_db = pd.read_csv(db_gecmis_kayitlar)
         yeni_kayitlar = []
@@ -161,7 +160,6 @@ if os.path.exists(excel_yolu):
                 p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 c_fiyat = 0.0
                 
-                # Canlı Fiyat Çekimi
                 try:
                     h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
@@ -182,19 +180,17 @@ if os.path.exists(excel_yolu):
                     kz_str = "-"
                     kz_html = "<span>-</span>"
                 
-                # Canlı Tablo Satırı Oluştur
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # MÜKERRER KAYIT KONTROLÜ (Hata Vermesi İmkansız Sıralı Düz Mantık)
-                mukerrer_var_mi = False
+                # MÜKERRER KAYIT FİLTRESİ (GİRİNTİ HATASI YAPMASI İMKANSIZ YENİ DÜZ YAPILI SİSTEM)
+                mukerrer_bulundu = False
                 if c_fiyat > 0 and not df_gecmis_db.empty:
-                    f_hisse = df_gecmis_db["Hisse"] == ha
-                    f_tarih = df_gecmis_db["Tarih"].str.contains(bugun_tarih_str)
-                    f_fiyat = df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL"
-                    if len(df_gecmis_db[f_hisse & f_tarih & f_fiyat]) > 0:
-                        mukerrer_var_mi = True
+                    ayni_hisse = df_gecmis_db["Hisse"] == ha
+                    ayni_gun = df_gecmis_db["Tarih"].str.contains(bugun_tarih_str)
+                    ayni_fiyat = df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL"
+                    mukerrer_bulundu = (len(df_gecmis_db[ayni_hisse & ayni_gun & ayni_fiyat]) > 0)
                 
-                if c_fiyat > 0 and not mukerrer_var_mi:
+                if c_fiyat > 0 and not mukerrer_bulundu:
                     yeni_kayitlar.append({
                         "Tarih": excel_guncelleme_tarihi,
                         "BTA Puanı": p_temiz,
@@ -205,10 +201,12 @@ if os.path.exists(excel_yolu):
                     })
                     
         if yeni_kayitlar:
-            df_yeni = pd.DataFrame(yeni_kayitlar)
-            df_gecmis_db = pd.concat([df_gecmis_db, df_yeni], ignore_index=True)
-            df_gecmis_db.tail(100).to_csv(db_gecmis_kayitlar, index=False)
+            df_gecmis_db = pd.concat([df_gecmis_db, pd.DataFrame(yeni_kayitlar)], ignore_index=True).tail(100)
+            df_gecmis_db.to_csv(db_gecmis_kayitlar, index=False)
             
     except Exception as e:
-        st.error(f"Excel okunurken bir hata oluştu: {e}")
+        st.error(f"Excel veya veritabanı işlenirken bir hata oluştu: {e}")
 else:
+    st.warning(f"⚠️ Kritik Uyarı: '{excel_yolu}' isimli Excel dosyası sunucu dizininde bulunamadı. Lütfen dosyayı yükleyin.")
+
+# 7. OTOMATİK BAŞARI TEBRİK PANELİ
