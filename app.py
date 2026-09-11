@@ -87,7 +87,7 @@ with col_oy2:
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
-        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuza uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Veriler en az 15 dakika gecikmelidir.
     </p>
 </div>
 """
@@ -109,16 +109,16 @@ tebrik_metni = ""
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
-# 📌 [KRİTİK DÜZELTME]: Excel'i başlık satırı olmadan (header=None) okuyoruz, böylece 3. satıra direkt ulaşabiliyoruz
+# Excel Okuma Yapısı
 if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
         mevcut_sayfalar = excel_dosyasi.sheet_names
-        hedef_sayfa = mevcut_sayfalar[0]
+        hedef_sayfa = mevcut_sayfalar
         for sayfa in mevcut_sayfalar:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
-        # header=None diyerek saf koordinat sistemine geçtik
+        # Başlık satırı karmaşasını çözmek için header=None ile saf veri olarak okuyoruz
         df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa, header=None)
     except:
         pass
@@ -131,27 +131,38 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# 🎯 SİZİN BELİRTTİĞİNİZ TAM KOORDİNAT SİSTEMİ (A3, C3, D3)
-# Python sıfırdan saydığı için: Satır 3 -> indeks 2, A -> 0, C -> 2, D -> 3 olur.
-hisse_col = 0   # A sütunu
-maliyet_col = 2 # C sütunu
-puan_col = 3    # D sütunu
-baslangic_satiri = 2 # 3. satır (A3, C3, D3)
+# Sütun koordinatları (A=0, C=2, D=3)
+hisse_col = 0
+maliyet_col = 2
+puan_col = 3
 
 if not df_excel.empty:
-    for idx in range(baslangic_satiri, len(df_excel)):
+    for idx in range(len(df_excel)):
         try:
-            ha = str(df_excel.iloc[idx, hisse_col]).strip().upper() if pd.notna(df_excel.iloc[idx, hisse_col]) else ""
-            alim_c = str(df_excel.iloc[idx, maliyet_col]).strip() if pd.notna(df_excel.iloc[idx, maliyet_col]) else ""
-            puan_d = df_excel.iloc[idx, puan_col] if pd.notna(df_excel.iloc[idx, puan_col]) else ""
+            # Satırda veri var mı kontrol et, yoksa temiz metin üret
+            ha = ""
+            if pd.notna(df_excel.iloc[idx, hisse_col]):
+                ha = str(df_excel.iloc[idx, hisse_col]).strip().upper()
+                
+            alim_c = ""
+            if pd.notna(df_excel.iloc[idx, maliyet_col]):
+                alim_c = str(df_excel.iloc[idx, maliyet_col]).strip()
+                
+            puan_d = ""
+            if pd.notna(df_excel.iloc[idx, puan_col]):
+                puan_d = str(df_excel.iloc[idx, puan_col]).strip()
             
-            if ha != "" and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE"]:
+            # Başlık satırlarını veya gereksiz kelimeleri otomatik eliyoruz
+            if ha != "" and len(ha) <= 6 and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE", "BTA"]:
                 veri_var_mi = True
                 p_temiz = "-"
-                if pd.notna(puan_d) and str(puan_d).strip() != "":
-                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                if puan_d != "" and puan_d.lower() not in ["nan", "none"]:
+                    try:
+                        p_temiz = f"{float(puan_d):.2f}"
+                    except:
+                        p_temiz = puan_d
                 
-                # CANLI YFINANCE FIYAT MOTORU
+                # CANLI VE GERÇEK BORSA FIYATI ÇEKİMİ (yfinance)
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -161,18 +172,24 @@ if not df_excel.empty:
                 except:
                     c_fiyat = 0.0
                 
+                # Maliyet metnini sayıya çevirme
                 alim_c_temiz = alim_c.replace(",", ".").strip()
-                maliyet = float(alim_c_temiz) if alim_c_temiz != "" else 0.0
+                maliyet = 0.0
+                try:
+                    if alim_c_temiz != "":
+                        maliyet = float(alim_c_temiz)
+                except:
+                    maliyet = 0.0
                 
-                # Not Defteri Kayıt Kontrolü
+                # Not Defterine (Geçmişe) Akıllı Kayıt Mekanizması
                 if maliyet > 0:
                     is_exist = False
-                    if not df_gecmis.empty:
+                    if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
                         is_exist = ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any()
                     if not is_exist:
                         yeni_kayitlar.append({"Tarih": tarih_kisa, "BTA Puanı": p_temiz, "Hisse": ha, "Algoritmik Fiyat": maliyet})
 
-                # Kar/Zarar ve Tavan Durumu Hesabı
+                # Kar / Zarar ve Tavan Hesaplama
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
@@ -198,9 +215,9 @@ if len(yeni_kayitlar) > 0:
 
 # 7. TAVAN BAŞARI TEBRİK MESAJI
 if tebrik_metni != "":
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {tebrik_metni} hedefine ulaşarak %9 ve üzeri tavan performansı göstermiştir. Tebrik ederiz!</p></div>'
-    st.markdown(tebrik_html, unsafe_allow_html=True)
+    st.markdown(f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {tebrik_metni} hedefine ulaşarak %9 ve üzeri tavan performansı göstermiştir. Tebrik ederiz!</p></div>', unsafe_allow_html=True)
 
-# 8. CANLI TABLO PANELİ
-tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
+# 8. CANLI TABLO PANELİ GÖSTERİMİ
+if veri_var_mi and tablo_rows_html != "":
+    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
+    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
