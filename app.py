@@ -78,7 +78,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
             df_ist.to_csv(db_istatistik, index=False)
