@@ -106,7 +106,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -174,3 +174,17 @@ toplam_oy = basarili + basarisiz
 begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
 
 st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+
+# ==========================================
+# 📝 YENİ EKLENEN BÖLÜM: BTA KAYIT DEFTERİ
+# ==========================================
+st.write("---")
+st.markdown('<p style="font-size:18px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📝 BTA HİSSE NOTLARI & KAYIT DEFTERİ</p>', unsafe_allow_html=True)
+
+# Veri tabanını yükle
+try:
+    df_notlar_verisi = pd.read_csv(db_notlar)
+except Exception:
+    df_notlar_verisi = pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
+
+# İki sütunlu düzen: Sol taraf Not Ekleme formu, Sağ taraf Mevcut Notlar Listesi
