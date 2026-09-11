@@ -23,7 +23,32 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 .borsa-tablo { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
 .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
-.tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
+
+/* 🌟 YENİLENEN TEBRİK KUTUSU VE KONFETİ EFEKTİ */
+.tebrik-kutusu { 
+    border: 2px solid #00ffcc; 
+    box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); 
+    background: #121d33; 
+    border-radius: 10px; 
+    padding: 20px; 
+    text-align: center; 
+    margin-bottom: 15px; 
+    position: relative;
+    overflow: hidden;
+}
+
+/* Şeffaf GIF arka planı ile kutu içinde sürekli patlayan konfetiler */
+.tebrik-kutusu::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url('https://giphy.com');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.18; /* Yazıların çok net okunması için arka planı hafif şeffaf yapıyoruz */
+    pointer-events: none;
+}
+
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
 
 .logo-yurume-alani {
@@ -106,7 +131,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -146,10 +171,19 @@ if os.path.exists(excel_yolu):
             
             tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
-# 8. OTOMATİK BAŞARI TEBRİK PANELİ
+# 8. OTOMATİK BAŞARI TEBRİK PANELİ (KONFETİ EFEKTLİ KAPLANMIŞ KATMAN)
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
+    tebrik_html = f'''
+    <div class="tebrik-kutusu">
+        <div style="position: relative; z-index: 1;">
+            <h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:20px; font-weight:bold; text-shadow: 0 0 10px #00ffcc;">🎉 ⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡ 🎉</h3>
+            <p style="color:#ffffff; font-size:15px; margin:0; font-weight: bold;">
+                Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!
+            </p>
+        </div>
+    </div>
+    '''
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
 # 9. TABLO VEYA ARAMA METNİ PANELİ
@@ -168,9 +202,3 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 
 # 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
 st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-
-toplam_oy = basarili + basarisiz
-begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
-
-st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
