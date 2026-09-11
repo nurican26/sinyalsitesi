@@ -185,15 +185,11 @@ if os.path.exists(excel_yolu):
                 # Canlı Tablo Satırı Oluştur
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # MÜKERRER KAYIT KONTROLÜ
+                # MÜKERRER KAYIT KONTROLÜ (En Sade Haliyle)
                 kaydedilsin_mi = False
                 if c_fiyat > 0:
                     if not df_gecmis_db.empty:
-                        mukerrer = df_gecmis_db[
-                            (df_gecmis_db["Hisse"] == ha) & 
-                            (df_gecmis_db["Tarih"].str.contains(bugun_tarih_str)) & 
-                            (df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL")
-                        ]
+                        mukerrer = df_gecmis_db[(df_gecmis_db["Hisse"] == ha) & (df_gecmis_db["Tarih"].str.contains(bugun_tarih_str)) & (df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL")]
                         if len(mukerrer) == 0:
                             kaydedilsin_mi = True
                     else:
@@ -215,3 +211,5 @@ if os.path.exists(excel_yolu):
             df_gecmis_db.tail(100).to_csv(db_gecmis_kayitlar, index=False)
             
     except Exception as e:
+        st.error(f"Excel okunurken bir hata oluştu: {e}")
+else:
