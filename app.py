@@ -56,7 +56,7 @@ st.markdown(css_kodu, unsafe_allow_html=True)
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
-db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv" # Yeni oluşturulan geçmiş veritabanı dosyası
+db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
@@ -103,7 +103,7 @@ bist_mini_widget = """
 """
 components.html(bist_mini_widget, height=100)
 
-# 6. MODERN FRAGMENT YAPISI (Sadece bu alan 5 saniyede bir tetiklenir)
+# 6. MODERN FRAGMENT YAPISI
 @st.fragment(run_every=5)
 def canlı_borsa_paneli():
     excel_tarih_objesi = datetime.datetime.now()
@@ -119,7 +119,6 @@ def canlı_borsa_paneli():
         try:
             df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
             
-            # Geçmiş kayıtları kontrol etmek için mevcut CSV'yi yükle
             try:
                 df_gecmis = pd.read_csv(db_gecmis_kayitlar)
             except:
@@ -147,8 +146,7 @@ def canlı_borsa_paneli():
                     alim_c_temiz = alim_c.replace(",", ".")
                     maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                     
-                    # 📌 DEĞİŞİKLİK TAKİBİ VE NOT DEFTERİNE KAYIT MOTORU
-                    # Eğer bu hisse ismi ve algoritmik fiyat ikilisi geçmiş veritabanında yoksa YENİ kayıt olarak ekle
+                    # Değişiklik kontrolü ve not defteri kaydı
                     if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
                         yeni_kayitlar.append({
                             "Tarih": tarih_kisa,
@@ -168,7 +166,6 @@ def canlı_borsa_paneli():
                     
                     tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
             
-            # Eğer yeni değişen/eklenen hisse varsa veritabanına yaz
             if yeni_kayitlar:
                 df_yeni = pd.DataFrame(yeni_kayitlar)
                 df_guncel_gecmis = pd.concat([df_gecmis, df_yeni], ignore_index=True)
@@ -177,16 +174,20 @@ def canlı_borsa_paneli():
         except Exception as e:
             st.error(f"Excel okunurken bir hata oluştu: {e}")
 
-    # Otomatik Başarı Tebrik Paneli Görünümü
     if basarili_hisseler:
         hisseler_str = ", ".join(basarili_hisseler)
         tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
         st.markdown(tebrik_html, unsafe_allow_html=True)
 
-    # Tablo veya Tarama Metni Gösterimi
     if veri_var_mi and tablo_rows_html != "":
         tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
         panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
         st.markdown(panel_html, unsafe_allow_html=True)
         st.markdown(tablo_html, unsafe_allow_html=True)
     else:
+        tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
+        st.markdown(tarama_html, unsafe_allow_html=True)
+
+canlı_borsa_paneli()
+
+# 7. YASAL UYARI BÖLÜMÜ
