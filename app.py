@@ -50,7 +50,6 @@ db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 
-# Dosya Oluşturma Blokları Düzleştirildi
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
@@ -60,7 +59,7 @@ if not os.path.exists(db_istatistik):
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# Sabit Sayaç Değerleri (Hata payı sıfırlandı)
+# 4. SABİT SAYAÇ DEĞERLERİ
 ziyaret = 187
 basarili = 15
 basarisiz = 2
@@ -107,22 +106,66 @@ tarih_kisa = excel_tarih_objesi.strftime("%d.%m.%Y %H:%M")
 tablo_rows_html = ""
 veri_var_mi = False
 
-# Excel Verisini Doğrudan Alıp Listeleme (Döngü ve hata blokları tamamen düzleştirildi)
+# Excel Güvenli Okuma ve Gerçek Fiyat Çekme Motoru
 if yuklenen_dosya is not None:
-    excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
-    df_excel = excel_dosyasi.parse(sheet_name=excel_dosyasi.sheet_names[0])
-    
-    # Birinci Satır (Örnek Hisse Çizimi)
-    ha = "KONYA"
-    p_temiz = "92.50"
-    maliyet = 8500.00
-    c_fiyat = 8830.00
-    or_dg = 3.90
-    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
-    tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-    veri_var_mi = True
+    try:
+        excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
+        mevcut_sayfalar = excel_dosyasi.sheet_names
+        hedef_sayfa = mevcut_sayfalar[0]
+        for sayfa in mevcut_sayfalar:
+            if sayfa.strip().upper() == "WEB":
+                hedef_sayfa = sayfa
+        df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa)
+        
+        # Excel'den gelen sütunların başlıkları ne olursa olsun satırları analiz etmeye başla
+        for idx in range(min(15, len(df_excel))):
+            try:
+                ha = str(df_excel.iloc[idx, 0]).strip().upper() if pd.notna(df_excel.iloc[idx, 0]) else ""
+                alim_c = str(df_excel.iloc[idx, 2]).strip() if pd.notna(df_excel.iloc[idx, 2]) else ""
+                puan_d = df_excel.iloc[idx, 3] if pd.notna(df_excel.iloc[idx, 3]) else ""
+                
+                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG", "KOD"]:
+                    veri_var_mi = True
+                    p_temiz = "-"
+                    if str(puan_d).strip() != "":
+                        p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                    
+                    # 🚀 CANLI BIST FIYATINI ÇEKME ALANI
+                    c_fiyat = 0.0
+                    try:
+                        ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
+                        h_veri = yf.Ticker(ticker_kod).history(period="1d", timeout=3)
+                        if len(h_veri) > 0:
+                            c_fiyat = float(h_veri['Close'].iloc[-1])
+                    except:
+                        c_fiyat = 0.0
+                    
+                    # Alım/Maliyet Fiyatını Sayıya Çevirme
+                    alim_c_temiz = alim_c.replace(",", ".").strip()
+                    maliyet = 0.0
+                    try:
+                        if alim_c_temiz != "":
+                            maliyet = float(alim_c_temiz)
+                    except:
+                        maliyet = 0.0
+                    
+                    # Kâr / Zarar Hesaplama
+                    if maliyet > 0 and c_fiyat > 0:
+                        or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                        if or_dg >= 0:
+                            kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
+                        else:
+                            kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                    else:
+                        kz_str = "<span>-</span>"
+                    
+                    tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            except:
+                continue
+    except:
+        pass
 
-# 8. CANLI TABLO PANELİ
+# 8. CANLI TABLO PANELİ GÖSTERİMİ
 if veri_var_mi:
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
