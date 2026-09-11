@@ -65,6 +65,10 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
 
+# Hafıza yönetimini başlatma
+if "kaydedilen_sinyaller" not in st.session_state:
+    st.session_state["kaydedilen_sinyaller"] = set()
+
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
 try:
@@ -109,7 +113,7 @@ excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
+# 7. EXCEL VERİLERİNİ OKUMA, ANALİZ ETME VE OTOMATİK KAYIT
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
@@ -134,6 +138,7 @@ if os.path.exists(excel_yolu):
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                 
+                or_dg = 0.0
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
@@ -144,6 +149,39 @@ if os.path.exists(excel_yolu):
                     kz_str = "<span>-</span>"
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+
+                # 📌 OTOMATİK KAYIT MEKANİZMASI (Her güncellemede buraya otomatik yazar)
+                # Benzersiz bir anahtar oluşturuyoruz (Örn: "KONYA_4100.0_4260.0")
+                sinyal_anahtari = f"{ha}_{maliyet}_{c_fiyat}_{p_temiz}"
+                
+                if sinyal_anahtari not in st.session_state["kaydedilen_sinyaller"]:
+                    try:
+                        df_notlar_mevcut = pd.read_csv(db_notlar)
+                        # Aynı hissenin aynı maliyet ve fiyatla son 1 dakika içinde eklenip eklenmediğini CSV'den de teyit et
+                        zaten_ekli = False
+                        if not df_notlar_mevcut.empty:
+                            son_ayni = df_notlar_mevcut[(df_notlar_mevcut["hisse"] == ha) & 
+                                                        (df_notlar_mevcut["hedef_fiyat"] == f"{maliyet:,.2f} TL")]
+                            if not son_ayni.empty:
+                                zaten_ekli = True
+                        
+                        if not zaten_ekli:
+                            yeni_id = int(df_notlar_mevcut["id"].max() + 1) if not df_notlar_mevcut.empty else 1
+                            su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+                            
+                            oto_not = f"🤖 BTA Algoritması tarafından otomatik olarak sisteme işlendi. Anlık Fiyat: {c_fiyat:,.2f} TL, K/Z Durumu: %{or_dg:.2f}"
+                            yeni_satir = pd.DataFrame([{
+                                "id": yeni_id,
+                                "tarih": su_an,
+                                "hisse": ha,
+                                "not": oto_not,
+                                "hedef_fiyat": f"{maliyet:,.2f} TL"
+                            }])
+                            df_notlar_guncel = pd.concat([df_notlar_mevcut, yeni_satir], ignore_index=True)
+                            df_notlar_guncel.to_csv(db_notlar, index=False)
+                            st.session_state["kaydedilen_sinyaller"].add(sinyal_anahtari)
+                    except:
+                        pass
     except:
         pass
 
@@ -156,39 +194,3 @@ if basarili_hisseler:
 # 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
-    st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 10. YASAL UYARI BÖLÜMÜ
-yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
-st.markdown(yasal_html, unsafe_allow_html=True)
-
-# 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
-st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-
-if "oy_verildi" not in st.session_state:
-    st.session_state["oy_verildi"] = False
-
-# Bağımsız metrik alanları
-col_met1, col_met2 = st.columns(2)
-with col_met1:
-    st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
-
-toplam_oy = basarili + basarisiz
-begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 100
-
-with col_met2:
-    st.metric("👍 Algoritma Başarı Puanı (Beğeni)", f"%{begeni_orani}")
-
-st.write("")
-st.write("**Bu sinyali nasıl buldunuz?**")
-
-if not st.session_state["oy_verildi"]:
-    btn_col1, btn_col2, btn_col_bos = st.columns([1, 1, 4])
-    with btn_col1:
-        if st.button("🚀 Başarılı", key="btn_basarili", use_container_width=True):
