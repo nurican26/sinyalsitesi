@@ -73,19 +73,17 @@ if not os.path.exists(db_kayit_defteri):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Fiyat", "K/Z"]).to_csv(db_kayit_defteri, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
-ziyaret, basarili, basarisiz = 0, 0, 0
+ziyaret = 0
 if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
             df_ist.to_csv(db_istatistik, index=False)
             st.session_state["ziyaret_sayildi"] = True
         ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-        basarili = int(df_ist.at[0, "basarili_oy"])
-        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
         pass
 
@@ -127,7 +125,6 @@ if os.path.exists(excel_yolu):
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
-        # Sınır tamamen kaldırıldı: Tüm Excel satırları okunuyor
         for idx in range(len(df)):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -198,3 +195,7 @@ if veri_var_mi and tablo_rows_html != "":
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 else:
+    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
+    st.markdown(tarama_html, unsafe_allow_html=True)
+
+# 10. YASAL UYARI BÖLÜMÜ
