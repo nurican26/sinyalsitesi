@@ -116,7 +116,7 @@ with col_oy2:
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
-        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuz ile risk and getiri tercihlerinize uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuza uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
     </p>
 </div>
 """
@@ -134,7 +134,7 @@ tarih_kisa = excel_tarih_objesi.strftime("%d.%m.%Y %H:%M")
 
 tablo_rows_html = ""
 veri_var_mi = False
-basarili_hisseler = []
+tebrik_metni = ""
 
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
@@ -160,7 +160,7 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Sabit Sütun Düzenine Geri Dönüldü (Hata riskini sıfırlamak için)
+# Sabit Sütun Düzeni
 hisse_col = 0
 maliyet_col = 2
 puan_col = 3
@@ -211,7 +211,7 @@ if not df_excel.empty:
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
-                        basarili_hisseler.append(ha)
+                        tebrik_metni += f"<b>{ha.replace('.IS', '')}</b> (%{or_dg:.2f}) "
                     kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 elif maliyet > 0 and c_fiyat == 0.0:
                     kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
@@ -229,5 +229,5 @@ if len(yeni_kayitlar) > 0:
     except:
         pass
 
-# 7. TEBRİK PANELİ GÖSTERİMİ
-if len(basarili_hisseler) > 0:
+# 7. TEBRİK PANELİ (Girintisiz ve Dümdüz Tasarım)
+if tebrik_metni != "":
