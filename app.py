@@ -62,11 +62,12 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
+# Dosya kontrolleri ve ilk oluşturma süreçleri
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -74,11 +75,13 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+        
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
             df_ist.to_csv(db_istatistik, index=False)
             st.session_state["ziyaret_sayildi"] = True
+            
         ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
         basarili = int(df_ist.at[0, "basarili_oy"])
         basarisiz = int(df_ist.at[0, "basarisiz_oy"])
@@ -106,7 +109,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -170,7 +173,17 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
-toplam_oy = basarili + basarisiz
-begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
+# Oy verme mekanizması fonksiyonları
+def oy_ver(tip):
+    try:
+        df_ist = pd.read_csv(db_istatistik)
+        if tip == "basarili":
+            df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
+        elif tip == "basarisiz":
+            df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["oy_verildi"] = True
+    except Exception as e:
+        st.error(f"Oy kaydedilirken hata oluştu: {e}")
 
-st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+# Metrikleri yan yana göstermek ve oy butonlarını konumlandırmak için 3 kolon
