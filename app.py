@@ -121,17 +121,24 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 tablo_rows_html = ""
 df = pd.DataFrame()
 
-# Kodun düz doğrusal akması için hata potansiyeli olan if yapısı kaldırıldı
 try:
     df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
 except:
     pass
 
-# Kayıt defterini yükleme adımı
+# KEYERROR ÇÖZÜMÜ: Sütun doğrulamalı güvenli yükleme motoru
+df_kayit_mevcut = pd.DataFrame(columns=sutunlar)
 try:
-    df_kayit_mevcut = pd.read_csv(db_kayit_defteri)
+    if os.path.exists(db_kayit_defteri):
+        df_okunan = pd.read_csv(db_kayit_defteri)
+        # Gerekli tüm sütunlar mevcut mu kontrol et
+        if all(col in df_okunan.columns for col in sutunlar):
+            df_kayit_mevcut = df_okunan
+        else:
+            # Sütunlar eksikse dosyayı temiz ve doğru şemayla yeniden oluştur
+            pd.DataFrame(columns=sutunlar).to_csv(db_kayit_defteri, index=False)
 except:
-    df_kayit_mevcut = pd.DataFrame(columns=sutunlar)
+    pass
 
 yeni_kayitlar = []
 
@@ -212,8 +219,3 @@ st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📜 BTA TARİHSEL HİSSE KAYIT DEFTERİ (LOG)</p>', unsafe_allow_html=True)
 try:
     df_goster = pd.read_csv(db_kayit_defteri)
-    st.dataframe(df_goster.iloc[::-1], use_container_width=True, hide_index=True)
-except:
-    st.info("Kayıt defteri henüz boş veya yeni oluşturuluyor.")
-
-# 10. YASAL UYARI BÖLÜMÜ
