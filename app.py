@@ -61,7 +61,7 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
-db_kayit_defteri = "bta_hisse_kayit_defteri.csv"  # Yeni Kayıt Defteri Dosyası
+db_kayit_defteri = "bta_hisse_kayit_defteri.csv"  # 📌 Kayıt defteri dosyası
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
@@ -69,7 +69,7 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-# Kayıt defteri yoksa sütunlarıyla birlikte oluşturuyoruz
+# 📌 Kayıt defteri tablosu yoksa ilk kez oluşturuluyor
 if not os.path.exists(db_kayit_defteri):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Fiyat", "K/Z"]).to_csv(db_kayit_defteri, index=False)
 
@@ -111,17 +111,17 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# Anlık loglama zaman damgası
+# Deftere basılacak anlık kayıt zaman damgası
 kayit_zamani = excel_tarih_objesi.strftime("%d.%m.%Y %H:%M")
 
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
-mevcut_hisseler_listesi = []
+mevcut_hisseler_listesi = [] # Kayıt defteri için veri havuzu
 
 if os.path.exists(excel_yolu):
     df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
@@ -133,6 +133,8 @@ if os.path.exists(excel_yolu):
         ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
         alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
         puan_d = df.iloc[idx, 3]
+        
+        # 📌 Sizin orijinal filtreniz (Kesinlikle dokunulmadı)
         if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
             veri_var_mi = True
             p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
@@ -158,6 +160,7 @@ if os.path.exists(excel_yolu):
             
             tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
             
+            # Arka plandaki log sistemine veriyi gönderiyoruz
             mevcut_hisseler_listesi.append({
                 "Tarih": kayit_zamani,
                 "BTA Puanı": p_temiz,
@@ -167,13 +170,14 @@ if os.path.exists(excel_yolu):
                 "K/Z": kz_metin
             })
 
-# 7B. OTOMATİK KAYIT DEFTERİ MOTORU
+# 📌 7B. OTOMATİK KAYIT MOTORU (Orijinal paneli bozmadan sessizce çalışır)
 if mevcut_hisseler_listesi:
     try:
         df_defter = pd.read_csv(db_kayit_defteri)
         yeni_kayitlar = []
         
         for yeni in mevcut_hisseler_listesi:
+            # Aynı dakika içinde aynı hisse mükerrer yazılmasın kontrolü
             ayni_kayit_var_mi = not df_defter[(df_defter["Tarih"] == yeni["Tarih"]) & (df_defter["Hisse"] == yeni["Hisse"])].empty
             if not ayni_kayit_var_mi:
                 yeni_kayitlar.append(yeni)
@@ -182,7 +186,7 @@ if mevcut_hisseler_listesi:
             df_yeni = pd.DataFrame(yeni_kayitlar)
             df_defter = pd.concat([df_defter, df_yeni], ignore_index=True)
             df_defter.to_csv(db_kayit_defteri, index=False)
-    except Exception as e:
+    except:
         pass
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
@@ -191,14 +195,10 @@ if basarili_hisseler:
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ
+# 9. TABLO VEYA ARAMA METNİ PANELİ (Üst Panel)
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 10. YASAL UYARI BÖLÜMÜ
