@@ -115,7 +115,7 @@ if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
         mevcut_sayfalar = excel_dosyasi.sheet_names
-        hedef_sayfa = mevcut_sayfalar[0] # Eğer WEB adında sayfa bulunamazsa otomatik ilk sayfayı seçer
+        hedef_sayfa = mevcut_sayfalar
         for sayfa in mevcut_sayfalar:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
@@ -131,7 +131,7 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Otomatik Esnek Sütun Tespiti
+# Sütun Düzenleri
 hisse_col = 0
 maliyet_col = 2
 puan_col = 3
@@ -152,14 +152,13 @@ if not df_excel.empty:
             alim_c = str(df_excel.iloc[idx, maliyet_col]).strip() if pd.notna(df_excel.iloc[idx, maliyet_col]) else ""
             puan_d = df_excel.iloc[idx, puan_col] if pd.notna(df_excel.iloc[idx, puan_col]) else ""
             
-            # Kelime engelleme filtresi gevşetildi, sadece bariz başlık satırları eleniyor
             if ha != "" and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE"]:
                 veri_var_mi = True
                 p_temiz = "-"
                 if str(puan_d).strip() != "":
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 
-                # İNTERNETTEN CANLI BİST FİYATI ÇEKME (yfinance)
+                # 🚀 CANLI BİST FİYATI ÇEKME (Hizalama ve boşluk kaymaları tamamen sıfırlandı)
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -169,7 +168,6 @@ if not df_excel.empty:
                 except:
                     c_fiyat = 0.0
                 
-                # Fiyat metinlerini sayıya dönüştürme
                 alim_c_temiz = alim_c.replace(",", ".").strip()
                 maliyet = 0.0
                 try:
@@ -178,26 +176,17 @@ if not df_excel.empty:
                 except:
                     maliyet = 0.0
                 
-                # Geçmiş Not Defterine Kayıt Kontrolü
                 if maliyet > 0:
                     is_exist = False
                     if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
                         is_exist = ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any()
-                    
                     if not is_exist:
-                        yeni_kayitlar.append({
-                            "Tarih": tarih_kisa,
-                            "BTA Puanı": p_temiz,
-                            "Hisse": ha,
-                            "Algoritmik Fiyat": maliyet
-                        })
+                        yeni_kayitlar.append({"Tarih": tarih_kisa, "BTA Puanı": p_temiz, "Hisse": ha, "Algoritmik Fiyat": maliyet})
 
-                # Canlı K/Z ve %9 Tavan Tespiti
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
                         basarili_hisseler.append(f"<b>{ha.replace('.IS', '')}</b> (%{or_dg:.2f})")
-                        
                     if or_dg >= 0:
                         kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
                     else:
@@ -218,7 +207,7 @@ if len(yeni_kayitlar) > 0:
     except:
         pass
 
-# 7. ⚡ ALGORİTMİK TAVAN BAŞARI TEBRİK PANELİ
+# 7. ⚡ TAVAN BAŞARI TEBRİK MESAJI PANELİ
 if len(basarili_hisseler) > 0:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri tavan performansı göstermiştir. Tebrik ederiz!</p></div>'
@@ -226,4 +215,4 @@ if len(basarili_hisseler) > 0:
 
 # 8. CANLI TABLO PANELİ GÖSTERİMİ
 if veri_var_mi and tablo_rows_html != "":
- 
+    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
