@@ -65,7 +65,7 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
 
-# 🛠️ KİLİTLENMEYİ ÖNLEYEN ÖNBELLEK HAFIZASI
+# Kilitlenmeyi önleyen önbellek hafızası
 @st.cache_resource
 def get_global_logged_signals():
     return set()
@@ -127,6 +127,30 @@ if os.path.exists(excel_yolu):
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
+        # 📌 KİLİTLENMEYİ ÖNLEYEN TOPLU FİYAT İNDİRME MEKANİZMASI (Süreyi saliselere indirir)
+        indirilecek_hisseler = []
+        for idx in range(min(10, len(df))):
+            ha_kod = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            if ha_kod != "" and ha_kod not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                indirilecek_hisseler.append(f"{ha_kod}.IS")
+        
+        fiyat_sozlugu = {}
+        if indirilecek_hisseler:
+            try:
+                # Tüm hisseleri tek bir komutla saniyeler içinde indiriyoruz
+                toplu_veri = yf.download(indirilecek_hisseler, period="1d", group_by="ticker", auto_adjust=True, timeout=5, progress=False)
+                for h_kod in indirilecek_hisseler:
+                    try:
+                        if len(indirilecek_hisseler) == 1:
+                            fiyat_sozlugu[h_kod] = float(toplu_veri['Close'].iloc[-1])
+                        else:
+                            fiyat_sozlugu[h_kod] = float(toplu_veri[h_kod]['Close'].iloc[-1])
+                    except:
+                        fiyat_sozlugu[h_kod] = 0.0
+            except:
+                pass
+
+        # HTML Tablosunu oluşturma süreci
         for idx in range(min(10, len(df))):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -134,12 +158,10 @@ if os.path.exists(excel_yolu):
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 veri_var_mi = True
                 p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                c_fiyat = 0.0
-                try:
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                except:
-                    pass
+                
+                # Hafızadan fiyatı anında çekiyoruz
+                c_fiyat = fiyat_sozlugu.get(f"{ha}.IS", 0.0)
+                
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                 
@@ -155,14 +177,13 @@ if os.path.exists(excel_yolu):
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
-                # Döngüyü kilitlememek için listeye alıyoruz
                 otomatik_eklenecekler.append({
                     "hisse": ha, "maliyet": maliyet, "c_fiyat": c_fiyat, "puan": p_temiz, "or_dg": or_dg
                 })
     except:
         pass
 
-# 🛠️ GÜVENLİ OTOMATİK LOGLAMA MOTORU (SAYFAYI ASLA YENİDEN TETİKLEMEZ)
+# 🛠️ GÜVENLİ VE PERFORMANSLI OTOMATİK KAYIT SİSTEMİ
 if otomatik_eklenecekler:
     try:
         df_notlar_mevcut = pd.read_csv(db_notlar)
@@ -172,7 +193,6 @@ if otomatik_eklenecekler:
             sinyal_anahtari = f"{item['hisse']}_{item['maliyet']}_{item['puan']}"
             
             if sinyal_anahtari not in global_kayitlar:
-                # Veritabanında mükerrer kayıt kontrolü
                 zaten_var = False
                 if not df_notlar_mevcut.empty:
                     kontrol = df_notlar_mevcut[(df_notlar_mevcut["hisse"] == item['hisse']) & 
@@ -202,12 +222,3 @@ if otomatik_eklenecekler:
     except:
         pass
 
-# 8. OTOMATİK BAŞARI TEBRİK PANELİ
-if basarili_hisseler:
-    hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
-    st.markdown(tebrik_html, unsafe_allow_html=True)
-
-# 9. TABLO VEYA ARAMA METNİ PANELİ
-if veri_var_mi and tablo_rows_html != "":
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
