@@ -54,9 +54,6 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
 
-# 3. 5 SANİYEDE BİR YENİLEME MOTORU
-st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
-
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
@@ -160,7 +157,6 @@ if basarili_hisseler:
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 else:
@@ -178,3 +174,21 @@ st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-b
 if "oy_verildi" not in st.session_state:
     st.session_state["oy_verildi"] = False
 
+# Bağımsız metrik alanları
+col_met1, col_met2 = st.columns(2)
+with col_met1:
+    st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+
+toplam_oy = basarili + basarisiz
+begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 100
+
+with col_met2:
+    st.metric("👍 Algoritma Başarı Puanı (Beğeni)", f"%{begeni_orani}")
+
+st.write("")
+st.write("**Bu sinyali nasıl buldunuz?**")
+
+if not st.session_state["oy_verildi"]:
+    btn_col1, btn_col2, btn_col_bos = st.columns([1, 1, 4])
+    with btn_col1:
+        if st.button("🚀 Başarılı", key="btn_basarili", use_container_width=True):
