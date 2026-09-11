@@ -79,12 +79,12 @@ if os.path.exists(db_istatistik):
         basarili = int(df_ist.at[0, "basarili_oy"])
         basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
-        ziyaret, basarili, basarisiz = 174, 15, 2
+        ziyaret, basarili, basarisiz = 182, 15, 2
 
 # 5. PARILTILI BTA LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
 
-# 🚀 [YENİ] EN ÜSTE TAŞINAN ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
+# EN ÜSTE TAŞINAN ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 toplam_oy = basarili + basarisiz
@@ -120,7 +120,7 @@ with col_oy2:
             except:
                 pass
 
-# 🚀 [YENİ] EN ÜSTE TAŞINAN SPK YASAL UYARI BÖLÜMÜ
+# EN ÜSTE TAŞINAN SPK YASAL UYARI BÖLÜMÜ
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
@@ -133,7 +133,7 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
 # 🔄 VERİLERİ YENİLEME BUTONU
-col_btn, _ = st.columns([1, 2])
+col_btn, _ = st.columns()
 with col_btn:
     yenile_butonu = st.button("🔄 Verileri Yenile ve Kontrol Et", use_container_width=True)
 
@@ -159,61 +159,59 @@ if os.path.exists(excel_yolu):
         yeni_kayitlar = []
 
         for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-            
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                veri_var_mi = True
+            try:
+                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+                puan_d = df.iloc[idx, 3]
                 
-                if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
-                    p_temiz = "-"
-                else:
-                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                    veri_var_mi = True
                     
-                c_fiyat = 0.0
-                try:
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=3)
-                    if len(h_veri) > 0:
-                        c_fiyat = float(h_veri['Close'].iloc[-1])
-                except:
-                    pass
-                
-                alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-                
-                # Geçmiş kayıt kontrolü
-                if maliyet > 0:
-                    if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
-                        yeni_kayitlar.append({
-                            "Tarih": tarih_kisa,
-                            "BTA Puanı": p_temiz,
-                            "Hisse": ha,
-                            "Algoritmik Fiyat": maliyet
-                        })
+                    if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
+                        p_temiz = "-"
+                    else:
+                        p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                        
+                    c_fiyat = 0.0
+                    try:
+                        h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=3)
+                        if len(h_veri) > 0:
+                            c_fiyat = float(h_veri['Close'].iloc[-1])
+                    except:
+                        c_fiyat = 0.0 # Yahoo Finance hatası tablonun geri kalanını bozmasın diye izole edildi
+                    
+                    alim_c_temiz = alim_c.replace(",", ".")
+                    maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                    
+                    # Geçmiş kayıt kontrolü
+                    if maliyet > 0:
+                        if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
+                            yeni_kayitlar.append({
+                                "Tarih": tarih_kisa,
+                                "BTA Puanı": p_temiz,
+                                "Hisse": ha,
+                                "Algoritmik Fiyat": maliyet
+                            })
 
-                if maliyet > 0 and c_fiyat > 0:
-                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    if or_dg >= 9.0:
-                        basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                else:
-                    kz_str = "<span>-</span>"
-                
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-        
+                    if maliyet > 0 and c_fiyat > 0:
+                        or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                        if or_dg >= 9.0:
+                            basariliHisse_adi = ha.replace(".IS", "")
+                            basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                    elif maliyet > 0 and c_fiyat == 0.0:
+                        kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
+                    else:
+                        kz_str = "<span>-</span>"
+                    
+                    tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            except:
+                continue # Satır bazlı hatalar döngüyü ve sayfayı tamamen kilitlemesin
+
         if yeni_kayitlar:
-            df_yeni = pd.DataFrame(yeni_kayitlar)
-            df_guncel_gecmis = pd.concat([df_gecmis, df_yeni], ignore_index=True)
+            df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
             df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
 
     except Exception as e:
-        st.error(f"Excel dosyası okunamıyor: {e}")
-
-# Algoritmik Başarı Tebrik Paneli
-if basarili_hisseler:
-    hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
-    st.markdown(tebrik_html, unsafe_allow_html=True)
+        st.error(f"Excel dosyası şu an sistem tarafından okunamadı. Lütfen dosyayı kapatıp tekrar deneyin.")
 
