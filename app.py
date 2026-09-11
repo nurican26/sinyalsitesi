@@ -181,7 +181,6 @@ if os.path.exists(excel_yolu):
                     alim_c_temiz = alim_c.replace(",", ".")
                     maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                     
-                    # 📌 YAZIM HATASI DÜZELTİLDİ: Çince karakter temizlendi, kararlı eşleşme sağlandı.
                     if maliyet > 0:
                         is_exist = False
                         if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
@@ -214,3 +213,8 @@ if os.path.exists(excel_yolu):
             df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
             df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
 
+    except:
+        st.error("Excel dosyası okunamadı.")
+
+# Algoritmik Başarı Tebrik Paneli
+if basarili_hisseler:
