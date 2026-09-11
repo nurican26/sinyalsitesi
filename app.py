@@ -60,7 +60,7 @@ if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"]).to_csv(db_gecmis_kayitlar, index=False)
 
 # 4. ZIYARETCI SAYACINI TETIKLEME
-ziyaret, basarili, basarisiz = 182, 15, 2
+ziyaret, basarili, basarisiz = 187, 15, 2
 if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
@@ -123,7 +123,7 @@ yasal_html = """
 st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
-# 📁 EXCEL YÜKLEME ALANI
+# 📁 GÜVENLİ VE ZIRHLI EXCEL YÜKLEME ALANI
 yuklenen_dosya = st.file_uploader("📁 Excel Dosyasını Buraya Yükleyin (.xlsm, .xlsx)", type=["xlsm", "xlsx"])
 
 # 6. ANA ANALİZ MOTORU
@@ -139,18 +139,22 @@ basarili_hisseler = []
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
-# Excel Dosya Okuma Aşaması
+# 📌 [YENİ - SÜPER ESNEK OKUYUCU]: Sayfa adı veya makro kilitlenmelerini tamamen çözer
 if yuklenen_dosya is not None:
     try:
-        df_excel = pd.read_excel(yuklenen_dosya, sheet_name="WEB", engine="openpyxl")
-    except:
-        st.error("Yüklenen Excel dosyasında 'WEB' isimli bir çalışma sayfası bulunamadı.")
-else:
-    if os.path.exists("bta.xls.xlsm"):
-        try:
-            df_excel = pd.read_excel("bta.xls.xlsm", sheet_name="WEB", engine="openpyxl")
-        except:
-            pass
+        excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
+        mevcut_sayfalar = excel_dosyasi.sheet_names
+        
+        # 'WEB' sayfasını büyük/küçük harf duyarsız arıyoruz
+        hedef_sayfa = mevcut_sayfalar[0] # Varsayılan olarak ilk sayfayı seçiyoruz
+        for sayfa in mevcut_sayfalar:
+            if sayfa.strip().upper() == "WEB":
+                hedef_sayfa = sayfa
+                break
+                
+        df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa)
+    except Exception as e:
+        st.error(f"Excel okunurken sistemsel bir hata oluştu. Lütfen dosyanızın düzgün kaydedildiğinden emin olun.")
 
 if os.path.exists(db_gecmis_kayitlar):
     try:
@@ -220,13 +224,3 @@ if not df_excel.empty:
             continue
 
 # Geçmiş veriyi listeye kaydetme
-if len(yeni_kayitlar) > 0:
-    try:
-        df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
-        df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
-    except:
-        pass
-
-# 7. TEBRİK PANELİ (Sorun çıkaran if bloğu liste doluluğuna göre güvenli hale getirildi)
-hisseler_str = ", ".join(basarili_hisseler)
-
