@@ -63,7 +63,6 @@ db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_kayit_defteri = "bta_hisse_kayit_defteri.csv"
 
-# Hedef sütun listesi yapısı
 sutunlar = ["Kayit_Tarihi", "Bta_Puani", "Hisse", "Algoritmik_Fiyat", "Anlik_Fiyat", "Performans"]
 
 if not os.path.exists(db_notlar):
@@ -120,79 +119,76 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
+df = pd.DataFrame()
 
-# Hata olasılığını sıfırlamak için dosya kontrolü ve okuma süreçleri bağımsız hale getirildi
-if os.path.exists(excel_yolu):
+# Kodun düz doğrusal akması için hata potansiyeli olan if yapısı kaldırıldı
+try:
+    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+except:
+    pass
+
+# Kayıt defterini yükleme adımı
+try:
+    df_kayit_mevcut = pd.read_csv(db_kayit_defteri)
+except:
+    df_kayit_mevcut = pd.DataFrame(columns=sutunlar)
+
+yeni_kayitlar = []
+
+# Döngü içi analiz
+for idx in range(min(10, len(df))):
+    ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+    alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+    puan_d = df.iloc[idx, 3]
+    
+    if ha == "":
+        continue
+    if ha in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+        continue
+        
+    veri_var_mi = True
+    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+    c_fiyat = 0.0
+    
     try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    except Exception as e:
-        df = pd.DataFrame()
-        st.error(f"Excel dosyası okunurken hata oluştu: {e}")
-
-    if not df.empty:
-        if len(df.columns) >= 5:
-            ham_liste = df.iloc[:, 4].dropna().unique()
-            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+        h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+        c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+    except:
+        pass
+        
+    alim_c_temiz = alim_c.replace(",", ".")
+    maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+    
+    or_dg = 0.0
+    kz_str = "<span>-</span>"
+    
+    if maliyet > 0 and c_fiyat > 0:
+        or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+        if or_dg >= 9.0:
+            basariliHisse_adi = ha.replace(".IS", "")
+            basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
             
-        try:
-            df_kayit_mevcut = pd.read_csv(db_kayit_defteri)
-            for col in sutunlar:
-                if col not in df_kayit_mevcut.columns:
-                    df_kayit_mevcut[col] = None
-        except:
-            df_kayit_mevcut = pd.DataFrame(columns=sutunlar)
+    mükerrer_mi = pd.DataFrame()
+    if not df_kayit_mevcut.empty:
+        mükerrer_mi = df_kayit_mevcut[(df_kayit_mevcut["Hisse"] == ha) & (df_kayit_mevcut["Algoritmik_Fiyat"] == maliyet)]
 
-        yeni_kayitlar = []
+    if mükerrer_mi.empty:
+        yeni_kayitlar.append({
+            "Kayit_Tarihi": excel_guncelleme_tarihi,
+            "Bta_Puani": p_temiz,
+            "Hisse": ha,
+            "Algoritmik_Fiyat": maliyet,
+            "Anlik_Fiyat": c_fiyat,
+            "Performans": f"%{or_dg:.2f}"
+        })
 
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-            
-            if ha == "" or ha in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                continue
-                
-            veri_var_mi = True
-            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-            c_fiyat = 0.0
-            try:
-                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-            except:
-                pass
-            alim_c_temiz = alim_c.replace(",", ".")
-            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-            
-            or_dg = 0.0
-            if maliyet > 0 and c_fiyat > 0:
-                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                if or_dg >= 9.0:
-                    basariliHisse_adi = ha.replace(".IS", "")
-                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-            else:
-                kz_str = "<span>-</span>"
-            
-            mükerrer_mi = pd.DataFrame()
-            if not df_kayit_mevcut.empty:
-                mükerrer_mi = df_kayit_mevcut[(df_kayit_mevcut["Hisse"] == ha) & (df_kayit_mevcut["Algoritmik_Fiyat"] == maliyet)]
+    tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
-            if mükerrer_mi.empty:
-                yeni_kayitlar.append({
-                    "Kayit_Tarihi": excel_guncelleme_tarihi,
-                    "Bta_Puani": p_temiz,
-                    "Hisse": ha,
-                    "Algoritmik_Fiyat": maliyet,
-                    "Anlik_Fiyat": c_fiyat,
-                    "Performans": f"%{or_dg:.2f}"
-                })
-
-            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-
-        if yeni_kayitlar:
-            df_yeni = pd.DataFrame(yeni_kayitlar)
-            df_toplam_kayit = pd.concat([df_kayit_mevcut, df_yeni], ignore_index=True)
-            df_toplam_kayit.to_csv(db_kayit_defteri, index=False)
+if yeni_kayitlar:
+    df_yeni = pd.DataFrame(yeni_kayitlar)
+    df_toplam_kayit = pd.concat([df_kayit_mevcut, df_yeni], ignore_index=True)
+    df_toplam_kayit.to_csv(db_kayit_defteri, index=False)
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
@@ -201,9 +197,23 @@ if basarili_hisseler:
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
 # 9. TABLO VEYA ARAMA METNİ PANELİ
-if veri_var_mi and tablo_rows_html != "":
+if veri_var_mi:
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
-else:
+
+if not veri_var_mi:
+    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
+    st.markdown(tarama_html, unsafe_allow_html=True)
+
+# 📜 ARŞİV PANELİ
+st.write("---")
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📜 BTA TARİHSEL HİSSE KAYIT DEFTERİ (LOG)</p>', unsafe_allow_html=True)
+try:
+    df_goster = pd.read_csv(db_kayit_defteri)
+    st.dataframe(df_goster.iloc[::-1], use_container_width=True, hide_index=True)
+except:
+    st.info("Kayıt defteri henüz boş veya yeni oluşturuluyor.")
+
+# 10. YASAL UYARI BÖLÜMÜ
