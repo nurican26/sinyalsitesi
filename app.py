@@ -123,7 +123,7 @@ yasal_html = """
 st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
-# 📁 DİREKT PANEL ÜZERİNDEN EXCEL YÜKLEME ALANI
+# 📁 EXCEL YÜKLEME ALANI
 yuklenen_dosya = st.file_uploader("📁 Excel Dosyasını Buraya Yükleyin (.xlsm, .xlsx)", type=["xlsm", "xlsx"])
 
 # 6. ANA ANALİZ MOTORU
@@ -160,7 +160,7 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Satır Analiz Döngüsü (Tüm riskler sıfırlandı)
+# Satır Analiz Döngüsü
 if not df_excel.empty:
     for idx in range(min(10, len(df_excel))):
         try:
@@ -219,6 +219,7 @@ if not df_excel.empty:
         except:
             continue
 
+# Geçmiş veriyi listeye kaydetme
 if len(yeni_kayitlar) > 0:
     try:
         df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
@@ -226,5 +227,6 @@ if len(yeni_kayitlar) > 0:
     except:
         pass
 
-# 7. TEBRİK PANELİ GÖSTERİMİ (Hizalama hatası düzeltildi)
-if len(basarili_hisseler) > 0:
+# 7. TEBRİK PANELİ (Sorun çıkaran if bloğu liste doluluğuna göre güvenli hale getirildi)
+hisseler_str = ", ".join(basarili_hisseler)
+
