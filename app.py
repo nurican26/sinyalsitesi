@@ -105,7 +105,7 @@ components.html(bist_mini_widget, height=100)
 tum_hisseler = [] 
 veri_var_mi = False
 basarili_hisseler = []
-aktif_tablo_hisseleri = []  # Otomatik kayıt için aktif tablodaki hisseleri tutacağız
+aktif_tablo_hisseleri = []
 
 # 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
@@ -126,7 +126,7 @@ if os.path.exists(excel_yolu):
         puan_d = df.iloc[idx, 3]
         if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
             veri_var_mi = True
-            aktif_tablo_hisseleri.append(ha)  # Otomatik kontrol için listeye ekle
+            aktif_tablo_hisseleri.append(ha)
             
             p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
             c_fiyat = 0.0
@@ -149,9 +149,7 @@ if os.path.exists(excel_yolu):
             
             tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
-# ====================================================================
-# 🤖 OTOMATİK ARKA PLAN KAYIT MOTORU (YENİ HİSSE GELDİKÇE TETİKLENİR)
-# ====================================================================
+# 🤖 OTOMATİK ARKA PLAN KAYIT MOTORU
 try:
     df_mevcut_notlar = pd.read_csv(db_notlar)
 except Exception:
@@ -160,14 +158,12 @@ except Exception:
 kayit_degisti_mi = False
 
 for hisse_kod in aktif_tablo_hisseleri:
-    # Veri tabanında bu hisseye ait daha önce kaydedilmiş bir otomatik kayıt var mı kontrol et
     zaten_kayitli = not df_mevcut_notlar[
         (df_mevcut_notlar["hisse"] == hisse_kod) & 
         (df_mevcut_notlar["not"].str.contains("Algoritma tarafından otomatik tespit edildi", na=False))
     ].empty
     
     if not zaten_kayitli:
-        # Yeni hisse bulundu, kayıt defterine otomatik ekle
         yeni_id = int(df_mevcut_notlar["id"].max() + 1) if not df_mevcut_notlar.empty else 1
         su_an_zaman = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
         
@@ -185,7 +181,6 @@ for hisse_kod in aktif_tablo_hisseleri:
 if kayit_degisti_mi:
     df_mevcut_notlar.to_csv(db_notlar, index=False)
     st.toast("🚀 Algoritmaya yeni gelen hisse(ler) başarıyla kayıt defterine işlendi!")
-# ====================================================================
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
@@ -200,3 +195,7 @@ if veri_var_mi and tablo_rows_html != "":
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 else:
+    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
+    st.markdown(tarama_html, unsafe_allow_html=True)
+
+# 10. YASAL UYARI BÖLÜMÜ
