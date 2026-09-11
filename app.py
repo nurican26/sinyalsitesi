@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -62,26 +62,22 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Veri tabanları yoksa oluşturma ve sıfırlama fonksiyonları
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik) or os.path.getsize(db_istatistik) == 0:
     pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-
-# Oylama fonksiyonlarını önceden tanımlıyoruz (Sözdizimi hatasını engellemek için)
+# Oylama fonksiyonu
 def oy_ver(oy_tipi):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
             df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
-        
         df_ist.at[0, oy_tipi] = int(df_ist.at[0, oy_tipi]) + 1
         df_ist.to_csv(db_istatistik, index=False)
     except:
         pass
-
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -194,3 +190,8 @@ with col_btn1:
         st.rerun()
             
 with col_btn2:
+    if st.button("👎 Başarısız (Beğenmedim)", key="btn_begenme", use_container_width=True):
+        oy_ver("basarisiz_oy")
+        st.rerun()
+
+try:
