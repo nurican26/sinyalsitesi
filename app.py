@@ -193,11 +193,9 @@ if os.path.exists(excel_yolu):
                 
                 for _, k_row in hisse_kayitlari.iterrows():
                     try:
-                        # Kayıt tarihini ayrıştır
-                        k_tarih_str = k_row["Tarih"].split(" | ")[0]
+                        k_tarih_str = k_row["Tarih"].split(" | ")[0] + " - " + k_row["Tarih"].split(" | ")[1]
                         k_tarih = datetime.datetime.strptime(k_tarih_str, "%d.%m.%Y - %H:%M")
                         
-                        # Eğer 1 saatten daha yeniyse ve fiyat aynıysa mükerrer kabul et
                         if k_tarih > zaman_eski_sinir and k_row["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL":
                             mukerrer = True
                             break
@@ -211,3 +209,6 @@ if os.path.exists(excel_yolu):
                         "Hisse": ha,
                         "Algoritmik Fiyat": f"{maliyet:,.2f} TL",
                         "Anlık Fiyat": f"{c_fiyat:,.2f} TL",
+                        "Kâr/Zarar Durumu": kz_str
+                    })
+                    
