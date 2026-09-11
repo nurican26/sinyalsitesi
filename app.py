@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -127,10 +127,10 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Excel dosyanızdaki B, C, D koordinat sistemi
-hisse_col = 1   # B Sütunu
-maliyet_col = 2 # C Sütunu
-puan_col = 3    # D Sütunu
+# Excel dosyanızdaki B, C, D kesin sütun koordinat sistemi
+hisse_col = 1   # B Sütunu (Hisse adı)
+maliyet_col = 2 # C Sütunu (Maliyet fiyatı)
+puan_col = 3    # D Sütunu (BTA Puanı)
 
 if not df_excel.empty:
     for idx in range(len(df_excel)):
@@ -138,15 +138,12 @@ if not df_excel.empty:
             ha = ""
             if pd.notna(df_excel.iloc[idx, hisse_col]):
                 ha = str(df_excel.iloc[idx, hisse_col]).strip().upper()
-                
             alim_c = ""
             if pd.notna(df_excel.iloc[idx, maliyet_col]):
                 alim_c = str(df_excel.iloc[idx, maliyet_col]).strip()
-                
             puan_d = ""
             if pd.notna(df_excel.iloc[idx, puan_col]):
                 puan_d = str(df_excel.iloc[idx, puan_col]).strip()
-            
             if ha != "" and len(ha) <= 6 and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE", "BTA AL SAT", "AL SAT", "BTA HİSSE"]:
                 veri_var_mi = True
                 p_temiz = "-"
@@ -155,8 +152,6 @@ if not df_excel.empty:
                         p_temiz = f"{float(puan_d):.2f}"
                     except:
                         p_temiz = puan_d
-                
-                # CANLI YFINANCE VERİ ÇEKİMİ
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -165,8 +160,6 @@ if not df_excel.empty:
                         c_fiyat = float(h_veri['Close'].iloc[-1])
                 except:
                     c_fiyat = 0.0
-                
-                # Maliyet Dönüştürücü
                 maliyet = 0.0
                 try:
                     alim_c_temiz = alim_c.replace(",", ".").strip()
@@ -174,16 +167,12 @@ if not df_excel.empty:
                         maliyet = float(alim_c_temiz)
                 except:
                     maliyet = 0.0
-                
-                # Not Defterine Ekleme
                 if maliyet > 0:
                     is_exist = False
                     if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
                         is_exist = ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any()
                     if not is_exist:
                         yeni_kayitlar.append({"Tarih": tarih_kisa, "BTA Puanı": p_temiz, "Hisse": ha, "Algoritmik Fiyat": maliyet})
-
-                # 📌 GİRİNTİSİZ AKILLI K/Z TASARIMI: Tüm riskli if-else satırları tek hizada düzleştirildi
                 kz_str = "<span>-</span>"
                 or_dg = 0.0
                 if maliyet > 0 and c_fiyat > 0:
@@ -196,7 +185,6 @@ if not df_excel.empty:
                     kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 if maliyet > 0 and c_fiyat == 0.0:
                     kz_str = "<span style='color:#a2b4cc;'>Veri Alınıyor</span>"
-                
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
         except:
             continue
@@ -218,3 +206,5 @@ if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
+    st.markdown(tablo_html, unsafe_allow_html=True)
+else:
