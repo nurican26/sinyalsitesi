@@ -58,7 +58,7 @@ st.markdown(css_kodu, unsafe_allow_html=True)
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
-excel_yolu = "bta.xls.xlsm"
+excel_yolu = "bta.xls.xlsm"  # 📌 Sabitlenen güncel dosya adınız
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_kayit_defteri = "bta_hisse_kayit_defteri.csv"
@@ -126,23 +126,20 @@ if os.path.exists(excel_yolu):
         ham_liste = df.iloc[:, 4].dropna().unique()
         tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
         
-    # 📌 SINIR KALDIRILDI: Döngü tüm Excel satırlarını okur (len(df))
+    # 📌 SINIR TAMAMEN KALDIRILDI: Excel dosyasındaki tüm satırlar taranır (len(df))
     for idx in range(len(df)):
         ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
         alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
         puan_d = df.iloc[idx, 3]
-        
         if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
             veri_var_mi = True
             p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
             c_fiyat = 0.0
             try:
-                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=5)
-                if len(h_veri) > 0:
-                    c_fiyat = float(h_veri['Close'].iloc[-1])
+                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=3)
+                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
             except:
                 pass
-                
             alim_c_temiz = alim_c.replace(",", ".")
             maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
@@ -159,7 +156,7 @@ if os.path.exists(excel_yolu):
             
             tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
             
-            if veri_var_mi and c_fiyat > 0:
+            if c_fiyat > 0:
                 mevcut_hisseler_listesi.append({
                     "Tarih": kayit_zamani,
                     "BTA Puanı": p_temiz,
@@ -169,7 +166,7 @@ if os.path.exists(excel_yolu):
                     "K/Z": kz_metin
                 })
 
-# 7B. GEÇMİŞ LOG MOTORU
+# 7B. OTOMATİK KAYIT MOTORU
 if mevcut_hisseler_listesi:
     try:
         df_defter = pd.read_csv(db_kayit_defteri)
@@ -191,7 +188,7 @@ if basarili_hisseler:
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ (Canlı Panel)
+# 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
