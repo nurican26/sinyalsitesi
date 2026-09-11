@@ -51,7 +51,7 @@ st.markdown(css_kodu, unsafe_allow_html=True)
 # 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
-# 4. VERİ TABANLARI VE EXCEL YOLLARI
+# 4. VERI TABANLARI VE EXCEL YOLLARI
 excel_isimleri = ["bta.xls.xlsm", "bta.xlsm", "bta.xlsx"]
 excel_yolu = None
 for isim in excel_isimleri:
@@ -62,21 +62,14 @@ for isim in excel_isimleri:
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 
+# Veritabanlarını güvenli başlatma
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([{"ziyaret_sayisi": 198, "toplam_yildiz": 5, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
-else:
-    try:
-        df_eski_kontrol = pd.read_csv(db_istatistik)
-        if "toplam_yildiz" not in df_eski_kontrol.columns:
-            df_eski_kontrol["toplam_yildiz"] = 5
-            df_eski_kontrol["oy_sayisi"] = 1
-            df_eski_kontrol.to_csv(db_istatistik, index=False)
-    except:
-        pass
+    pd.DataFrame([{"ziyaret_sayisi": 198, "toplam_yildiz": 5.0, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
 
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Anlık Fiyat", "Kâr/Zarar Durumu"]).to_csv(db_gecmis_kayitlar, index=False)
 
+# Veriyi oku ve Ziyaretçiyi artır
 df_ist = pd.read_csv(db_istatistik)
 if "ziyaret_artirildi" not in st.session_state:
     df_ist.loc[0, "ziyaret_sayisi"] += 1
@@ -86,6 +79,8 @@ if "ziyaret_artirildi" not in st.session_state:
 ziyaret = int(df_ist.loc[0, "ziyaret_sayisi"])
 toplam_yildiz = float(df_ist.loc[0, "toplam_yildiz"])
 oy_sayisi = int(df_ist.loc[0, "oy_sayisi"])
+
+# Yıldız Hesaplama Mantığı: Verilen toplam yıldız / Toplam Oy Sayısı
 mevcut_puan = round(toplam_yildiz / oy_sayisi, 1) if oy_sayisi > 0 else 5.0
 
 # 5. PARILTILI BTA LOGO PANELİ
@@ -116,13 +111,14 @@ with col_met2:
 
 with col_oy:
     yildiz_secimi = st.feedback("stars", key="bta_yildiz_sistemi")
-    if yildiz_secimi is not None and f"oylandi_{yildiz_secimi}" not in st.session_state:
-        verilen_puan = yildiz_secimi + 1
-        df_ist.loc[0, "toplam_yildiz"] += verilen_puan
+    if yildiz_secimi is not None and f"oy_verildi_{yildiz_secimi}" not in st.session_state:
+        # st.feedback 0-4 arası değer döner, bunu 1-5 yıldız formatına eşitliyoruz
+        puan_degeri = int(yildiz_secimi) + 1
+        df_ist.loc[0, "toplam_yildiz"] += puan_degeri
         df_ist.loc[0, "oy_sayisi"] += 1
         df_ist.to_csv(db_istatistik, index=False)
-        st.session_state[f"oylandi_{yildiz_secimi}"] = True
-        st.toast(f"🎉 {verilen_puan} Yıldız verdiniz. Teşekkürler!", icon="⭐")
+        st.session_state[f"oy_verildi_{yildiz_secimi}"] = True
+        st.toast(f"⭐ {puan_degeri} Yıldız verdiniz. Teşekkürler!")
         st.rerun()
 
 yasal_html = """
@@ -206,9 +202,10 @@ if excel_yolu is not None:
             df_gecmis_db.to_csv(db_gecmis_kayitlar, index=False)
             
     except Exception as e:
-        st.error(f"Excel okunurken sistem hatası: {e}")
+        st.error(f"Excel okunurken bir hata oluştu: {e}")
 else:
-    st.warning("⚠️ Excel dosyası bulunamadı. Lütfen 'bta.xlsx' veya 'bta.xlsm' dosyanızı yükleyin.")
+    st.warning("⚠️ Kritik Uyarı: Sunucuda 'bta.xlsx' veya 'bta.xls.xlsm' dosyası bulunamadı.")
 
+# 7. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
