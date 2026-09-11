@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -125,7 +124,7 @@ with col_oy2:
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
-        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Bu görüşler mali durumunuz ile risk and getiri tercihlerinize uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
     </p>
 </div>
 """
@@ -182,8 +181,13 @@ if os.path.exists(excel_yolu):
                     alim_c_temiz = alim_c.replace(",", ".")
                     maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                     
+                    # 📌 YAZIM HATASI DÜZELTİLDİ: Çince karakter temizlendi, kararlı eşleşme sağlandı.
                     if maliyet > 0:
-                        if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritm放 价'] == maliyet) if 'Algoritm放 价' in df_gecmis.columns else (df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
+                        is_exist = False
+                        if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
+                            is_exist = ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any()
+                        
+                        if not is_exist:
                             yeni_kayitlar.append({
                                 "Tarih": tarih_kisa,
                                 "BTA Puanı": p_temiz,
@@ -210,9 +214,3 @@ if os.path.exists(excel_yolu):
             df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
             df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
 
-    except Exception as e:
-        st.error(f"Excel dosyası şu an sistem tarafından okunamadı.")
-
-# Algoritmik Başarı Tebrik Paneli
-if basarili_hisseler:
-    hisseler_str = ", ".join(basarili_hisseler)
