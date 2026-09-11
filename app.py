@@ -1,171 +1,141 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yıldız Panel - Beğeni Paneli</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+import streamlit as st
+import pandas as pd
+import datetime
+import os
+from streamlit_autorefresh import st_autorefresh
 
-        body {
-            background-color: #0b111e;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
+# 1. SAYFA AYARLARI
+st.set_page_config(page_title="Yıldız Panel - Beğeni Paneli", layout="wide")
 
-        .panel-container {
-            width: 100%;
-            max-width: 800px;
-            background: linear-gradient(145deg, #0f172a, #131c33);
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
+# 2. ÖZEL CSS TASARIMI (BTA Görsel Diline Sadık Kalınmıştır)
+css_kodu = """
+<style>
+.stApp { 
+    background-color: #0b111e !important; 
+    background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important; 
+}
+.block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
+div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
 
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #1e293b;
-            padding-bottom: 20px;
-            margin-bottom: 25px;
-        }
+/* Sipariş Geçmişi Tablo Tasarımı */
+.siparis-tablo { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 15px; background-color: #121d33; border-radius: 10px; overflow: hidden; }
+.siparis-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 10px 8px; }
+.siparis-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #00f2fe;
-            text-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
-            letter-spacing: 2px;
-        }
+/* Yürüyen Yıldız Panel Logosu */
+.logo-yurume-alani {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1;
+}
 
-        .status {
-            font-size: 13px;
-            color: #00ff87;
-            background: rgba(0, 255, 135, 0.1);
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 255, 135, 0.3);
-        }
+@keyframes yildizYoru {
+    0% { transform: translateX(-10%); }
+    50% { transform: translateX(75%); }
+    100% { transform: translateX(-10%); }
+}
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+.yuruyen-yildiz-logo {
+    font-family: 'Brush Script MT', cursive, sans-serif !important;
+    font-weight: bold; 
+    font-size: 65px; 
+    color: #00ffcc;
+    display: inline-block;
+    animation: yildizYoru 18s infinite linear;
+    text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
+}
+</style>
+"""
+st.markdown(css_kodu, unsafe_allow_html=True)
 
-        label {
-            display: block;
-            font-size: 14px;
-            color: #94a3b8;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+# 3. OTOMATİK YENİLEME MOTORU (5 Saniyede Bir)
+st_autorefresh(interval=5 * 1000, key="yildiz_panel_senkronize_motoru")
 
-        input, select {
-            width: 100%;
-            padding: 14px;
-            background-color: #090d16;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
+# 4. VERİ TABANLARI VE SAYAÇLAR
+db_siparisler = "yildiz_panel_siparisler_db.csv"
+db_istatistik = "yildiz_panel_istatistik_db.csv"
 
-        input:focus, select:focus {
-            outline: none;
-            border-color: #00f2fe;
-            box-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
-        }
+if not os.path.exists(db_siparisler):
+    pd.DataFrame(columns=["tarih", "platform", "link", "miktar", "durum"]).to_csv(db_siparisler, index=False)
 
-        .info-box {
-            background-color: rgba(255, 234, 0, 0.05);
-            border: 1px solid rgba(255, 234, 0, 0.2);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 12px;
-            color: #e2e8f0;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
+if not os.path.exists(db_istatistik):
+    pd.DataFrame([[0]], columns=["toplam_ziyaret"]).to_csv(db_istatistik, index=False)
 
-        .info-box span {
-            color: #ffea00;
-            font-weight: bold;
-        }
+# Ziyaretçi Sayacı
+ziyaret = 0
+try:
+    df_ist = pd.read_csv(db_istatistik)
+    if "ziyaret_sayildi" not in st.session_state:
+        df_ist.at[0, "toplam_ziyaret"] = int(df_ist.at[0, "toplam_ziyaret"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["ziyaret_sayildi"] = True
+    ziyaret = int(df_ist.at[0, "toplam_ziyaret"])
+except:
+    pass
 
-        .submit-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(90deg, #00f2fe, #4facfe);
-            border: none;
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
-        }
+# 5. YÜRÜYEN LOGO BÖLÜMÜ
+st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-yildiz-logo">Yıldız Panel</h1></div>', unsafe_allow_html=True)
 
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.6);
-        }
+# 6. BEĞENİ GÖNDERİM FORMU KARTI
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#1E90FF; margin-bottom:5px;">🚀 ANLIK BEĞENİ GÖNDERİM SİSTEMİ</p>', unsafe_allow_html=True)
 
-        .submit-btn:active {
-            transform: translateY(1px);
-        }
-    </style>
-</head>
-<body>
+with st.container():
+    # Streamlit bileşenleriyle form yapısı
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        platform = st.selectbox("Platform Seçimi", ["Instagram Beğeni", "TikTok Beğeni", "X (Twitter) Beğeni", "YouTube Beğeni"])
+        miktar = st.number_input("Beğeni Miktarı", min_value=10, max_value=10000, value=100, step=50)
+    with col2:
+        link = st.text_input("Gönderi Bağlantısı (URL)", placeholder="https://instagram.com...")
+        
+    # Yasal Uyarı & Bilgilendirme Kutusu
+    uyari_html = '<div style="background-color: #121d33; border: 1px solid #00ffcc; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:12px; color:#b2c3d9; line-height:1.5; margin:0;"><b style="color:#00ffcc;">⚠️ SİSTEM BİLGİLENDİRMESİ:</b> Gönderimler yoğunluğa bağlı olarak 15 dakikaya kadar gecikebilir. İşlem görecek hesabın <b>"Gizli"</b> olmaması gerekmektedir. Gizli hesaplara sipariş iletilemez.</p></div>'
+    st.markdown(uyari_html, unsafe_allow_html=True)
+    
+    st.write("")
+    if st.button("Beğeni Gönderimini Başlat", use_container_width=True):
+        if link:
+            # Yeni siparişi veritabanına ekleme
+            yeni_siparis = pd.DataFrame([{
+                "tarih": datetime.datetime.now().strftime("%d.%m.%Y - %H:%M"),
+                "platform": platform,
+                "link": link[:30] + "..." if len(link) > 30 else link, # Tablo taşmasın diye kısaltma
+                "miktar": f"{miktar} Adet",
+                "durum": "Sırada"
+            }])
+            
+            if os.path.exists(db_siparisler):
+                df_sip = pd.read_csv(db_siparisler)
+                df_sip = pd.concat([yeni_siparis, df_sip], ignore_index=True)
+                df_sip.to_csv(db_siparisler, index=False)
+            
+            st.success(f"⚡ {platform} işlemi başarıyla sıraya alındı!")
+        else:
+            st.error("Lütfen geçerli bir gönderi bağlantısı (URL) giriniz!")
 
-    <div class="panel-container">
-        <div class="panel-header">
-            <div class="logo">YILDIZ PANEL</div>
-            <div class="status">● Sistem Aktif</div>
-        </div>
+# 7. SİPARİŞ GEÇMİŞİ TABLOSU
+st.write("---")
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:5px;">📊 GÜNCEL SİPARİŞ DURUMLARI</p>', unsafe_allow_html=True)
 
-        <form onsubmit="event.preventDefault(); alert('Beğeni işlemi başlatıldı!');">
-            <div class="form-group">
-                <label for="platform">Platform Seçimi</label>
-                <select id="platform">
-                    <option value="instagram">Instagram Beğeni</option>
-                    <option value="tiktok">TikTok Beğeni</option>
-                    <option value="twitter">X (Twitter) Beğeni</option>
-                    <option value="youtube">YouTube Beğeni</option>
-                </select>
-            </div>
+if os.path.exists(db_siparisler):
+    df_siparisler = pd.read_csv(db_siparisler)
+    if not df_siparisler.empty:
+        tablo_rows_html = ""
+        # Sadece son 5 siparişi listele
+        for idx, row in df_siparisler.head(5).iterrows():
+            durum_stil = '<span style="color:#00ff66;">● Tamamlandı</span>' if idx != 0 else '<span style="color:#ffea00;">⏳ Gönderiliyor</span>'
+            tablo_rows_html += f'<tr><td>{row["tarih"]}</td><td>{row["platform"]}</td><td>{row["link"]}</td><td>{row["miktar"]}</td><td>{durum_stil}</td></tr>'
+        
+        tablo_html = '<table class="siparis-tablo"><tr><th>ZAMAN</th><th>PLATFORM</th><th>HEDEF BAĞLANTI</th><th>MİKTAR</th><th>DURUM</th></tr>' + tablo_rows_html + '</table>'
+        st.markdown(tablo_html, unsafe_allow_html=True)
+    else:
+        st.info("Henüz verilmiş bir sipariş bulunmuyor.")
 
-            <div class="form-group">
-                <label for="url">Gönderi Bağlantısı (URL)</label>
-                <input type="url" id="url" placeholder="https://..." required>
-            </div>
-
-            <div class="form-group">
-                <label for="quantity">Beğeni Miktarı</label>
-                <input type="number" id="quantity" placeholder="Örn: 500" min="10" max="10000" required>
-            </div>
-
-            <div class="info-box">
-                <span>⚠️ YASAL UYARI & BİLGİLENDİRME:</span> Gönderim süresi yoğunluğa bağlı olarak 15 dakikaya kadar gecikebilir. Hesap gizliliğinizin "Kamuya Açık" (Herkese Açık) olduğundan emin olunuz. Gizli hesaplara gönderim yapılamamaktadır.
-            </div>
-
-            <button type="submit" class="submit-btn">Beğeni Gönderimini Başlat</button>
-        </form>
-    </div>
-
-</body>
-</html>
+# 8. ETKİLEŞİM VE İSTATİSTİK PANELİ
+st.write("---")
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📈 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
