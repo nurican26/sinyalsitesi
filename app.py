@@ -58,7 +58,7 @@ st.markdown(css_kodu, unsafe_allow_html=True)
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
-excel_yolu = "bta.xls.xlsm"  # 📌 Sabitlenen güncel dosya adınız
+excel_yolu = "bta.xlsx.xlsm"  # 📌 GitHub deponuzdaki tam ada göre düzeltildi!
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_kayit_defteri = "bta_hisse_kayit_defteri.csv"
@@ -126,7 +126,7 @@ if os.path.exists(excel_yolu):
         ham_liste = df.iloc[:, 4].dropna().unique()
         tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
         
-    # 📌 SINIR TAMAMEN KALDIRILDI: Excel dosyasındaki tüm satırlar taranır (len(df))
+    # 📌 TÜM SATIRLAR TARANIYOR (Döngü kısıtlaması kaldırıldı)
     for idx in range(len(df)):
         ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
         alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
@@ -188,7 +188,7 @@ if basarili_hisseler:
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ
+# 9. TABLO VEYA ARAMA METNİ PANELİ (Canlı Panel)
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
