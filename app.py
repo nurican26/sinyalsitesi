@@ -59,20 +59,19 @@ db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# İstatistik veritabanını varsayılan değerlerle aç
 if not os.path.exists(db_istatistik):
     pd.DataFrame([{"ziyaret_sayisi": 187, "basarili_oy": 15, "basarisiz_oy": 2}]).to_csv(db_istatistik, index=False)
 
+# Kalıcı Geçmiş Kayıt Tablosu Altyapısı
 if not os.path.exists(db_gecmis_kayitlar):
-    pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Anlık Fiyat", "Kâr/Zarar Durumu"]).to_csv(db_gecmis_kayitlar, index=False)
+    pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Anlık Fiyat", "Kar_Zarar_Yuzde"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# Veritabanından sayaç verilerini oku
+# İstatistik Sayaçlarını Yükle
 try:
     df_ist = pd.read_csv(db_istatistik)
     if df_ist.empty:
         df_ist = pd.DataFrame([{"ziyaret_sayisi": 187, "basarili_oy": 15, "basarisiz_oy": 2}])
     
-    # Sayfa ilk kez yüklendiğinde ziyareti 1 artır
     if "ziyaret_kaydedildi" not in st.session_state:
         df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
         df_ist.to_csv(db_istatistik, index=False)
@@ -84,7 +83,6 @@ try:
 except:
     ziyaret, basarili, basarisiz = 188, 15, 2
 
-# Başarı oranını dinamik hesapla
 toplam_oy = basarili + basarisiz
 basari_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 88
 
@@ -142,12 +140,19 @@ st.write("---")
 # 6. ANA ANALİZ MOTORU (Otomatik Dosya Okuma)
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
-excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
+excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M")
 
 tablo_rows_html = ""
-gecmis_rows_html = ""
 veri_var_mi = False
 basarili_hisseler = []
+
+# Mevcut kaydedilmiş verileri CSV'den yükle
+try:
+    df_gecmis_db = pd.read_csv(db_gecmis_kayitlar)
+except:
+    df_gecmis_db = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Anlık Fiyat", "Kar_Zarar_Yuzde"])
+
+yeni_kayitlar = []
 
 if os.path.exists(excel_yolu):
     try:
@@ -173,9 +178,9 @@ if os.path.exists(excel_yolu):
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                 
+                or_dg = 0.0
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    # %9 ve üzeri başarı tespiti (Kutlama mesajını tetikler)
                     if or_dg >= 9.0:
                         basariliHisse_adi = ha.replace(".IS", "")
                         basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
@@ -186,17 +191,27 @@ if os.path.exists(excel_yolu):
                 # Canlı Tablo Satırı
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
                 
-                # Kayıt Defteri Satırı
-                gecmis_rows_html += f'<tr><td>{excel_guncelleme_tarihi}</td><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+                # Veritabanında bu hisse aynı gün zaten kaydedilmiş mi kontrol et (Mükerrer kaydı önler)
+                gunluk_kontrol = df_gecmis_db[(df_gecmis_db["Tarih"].str.contains(excel_guncelleme_tarihi.split(" -")[0])) & (df_gecmis_db["Hisse"] == ha)]
+                if gunluk_kontrol.empty:
+                    yeni_kayitlar.append({
+                        "Tarih": excel_guncelleme_tarihi,
+                        "BTA Puanı": p_temiz,
+                        "Hisse": ha,
+                        "Algoritmik Fiyat": f"{maliyet:,.2f} TL",
+                        "Anlık Fiyat": f"{c_fiyat:,.2f} TL",
+                        "Kar_Zarar_Yuzde": f"{or_dg:.2f}"
+                    })
+        
+        # Yeni taranan hisseleri kalıcı olarak CSV veritabanına ekle ve kaydet
+        if yeni_kayitlar:
+            df_yeni = pd.DataFrame(yeni_kayitlar)
+            df_gecmis_db = pd.concat([df_gecmis_db, df_yeni], ignore_index=True)
+            df_gecmis_db.to_csv(db_gecmis_kayitlar, index=False)
+            
     except Exception as e:
-        st.error(f"Excel okunurken bir hata oluştu: {e}")
+        st.error(f"Excel veya veritabanı senkronizasyon hatası: {e}")
 
-# 7. OTOMATİK BAŞARI TEBRİK PANELİ (%9 ve üstü hisse olduğunda otomatik açılır)
+# 7. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
-    st.markdown(tebrik_html, unsafe_allow_html=True)
-
-# 8. CANLI TABLO PANELİ
-if veri_var_mi and tablo_rows_html != "":
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
