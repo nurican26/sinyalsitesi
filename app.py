@@ -45,11 +45,18 @@ div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
 
-# 3. VERI TABANLARI VE EXCEL YOLLARI
-excel_yolu = "bta.xls.xlsm"
+# 3. VERI TABANLARI VE DOSYA YOLLARI KONTROLÜ
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
+
+# Otomatik dosya arama mekanizması (Büyük/küçük harf hatalarını engellemek için)
+excel_yolu = "bta.xls.xlsm"
+if not os.path.exists(excel_yolu):
+    for f in os.listdir("."):
+        if f.lower().startswith("bta") and (f.lower().endswith(".xlsm") or f.lower().endswith(".xlsx") or f.lower().endswith(".xls")):
+            excel_yolu = f
+            break
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
@@ -76,10 +83,8 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# 5. PARILTILI BTA LOGO PANELİ
+# 5. BAŞLIK VE İSTATİSTİK PANELİ GÖSTERİMİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
-
-# EN ÜSTE TAŞINAN ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 toplam_oy = basarili + basarisiz
@@ -95,27 +100,24 @@ with col_met2:
 
 with col_oy1:
     if st.button("👍 Başarılı Buldum", use_container_width=True):
-        if os.path.exists(db_istatistik):
-            try:
-                df_ist = pd.read_csv(db_istatistik)
-                df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
-                df_ist.to_csv(db_istatistik, index=False)
-                st.toast("Oyunuz Kaydedildi! 👍")
-            except:
-                pass
+        try:
+            df_ist = pd.read_csv(db_istatistik)
+            df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
+            df_ist.to_csv(db_istatistik, index=False)
+            st.toast("Oyunuz Kaydedildi! 👍")
+        except:
+            pass
 
 with col_oy2:
     if st.button("👎 Başarısız Buldum", use_container_width=True):
-        if os.path.exists(db_istatistik):
-            try:
-                df_ist = pd.read_csv(db_istatistik)
-                df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
-                df_ist.to_csv(db_istatistik, index=False)
-                st.toast("Oyunuz Kaydedildi! 👎")
-            except:
-                pass
+        try:
+            df_ist = pd.read_csv(db_istatistik)
+            df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
+            df_ist.to_csv(db_istatistik, index=False)
+            st.toast("Oyunuz Kaydedildi! 👎")
+        except:
+            pass
 
-# EN ÜSTE TAŞINAN SPK YASAL UYARI BÖLÜMÜ
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
@@ -124,10 +126,9 @@ yasal_html = """
 </div>
 """
 st.markdown(yasal_html, unsafe_allow_html=True)
-
 st.write("---")
 
-# 🔄 VERİLERİ YENİLEME BUTONU
+# 🔄 YENİLEME BUTONU
 yenile_butonu = st.button("🔄 Verileri Yenile ve Kontrol Et", use_container_width=True)
 
 # 6. ANA ANALİZ MOTORU
@@ -143,11 +144,12 @@ basarili_hisseler = []
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
+# Excel Güvenli Okuma Alanı
 if os.path.exists(excel_yolu):
     try:
         df_excel = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    except:
-        pass
+    except Exception as e:
+        st.warning(f"Excel dosyası bulundu ({excel_yolu}) ancak okunurken bir hata oluştu. Dosyanın açık olmadığından emin olun.")
 
 if os.path.exists(db_gecmis_kayitlar):
     try:
@@ -157,6 +159,7 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
+# Satır Analiz Aşaması
 if not df_excel.empty:
     for idx in range(min(10, len(df_excel))):
         try:
@@ -180,7 +183,6 @@ if not df_excel.empty:
                 except:
                     c_fiyat = 0.0
                 
-                # 📌 GÜVENLİK DÜZELTMESİ: Boşluk ve geçersiz karakter çökmeleri engellendi
                 alim_c_temiz = alim_c.replace(",", ".").strip()
                 try:
                     maliyet = float(alim_c_temiz) if alim_c_temiz != "" else 0.0
@@ -222,6 +224,4 @@ if yeni_kayitlar:
     except:
         pass
 
-# 7. TEBRİK PANELİ
-if len(basarili_hisseler) > 0:
-    hisseler_str = ", ".join(basarili_hisseler)
+# 7. TEBRİK PANELİ GÖSTERİMİ
