@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -127,7 +127,7 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Gönderdiğiniz son imaja göre netleşen B, C, D sütun koordinatları
+# Excel dosyanızdaki B, C, D koordinat sistemi
 hisse_col = 1   # B Sütunu
 maliyet_col = 2 # C Sütunu
 puan_col = 3    # D Sütunu
@@ -156,7 +156,7 @@ if not df_excel.empty:
                     except:
                         p_temiz = puan_d
                 
-                # CANLI BORSA FIYATI MOTORU (yfinance)
+                # CANLI YFINANCE VERİ ÇEKİMİ
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -183,14 +183,18 @@ if not df_excel.empty:
                     if not is_exist:
                         yeni_kayitlar.append({"Tarih": tarih_kisa, "BTA Puanı": p_temiz, "Hisse": ha, "Algoritmik Fiyat": maliyet})
 
-                # 📌 GİRİNTİ HATASI ÇÖZÜLDÜ: if-else yapısı tek satırlık formata getirilerek IndentationError tamamen yok edildi.
+                # 📌 GİRİNTİSİZ AKILLI K/Z TASARIMI: Tüm riskli if-else satırları tek hizada düzleştirildi
                 kz_str = "<span>-</span>"
+                or_dg = 0.0
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    if or_dg >= 9.0:
-                        tebrik_metni += f"<b>{ha.replace('.IS', '')}</b> (%{or_dg:.2f}) "
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                elif maliyet > 0 and c_fiyat == 0.0:
+                if maliyet > 0 and c_fiyat > 0 and or_dg >= 9.0:
+                    tebrik_metni += f"<b>{ha.replace('.IS', '')}</b> (%{or_dg:.2f}) "
+                if maliyet > 0 and c_fiyat > 0 and or_dg >= 0:
+                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>'
+                if maliyet > 0 and c_fiyat > 0 and or_dg < 0:
+                    kz_str = f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                if maliyet > 0 and c_fiyat == 0.0:
                     kz_str = "<span style='color:#a2b4cc;'>Veri Alınıyor</span>"
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
@@ -214,5 +218,3 @@ if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-else:
