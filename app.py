@@ -62,31 +62,30 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Dosya kontrolleri ve ilk oluşturma süreçleri
+# Dosya yapılarının doğru başladığından emin oluyoruz
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
-if os.path.exists(db_istatistik):
-    try:
-        df_ist = pd.read_csv(db_istatistik)
-        if df_ist.empty:
-            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+try:
+    df_ist = pd.read_csv(db_istatistik)
+    if df_ist.empty:
+        df_ist = pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}])
+    
+    if "ziyaret_sayildi" not in st.session_state:
+        df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["ziyaret_sayildi"] = True
         
-        if "ziyaret_sayildi" not in st.session_state:
-            df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.session_state["ziyaret_sayildi"] = True
-            
-        ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-        basarili = int(df_ist.at[0, "basarili_oy"])
-        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
-    except:
-        pass
+    ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+    basarili = int(df_ist.at[0, "basarili_oy"])
+    basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+except:
+    ziyaret, basarili, basarisiz = 1, 0, 0
 
 # 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
@@ -117,37 +116,40 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
-    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    if len(df.columns) >= 5:
-        ham_liste = df.iloc[:, 4].dropna().unique()
-        tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
-        
-    for idx in range(min(10, len(df))):
-        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-        puan_d = df.iloc[idx, 3]
-        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-            veri_var_mi = True
-            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-            c_fiyat = 0.0
-            try:
-                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-            except:
-                pass
-            alim_c_temiz = alim_c.replace(",", ".")
-            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+    try:
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        if len(df.columns) >= 5:
+            ham_liste = df.iloc[:, 4].dropna().unique()
+            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
-            if maliyet > 0 and c_fiyat > 0:
-                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                if or_dg >= 9.0:
-                    basariliHisse_adi = ha.replace(".IS", "")
-                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-            else:
-                kz_str = "<span>-</span>"
-            
-            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+        for idx in range(min(10, len(df))):
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
+                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                c_fiyat = 0.0
+                try:
+                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+                except:
+                    pass
+                alim_c_temiz = alim_c.replace(",", ".")
+                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    if or_dg >= 9.0:
+                        basariliHisse_adi = ha.replace(".IS", "")
+                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
+                
+                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+    except:
+        pass
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
@@ -173,17 +175,20 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
-# Oy verme mekanizması fonksiyonları
-def oy_ver(tip):
-    try:
-        df_ist = pd.read_csv(db_istatistik)
-        if tip == "basarili":
-            df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
-        elif tip == "basarisiz":
-            df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
-        df_ist.to_csv(db_istatistik, index=False)
-        st.session_state["oy_verildi"] = True
-    except Exception as e:
-        st.error(f"Oy kaydedilirken hata oluştu: {e}")
+# Oy verme butonu tıklama yönetimi
+if "oy_verildi" not in st.session_state:
+    st.session_state["oy_verildi"] = False
 
-# Metrikleri yan yana göstermek ve oy butonlarını konumlandırmak için 3 kolon
+col_met1, col_met2, col_met3 = st.columns(3)
+
+with col_met1:
+    st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+
+toplam_oy = basarili + basarisiz
+begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 100
+
+with col_met2:
+    st.metric("👍 Algoritma Başarı Puanı (Beğeni)", f"%{begeni_orani}")
+
+with col_met3:
+    st.write("**Bu sinyali nasıl buldunuz?**")
