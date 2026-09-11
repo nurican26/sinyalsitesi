@@ -127,7 +127,7 @@ if os.path.exists(excel_yolu):
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
-        # Sınır kaldırıldı: Excel dosyasındaki tüm satırlar taranıyor (len(df))
+        # Sınır tamamen kaldırıldı: Tüm Excel satırları okunuyor
         for idx in range(len(df)):
             ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
