@@ -63,7 +63,7 @@ db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_kayit_defteri = "bta_hisse_kayit_defteri.csv"
 
-# Tarihsel arşivi tutulacak sütun yapısı (Anlık fiyat kaldırıldı)
+# Tarihsel arşiv için net sütun yapısı
 sutunlar = ["Kayit_Tarihi", "Bta_Puani", "Hisse", "Algoritmik_Fiyat", "Performans"]
 
 if not os.path.exists(db_notlar):
@@ -128,7 +128,7 @@ try:
 except:
     pass
 
-# Kayıt Defterini Güvenli Yükleme ve Sütun Doğrulama Adımı
+# Kayıt Defterini Güvenli Yükleme
 df_kayit_mevcut = pd.DataFrame(columns=sutunlar)
 try:
     if os.path.exists(db_kayit_defteri):
@@ -155,7 +155,6 @@ for idx in range(min(10, len(df))):
         
     veri_var_mi = True
     
-    # 🎯 BTA PUANI DOĞRU FORMATLAMA
     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
     
     c_fiyat = 0.0
@@ -191,7 +190,6 @@ for idx in range(min(10, len(df))):
             "Performans": f"%{or_dg:.2f}"
         })
 
-    # 🎯 DÜZELTİLDİ: Puan yerine anlık fiyatın basılması hatası giderildi.
     tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
 if yeni_kayitlar:
@@ -215,8 +213,9 @@ if not veri_var_mi:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# 📜 ARŞİV PANELİ
+# 📜 ARŞİV PANELİ (Hata veren try-except bloğu tamamen kaldırılarak en kararlı doğrusal yapıya geçirildi)
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📜 BTA TARİHSEL HİSSE KAYIT DEFTERİ (LOG)</p>', unsafe_allow_html=True)
-try:
+
+if os.path.exists(db_kayit_defteri) and os.path.getsize(db_kayit_defteri) > 60:
     df_goster = pd.read_csv(db_kayit_defteri)
