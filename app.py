@@ -61,7 +61,6 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
-db_kayit_defteri = "bta_hisse_kayit_defteri.csv"
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
@@ -69,11 +68,8 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-if not os.path.exists(db_kayit_defteri):
-    pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Fiyat", "K/Z"]).to_csv(db_kayit_defteri, index=False)
-
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
-ziyaret = 0
+ziyaret, basarili, basarisiz = 0, 0, 0
 if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
@@ -84,6 +80,8 @@ if os.path.exists(db_istatistik):
             df_ist.to_csv(db_istatistik, index=False)
             st.session_state["ziyaret_sayildi"] = True
         ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+        basarili = int(df_ist.at[0, "basarili_oy"])
+        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
         pass
 
@@ -112,75 +110,41 @@ basarili_hisseler = []
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
-kayit_zamani = excel_tarih_objesi.strftime("%d.%m.%Y %H:%M")
 
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
-mevcut_hisseler_listesi = []
-
 if os.path.exists(excel_yolu):
-    try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        if len(df.columns) >= 5:
-            ham_liste = df.iloc[:, 4].dropna().unique()
-            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+    if len(df.columns) >= 5:
+        ham_liste = df.iloc[:, 4].dropna().unique()
+        tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+        
+    for idx in range(min(10, len(df))):
+        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+        puan_d = df.iloc[idx, 3]
+        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+            veri_var_mi = True
+            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+            c_fiyat = 0.0
+            try:
+                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+            except:
+                pass
+            alim_c_temiz = alim_c.replace(",", ".")
+            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
-        for idx in range(len(df)):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                veri_var_mi = True
-                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                c_fiyat = 0.0
-                try:
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=3)
-                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                except:
-                    pass
-                alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-                
-                if maliyet > 0 and c_fiyat > 0:
-                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    if or_dg >= 9.0:
-                        basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                    kz_metin = f"%{or_dg:.2f}"
-                else:
-                    kz_str = "<span>-</span>"
-                    kz_metin = "-"
-                
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-                
-                if c_fiyat > 0:
-                    mevcut_hisseler_listesi.append({
-                        "Tarih": kayit_zamani,
-                        "BTA Puanı": p_temiz,
-                        "Hisse": ha,
-                        "Algoritmik Fiyat": f"{maliyet:,.2f} TL",
-                        "Fiyat": f"{c_fiyat:,.2f} TL",
-                        "K/Z": kz_metin
-                    })
-    except Exception as e:
-        st.error(f"Excel Okuma Hatası: {e}.")
-
-# 7B. OTOMATİK KAYIT MOTORU
-if mevcut_hisseler_listesi:
-    try:
-        df_defter = pd.read_csv(db_kayit_defteri)
-        yeni_kayitlar = []
-        for yeni in mevcut_hisseler_listesi:
-            ayni_kayit_var_mi = not df_defter[(df_defter["Tarih"] == yeni["Tarih"]) & (df_defter["Hisse"] == yeni["Hisse"])].empty
-            if not ayni_kayit_var_mi:
-                yeni_kayitlar.append(yeni)
-        if yeni_kayitlar:
-            df_yeni = pd.DataFrame(yeni_kayitlar)
-            df_defter = pd.concat([df_defter, df_yeni], ignore_index=True)
-            df_defter.to_csv(db_kayit_defteri, index=False)
-    except:
-        pass
+            if maliyet > 0 and c_fiyat > 0:
+                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                if or_dg >= 9.0:
+                    basariliHisse_adi = ha.replace(".IS", "")
+                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+            else:
+                kz_str = "<span>-</span>"
+            
+            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
@@ -188,7 +152,7 @@ if basarili_hisseler:
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ (Canlı Panel)
+# 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
@@ -199,3 +163,14 @@ else:
     st.markdown(tarama_html, unsafe_allow_html=True)
 
 # 10. YASAL UYARI BÖLÜMÜ
+yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
+st.markdown(yasal_html, unsafe_allow_html=True)
+
+# 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
+st.write("---")
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+
+toplam_oy = basarili + basarisiz
+begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
+
+st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
