@@ -126,16 +126,14 @@ try:
 except:
     pass
 
-# KEYERROR ÇÖZÜMÜ: Sütun doğrulamalı güvenli yükleme motoru
+# Kayıt Defterini Güvenli Yükleme Adımı
 df_kayit_mevcut = pd.DataFrame(columns=sutunlar)
 try:
     if os.path.exists(db_kayit_defteri):
         df_okunan = pd.read_csv(db_kayit_defteri)
-        # Gerekli tüm sütunlar mevcut mu kontrol et
         if all(col in df_okunan.columns for col in sutunlar):
             df_kayit_mevcut = df_okunan
         else:
-            # Sütunlar eksikse dosyayı temiz ve doğru şemayla yeniden oluştur
             pd.DataFrame(columns=sutunlar).to_csv(db_kayit_defteri, index=False)
 except:
     pass
@@ -193,8 +191,7 @@ for idx in range(min(10, len(df))):
     tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
 if yeni_kayitlar:
-    df_yeni = pd.DataFrame(yeni_kayitlar)
-    df_toplam_kayit = pd.concat([df_kayit_mevcut, df_yeni], ignore_index=True)
+    df_toplam_kayit = pd.concat([df_kayit_mevcut, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
     df_toplam_kayit.to_csv(db_kayit_defteri, index=False)
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
@@ -214,8 +211,13 @@ if not veri_var_mi:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# 📜 ARŞİV PANELİ
+# 📜 ARŞİV PANELİ (Try-Except Hatası Giderildi)
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📜 BTA TARİHSEL HİSSE KAYIT DEFTERİ (LOG)</p>', unsafe_allow_html=True)
 try:
     df_goster = pd.read_csv(db_kayit_defteri)
+    st.dataframe(df_goster.iloc[::-1], use_container_width=True, hide_index=True)
+except:
+    st.info("Kayıt defteri henüz boş veya yeni oluşturuluyor.")
+
+# 10. YASAL UYARI BÖLÜMÜ
