@@ -52,13 +52,18 @@ st.markdown(css_kodu, unsafe_allow_html=True)
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
-excel_yolu = "bta.xls.xlsm"
+excel_isimleri = ["bta.xls.xlsm", "bta.xlsm", "bta.xlsx"]
+excel_yolu = None
+for isim in excel_isimleri:
+    if os.path.exists(isim):
+        excel_yolu = isim
+        break
+
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 
-# Veritabanı dosyalarını güvenli başlatma veya eski dosyayı otomatik dönüştürme
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([{"ziyaret_sayisi": 196, "toplam_yildiz": 5, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([{"ziyaret_sayisi": 198, "toplam_yildiz": 5, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
 else:
     try:
         df_eski_kontrol = pd.read_csv(db_istatistik)
@@ -72,7 +77,6 @@ else:
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Anlık Fiyat", "Kâr/Zarar Durumu"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# İstatistikleri Yükle ve Ziyaretçiyi Artır
 df_ist = pd.read_csv(db_istatistik)
 if "ziyaret_artirildi" not in st.session_state:
     df_ist.loc[0, "ziyaret_sayisi"] += 1
@@ -87,7 +91,6 @@ mevcut_puan = round(toplam_yildiz / oy_sayisi, 1) if oy_sayisi > 0 else 5.0
 # 5. PARILTILI BTA LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
 
-# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
 bist_mini_widget = """
 <div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
   <div class="tradingview-widget-container__widget"></div>
@@ -101,7 +104,6 @@ bist_mini_widget = """
 """
 components.html(bist_mini_widget, height=100)
 
-# ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 col_met1, col_met2, col_oy = st.columns(3)
@@ -123,7 +125,6 @@ with col_oy:
         st.toast(f"🎉 {verilen_puan} Yıldız verdiniz. Teşekkürler!", icon="⭐")
         st.rerun()
 
-# SPK YASAL UYARI BÖLÜMÜ
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
@@ -134,7 +135,6 @@ yasal_html = """
 st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
-# 6. ANA ANALİZ MOTORU (Otomatik Dosya Okuma)
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -144,9 +144,11 @@ tablo_rows_html = ""
 veri_var_mi = False
 basarili_hisseler = []
 
-if os.path.exists(excel_yolu):
+if excel_yolu is not None:
     try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        excel_file = pd.ExcelFile(excel_yolu, engine="openpyxl")
+        sayfa_adi = "WEB" if "WEB" in excel_file.sheet_names else excel_file.sheet_names[0]
+        df = pd.read_excel(excel_yolu, sheet_name=sayfa_adi, engine="openpyxl")
         df_gecmis_db = pd.read_csv(db_gecmis_kayitlar)
         yeni_kayitlar = []
         
@@ -182,7 +184,6 @@ if os.path.exists(excel_yolu):
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # MÜKERRER KAYIT FİLTRESİ (GİRİNTİ HATASI YAPMASI İMKANSIZ YENİ DÜZ YAPILI SİSTEM)
                 mukerrer_bulundu = False
                 if c_fiyat > 0 and not df_gecmis_db.empty:
                     ayni_hisse = df_gecmis_db["Hisse"] == ha
@@ -205,8 +206,9 @@ if os.path.exists(excel_yolu):
             df_gecmis_db.to_csv(db_gecmis_kayitlar, index=False)
             
     except Exception as e:
-        st.error(f"Excel veya veritabanı işlenirken bir hata oluştu: {e}")
+        st.error(f"Excel okunurken sistem hatası: {e}")
 else:
-    st.warning(f"⚠️ Kritik Uyarı: '{excel_yolu}' isimli Excel dosyası sunucu dizininde bulunamadı. Lütfen dosyayı yükleyin.")
+    st.warning("⚠️ Excel dosyası bulunamadı. Lütfen 'bta.xlsx' veya 'bta.xlsm' dosyanızı yükleyin.")
 
-# 7. OTOMATİK BAŞARI TEBRİK PANELİ
+if basarili_hisseler:
+    hisseler_str = ", ".join(basarili_hisseler)
