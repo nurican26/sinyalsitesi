@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import datetime
 import yfinance as yf
@@ -62,12 +62,26 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
+# Veri tabanları yoksa oluşturma ve sıfırlama fonksiyonları
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# İstatistik dosyası yoksa veya boşsa içi dolu ilk satırı yaratarak başlatıyoruz
 if not os.path.exists(db_istatistik) or os.path.getsize(db_istatistik) == 0:
     pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+
+
+# Oylama fonksiyonlarını önceden tanımlıyoruz (Sözdizimi hatasını engellemek için)
+def oy_ver(oy_tipi):
+    try:
+        df_ist = pd.read_csv(db_istatistik)
+        if df_ist.empty:
+            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+        
+        df_ist.at[0, oy_tipi] = int(df_ist.at[0, oy_tipi]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+    except:
+        pass
+
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -176,16 +190,7 @@ col_btn1, col_btn2 = st.columns(2)
 
 with col_btn1:
     if st.button("👍 Başarılı (Beğendim)", key="btn_begen", use_container_width=True):
-        try:
-            df_ist = pd.read_csv(db_istatistik)
-            df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.rerun()
-        except:
-            pass
+        oy_ver("basarili_oy")
+        st.rerun()
             
 with col_btn2:
-    if st.button("👎 Başarısız (Beğenmedim)", key="btn_begenme", use_container_width=True):
-        try:
-            df_ist = pd.read_csv(db_istatistik)
-            df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
