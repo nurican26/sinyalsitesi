@@ -161,7 +161,6 @@ if aktif_tablo_hisseleri:
         kayit_degisti_mi = False
         
         for hisse_kod in aktif_tablo_hisseleri:
-            # Geçmişte bu hisse için hiç kayıt atılmış mı doğrudan CSV dosyasından bakıyoruz
             zaten_var = not df_mevcut_notlar[df_mevcut_notlar["hisse"] == hisse_kod].empty
             
             if not zaten_var:
@@ -197,4 +196,5 @@ if veri_var_mi and tablo_rows_html != "":
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
-else:
+
+if not veri_var_mi or tablo_rows_html == "":
