@@ -116,7 +116,7 @@ with col_oy2:
 yasal_html = """
 <div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
     <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
-        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuza uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuz ile risk and getiri tercihlerinize uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
     </p>
 </div>
 """
@@ -148,7 +148,6 @@ if yuklenen_dosya is not None:
         for sayfa in mevcut_sayfalar:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
-                break
         df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa)
     except:
         pass
@@ -161,22 +160,13 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Sütun Tespitleri
+# Sabit Sütun Düzenine Geri Dönüldü (Hata riskini sıfırlamak için)
 hisse_col = 0
 maliyet_col = 2
 puan_col = 3
 
 if not df_excel.empty:
-    sutunlar = [str(c).strip().upper() for c in df_excel.columns]
-    for i, col in enumerate(sutunlar):
-        if "HİSSE" in col or "HISSE" in col or "KOD" in col:
-            hisse_col = i
-        if "MALİYET" in col or "MALIYET" in col or "FİYAT" in col or "FIYAT" in col or "ALIM" in col:
-            maliyet_col = i
-        if "PUAN" in col or "BTA" in col or "SKOR" in col:
-            puan_col = i
-
-    for idx in range(len(df_excel)):
+    for idx in range(min(10, len(df_excel))):
         try:
             ha = str(df_excel.iloc[idx, hisse_col]).strip().upper() if pd.notna(df_excel.iloc[idx, hisse_col]) else ""
             alim_c = str(df_excel.iloc[idx, maliyet_col]).strip() if pd.notna(df_excel.iloc[idx, maliyet_col]) else ""
@@ -221,11 +211,23 @@ if not df_excel.empty:
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
-                        basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                        basarili_hisseler.append(ha)
                     kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 elif maliyet > 0 and c_fiyat == 0.0:
                     kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
                 else:
                     kz_str = "<span>-</span>"
                 
+                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+        except:
+            pass
+
+if len(yeni_kayitlar) > 0:
+    try:
+        df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
+        df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
+    except:
+        pass
+
+# 7. TEBRİK PANELİ GÖSTERİMİ
+if len(basarili_hisseler) > 0:
