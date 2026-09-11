@@ -65,12 +65,9 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
 
-# Kilitlenmeyi önleyen önbellek hafızası
-@st.cache_resource
-def get_global_logged_signals():
-    return set()
-
-global_kayitlar = get_global_logged_signals()
+# Hafıza önbelleği
+if "otomatik_loglananlar" not in st.session_state:
+    st.session_state["otomatik_loglananlar"] = set()
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -118,7 +115,6 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
-otomatik_eklenecekler = []
 
 if os.path.exists(excel_yolu):
     try:
@@ -127,18 +123,36 @@ if os.path.exists(excel_yolu):
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
-        # 📌 KİLİTLENMEYİ ÖNLEYEN TOPLU FİYAT İNDİRME MEKANİZMASI (Süreyi saliselere indirir)
+        # Ön veri hazırlığı
         indirilecek_hisseler = []
+        excel_satirlari = []
+        
         for idx in range(min(10, len(df))):
             ha_kod = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
             if ha_kod != "" and ha_kod not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                indirilecek_hisseler.append(f"{ha_kod}.IS")
-        
+                # Uzantı kontrolü yapılıyor
+                full_kod = ha_kod if ha_kod.endswith(".IS") else f"{ha_kod}.IS"
+                indirilecek_hisseler.append(full_kod)
+                
+                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else "0"
+                alim_c_temiz = alim_c.replace(",", ".")
+                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                
+                puan_d = df.iloc[idx, 3]
+                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                
+                excel_satirlari.append({
+                    "hisse_orijinal": ha_kod,
+                    "hisse_is": full_kod,
+                    "maliyet": maliyet,
+                    "puan": p_temiz
+                })
+
+        # Toplu fiyat çekimi (Hata durumunda sıfır kabul edilir, ekran kilitlenmez)
         fiyat_sozlugu = {}
         if indirilecek_hisseler:
             try:
-                # Tüm hisseleri tek bir komutla saniyeler içinde indiriyoruz
-                toplu_veri = yf.download(indirilecek_hisseler, period="1d", group_by="ticker", auto_adjust=True, timeout=5, progress=False)
+                toplu_veri = yf.download(indirilecek_hisseler, period="1d", timeout=3, progress=False, auto_adjust=True)
                 for h_kod in indirilecek_hisseler:
                     try:
                         if len(indirilecek_hisseler) == 1:
@@ -150,75 +164,62 @@ if os.path.exists(excel_yolu):
             except:
                 pass
 
-        # HTML Tablosunu oluşturma süreci
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                veri_var_mi = True
-                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                
-                # Hafızadan fiyatı anında çekiyoruz
-                c_fiyat = fiyat_sozlugu.get(f"{ha}.IS", 0.0)
-                
-                alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-                
-                or_dg = 0.0
-                if maliyet > 0 and c_fiyat > 0:
-                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    if or_dg >= 9.0:
-                        basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                else:
-                    kz_str = "<span>-</span>"
-                
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-
-                otomatik_eklenecekler.append({
-                    "hisse": ha, "maliyet": maliyet, "c_fiyat": c_fiyat, "puan": p_temiz, "or_dg": or_dg
-                })
-    except:
-        pass
-
-# 🛠️ GÜVENLİ VE PERFORMANSLI OTOMATİK KAYIT SİSTEMİ
-if otomatik_eklenecekler:
-    try:
+        # Veritabanını tek seferde açıp loglama yapıyoruz (Döngü kilitlenmesi önlendi)
         df_notlar_mevcut = pd.read_csv(db_notlar)
         dosya_guncellendi = False
-        
-        for item in otomatik_eklenecekler:
-            sinyal_anahtari = f"{item['hisse']}_{item['maliyet']}_{item['puan']}"
+
+        for item in excel_satirlari:
+            veri_var_mi = True
+            c_fiyat = fiyat_sozlugu.get(item["hisse_is"], 0.0)
+            maliyet = item["maliyet"]
+            ha = item["hisse_orijinal"]
+            p_temiz = item["puan"]
             
-            if sinyal_anahtari not in global_kayitlar:
-                zaten_var = False
+            or_dg = 0.0
+            if maliyet > 0 and c_fiyat > 0:
+                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                if or_dg >= 9.0:
+                    basariliHisse_adi = ha.replace(".IS", "")
+                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+            else:
+                kz_str = "<span>-</span>"
+            
+            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+
+            # 📌 BENZERSİZ OTOMATİK KAYIT SİSTEMİ
+            sinyal_key = f"{ha}_{maliyet}_{p_temiz}"
+            if sinyal_key not in st.session_state["otomatik_loglananlar"]:
+                zaten_yazili = False
                 if not df_notlar_mevcut.empty:
-                    kontrol = df_notlar_mevcut[(df_notlar_mevcut["hisse"] == item['hisse']) & 
-                                               (df_notlar_mevcut["hedef_fiyat"] == f"{item['maliyet']:,.2f} TL")]
+                    # CSV'de mükerrerlik taraması
+                    kontrol = df_notlar_mevcut[(df_notlar_mevcut["hisse"] == ha) & 
+                                               (df_notlar_mevcut["hedef_fiyat"] == f"{maliyet:,.2f} TL")]
                     if not kontrol.empty:
-                        zaten_var = True
+                        zaten_yazili = True
                 
-                if not zaten_var:
+                if not zaten_yazili:
                     yeni_id = int(df_notlar_mevcut["id"].max() + 1) if not df_notlar_mevcut.empty else 1
                     su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-                    oto_not = f"🤖 BTA Algoritması tarafından otomatik olarak sisteme işlendi. Anlık Fiyat: {item['c_fiyat']:,.2f} TL, K/Z Durumu: %{item['or_dg']:.2f}"
+                    oto_not = f"🤖 BTA Algoritması tarafından otomatik olarak sisteme işlendi. Anlık Fiyat: {c_fiyat:,.2f} TL, K/Z Durumu: %{or_dg:.2f}"
                     
                     yeni_satir = pd.DataFrame([{
                         "id": yeni_id,
                         "tarih": su_an,
-                        "hisse": item['hisse'],
+                        "hisse": ha,
                         "not": oto_not,
-                        "hedef_fiyat": f"{item['maliyet']:,.2f} TL"
+                        "hedef_fiyat": f"{maliyet:,.2f} TL"
                     }])
                     df_notlar_mevcut = pd.concat([df_notlar_mevcut, yeni_satir], ignore_index=True)
                     dosya_guncellendi = True
                 
-                global_kayitlar.add(sinyal_anahtari)
-        
+                st.session_state["otomatik_loglananlar"].add(sinyal_key)
+
         if dosya_guncellendi:
             df_notlar_mevcut.to_csv(db_notlar, index=False)
-    except:
-        pass
 
+    except Exception as e:
+        st.error(f"Excel okunurken bir hata oluştu, ancak panel açık tutuluyor: {e}")
+
+# 8. OTOMATİK BAŞARI TEBRİK PANELİ
+if basarili_hisseler:
