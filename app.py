@@ -63,15 +63,14 @@ db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_kayit_defteri = "bta_hisse_kayit_defteri.csv"
 
-# 📊 ANLIK FİYAT ÇIKARILDI: Tarihsel arşivi tutulacak net sütun yapısı
+# Tarihsel arşivi tutulacak sütun yapısı (Anlık fiyat kaldırıldı)
 sutunlar = ["Kayit_Tarihi", "Bta_Puani", "Hisse", "Algoritmik_Fiyat", "Performans"]
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-# 👁️ BOZULMAZ SAYAC ALTYAPISI: Dosya yoksa veya şeması yanlışsa sıfırdan kurar
 if not os.path.exists(db_istatistik) or os.path.getsize(db_istatistik) == 0:
-    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 if not os.path.exists(db_kayit_defteri) or os.path.getsize(db_kayit_defteri) == 0:
     pd.DataFrame(columns=sutunlar).to_csv(db_kayit_defteri, index=False)
@@ -81,9 +80,8 @@ ziyaret, basarili, basarisiz = 0, 0, 0
 try:
     df_ist = pd.read_csv(db_istatistik)
     if df_ist.empty or "ziyaret_sayisi" not in df_ist.columns:
-        df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+        df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
     
-    # Otomatik yenilemelerde sayacın uçmaması için session_state kontrolü
     if "ziyaret_sayildi" not in st.session_state:
         df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
         df_ist.to_csv(db_istatistik, index=False)
@@ -218,3 +216,8 @@ if not veri_var_mi:
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📜 BTA TARİHSEL HİSSE KAYIT DEFTERİ (LOG)</p>', unsafe_allow_html=True)
 try:
+    df_goster = pd.read_csv(db_kayit_defteri)
+    st.dataframe(df_goster.iloc[::-1], use_container_width=True, hide_index=True)
+except:
+    st.info("Kayıt defteri henüz boş veya yeni oluşturuluyor.")
+
