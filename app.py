@@ -56,12 +56,16 @@ st.markdown(css_kodu, unsafe_allow_html=True)
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
+db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv" # Yeni oluşturulan geçmiş veritabanı dosyası
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
     pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
+
+if not os.path.exists(db_gecmis_kayitlar):
+    pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"]).to_csv(db_gecmis_kayitlar, index=False)
 
 # 4. ZIYARETCI SAYACINI TETIKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -80,7 +84,6 @@ if os.path.exists(db_istatistik):
         basarili = int(df_ist.at[0, "basarili_oy"])
         basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except Exception as e:
-        # Sayaç hatası durumunda uygulamanın çökmesi engellendi
         ziyaret, basarili, basarisiz = 174, 0, 0 
 
 # 5. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
@@ -100,12 +103,13 @@ bist_mini_widget = """
 """
 components.html(bist_mini_widget, height=100)
 
-# 6. MODERN FRAGMENT YAPISI (Sadece bu alan 5 saniyede bir tetiklenir, formları bozmaz)
+# 6. MODERN FRAGMENT YAPISI (Sadece bu alan 5 saniyede bir tetiklenir)
 @st.fragment(run_every=5)
 def canlı_borsa_paneli():
     excel_tarih_objesi = datetime.datetime.now()
     gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
     excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
+    tarih_kisa = excel_tarih_objesi.strftime("%d.%m.%Y %H:%M")
 
     tablo_rows_html = ""
     veri_var_mi = False
@@ -115,12 +119,19 @@ def canlı_borsa_paneli():
         try:
             df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
             
+            # Geçmiş kayıtları kontrol etmek için mevcut CSV'yi yükle
+            try:
+                df_gecmis = pd.read_csv(db_gecmis_kayitlar)
+            except:
+                df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
+            
+            yeni_kayitlar = []
+
             for idx in range(min(10, len(df))):
                 ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
                 alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
                 puan_d = df.iloc[idx, 3]
                 
-                # Yasaklı kelime filtresi kontrolü
                 if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                     veri_var_mi = True
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
@@ -136,6 +147,16 @@ def canlı_borsa_paneli():
                     alim_c_temiz = alim_c.replace(",", ".")
                     maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                     
+                    # 📌 DEĞİŞİKLİK TAKİBİ VE NOT DEFTERİNE KAYIT MOTORU
+                    # Eğer bu hisse ismi ve algoritmik fiyat ikilisi geçmiş veritabanında yoksa YENİ kayıt olarak ekle
+                    if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
+                        yeni_kayitlar.append({
+                            "Tarih": tarih_kisa,
+                            "BTA Puanı": p_temiz,
+                            "Hisse": ha,
+                            "Algoritmik Fiyat": maliyet
+                        })
+
                     if maliyet > 0 and c_fiyat > 0:
                         or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                         if or_dg >= 9.0:
@@ -146,6 +167,13 @@ def canlı_borsa_paneli():
                         kz_str = "<span>-</span>"
                     
                     tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            
+            # Eğer yeni değişen/eklenen hisse varsa veritabanına yaz
+            if yeni_kayitlar:
+                df_yeni = pd.DataFrame(yeni_kayitlar)
+                df_guncel_gecmis = pd.concat([df_gecmis, df_yeni], ignore_index=True)
+                df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
+
         except Exception as e:
             st.error(f"Excel okunurken bir hata oluştu: {e}")
 
@@ -162,22 +190,3 @@ def canlı_borsa_paneli():
         st.markdown(panel_html, unsafe_allow_html=True)
         st.markdown(tablo_html, unsafe_allow_html=True)
     else:
-        tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-        st.markdown(tarama_html, unsafe_allow_html=True)
-
-# Canlı paneli çalıştırıyoruz
-canlı_borsa_paneli()
-
-# 7. YASAL UYARI BÖLÜMÜ
-yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
-st.markdown(yasal_html, unsafe_allow_html=True)
-
-# 8. ETKİLEŞİM VE İSTATİSTİK
-st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
-
-# -------------------------------------------------------------
-# 🚀 BURADAN İTİBAREN DİLEDİĞİNİZ YENİ KODU/ÖZELLİĞİ EKLEYEBİLİRSİNİZ
-# Sayfa donmayacak ve form girişleriniz artık sıfırlanmayacaktır.
-# -------------------------------------------------------------
