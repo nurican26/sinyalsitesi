@@ -112,7 +112,7 @@ df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fi
 if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
-        hedef_sayfa = excel_dosyasi.sheet_names
+        hedef_sayfa = excel_dosyasi.sheet_names[0]
         for sayfa in excel_dosyasi.sheet_names:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
@@ -191,16 +191,11 @@ if len(yeni_kayitlar) > 0:
     except:
         pass
 
-# 7. TAVAN BAŞARI TEBRİK MESAJI
+# 7. TAVAN BAŞARI TEBRİK MESAJI (Tamamen Güvenli Düz Çizgi)
 if tebrik_metni != "":
-    st.markdown(f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {tebrik_metni} hedefine ulaşarak %9 ve üzeri tavan performansı göstermiştir. Tebrik ederiz!</p></div>', unsafe_allow_html=True)
+    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {tebrik_metni} hedefine ulaşarak %9 ve üzeri tavan performansı göstermiştir. Tebrik ederiz!</p></div>'
+    st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 8. CANLI TABLO PANELİ (Tüm hiyerarşik if kilitlenmeleri çözüldü)
+# 8. CANLI TABLO PANELİ (Riskli if-else kilitlenmeleri tamamen kaldırıldı)
 tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
 panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
-
-if veri_var_mi:
-    st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-
-if not veri_var_mi:
