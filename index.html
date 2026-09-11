@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="notranslate" google="notranslate">
 <head>
     <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTA Merkez</title>
     <style>
         body {
-            background-color: #0b111e;
-            background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #ffffff;
+            background-color: #0b111e !important;
+            background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%) !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            color: #ffffff !important;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -41,7 +42,6 @@
         .up { color: #00ff66; }
         .down { color: #ff3344; }
     </style>
-    <!-- Excel Okuma Kütüphaneleri -->
     <script src="https://cloudflare.com"></script>
 </head>
 <body>
@@ -49,7 +49,6 @@
 <div class="container">
     <h1 class="bta-ana-logo">BTA MERKEZ</h1>
 
-    <!-- TradingView Grafik -->
     <div style="width:100%; max-width:450px; margin: 0 auto 20px auto;">
         <div class="tradingview-widget-container">
             <div class="tradingview-widget-container__widget"></div>
@@ -62,7 +61,6 @@
         </div>
     </div>
 
-    <!-- İstatistik Paneli -->
     <p style="font-size:16px; font-weight:bold; color:#00ffcc; text-align:center; margin-bottom:10px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>
     <div class="panel-grid">
         <div class="ist-kutu">
@@ -89,7 +87,6 @@
         <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuza uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
     </div>
 
-    <!-- Canlı Rapor Tablosu -->
     <div class="section-title">📈 BTA ALGORİTMİK HİSSE</div>
     <table class="borsa-tablo">
         <thead>
@@ -106,7 +103,6 @@
         </tbody>
     </table>
 
-    <!-- Geçmiş Kayıtlar -->
     <div class="section-title">📝 GEÇMİŞ ANALİZ KAYITLARI (NOT DEFTERİ)</div>
     <table class="borsa-tablo">
         <thead>
@@ -126,12 +122,10 @@
 </div>
 
 <script>
-    // Önbellek (Cache) kilidini kırmak için dinamik link yapısı kuruldu
     const excelBaseUrl = "https://githubusercontent.com";
 
     async function excelTetikleVeOku() {
         try {
-            // Her 5 saniyede bir dosyanın son halini çekmek için sonuna benzersiz sayı ekliyoruz
             const response = await fetch(excelBaseUrl + "?t=" + new Date().getTime());
             if (!response.ok) return;
             
@@ -141,14 +135,12 @@
             
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            // Boşlukları ve formatları bozmadan JSON dizisine çevir
             const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             
             let aktifTabloHtml = "";
             let gecmisTabloHtml = "";
             let satirSayisi = 0;
 
-            // Excel satırlarını baştan sona tara
             for (let i = 0; i < rows.length; i++) {
                 let row = rows[i];
                 if (!row || row.length < 2) continue;
@@ -157,19 +149,16 @@
                 let maliyetFiyat = parseFloat(String(row[2] || '').replace(',', '.'));
                 let puan = row[3] ? parseFloat(row[3]).toFixed(2) : '-';
 
-                // Başlık satırlarını temizle
-                if (!hisseKod || hisseKod.includes("HİSSE") || hisseKod.includes("BTA") || hisseKod === "") continue;
+                if (!hisseKod || hisseKod.includes("HİSSE") || hisseKod.includes("BTA") || hisseKod === "" || isNaN(maliyetFiyat)) continue;
 
                 satirSayisi++;
 
-                // Canlı simüle veya yfinance verisi gelene kadar ara fiyat ataması
                 let anlikFiyat = maliyetFiyat * 1.05; 
                 let fark = ((anlikFiyat - maliyetFiyat) / maliyetFiyat) * 100;
                 let kzClass = fark >= 0 ? "up" : "down";
                 let kzIsaret = fark >= 0 ? "▲" : "▼";
 
                 if (satirSayisi <= 10) {
-                    // Canlı Tabloya Ekle
                     aktifTabloHtml += `<tr>
                         <td>${puan}</td>
                         <td>${hisseKod}</td>
@@ -179,7 +168,6 @@
                     </tr>`;
                 }
 
-                // Kayıt Defterine Ekle (Tarih damgasıyla)
                 let bugun = new Date();
                 let tarihStr = bugun.toLocaleDateString('tr-TR') + " - " + bugun.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
                 
@@ -210,10 +198,19 @@
         }
     }
 
-    // İlk açılışta ve her 5 saniyede bir dosyayı zorla tetikle
     excelTetikleVeOku();
     setInterval(excelTetikleVeOku, 5000);
 
-    // Yıldız Sistemi
     const stars = document.querySelectorAll('.star');
     let toplamYildiz = 420; let oySayisi = 100;
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            let val = parseInt(star.getAttribute('data-value'));
+            toplamYildiz += val; oySayisi++;
+            document.getElementById('lbl-puan').innerText = (toplamYildiz / oySayisi).toFixed(1) + " / 5";
+            stars.forEach((s, idx) => { if(idx < val) s.classList.add('active'); else s.classList.remove('active'); });
+        });
+    });
+</script>
+</body>
+</html>
