@@ -68,17 +68,7 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-# 5. HAFIZA (SESSION STATE) TANIMLAMALARI
-if "kayitli_otomatik_hisseler" not in st.session_state:
-    try:
-        df_init = pd.read_csv(db_notlar)
-        # Daha önce otomatik eklenmiş hisseleri hafızaya çekerek mükerrer kaydı engelliyoruz
-        auto_records = df_init[df_init["not"].str.contains("otomatik tespit edildi", na=False, case=False)]
-        st.session_state["kayitli_otomatik_hisseler"] = set(auto_records["hisse"].unique())
-    except:
-        st.session_state["kayitli_otomatik_hisseler"] = set()
-
-# 6. ZİYARETÇİ SAYACINI TETİKLEME
+# 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
 if os.path.exists(db_istatistik):
     try:
@@ -95,7 +85,7 @@ if os.path.exists(db_istatistik):
     except:
         pass
 
-# 7. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
+# 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
 
 # TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
@@ -122,7 +112,7 @@ excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 8. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
+# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
@@ -159,11 +149,11 @@ if os.path.exists(excel_yolu):
                     kz_str = "<span>-</span>"
                 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-    except Exception as e:
+    except:
         pass
 
 # ====================================================================
-# 🤖 GÜVENLİ VE HAFIZA DESTEKLİ OTOMATİK ARKA PLAN KAYIT MOTORU
+# 🤖 DOĞRUDAN CSV TABANLI SIFIR HATA OTOMATİK KAYIT SİSTEMİ
 # ====================================================================
 if aktif_tablo_hisseleri:
     try:
@@ -171,10 +161,10 @@ if aktif_tablo_hisseleri:
         kayit_degisti_mi = False
         
         for hisse_kod in aktif_tablo_hisseleri:
-            # Hem yerel csv tablosundan hem de Streamlit oturum hafızasından kontrol et
-            kod_kayitli_mi = hisse_kod in st.session_state["kayitli_otomatik_hisseler"]
+            # Geçmişte bu hisse için hiç kayıt atılmış mı doğrudan CSV dosyasından bakıyoruz
+            zaten_var = not df_mevcut_notlar[df_mevcut_notlar["hisse"] == hisse_kod].empty
             
-            if not kod_kayitli_mi:
+            if not zaten_var:
                 yeni_id = int(df_mevcut_notlar["id"].max() + 1) if not df_mevcut_notlar.empty else 1
                 su_an_zaman = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
                 
@@ -187,22 +177,24 @@ if aktif_tablo_hisseleri:
                 }])
                 
                 df_mevcut_notlar = pd.concat([df_mevcut_notlar, yeni_otomatik_satir], ignore_index=True)
-                st.session_state["kayitli_otomatik_hisseler"].add(hisse_kod)
                 kayit_degisti_mi = True
                 
         if kayit_degisti_mi:
             df_mevcut_notlar.to_csv(db_notlar, index=False)
-            st.toast("🚀 Algoritmaya yeni gelen hisse(ler) başarıyla kayıt defterine işlendi!")
-    except Exception as e:
+    except:
         pass
 # ====================================================================
 
-# 9. OTOMATİK BAŞARI TEBRİK PANELİ
+# 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 10. TABLO VEYA ARAMA METNİ PANELİ
+# 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
+    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
+    st.markdown(panel_html, unsafe_allow_html=True)
+    st.markdown(tablo_html, unsafe_allow_html=True)
+else:
