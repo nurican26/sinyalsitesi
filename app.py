@@ -157,12 +157,11 @@ if os.path.exists(excel_yolu):
                     kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
                 else:
                     kz_str = "<span>-</span>"
-                    or_dg = 0.0
                 
                 # Canlı Tablo Satırı
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
                 
-                # Kayıt Defteri Satırı (Fiyat ve O günkü Kar Durumu Dahil)
+                # Kayıt Defteri Satırı
                 gecmis_rows_html += f'<tr><td>{excel_guncelleme_tarihi}</td><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
     except Exception as e:
         st.error(f"Excel okunurken bir hata oluştu: {e}")
@@ -188,9 +187,4 @@ st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#1E90FF; margin-bottom:8px;">📝 GEÇMİŞ ANALİZ KAYITLARI (NOT DEFTERİ)</p>', unsafe_allow_html=True)
 
 if gecmis_rows_html != "":
-    gecmis_tablo_html = f"""
-    <table class="borsa-tablo">
-        <tr>
-            <th>KAYIT TARİHİ</th>
-            <th>BTA PUANI</th>
-            <th>HİSSE</th>
+    gecmis_tablo_html = '<table class="borsa-tablo"><tr><th>KAYIT TARİHİ</th><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYAT</th><th>ANLIK FİYAT</th><th>O GÜNKÜ KÂR/ZARAR</th></tr>' + gecmis_rows_html + '</table>'
