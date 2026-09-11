@@ -56,14 +56,24 @@ excel_yolu = "bta.xls.xlsm"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
 
-# Veritabanı dosyalarını güvenli başlatma
+# Veritabanı dosyalarını güvenli başlatma veya eski dosyayı otomatik dönüştürme
 if not os.path.exists(db_istatistik):
     pd.DataFrame([{"ziyaret_sayisi": 187, "toplam_yildiz": 5, "oy_sayisi": 1}]).to_csv(db_istatistik, index=False)
+else:
+    # Eski dosya varsa yapısını kontrol et ve eksik sütunları yamala
+    try:
+        df_eski_kontrol = pd.read_csv(db_istatistik)
+        if "toplam_yildiz" not in df_eski_kontrol.columns:
+            df_eski_kontrol["toplam_yildiz"] = 5
+            df_eski_kontrol["oy_sayisi"] = 1
+            df_eski_kontrol.to_csv(db_istatistik, index=False)
+    except:
+        pass
 
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat", "Anlık Fiyat", "Kâr/Zarar Durumu"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# İstatistikleri Yükle ve Ziyaretçiyi 1 Artır (Session State ile döngü önleme)
+# İstatistikleri Yükle ve Ziyaretçiyi Artır
 df_ist = pd.read_csv(db_istatistik)
 if "ziyaret_artirildi" not in st.session_state:
     df_ist.loc[0, "ziyaret_sayisi"] += 1
@@ -95,7 +105,7 @@ components.html(bist_mini_widget, height=100)
 # ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
-col_met1, col_met2, col_oy = st.columns([1, 1, 2])
+col_met1, col_met2, col_oy = st.columns(3)
 
 with col_met1:
     st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">👁️ Toplam Ziyaret</span><br><b style="font-size:20px; color:#00ffcc;">{ziyaret} Kez</b></div>', unsafe_allow_html=True)
@@ -104,10 +114,8 @@ with col_met2:
     st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">⭐ Platform Puanı</span><br><b style="font-size:20px; color:#00ffcc;">{mevcut_puan} / 5</b></div>', unsafe_allow_html=True)
 
 with col_oy:
-    # 5 Yıldız Seçim Aracı
     yildiz_secimi = st.feedback("stars", key="bta_yildiz_sistemi")
     if yildiz_secimi is not None and f"oylandi_{yildiz_secimi}" not in st.session_state:
-        # feedback bileşeni 0-4 arası döndürdüğü için 1 ekliyoruz
         verilen_puan = yildiz_secimi + 1
         df_ist.loc[0, "toplam_yildiz"] += verilen_puan
         df_ist.loc[0, "oy_sayisi"] += 1
@@ -139,8 +147,6 @@ basarili_hisseler = []
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        
-        # Kalıcı geçmiş kayıtları yükle
         df_gecmis_db = pd.read_csv(db_gecmis_kayitlar)
         yeni_kayitlar = []
         
@@ -154,7 +160,6 @@ if os.path.exists(excel_yolu):
                 p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 c_fiyat = 0.0
                 
-                # Canlı Fiyat Çekimi
                 try:
                     h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
@@ -175,10 +180,8 @@ if os.path.exists(excel_yolu):
                     kz_str = "-"
                     kz_html = "<span>-</span>"
                 
-                # Canlı Tablo Satırı
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # Kalıcı Kayıt Defteri için Kontrol (Aynı hisse aynı fiyatta bugün kaydedilmemişse ekle)
                 bugun_tarih = excel_tarih_objesi.strftime("%d.%m.%Y")
                 mukerrer = df_gecmis_db[
                     (df_gecmis_db["Hisse"] == ha) & 
@@ -196,11 +199,9 @@ if os.path.exists(excel_yolu):
                         "Kâr/Zarar Durumu": kz_str
                     })
                     
-        # Yeni veriler varsa veritabanına ekle ve diske kaydet
         if yeni_kayitlar:
             df_yeni = pd.DataFrame(yeni_kayitlar)
             df_gecmis_db = pd.concat([df_gecmis_db, df_yeni], ignore_index=True)
-            # Sadece son 50 kaydı tutarak şişmesini engelleyelim
             df_gecmis_db.tail(50).to_csv(db_gecmis_kayitlar, index=False)
             
     except Exception as e:
