@@ -45,7 +45,7 @@ div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
 
-# 3. VERI TABANLARI KONTROLÜ
+# 3. VERI TABANLARI VE EXCEL YOLLARI KONTROLÜ
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_gecmis_kayitlar = "bta_hisse_gecmisi_db.csv"
@@ -112,7 +112,7 @@ df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fi
 if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
-        hedef_sayfa = excel_dosyasi.sheet_names[0]
+        hedef_sayfa = excel_dosyasi.sheet_names
         for sayfa in excel_dosyasi.sheet_names:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
@@ -128,7 +128,6 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# SÜTUNLAR TAMAMEN DİNAMİK YAKALANIYOR (GİRİNTİSİZ GÜVENLİ YAPI)
 hisse_col, maliyet_col, puan_col = 0, 2, 3
 
 if not df_excel.empty:
@@ -150,7 +149,6 @@ if not df_excel.empty:
                 if pd.notna(puan_d) and str(puan_d).strip() != "":
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                 
-                # CANLI YFINANCE ENTEGRASYONU
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -197,10 +195,11 @@ if len(yeni_kayitlar) > 0:
 if tebrik_metni != "":
     st.markdown(f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {tebrik_metni} hedefine ulaşarak %9 ve üzeri tavan performansı göstermiştir. Tebrik ederiz!</p></div>', unsafe_allow_html=True)
 
-# 8. CANLI TABLO PANELİ
+# 8. CANLI TABLO PANELİ (Tüm hiyerarşik if kilitlenmeleri çözüldü)
+tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
+panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
+
 if veri_var_mi:
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 
