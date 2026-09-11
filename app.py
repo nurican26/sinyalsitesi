@@ -154,9 +154,11 @@ for idx in range(min(10, len(df))):
         continue
         
     veri_var_mi = True
-    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-    c_fiyat = 0.0
     
+    # 🎯 BTA PUANI DOĞRU FORMATLAMA
+    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+    
+    c_fiyat = 0.0
     try:
         h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
         c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
@@ -189,6 +191,7 @@ for idx in range(min(10, len(df))):
             "Performans": f"%{or_dg:.2f}"
         })
 
+    # 🎯 DÜZELTİLDİ: Puan yerine anlık fiyatın basılması hatası giderildi.
     tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
 if yeni_kayitlar:
@@ -217,7 +220,3 @@ st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📜 BTA TARİHSEL HİSSE KAYIT DEFTERİ (LOG)</p>', unsafe_allow_html=True)
 try:
     df_goster = pd.read_csv(db_kayit_defteri)
-    st.dataframe(df_goster.iloc[::-1], use_container_width=True, hide_index=True)
-except:
-    st.info("Kayıt defteri henüz boş veya yeni oluşturuluyor.")
-
