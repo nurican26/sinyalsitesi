@@ -123,7 +123,7 @@ yasal_html = """
 st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
-# 📁 GÜVENLİ VE ZIRHLI EXCEL YÜKLEME ALANI
+# 📁 GÜVENLİ VE AKILLI EXCEL YÜKLEME ALANI
 yuklenen_dosya = st.file_uploader("📁 Excel Dosyasını Buraya Yükleyin (.xlsm, .xlsx)", type=["xlsm", "xlsx"])
 
 # 6. ANA ANALİZ MOTORU
@@ -139,22 +139,19 @@ basarili_hisseler = []
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
-# 📌 [YENİ - SÜPER ESNEK OKUYUCU]: Sayfa adı veya makro kilitlenmelerini tamamen çözer
+# Excel Okuma Yapısı
 if yuklenen_dosya is not None:
     try:
         excel_dosyasi = pd.ExcelFile(yuklenen_dosya, engine="openpyxl")
         mevcut_sayfalar = excel_dosyasi.sheet_names
-        
-        # 'WEB' sayfasını büyük/küçük harf duyarsız arıyoruz
-        hedef_sayfa = mevcut_sayfalar[0] # Varsayılan olarak ilk sayfayı seçiyoruz
+        hedef_sayfa = mevcut_sayfalar[0]
         for sayfa in mevcut_sayfalar:
             if sayfa.strip().upper() == "WEB":
                 hedef_sayfa = sayfa
                 break
-                
         df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa)
-    except Exception as e:
-        st.error(f"Excel okunurken sistemsel bir hata oluştu. Lütfen dosyanızın düzgün kaydedildiğinden emin olun.")
+    except:
+        st.error("Excel dosyası açılamadı veya yapısı bozuk.")
 
 if os.path.exists(db_gecmis_kayitlar):
     try:
@@ -164,19 +161,40 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Satır Analiz Döngüsü
+# 📌 [DİNAMİK SÜTUN TESPİT MOTORU]: Kullanıcının Excel başlıklarını otomatik eşleştirir
+hisse_col = None
+maliyet_col = None
+puan_col = None
+
 if not df_excel.empty:
-    for idx in range(min(10, len(df_excel))):
+    # Sütun isimlerini temizle ve küçük/büyük harf karmaşasını çöz
+    sutunlar = [str(c).strip().upper() for c in df_excel.columns]
+    
+    for i, col in enumerate(sutunlar):
+        if "HİSSE" in col or "HISSE" in col or "KOD" in col:
+            hisse_col = i
+        elif "MALİYET" in col or "MALIYET" in col or "FİYAT" in col or "FIYAT" in col or "ALIM" in col:
+            maliyet_col = i
+        elif "PUAN" in col or "BTA" in col or "SKOR" in col:
+            puan_col = i
+
+    # Eğer otomatik sütun bulunamazsa, eski sabit varsayılan düzeni (0, 2, 3) zorla devreye al
+    if hisse_col is None: hisse_col = 0
+    if maliyet_col is None: maliyet_col = 2
+    if puan_col is None: puan_col = 3
+
+    # Döngü Analizi
+    for idx in range(len(df_excel)):
         try:
-            ha = str(df_excel.iloc[idx, 0]).strip().upper() if pd.notna(df_excel.iloc[idx, 0]) else ""
-            alim_c = str(df_excel.iloc[idx, 2]).strip() if pd.notna(df_excel.iloc[idx, 2]) else ""
-            puan_d = df_excel.iloc[idx, 3]
+            ha = str(df_excel.iloc[idx, hisse_col]).strip().upper() if pd.notna(df_excel.iloc[idx, hisse_col]) else ""
+            alim_c = str(df_excel.iloc[idx, maliyet_col]).strip() if pd.notna(df_excel.iloc[idx, maliyet_col]) else ""
+            puan_d = df_excel.iloc[idx, puan_col] if pd.notna(df_excel.iloc[idx, puan_col]) else ""
             
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG", "KOD", "YÜKLENEN"]:
                 veri_var_mi = True
                 p_temiz = "-"
                 
-                if pd.notna(puan_d) and str(puan_d).strip().lower() not in ["nan", "none", ""]:
+                if puan_d != "" and str(puan_d).strip().lower() not in ["nan", "none", ""]:
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     
                 c_fiyat = 0.0
@@ -212,15 +230,3 @@ if not df_excel.empty:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
                         basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                elif maliyet > 0 and c_fiyat == 0.0:
-                    kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
-                else:
-                    kz_str = "<span>-</span>"
-                
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-        except:
-            continue
-
-# Geçmiş veriyi listeye kaydetme
