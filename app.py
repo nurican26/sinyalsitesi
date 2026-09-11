@@ -65,7 +65,6 @@ basarisiz = 2
 
 # 5. LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
-
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
 
 col_met1, col_met2, col_oy1, col_oy2 = st.columns(4)
@@ -114,8 +113,9 @@ if yuklenen_dosya is not None:
         mevcut_sayfalar = excel_dosyasi.sheet_names
         hedef_sayfa = mevcut_sayfalar[0]
         for sayfa in mevcut_sayfalar:
-            if sayfa.strip().upper() == "WEB":
+            if "WEB" in sayfa.strip().upper():
                 hedef_sayfa = sayfa
+        # header=None vererek başlık kilitlenmelerini tamamen by-pass ediyoruz
         df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa, header=None)
     except:
         pass
@@ -128,15 +128,15 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# 🎯 GÖNDERDİĞİNİZ İMAJA GÖRE KESİNLEŞEN YENİ KOORDİNATLAR (B, C, D SÜTUNLARI)
-# Python'da: A=0, B=1, C=2, D=3 sütun indeksidir.
-hisse_col = 1   # B sütunu (Hisseleriniz burada duruyor)
-maliyet_col = 2 # C sütunu (BTA ALIM FİYATI)
-puan_col = 3    # D sütunu (BTA PUANI)
+# Sizin Excel'e özel milimetrik sütun haritası (B=1, C=2, D=3)
+hisse_col = 1   # B Sütunu
+maliyet_col = 2 # C Sütunu
+puan_col = 3    # D Sütunu
 
 if not df_excel.empty:
     for idx in range(len(df_excel)):
         try:
+            # 📌 ZIRHLI VERİ DÖNÜŞTÜRÜCÜ: Hücre boşsa veya geçersizse çökme yapmaz
             ha = ""
             if pd.notna(df_excel.iloc[idx, hisse_col]):
                 ha = str(df_excel.iloc[idx, hisse_col]).strip().upper()
@@ -149,8 +149,8 @@ if not df_excel.empty:
             if pd.notna(df_excel.iloc[idx, puan_col]):
                 puan_d = str(df_excel.iloc[idx, puan_col]).strip()
             
-            # Başlık satırlarını elemeli tarama motoru
-            if ha != "" and len(ha) <= 6 and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE", "BTA AL SAT", "AL SAT"]:
+            # Başlık satırlarını ve kelime tuzaklarını tamamen süzüyoruz
+            if ha != "" and len(ha) <= 6 and ha not in ["NAN", "NONE", "ANA", "KOD", "HİSSE KODU", "HİSSE", "BTA AL SAT", "AL SAT", "BTA HİSSE"]:
                 veri_var_mi = True
                 p_temiz = "-"
                 if puan_d != "" and puan_d.lower() not in ["nan", "none"]:
@@ -159,7 +159,7 @@ if not df_excel.empty:
                     except:
                         p_temiz = puan_d
                 
-                # CANLI VE GERÇEK BORSA FIYATI ÇEKİMİ (yfinance)
+                # CANLI YFINANCE VERİ AKIŞI
                 c_fiyat = 0.0
                 try:
                     ticker_kod = ha if ha.endswith(".IS") else f"{ha}.IS"
@@ -169,16 +169,14 @@ if not df_excel.empty:
                 except:
                     c_fiyat = 0.0
                 
-                # Maliyet dönüştürücü
-                alim_c_temiz = alim_c.replace(",", ".").strip()
-                maliyet = 0.0
+                # Fiyat Dönüştürücü
                 try:
-                    if alim_c_temiz != "":
-                        maliyet = float(alim_c_temiz)
+                    alim_c_temiz = alim_c.replace(",", ".").strip()
+                    maliyet = float(alim_c_temiz) if alim_c_temiz != "" else 0.0
                 except:
                     maliyet = 0.0
                 
-                # Not Defterine (Geçmişe) Akıllı Kayıt Motoru
+                # Kayıt Defteri Ekleme Filtresi
                 if maliyet > 0:
                     is_exist = False
                     if not df_gecmis.empty and 'Hisse' in df_gecmis.columns and 'Algoritmik Fiyat' in df_gecmis.columns:
@@ -186,7 +184,7 @@ if not df_excel.empty:
                     if not is_exist:
                         yeni_kayitlar.append({"Tarih": tarih_kisa, "BTA Puanı": p_temiz, "Hisse": ha, "Algoritmik Fiyat": maliyet})
 
-                # Kar / Zarar ve %9 Tavan Başarı Kontrolü
+                # Kar / Zarar ve Tavan Mesajı Mekanizması
                 if maliyet > 0 and c_fiyat > 0:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
@@ -219,3 +217,5 @@ if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
     st.markdown(panel_html, unsafe_allow_html=True)
+    st.markdown(tablo_html, unsafe_allow_html=True)
+else:
