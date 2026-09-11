@@ -185,16 +185,16 @@ if os.path.exists(excel_yolu):
                 # Canlı Tablo Satırı Oluştur
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_html}</td></tr>'
                 
-                # MÜKERRER KAYIT KONTROLÜ (Girintisiz Net Yapı)
-                kaydedilsin_mi = False
+                # MÜKERRER KAYIT KONTROLÜ (Hata Vermesi İmkansız Sıralı Düz Mantık)
+                mukerrer_var_mi = False
                 if c_fiyat > 0 and not df_gecmis_db.empty:
-                    mukerrer = df_gecmis_db[(df_gecmis_db["Hisse"] == ha) & (df_gecmis_db["Tarih"].str.contains(bugun_tarih_str)) & (df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL")]
-                    if len(mukerrer) == 0:
-                        kaydedilsin_mi = True
-                elif c_fiyat > 0:
-                    kaydedilsin_mi = True
+                    f_hisse = df_gecmis_db["Hisse"] == ha
+                    f_tarih = df_gecmis_db["Tarih"].str.contains(bugun_tarih_str)
+                    f_fiyat = df_gecmis_db["Anlık Fiyat"] == f"{c_fiyat:,.2f} TL"
+                    if len(df_gecmis_db[f_hisse & f_tarih & f_fiyat]) > 0:
+                        mukerrer_var_mi = True
                 
-                if kaydedilsin_mi:
+                if c_fiyat > 0 and not mukerrer_var_mi:
                     yeni_kayitlar.append({
                         "Tarih": excel_guncelleme_tarihi,
                         "BTA Puanı": p_temiz,
