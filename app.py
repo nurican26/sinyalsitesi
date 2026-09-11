@@ -123,7 +123,7 @@ yasal_html = """
 st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
-# 📁 GÜVENLİ VE AKILLI EXCEL YÜKLEME ALANI
+# 📁 EXCEL YÜKLEME ALANI
 yuklenen_dosya = st.file_uploader("📁 Excel Dosyasını Buraya Yükleyin (.xlsm, .xlsx)", type=["xlsm", "xlsx"])
 
 # 6. ANA ANALİZ MOTORU
@@ -151,7 +151,7 @@ if yuklenen_dosya is not None:
                 break
         df_excel = excel_dosyasi.parse(sheet_name=hedef_sayfa)
     except:
-        st.error("Excel dosyası açılamadı veya yapısı bozuk.")
+        pass
 
 if os.path.exists(db_gecmis_kayitlar):
     try:
@@ -161,40 +161,32 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# 📌 [DİNAMİK SÜTUN TESPİT MOTORU]: Kullanıcının Excel başlıklarını otomatik eşleştirir
-hisse_col = None
-maliyet_col = None
-puan_col = None
+# Sütun Tespitleri
+hisse_col = 0
+maliyet_col = 2
+puan_col = 3
 
 if not df_excel.empty:
-    # Sütun isimlerini temizle ve küçük/büyük harf karmaşasını çöz
     sutunlar = [str(c).strip().upper() for c in df_excel.columns]
-    
     for i, col in enumerate(sutunlar):
         if "HİSSE" in col or "HISSE" in col or "KOD" in col:
             hisse_col = i
-        elif "MALİYET" in col or "MALIYET" in col or "FİYAT" in col or "FIYAT" in col or "ALIM" in col:
+        if "MALİYET" in col or "MALIYET" in col or "FİYAT" in col or "FIYAT" in col or "ALIM" in col:
             maliyet_col = i
-        elif "PUAN" in col or "BTA" in col or "SKOR" in col:
+        if "PUAN" in col or "BTA" in col or "SKOR" in col:
             puan_col = i
 
-    # Eğer otomatik sütun bulunamazsa, eski sabit varsayılan düzeni (0, 2, 3) zorla devreye al
-    if hisse_col is None: hisse_col = 0
-    if maliyet_col is None: maliyet_col = 2
-    if puan_col is None: puan_col = 3
-
-    # Döngü Analizi
     for idx in range(len(df_excel)):
         try:
             ha = str(df_excel.iloc[idx, hisse_col]).strip().upper() if pd.notna(df_excel.iloc[idx, hisse_col]) else ""
             alim_c = str(df_excel.iloc[idx, maliyet_col]).strip() if pd.notna(df_excel.iloc[idx, maliyet_col]) else ""
             puan_d = df_excel.iloc[idx, puan_col] if pd.notna(df_excel.iloc[idx, puan_col]) else ""
             
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG", "KOD", "YÜKLENEN"]:
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG", "KOD"]:
                 veri_var_mi = True
                 p_temiz = "-"
                 
-                if puan_d != "" and str(puan_d).strip().lower() not in ["nan", "none", ""]:
+                if pd.notna(puan_d) and str(puan_d).strip().lower() not in ["nan", "none", ""]:
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     
                 c_fiyat = 0.0
@@ -230,3 +222,10 @@ if not df_excel.empty:
                     or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                     if or_dg >= 9.0:
                         basariliHisse_adi = ha.replace(".IS", "")
+                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                elif maliyet > 0 and c_fiyat == 0.0:
+                    kz_str = "<span style='color:#a2b4cc;'>Fiyat Çekilemedi</span>"
+                else:
+                    kz_str = "<span>-</span>"
+                
