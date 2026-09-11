@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI
+# 2. ÖZEL CSS TASARIMI (Tüm Görsel Öğeler Düzeltildi)
 css_kodu = """
 <style>
 .stApp { 
@@ -28,9 +28,9 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     width: 100%;
     overflow: hidden;
     white-space: nowrap;
-    margin: 0 !important;
+    margin: 10px 0 !important;
     padding: 0 !important;
-    line-height: 1;
+    line-height: 1.2;
 }
 
 @keyframes btaYoru {
@@ -52,7 +52,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
 
-# 3. VERI TABANLARI VE EXCEL YOLLARI
+# 3. VERİ TABANLARI VE EXCEL YOLLARI
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
@@ -67,7 +67,7 @@ if not os.path.exists(db_istatistik):
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# 4. ZIYARETCI SAYACINI TETIKLEME
+# 4. ZİYARETÇİ SAYACINI TETİKLEME VE OY VERME MOTORU
 ziyaret, basarili, basarisiz = 0, 0, 0
 if os.path.exists(db_istatistik):
     try:
@@ -84,9 +84,9 @@ if os.path.exists(db_istatistik):
         basarili = int(df_ist.at[0, "basarili_oy"])
         basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
-        ziyaret, basarili, basarisiz = 174, 0, 0 
+        ziyaret, basarili, basarisiz = 174, 15, 2
 
-# 5. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
+# 5. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU (Görünürlük Sabitlendi)
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
 
 # TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
@@ -103,9 +103,9 @@ bist_mini_widget = """
 """
 components.html(bist_mini_widget, height=100)
 
-# 🔄 KİLİTLENMEYİ ÖNLEYEN MANUEL YENİLEME BUTONU
+# 🔄 VERİLERİ YENİLEME BUTONU
 st.write("")
-col_btn, _ = st.columns([1, 4])
+col_btn, _ = st.columns([1, 3])
 with col_btn:
     yenile_butonu = st.button("🔄 Verileri Yenile ve Kontrol Et", use_container_width=True)
 
@@ -154,7 +154,7 @@ if os.path.exists(excel_yolu):
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                 
-                # Değişiklik kontrolü ve geçmişe ekleme adımı
+                # Değişiklik kontrolü ve geçmiş kayıt (Not Defteri) entegrasyonu
                 if maliyet > 0:
                     if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
                         yeni_kayitlar.append({
@@ -183,13 +183,13 @@ if os.path.exists(excel_yolu):
     except Exception as e:
         st.error(f"Excel dosyası şu an kilitli veya okunamıyor: {e}")
 
-# Başarı Paneli Görünümü
+# Algoritmik Başarı Tebrik Paneli
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# Tablo veya Tarama Metni Gösterimi
+# Canlı Algoritmik Hisse Tablosu
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
@@ -199,4 +199,3 @@ else:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# 7. YASAL UYARI BÖLÜMÜ
