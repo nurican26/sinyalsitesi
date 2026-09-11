@@ -60,7 +60,7 @@ if not os.path.exists(db_istatistik):
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# 4. ZIYARETCI SAYACINI TETIKLEME VE OY VERME MOTORU
+# 4. ZIYARETCI SAYACINI TETIKLEME
 ziyaret, basarili, basarisiz = 182, 15, 2
 if os.path.exists(db_istatistik):
     try:
@@ -140,7 +140,6 @@ tablo_rows_html = ""
 veri_var_mi = False
 basarili_hisseler = []
 
-# Excel ve geçmiş CSV veri okuma aşaması (Hatalar izole edildi)
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
@@ -158,7 +157,6 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Excel satır tarama döngüsü
 if not df_excel.empty:
     for idx in range(min(10, len(df_excel))):
         try:
@@ -182,8 +180,12 @@ if not df_excel.empty:
                 except:
                     c_fiyat = 0.0
                 
-                alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                # 📌 GÜVENLİK DÜZELTMESİ: Boşluk ve geçersiz karakter çökmeleri engellendi
+                alim_c_temiz = alim_c.replace(",", ".").strip()
+                try:
+                    maliyet = float(alim_c_temiz) if alim_c_temiz != "" else 0.0
+                except:
+                    maliyet = 0.0
                 
                 if maliyet > 0:
                     is_exist = False
@@ -220,7 +222,6 @@ if yeni_kayitlar:
     except:
         pass
 
-# 7. TEBRİK PANELİ (Sorun çıkaran girintili if tamamen dışarı çıkartıldı)
+# 7. TEBRİK PANELİ
 if len(basarili_hisseler) > 0:
     hisseler_str = ", ".join(basarili_hisseler)
-
