@@ -16,7 +16,6 @@ css_kodu = """
 }
 .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
 div[data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
-div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #121d33 !important; border: 1px solid #1e3a5f !important; border-radius: 10px !important; padding: 12px !important; }
 
 /* Sabit ve Şık BTA Logo Alanı */
 .bta-ana-logo {
@@ -25,7 +24,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     font-weight: bold; 
     font-size: 65px; 
     color: #00ffcc;
-    margin: 10px 0 !important;
+    margin: 5px 0 !important;
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
 
@@ -34,11 +33,21 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; }
 .tebrik-kutusu { border: 2px solid #00ffcc; box-shadow: 0 0 15px #00ffcc, inset 0 0 10px rgba(0,255,204,0.3); background: #121d33; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #1e3a5f; background: #0c1524; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; }
+
+/* İstatistik Kutusu Tasarımı */
+.ist-kutu {
+    background-color: #121d33;
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    color: white;
+}
 </style>
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
 
-# 3. VERİ TABANLARI VE EXCEL YOLLARI
+# 3. VERI TABANLARI VE EXCEL YOLLARI
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
@@ -53,7 +62,7 @@ if not os.path.exists(db_istatistik):
 if not os.path.exists(db_gecmis_kayitlar):
     pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"]).to_csv(db_gecmis_kayitlar, index=False)
 
-# 4. ZİYARETÇİ SAYACINI TETİKLEME VE OY VERME MOTORU
+# 4. ZIYARETCI SAYACINI TETIKLEME VE OY VERME MOTORU
 ziyaret, basarili, basarisiz = 0, 0, 0
 if os.path.exists(db_istatistik):
     try:
@@ -72,11 +81,58 @@ if os.path.exists(db_istatistik):
     except:
         ziyaret, basarili, basarisiz = 174, 15, 2
 
-# 5. PARILTILI BTA LOGO PANELİ (Kilitlenmeyi önlemek için sabitlendi)
+# 5. PARILTILI BTA LOGO PANELİ
 st.markdown('<h1 class="bta-ana-logo">BTA MERKEZ</h1>', unsafe_allow_html=True)
 
+# 🚀 [YENİ] EN ÜSTE TAŞINAN ETKİLEŞİM VE İSTATİSTİK BÖLÜMÜ
+st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:2px; text-align:center;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+
+toplam_oy = basarili + basarisiz
+begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
+
+col_met1, col_met2, col_oy1, col_oy2 = st.columns(4)
+
+with col_met1:
+    st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">👁️ Toplam Ziyaret</span><br><b style="font-size:20px; color:#00ffcc;">{ziyaret} Kez</b></div>', unsafe_allow_html=True)
+
+with col_met2:
+    st.markdown(f'<div class="ist-kutu"><span style="color:#b2c3d9; font-size:13px;">🎯 Başarı/Beğeni Oranı</span><br><b style="font-size:20px; color:#00ffcc;">%{begeni_orani}</b></div>', unsafe_allow_html=True)
+
+with col_oy1:
+    if st.button("👍 Başarılı Buldum", use_container_width=True):
+        if os.path.exists(db_istatistik):
+            try:
+                df_ist = pd.read_csv(db_istatistik)
+                df_ist.at[0, "basarili_oy"] = int(df_ist.at[0, "basarili_oy"]) + 1
+                df_ist.to_csv(db_istatistik, index=False)
+                st.toast("Oyunuz Kaydedildi! 👍")
+            except:
+                pass
+
+with col_oy2:
+    if st.button("👎 Başarısız Buldum", use_container_width=True):
+        if os.path.exists(db_istatistik):
+            try:
+                df_ist = pd.read_csv(db_istatistik)
+                df_ist.at[0, "basarisiz_oy"] = int(df_ist.at[0, "basarisiz_oy"]) + 1
+                df_ist.to_csv(db_istatistik, index=False)
+                st.toast("Oyunuz Kaydedildi! 👎")
+            except:
+                pass
+
+# 🚀 [YENİ] EN ÜSTE TAŞINAN SPK YASAL UYARI BÖLÜMÜ
+yasal_html = """
+<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 5px; margin-bottom: 10px;">
+    <p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;">
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+    </p>
+</div>
+"""
+st.markdown(yasal_html, unsafe_allow_html=True)
+
+st.write("---")
+
 # 🔄 VERİLERİ YENİLEME BUTONU
-st.write("")
 col_btn, _ = st.columns([1, 2])
 with col_btn:
     yenile_butonu = st.button("🔄 Verileri Yenile ve Kontrol Et", use_container_width=True)
@@ -126,7 +182,7 @@ if os.path.exists(excel_yolu):
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                 
-                # Değişiklik kontrolü ve geçmiş kayıt (Not Defteri)
+                # Geçmiş kayıt kontrolü
                 if maliyet > 0:
                     if not ((df_gecmis['Hisse'] == ha) & (df_gecmis['Algoritmik Fiyat'] == maliyet)).any():
                         yeni_kayitlar.append({
@@ -153,7 +209,7 @@ if os.path.exists(excel_yolu):
             df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
 
     except Exception as e:
-        st.error(f"Excel dosyası okunamıyor veya biçimi hatalı: {e}")
+        st.error(f"Excel dosyası okunamıyor: {e}")
 
 # Algoritmik Başarı Tebrik Paneli
 if basarili_hisseler:
@@ -161,25 +217,3 @@ if basarili_hisseler:
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# Canlı Algoritmik Hisse Tablosu
-if veri_var_mi and tablo_rows_html != "":
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
-    st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 7. RESMİ SPK YASAL UYARI BÖLÜMÜ
-yasal_html = """
-<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 12px; margin-top: 15px;">
-    <p style="font-size:12px; color:#b2c3d9; line-height:1.6; text-align:justify; margin:0;">
-        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. 
-        Yatırım danışmanlığı hizmeti, aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak 
-        yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel 
-        görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan 
-        bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Veriler en az 15 dakika gecikmelidir.
-    </p>
-</div>
-"""
