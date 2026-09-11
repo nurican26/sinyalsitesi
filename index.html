@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTA Merkez</title>
+    <style>
+        body {
+            background-color: #0b111e;
+            background-image: radial-gradient(at 0% 0%, rgba(26, 54, 93, 0.4) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { width: 100%; max-width: 1200px; }
+        .bta-ana-logo {
+            text-align: center;
+            font-family: 'Brush Script MT', cursive, sans-serif;
+            font-weight: bold;
+            font-size: 65px;
+            color: #00ffcc;
+            margin: 10px 0;
+            text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
+        }
+        .panel-grid { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .ist-kutu { background-color: #121d33; border: 1px solid #1e3a5f; border-radius: 8px; padding: 15px; text-align: center; flex: 1; min-width: 250px; }
+        .ist-kutu span { color: #b2c3d9; font-size: 14px; }
+        .ist-kutu b { font-size: 22px; color: #00ffcc; display: block; margin-top: 5px; }
+        .stars { display: flex; justify-content: center; gap: 5px; margin-top: 10px; }
+        .star { font-size: 30px; cursor: pointer; color: #1e2e4d; transition: color 0.2s; }
+        .star.active { color: #ffcc00; }
+        .yasal-uyari { background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 12px; margin-bottom: 25px; font-size: 12px; color: #b2c3d9; text-align: justify; line-height: 1.6; }
+        .section-title { font-size: 18px; font-weight: bold; color: #1E90FF; margin-bottom: 10px; }
+        .borsa-tablo { width: 100%; border-collapse: collapse; background-color: #121d33; border-radius: 10px; overflow: hidden; margin-bottom: 30px; }
+        .borsa-tablo th { background-color: #1e2e4d; color: #00ffcc; text-align: left; padding: 12px; font-size: 14px; }
+        .borsa-tablo td { padding: 12px; color: #ffffff; border-bottom: 1px solid #1e2e4d; font-weight: bold; font-size: 14px; }
+        .up { color: #00ff66; }
+        .down { color: #ff3344; }
+    </style>
+    <!-- Excel okumak için gerekli kütüphane -->
+    <script src="https://cloudflare.com"></script>
+    <script src="https://cloudflare.com"></script>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="bta-ana-logo">BTA MERKEZ</h1>
+
+    <!-- TradingView Mini Grafik -->
+    <div style="width:100%; max-width:450px; margin: 0 auto 20px auto;">
+        <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://tradingview.com" async>
+            {
+            "symbol": "BIST:XU100", "width": "100%", "height": 110, "locale": "tr",
+            "dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": false, "largeChartUrl": ""
+            }
+            </script>
+        </div>
+    </div>
+
+    <!-- İstatistik Üst Paneli -->
+    <p style="font-size:16px; font-weight:bold; color:#00ffcc; text-align:center; margin-bottom:10px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>
+    <div class="panel-grid">
+        <div class="ist-kutu">
+            <span>👁️ Toplam Ziyaret</span>
+            <b id="lbl-ziyaret">210 Kez</b>
+        </div>
+        <div class="ist-kutu">
+            <span>⭐ Platform Puanı</span>
+            <b id="lbl-puan">4.2 / 5</b>
+        </div>
+        <div class="ist-kutu">
+            <span>🌟 Değerlendir</span>
+            <div class="stars" id="star-container">
+                <span class="star" data-value="1">★</span>
+                <span class="star" data-value="2">★</span>
+                <span class="star" data-value="3">★</span>
+                <span class="star" data-value="4">★</span>
+                <span class="star" data-value="5">★</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="yasal-uyari">
+        <b style="color:#ff3344;">⚠️ SPK YASAL UYARI:</b> Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Burada yer alan yorum ve tavsiyeler, kişisel görüşlere dayanmaktadır. Mali durumunuza uygun olmayabilir. Veriler en az 15 dakika gecikmelidir.
+    </div>
+
+    <!-- Canlı Excel Veri Tablosu -->
+    <div class="section-title">📈 BTA ALGORİTMİK HİSSE</div>
+    <table class="borsa-tablo">
+        <thead>
+            <tr>
+                <th>BTA PUANI</th>
+                <th>HİSSE</th>
+                <th>ALGORİTMİK FİYATI</th>
+                <th>ANLIK FİYAT (CANLI)</th>
+                <th>K/Z DURUMU</th>
+            </tr>
+        </thead>
+        <tbody id="canli-tablo">
+            <tr><td colspan="5" style="text-align:center; color:#b2c3d9;">Excel verileri yükleniyor, lütfen bekleyin...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // GitHub'a yüklediğiniz Excel dosyasının tam ham bağlantısı
+    const excelUrl = "https://githubusercontent.com";
+
+    async function excelTetikleVeOku() {
+        try {
+            const response = await fetch(excelUrl);
+            if (!response.ok) return;
+            const data = await response.arrayBuffer();
+            const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
+            
+            // İlk sayfayı oku
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            let htmlVerisi = "";
+            let satirSayisi = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+                let row = rows[i];
+                if (!row || row.length < 3) continue;
+
+                let hisseAdi = String(row[0] || '').trim().upperCase || String(row[0] || '').trim();
+                let maliyet = parseFloat(String(row[2] || '').replace(',', '.'));
+                let btaPuani = row[3] ? parseFloat(row[3]).toFixed(2) : '-';
+
+                // Başlık satırlarını veya boş hisseleri ele
+                if (!hisseAdi || hisseAdi.includes("HİSSE") || hisseAdi.includes("BTA") || satirSayisi >= 10) continue;
+
+                satirSayisi++;
+                
+                // HTML tablosuna dinamik ekleme yap
+                htmlVerisi += `<tr>
+                    <td>${btaPuani}</td>
+                    <td>${hisseAdi}</td>
+                    <td>${maliyet.toFixed(2)} TL</td>
+                    <td>Yükleniyor...</td>
+                    <td><span class="up">-</span></td>
+                </tr>`;
+            }
+
+            if(htmlVerisi !== "") {
+                document.getElementById('canli-tablo').innerHTML = htmlVerisi;
+            }
+        } catch (error) {
+            console.error("Veri okuma hatası:", error);
+        }
+    }
+
+    // Her 5 saniyede bir GitHub'daki Excel dosyasını otomatik denetle ve tetikle
+    excelTetikleVeOku();
+    setInterval(excelTetikleVeOku, 5000);
+
+    // Yıldız Puanlama Scripti
+    const stars = document.querySelectorAll('.star');
+    let toplamYildiz = 420;
+    let oySayisi = 100;
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            let val = parseInt(star.getAttribute('data-value'));
+            toplamYildiz += val; oySayisi++;
+            document.getElementById('lbl-puan').innerText = (toplamYildiz / oySayisi).toFixed(1) + " / 5";
+            stars.forEach((s, idx) => { if(idx < val) s.classList.add('active'); else s.classList.remove('active'); });
+            alert("⭐ Değerlendirmeniz başarıyla iletildi.");
+        });
+    });
+</script>
+</body>
+</html>
