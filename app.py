@@ -121,14 +121,17 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
-if os.path.exists(excel_yolu):
+
+# Güvenli okuma kontrolü için if yapısı sadeleştirildi
+excel_kontrol = os.path.exists(excel_yolu)
+
+if excel_kontrol:
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         if len(df.columns) >= 5:
             ham_liste = df.iloc[:, 4].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
-        # Mevcut kayıt defterini güvenli okuma ve sütun kontrolü
         try:
             df_kayit_mevcut = pd.read_csv(db_kayit_defteri)
             for col in sutunlar:
@@ -165,7 +168,6 @@ if os.path.exists(excel_yolu):
                 else:
                     kz_str = "<span>-</span>"
                 
-                # Mükerrer Kontrolü
                 if not df_kayit_mevcut.empty:
                     mükerrer_mi = df_kayit_mevcut[(df_kayit_mevcut["Hisse"] == ha) & (df_kayit_mevcut["Algoritmik_Fiyat"] == maliyet)]
                 else:
@@ -183,7 +185,6 @@ if os.path.exists(excel_yolu):
 
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
-        # Yeni kayıtları dosyaya ekleme
         if yeni_kayitlar:
             df_yeni = pd.DataFrame(yeni_kayitlar)
             df_toplam_kayit = pd.concat([df_kayit_mevcut, df_yeni], ignore_index=True)
