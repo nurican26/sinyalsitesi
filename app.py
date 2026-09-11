@@ -133,7 +133,13 @@ def canlı_borsa_paneli():
                 
                 if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                     veri_var_mi = True
-                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                    
+                    # 📌 DEĞİŞİKLİK: Eğer puan hücresi boşsa veya 'nan' ise tire (-) yazdırıyoruz
+                    if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
+                        p_temiz = "-"
+                    else:
+                        p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                        
                     c_fiyat = 0.0
                     
                     try:
@@ -186,8 +192,3 @@ def canlı_borsa_paneli():
         st.markdown(tablo_html, unsafe_allow_html=True)
     else:
         tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-        st.markdown(tarama_html, unsafe_allow_html=True)
-
-canlı_borsa_paneli()
-
-# 7. YASAL UYARI BÖLÜMÜ
