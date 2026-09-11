@@ -110,15 +110,15 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# Kayıt zaman damgası
+# Deftere basılacak anlık kayıt zaman damgası
 kayit_zamani = excel_tarih_objesi.strftime("%d.%m.%Y %H:%M")
 
-# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
+# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME (ORİJİNAL YAPI)
 tablo_rows_html = ""
 mevcut_hisseler_listesi = []
 
@@ -132,7 +132,6 @@ if os.path.exists(excel_yolu):
         ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
         alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
         puan_d = df.iloc[idx, 3]
-        
         if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
             veri_var_mi = True
             p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
@@ -158,6 +157,7 @@ if os.path.exists(excel_yolu):
             
             tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
             
+            # Kayıt defteri veri havuzuna sessizce ekle
             mevcut_hisseler_listesi.append({
                 "Tarih": kayit_zamani,
                 "BTA Puanı": p_temiz,
@@ -167,7 +167,7 @@ if os.path.exists(excel_yolu):
                 "K/Z": kz_metin
             })
 
-# 7B. OTOMATİK KAYIT MOTORU
+# 📌 7B. İZOLE KAYIT MOTORU (Ana tabloya asla dokunmaz)
 if mevcut_hisseler_listesi:
     try:
         df_defter = pd.read_csv(db_kayit_defteri)
@@ -189,7 +189,7 @@ if basarili_hisseler:
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ
+# 9. TABLO VEYA ARAMA METNİ PANELİ (Canlı Panel)
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
     panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
