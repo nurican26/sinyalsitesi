@@ -63,33 +63,37 @@ db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 db_kayit_defteri = "bta_hisse_kayit_defteri.csv"
 
-sutunlar = ["Kayit_Tarihi", "Bta_Puani", "Hisse", "Algoritmik_Fiyat", "Anlik_Fiyat", "Performans"]
+# 📊 ANLIK FİYAT ÇIKARILDI: Tarihsel arşivi tutulacak net sütun yapısı
+sutunlar = ["Kayit_Tarihi", "Bta_Puani", "Hisse", "Algoritmik_Fiyat", "Performans"]
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
-if not os.path.exists(db_istatistik):
-    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+# 👁️ BOZULMAZ SAYAC ALTYAPISI: Dosya yoksa veya şeması yanlışsa sıfırdan kurar
+if not os.path.exists(db_istatistik) or os.path.getsize(db_istatistik) == 0:
+    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 if not os.path.exists(db_kayit_defteri) or os.path.getsize(db_kayit_defteri) == 0:
     pd.DataFrame(columns=sutunlar).to_csv(db_kayit_defteri, index=False)
 
-# 5. ZİYARETÇİ SAYACINI TETİKLEME
+# 5. GÜVENLİ ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
-if os.path.exists(db_istatistik):
-    try:
-        df_ist = pd.read_csv(db_istatistik)
-        if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
-        if "ziyaret_sayildi" not in st.session_state:
-            df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.session_state["ziyaret_sayildi"] = True
-        ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-        basarili = int(df_ist.at[0, "basarili_oy"])
-        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
-    except:
-        pass
+try:
+    df_ist = pd.read_csv(db_istatistik)
+    if df_ist.empty or "ziyaret_sayisi" not in df_ist.columns:
+        df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+    
+    # Otomatik yenilemelerde sayacın uçmaması için session_state kontrolü
+    if "ziyaret_sayildi" not in st.session_state:
+        df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["ziyaret_sayildi"] = True
+
+    ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+    basarili = int(df_ist.at[0, "basarili_oy"])
+    basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+except:
+    pass
 
 # 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
@@ -126,7 +130,7 @@ try:
 except:
     pass
 
-# Kayıt Defterini Güvenli Yükleme Adımı
+# Kayıt Defterini Güvenli Yükleme ve Sütun Doğrulama Adımı
 df_kayit_mevcut = pd.DataFrame(columns=sutunlar)
 try:
     if os.path.exists(db_kayit_defteri):
@@ -184,7 +188,6 @@ for idx in range(min(10, len(df))):
             "Bta_Puani": p_temiz,
             "Hisse": ha,
             "Algoritmik_Fiyat": maliyet,
-            "Anlik_Fiyat": c_fiyat,
             "Performans": f"%{or_dg:.2f}"
         })
 
@@ -211,13 +214,7 @@ if not veri_var_mi:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# 📜 ARŞİV PANELİ (Try-Except Hatası Giderildi)
+# 📜 ARŞİV PANELİ
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📜 BTA TARİHSEL HİSSE KAYIT DEFTERİ (LOG)</p>', unsafe_allow_html=True)
 try:
-    df_goster = pd.read_csv(db_kayit_defteri)
-    st.dataframe(df_goster.iloc[::-1], use_container_width=True, hide_index=True)
-except:
-    st.info("Kayıt defteri henüz boş veya yeni oluşturuluyor.")
-
-# 10. YASAL UYARI BÖLÜMÜ
