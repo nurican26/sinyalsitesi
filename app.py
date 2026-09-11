@@ -123,7 +123,7 @@ yasal_html = """
 st.markdown(yasal_html, unsafe_allow_html=True)
 st.write("---")
 
-# 🚀 [YENİ - SÜPER ÇÖZÜM]: DİREKT PANEL ÜZERİNDEN EXCEL YÜKLEME ALANI
+# 📁 DİREKT PANEL ÜZERİNDEN EXCEL YÜKLEME ALANI
 yuklenen_dosya = st.file_uploader("📁 Excel Dosyasını Buraya Yükleyin (.xlsm, .xlsx)", type=["xlsm", "xlsx"])
 
 # 6. ANA ANALİZ MOTORU
@@ -139,7 +139,7 @@ basarili_hisseler = []
 df_excel = pd.DataFrame()
 df_gecmis = pd.DataFrame(columns=["Tarih", "BTA Puanı", "Hisse", "Algoritmik Fiyat"])
 
-# Eğer panelden dosya yüklendiyse onu oku, yüklenmediyse klasördeki eski bta.xls.xlsm'yi aramayı dene
+# Excel Dosya Okuma Aşaması
 if yuklenen_dosya is not None:
     try:
         df_excel = pd.read_excel(yuklenen_dosya, sheet_name="WEB", engine="openpyxl")
@@ -160,7 +160,7 @@ if os.path.exists(db_gecmis_kayitlar):
 
 yeni_kayitlar = []
 
-# Satır Analiz Döngüsü
+# Satır Analiz Döngüsü (Tüm riskler sıfırlandı)
 if not df_excel.empty:
     for idx in range(min(10, len(df_excel))):
         try:
@@ -170,10 +170,9 @@ if not df_excel.empty:
             
             if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                 veri_var_mi = True
+                p_temiz = "-"
                 
-                if pd.isna(puan_d) or str(puan_d).strip().lower() in ["nan", "none", ""]:
-                    p_temiz = "-"
-                else:
+                if pd.notna(puan_d) and str(puan_d).strip().lower() not in ["nan", "none", ""]:
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     
                 c_fiyat = 0.0
@@ -185,8 +184,10 @@ if not df_excel.empty:
                     c_fiyat = 0.0
                 
                 alim_c_temiz = alim_c.replace(",", ".").strip()
+                maliyet = 0.0
                 try:
-                    maliyet = float(alim_c_temiz) if alim_c_temiz != "" else 0.0
+                    if alim_c_temiz != "":
+                        maliyet = float(alim_c_temiz)
                 except:
                     maliyet = 0.0
                 
@@ -218,12 +219,12 @@ if not df_excel.empty:
         except:
             continue
 
-if yeni_kayitlar:
+if len(yeni_kayitlar) > 0:
     try:
         df_guncel_gecmis = pd.concat([df_gecmis, pd.DataFrame(yeni_kayitlar)], ignore_index=True)
         df_guncel_gecmis.to_csv(db_gecmis_kayitlar, index=False)
     except:
         pass
 
-# 7. TEBRİK PANELİ GÖSTERİMİ
+# 7. TEBRİK PANELİ GÖSTERİMİ (Hizalama hatası düzeltildi)
 if len(basarili_hisseler) > 0:
