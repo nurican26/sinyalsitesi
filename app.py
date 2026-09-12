@@ -61,7 +61,8 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
-# 🌟 OTOMATİK OTOMATİK KAYIT DEFTERİ DOSYASI (YENİ EKLEDİK)
+
+# 🌟 OTOMATİK KAYIT DEFTERİ DOSYASI
 db_kayit_defteri = "bta_otomatik_kayit_defteri.csv"
 
 if not os.path.exists(db_notlar):
@@ -70,7 +71,7 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-# 🌟 OTOMATİK KAYIT DEFTERİ BAŞLATMA (YENİ EKLEDİK)
+# 🌟 OTOMATİK KAYIT DEFTERİ BAŞLATMA
 if not os.path.exists(db_kayit_defteri):
     pd.DataFrame(columns=["Kayıt_Tarihi", "Bta_Puanı", "Hisse_Adı", "Algoritmik_Fiyat", "Anlık_Fiyat"]).to_csv(db_kayit_defteri, index=False)
 
@@ -112,7 +113,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -141,11 +142,11 @@ if os.path.exists(excel_yolu):
             alim_c_temiz = alim_c.replace(",", ".")
             maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
-            # 🌟 OTO KAYIT SİSTEMİ (Mevcut Kayıt Defterini Okuyup Kontrol Ediyor)
+            # 🌟 OTOMATİK KAYIT YAPISI (Mevcut Arşivi Korur, Yeni Gelen Hisseyi Alta Ekler)
             try:
                 df_log = pd.read_csv(db_kayit_defteri)
-                # Eğer bu hisse ismi kayıt defterinde daha önce hiç yoksa, otomatik ekle
-                if ha not in df_log["Hisse_Adı"].values:
+                # Hisse daha önce bu tam algoritma fiyatıyla listeye girmediyse yeni bir kayıt oluşturur
+                if not ((df_log["Hisse_Adı"] == ha) & (df_log["Algoritmik_Fiyat"] == maliyet)).any():
                     su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
                     yeni_kayit = pd.DataFrame([{
                         "Kayıt_Tarihi": su_an,
@@ -156,8 +157,8 @@ if os.path.exists(excel_yolu):
                     }])
                     df_log = pd.concat([df_log, yeni_kayit], ignore_index=True)
                     df_log.to_csv(db_kayit_defteri, index=False)
-            except Exception as e:
-                pass # Hata durumunda sistemin kilitlenmemesi için pass geçiyoruz.
+            except:
+                pass
 
             if maliyet > 0 and c_fiyat > 0:
                 or_dg = ((c_fiyat - maliyet) / maliyet) * 100
