@@ -61,12 +61,18 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
+# 🌟 OTOMATİK OTOMATİK KAYIT DEFTERİ DOSYASI (YENİ EKLEDİK)
+db_kayit_defteri = "bta_otomatik_kayit_defteri.csv"
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+
+# 🌟 OTOMATİK KAYIT DEFTERİ BAŞLATMA (YENİ EKLEDİK)
+if not os.path.exists(db_kayit_defteri):
+    pd.DataFrame(columns=["Kayıt_Tarihi", "Bta_Puanı", "Hisse_Adı", "Algoritmik_Fiyat", "Anlık_Fiyat"]).to_csv(db_kayit_defteri, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -135,6 +141,24 @@ if os.path.exists(excel_yolu):
             alim_c_temiz = alim_c.replace(",", ".")
             maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
+            # 🌟 OTO KAYIT SİSTEMİ (Mevcut Kayıt Defterini Okuyup Kontrol Ediyor)
+            try:
+                df_log = pd.read_csv(db_kayit_defteri)
+                # Eğer bu hisse ismi kayıt defterinde daha önce hiç yoksa, otomatik ekle
+                if ha not in df_log["Hisse_Adı"].values:
+                    su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+                    yeni_kayit = pd.DataFrame([{
+                        "Kayıt_Tarihi": su_an,
+                        "Bta_Puanı": p_temiz,
+                        "Hisse_Adı": ha,
+                        "Algoritmik_Fiyat": maliyet,
+                        "Anlık_Fiyat": c_fiyat
+                    }])
+                    df_log = pd.concat([df_log, yeni_kayit], ignore_index=True)
+                    df_log.to_csv(db_kayit_defteri, index=False)
+            except Exception as e:
+                pass # Hata durumunda sistemin kilitlenmemesi için pass geçiyoruz.
+
             if maliyet > 0 and c_fiyat > 0:
                 or_dg = ((c_fiyat - maliyet) / maliyet) * 100
                 if or_dg >= 9.0:
@@ -163,14 +187,3 @@ else:
     st.markdown(tarama_html, unsafe_allow_html=True)
 
 # 10. YASAL UYARI BÖLÜMÜ
-yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
-st.markdown(yasal_html, unsafe_allow_html=True)
-
-# 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
-st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-
-toplam_oy = basarili + basarisiz
-begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
-
-st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
