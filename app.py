@@ -62,7 +62,7 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# 🌟 SONSUZA KADAR BİRİKECEK KAYIT DEFTERİ DOSYASI
+# 🌟 SONSUZA KADAR BİRİKECEK LOG KAYIT DOSYASI
 db_kayit_defteri = "bta_otomatik_kayit_defteri.csv"
 
 if not os.path.exists(db_notlar):
@@ -71,7 +71,7 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-# 🌟 DEFTER YOKSA SÜTUNLARIYLA BİRLİKTE SIFIRDAN OLUŞTURULUR
+# 🌟 KAYIT DEFTERİ CSV YOKSA SIFIRDAN SÜTUNLARIYLA OLUŞUR
 if not os.path.exists(db_kayit_defteri):
     pd.DataFrame(columns=["Kayıt_Tarihi", "Bta_Puanı", "Hisse_Adı", "Algoritmik_Fiyat", "Anlık_Fiyat"]).to_csv(db_kayit_defteri, index=False)
 
@@ -142,10 +142,10 @@ if os.path.exists(excel_yolu):
             alim_c_temiz = alim_c.replace(",", ".")
             maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
-            # 🌟 ASLA ÜZERİNE YAZMAYAN, SADECE YENİ SİNYALİ EN ALTA EKLEYEN LOG MOTORU
+            # 🌟 ASLA VERİ SİLMEYEN VE ÜZERİNE YAZMAYAN LOG MOTORU
             try:
                 df_log = pd.read_csv(db_kayit_defteri)
-                # Aynı hisse aynı maliyet fiyatıyla daha önce deftere girmediyse kaydet
+                # Aynı hisse aynı fiyattan daha önce deftere kaydedilmediyse yeni bir log satırı ekler
                 if not ((df_log["Hisse_Adı"] == ha) & (df_log["Algoritmik_Fiyat"] == maliyet)).any():
                     su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
                     yeni_satir = pd.DataFrame([{
@@ -188,4 +188,3 @@ else:
     st.markdown(tarama_html, unsafe_allow_html=True)
 
 # 10. YASAL UYARI BÖLÜMÜ
-
