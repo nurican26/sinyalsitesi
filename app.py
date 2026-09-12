@@ -62,7 +62,7 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# 🌟 OTOMATİK KAYIT DEFTERİ DOSYASI
+# 🌟 SONSUZA KADAR BİRİKECEK KAYIT DEFTERİ DOSYASI
 db_kayit_defteri = "bta_otomatik_kayit_defteri.csv"
 
 if not os.path.exists(db_notlar):
@@ -71,7 +71,7 @@ if not os.path.exists(db_notlar):
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
-# 🌟 OTOMATİK KAYIT DEFTERİ BAŞLATMA
+# 🌟 DEFTER YOKSA SÜTUNLARIYLA BİRLİKTE SIFIRDAN OLUŞTURULUR
 if not os.path.exists(db_kayit_defteri):
     pd.DataFrame(columns=["Kayıt_Tarihi", "Bta_Puanı", "Hisse_Adı", "Algoritmik_Fiyat", "Anlık_Fiyat"]).to_csv(db_kayit_defteri, index=False)
 
@@ -142,20 +142,20 @@ if os.path.exists(excel_yolu):
             alim_c_temiz = alim_c.replace(",", ".")
             maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
-            # 🌟 OTOMATİK KAYIT YAPISI (Mevcut Arşivi Korur, Yeni Gelen Hisseyi Alta Ekler)
+            # 🌟 ASLA ÜZERİNE YAZMAYAN, SADECE YENİ SİNYALİ EN ALTA EKLEYEN LOG MOTORU
             try:
                 df_log = pd.read_csv(db_kayit_defteri)
-                # Hisse daha önce bu tam algoritma fiyatıyla listeye girmediyse yeni bir kayıt oluşturur
+                # Aynı hisse aynı maliyet fiyatıyla daha önce deftere girmediyse kaydet
                 if not ((df_log["Hisse_Adı"] == ha) & (df_log["Algoritmik_Fiyat"] == maliyet)).any():
                     su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
-                    yeni_kayit = pd.DataFrame([{
+                    yeni_satir = pd.DataFrame([{
                         "Kayıt_Tarihi": su_an,
                         "Bta_Puanı": p_temiz,
                         "Hisse_Adı": ha,
                         "Algoritmik_Fiyat": maliyet,
                         "Anlık_Fiyat": c_fiyat
                     }])
-                    df_log = pd.concat([df_log, yeni_kayit], ignore_index=True)
+                    df_log = pd.concat([df_log, yeni_satir], ignore_index=True)
                     df_log.to_csv(db_kayit_defteri, index=False)
             except:
                 pass
@@ -188,3 +188,4 @@ else:
     st.markdown(tarama_html, unsafe_allow_html=True)
 
 # 10. YASAL UYARI BÖLÜMÜ
+
