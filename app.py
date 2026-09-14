@@ -12,6 +12,7 @@ from streamlit_autorefresh import st_autorefresh
 # SAYFA AYARLARI
 # ==================================================
 st.set_page_config(
+    page_title="BTA Algoritmik İşlem",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -19,7 +20,7 @@ st.set_page_config(
 
 
 # ==================================================
-# DOSYALAR
+# DOSYA AYARLARI
 # ==================================================
 KAYIT_DOSYASI = "bta_tarihli_kayit_defteri.csv"
 ISTATISTIK_DOSYASI = "bta_oda_istatistik.csv"
@@ -35,9 +36,7 @@ KAYIT_SUTUNLARI = [
 
 ISTATISTIK_SUTUNLARI = [
     "takip_sayisi",
-    "begeni_sayisi",
-    "oy_sayisi",
-    "puan_toplami"
+    "begeni_sayisi"
 ]
 
 MESAJ_SUTUNLARI = [
@@ -50,7 +49,9 @@ MESAJ_SUTUNLARI = [
 
 def dosya_olustur(dosya, sutunlar):
     if not os.path.exists(dosya):
-        pd.DataFrame(columns=sutunlar).to_csv(
+        pd.DataFrame(
+            columns=sutunlar
+        ).to_csv(
             dosya,
             index=False,
             encoding="utf-8-sig"
@@ -63,7 +64,7 @@ dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
 
 
 # ==================================================
-# FORMATLAMA
+# FORMATLAMA FONKSİYONLARI
 # ==================================================
 def tl_format(deger):
     try:
@@ -169,7 +170,7 @@ st.markdown(
         width: 100%;
         overflow: hidden;
         white-space: nowrap;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
     }
 
     .bta-logo {
@@ -187,11 +188,11 @@ st.markdown(
 
     @keyframes kayan_logo {
         0% {
-            transform: translateX(-100%);
+            transform: translateX(100vw);
         }
 
         100% {
-            transform: translateX(100vw);
+            transform: translateX(-100%);
         }
     }
 
@@ -216,6 +217,19 @@ st.markdown(
         border-radius: 7px;
         padding: 10px;
         margin: 7px 0;
+    }
+
+    .kisayol-butonu {
+        display: block;
+        width: 100%;
+        background: #00a889;
+        color: white !important;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+        text-decoration: none !important;
+        font-weight: bold;
+        margin: 12px 0;
     }
 
     .spk-uyari {
@@ -280,7 +294,11 @@ def kayitlari_oku():
 
 
 def kayit_id_olustur(hisse, fiyat, puan):
-    metin = f"{hisse}|{float(fiyat):.4f}|{float(puan):.4f}"
+    metin = (
+        f"{hisse}|"
+        f"{float(fiyat):.4f}|"
+        f"{float(puan):.4f}"
+    )
 
     return hashlib.sha256(
         metin.encode("utf-8")
@@ -292,11 +310,24 @@ def excel_kayitlarini_ekle(df):
     yeni_kayitlar = []
 
     for _, satir in df.iterrows():
-        hisse = str(satir["Hisse Kodu"]).strip().upper()
+        hisse = str(
+            satir["Hisse Kodu"]
+        ).strip().upper()
+
         fiyat = satir["BTA Alım Fiyatı"]
         puan = satir["BTA Puanı"]
 
-        if hisse in ["", "NONE", "NAN", "NULL", "NA"]:
+        if hisse in [
+            "",
+            "NONE",
+            "NAN",
+            "NULL",
+            "NA",
+            "HİSSE",
+            "HISSE",
+            "HİSSE KODU",
+            "HISSE KODU"
+        ]:
             continue
 
         if pd.isna(fiyat) or float(fiyat) <= 0:
@@ -328,7 +359,10 @@ def excel_kayitlarini_ekle(df):
 
     if yeni_kayitlar:
         sonuc = pd.concat(
-            [mevcut, pd.DataFrame(yeni_kayitlar)],
+            [
+                mevcut,
+                pd.DataFrame(yeni_kayitlar)
+            ],
             ignore_index=True
         )
 
@@ -340,7 +374,7 @@ def excel_kayitlarini_ekle(df):
 
 
 # ==================================================
-# İSTATİSTİK VE MESAJ FONKSİYONLARI
+# İSTATİSTİK FONKSİYONLARI
 # ==================================================
 def istatistik_oku():
     try:
@@ -350,45 +384,34 @@ def istatistik_oku():
         )
 
         if df.empty:
-            return 0, 0, 0, 0.0
+            return 0, 0
 
         satir = df.iloc[0]
 
+        takip = pd.to_numeric(
+            satir.get("takip_sayisi", 0),
+            errors="coerce"
+        )
+
+        begeni = pd.to_numeric(
+            satir.get("begeni_sayisi", 0),
+            errors="coerce"
+        )
+
         return (
-            int(pd.to_numeric(
-                satir.get("takip_sayisi", 0),
-                errors="coerce"
-            ) or 0),
-            int(pd.to_numeric(
-                satir.get("begeni_sayisi", 0),
-                errors="coerce"
-            ) or 0),
-            int(pd.to_numeric(
-                satir.get("oy_sayisi", 0),
-                errors="coerce"
-            ) or 0),
-            float(pd.to_numeric(
-                satir.get("puan_toplami", 0),
-                errors="coerce"
-            ) or 0)
+            int(takip) if pd.notna(takip) else 0,
+            int(begeni) if pd.notna(begeni) else 0
         )
 
     except Exception:
-        return 0, 0, 0, 0.0
+        return 0, 0
 
 
-def istatistik_kaydet(
-    takip,
-    begeni,
-    oy,
-    puan
-):
+def istatistik_kaydet(takip, begeni):
     pd.DataFrame(
         [{
             "takip_sayisi": takip,
-            "begeni_sayisi": begeni,
-            "oy_sayisi": oy,
-            "puan_toplami": puan
+            "begeni_sayisi": begeni
         }]
     ).to_csv(
         ISTATISTIK_DOSYASI,
@@ -397,12 +420,21 @@ def istatistik_kaydet(
     )
 
 
+# ==================================================
+# MESAJ FONKSİYONLARI
+# ==================================================
 def mesajlari_oku():
     try:
-        return pd.read_csv(
+        df = pd.read_csv(
             MESAJ_DOSYASI,
             encoding="utf-8-sig"
         )
+
+        for sutun in MESAJ_SUTUNLARI:
+            if sutun not in df.columns:
+                df[sutun] = ""
+
+        return df[MESAJ_SUTUNLARI]
 
     except Exception:
         return pd.DataFrame(columns=MESAJ_SUTUNLARI)
@@ -411,9 +443,11 @@ def mesajlari_oku():
 def mesaj_ekle(kullanici, metin):
     mesajlar = mesajlari_oku()
 
-    yeni = pd.DataFrame(
+    yeni_mesaj = pd.DataFrame(
         [{
-            "mesaj_id": int(datetime.now().timestamp() * 1000),
+            "mesaj_id": int(
+                datetime.now().timestamp() * 1000
+            ),
             "tarih": datetime.now().strftime(
                 "%d.%m.%Y %H:%M:%S"
             ),
@@ -423,7 +457,7 @@ def mesaj_ekle(kullanici, metin):
     )
 
     mesajlar = pd.concat(
-        [mesajlar, yeni],
+        [mesajlar, yeni_mesaj],
         ignore_index=True
     )
 
@@ -444,7 +478,7 @@ st_autorefresh(
 
 
 # ==================================================
-# LOGO VE BAŞLIK
+# LOGO
 # ==================================================
 st.markdown(
     """
@@ -457,8 +491,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("BTA Algoritmik İşlem Analiz Portalı")
-
 
 # ==================================================
 # YÖNETİCİ
@@ -470,10 +502,23 @@ admin_sifre = st.sidebar.text_input(
     type="password"
 )
 
-is_admin = admin_sifre == "3015"
+is_admin = admin_sifre == "BTA2026"
 
 if is_admin:
     st.sidebar.success("Yönetici yetkileri aktif.")
+
+
+# ==================================================
+# TAKİP PANELİNE KISA YOL
+# ==================================================
+st.markdown(
+    """
+    <a class="kisayol-butonu" href="#takip-paneli">
+        ⭐ Takip ve Beğeni Paneline Git
+    </a>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ==================================================
@@ -487,6 +532,14 @@ excel_dosyalari = [
     for dosya in os.listdir(".")
     if dosya.lower().endswith((".xlsx", ".xlsm"))
 ]
+
+excel_df = pd.DataFrame(
+    columns=[
+        "Hisse Kodu",
+        "BTA Alım Fiyatı",
+        "BTA Puanı"
+    ]
+)
 
 if excel_dosyalari:
     secilen_excel = excel_dosyalari[0]
@@ -565,11 +618,11 @@ if excel_dosyalari:
 
 
 # ==================================================
-# AYRI PANELLER
+# PANELLER
 # ==================================================
-tab_teknik, tab_oda, tab_sohbet, tab_kayit = st.tabs(
+tab_algoritmik, tab_takip, tab_sohbet, tab_kayit = st.tabs(
     [
-        "📊 Hisse Teknik Bilgileri",
+        "🤖 Algoritmik Bilgiler",
         "⭐ Takip ve Beğeni",
         "💬 Canlı Sohbet",
         "📒 Tarihli Kayıtlar"
@@ -578,18 +631,18 @@ tab_teknik, tab_oda, tab_sohbet, tab_kayit = st.tabs(
 
 
 # ==================================================
-# PANEL 1: TEKNİK BİLGİLER
+# ALGORİTMİK BİLGİLER PANELİ
 # ==================================================
-with tab_teknik:
-    st.header("📊 Hisse Teknik Bilgileri")
+with tab_algoritmik:
+    st.header("🤖 Algoritmik İşlem Bilgileri")
 
-    if not excel_dosyalari:
-        st.warning("Excel dosyası bulunamadı.")
-    elif excel_df.empty:
-        st.warning("Geçerli hisse bulunamadı.")
+    if excel_df.empty:
+        st.warning(
+            "BTA alım fiyatı bulunan hisse bulunamadı."
+        )
     else:
         secilen_hisse = st.selectbox(
-            "Teknik bilgilerini görüntüle:",
+            "Hisse seçin:",
             excel_df["Hisse Kodu"].tolist()
         )
 
@@ -600,92 +653,93 @@ with tab_teknik:
 
         try:
             hisse = yf.Ticker(sembol)
-            gecmis = hisse.history(
-                period="1mo",
-                interval="1d"
+
+            bilgi = hisse.info
+
+            fiyat = bilgi.get(
+                "regularMarketPrice"
             )
 
-            if gecmis.empty:
-                st.warning(
-                    "Bu hisse için teknik veri bulunamadı."
-                )
-            else:
-                son_fiyat = float(
-                    gecmis["Close"].iloc[-1]
-                )
+            onceki_kapanis = bilgi.get(
+                "regularMarketPreviousClose"
+            )
 
-                onceki_fiyat = float(
-                    gecmis["Close"].iloc[-2]
-                ) if len(gecmis) > 1 else son_fiyat
+            gunluk_en_yuksek = bilgi.get(
+                "dayHigh"
+            )
 
-                degisim = son_fiyat - onceki_fiyat
-                degisim_yuzde = (
-                    degisim / onceki_fiyat * 100
-                    if onceki_fiyat
-                    else 0
-                )
+            gunluk_en_dusuk = bilgi.get(
+                "dayLow"
+            )
 
-                en_yuksek = float(
-                    gecmis["High"].max()
-                )
+            hacim = bilgi.get(
+                "volume"
+            )
 
-                en_dusuk = float(
-                    gecmis["Low"].min()
-                )
+            piyasa_degeri = bilgi.get(
+                "marketCap"
+            )
 
-                hacim = int(
-                    gecmis["Volume"].iloc[-1]
-                )
+            kayit = excel_df[
+                excel_df["Hisse Kodu"] == secilen_hisse
+            ].iloc[0]
 
-                kayit = excel_df[
-                    excel_df["Hisse Kodu"] == secilen_hisse
-                ].iloc[0]
+            col1, col2, col3 = st.columns(3)
 
-                col1, col2, col3 = st.columns(3)
+            col1.metric(
+                "BTA Alım Fiyatı",
+                tl_format(kayit["BTA Alım Fiyatı"])
+            )
 
-                col1.metric(
-                    "Canlı Fiyat",
-                    tl_format(son_fiyat),
-                    f"%{sayi_format(degisim_yuzde)}"
-                )
+            col2.metric(
+                "BTA Puanı",
+                sayi_format(kayit["BTA Puanı"])
+            )
 
-                col2.metric(
-                    "BTA Alım Fiyatı",
-                    tl_format(kayit["BTA Alım Fiyatı"])
-                )
+            col3.metric(
+                "Anlık Fiyat",
+                tl_format(fiyat)
+            )
 
-                col3.metric(
-                    "BTA Puanı",
-                    sayi_format(kayit["BTA Puanı"])
-                )
-
-                st.markdown(
-                    f"""
-                    <div class="teknik-karti">
-                        <strong>Hisse:</strong> {secilen_hisse}<br>
-                        <strong>Son fiyat:</strong> {tl_format(son_fiyat)}<br>
-                        <strong>Günlük fark:</strong> {tl_format(degisim)}<br>
-                        <strong>1 aylık en yüksek:</strong> {tl_format(en_yuksek)}<br>
-                        <strong>1 aylık en düşük:</strong> {tl_format(en_dusuk)}<br>
-                        <strong>Son işlem hacmi:</strong> {hacim:,}<br>
-                        <strong>Veri zamanı:</strong>
-                        {datetime.now().strftime("%d.%m.%Y %H:%M:%S")}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            st.markdown(
+                f"""
+                <div class="teknik-karti">
+                    <strong>Hisse Kodu:</strong> {secilen_hisse}<br>
+                    <strong>Önceki Kapanış:</strong>
+                    {tl_format(onceki_kapanis)}<br>
+                    <strong>Günlük En Yüksek:</strong>
+                    {tl_format(gunluk_en_yuksek)}<br>
+                    <strong>Günlük En Düşük:</strong>
+                    {tl_format(gunluk_en_dusuk)}<br>
+                    <strong>İşlem Hacmi:</strong>
+                    {sayi_format(hacim)}<br>
+                    <strong>Piyasa Değeri:</strong>
+                    {sayi_format(piyasa_degeri)}<br>
+                    <strong>Veri Durumu:</strong>
+                    En az 15 dakika gecikmeli olabilir.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         except Exception as hata:
-            st.error(f"Teknik bilgiler alınamadı: {hata}")
+            st.warning(
+                f"Algoritmik bilgiler alınamadı: {hata}"
+            )
 
 
 # ==================================================
-# PANEL 2: TAKİP, BEĞENİ VE YILDIZ
+# TAKİP VE BEĞENİ PANELİ
 # ==================================================
-with tab_oda:
-    st.header("⭐ Oda Takip, Beğeni ve Yıldız Paneli")
+with tab_takip:
+    st.markdown(
+        '<div id="takip-paneli"></div>',
+        unsafe_allow_html=True
+    )
 
-    takip, begeni, oy, puan_toplami = istatistik_oku()
+    st.header("⭐ Odayı Takip Et ve Beğen")
+
+    takip, begeni = istatistik_oku()
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -699,18 +753,16 @@ with tab_oda:
                 use_container_width=True
             ):
                 takip += 1
-                st.session_state["takip_edildi"] = True
 
                 istatistik_kaydet(
                     takip,
-                    begeni,
-                    oy,
-                    puan_toplami
+                    begeni
                 )
 
+                st.session_state["takip_edildi"] = True
                 st.rerun()
         else:
-            st.success("Takiptesiniz.")
+            st.success("Odayı takip ediyorsunuz.")
 
     with col2:
         if "begeni_verildi" not in st.session_state:
@@ -722,74 +774,32 @@ with tab_oda:
                 use_container_width=True
             ):
                 begeni += 1
-                st.session_state["begeni_verildi"] = True
 
                 istatistik_kaydet(
                     takip,
-                    begeni,
-                    oy,
-                    puan_toplami
+                    begeni
                 )
 
+                st.session_state["begeni_verildi"] = True
                 st.rerun()
         else:
             st.success("Beğeniniz kaydedildi.")
 
     with col3:
-        st.metric("👥 Takipçi", f"{takip} kişi")
-
-    with col4:
-        st.metric("👍 Beğeni", f"{begeni}")
-
-    st.divider()
-
-    ortalama = (
-        puan_toplami / oy
-        if oy > 0
-        else 0
-    )
-
-    st.subheader("⭐ Portalı Puanla")
-
-    if "yildiz_verildi" not in st.session_state:
-        st.session_state["yildiz_verildi"] = False
-
-    if not st.session_state["yildiz_verildi"]:
-        secilen_puan = st.radio(
-            "Yıldız seçin:",
-            [1, 2, 3, 4, 5],
-            format_func=lambda x: "⭐" * x,
-            horizontal=True
+        st.metric(
+            "👥 Takipçi Sayısı",
+            f"{takip} kişi"
         )
 
-        if st.button(
-            "Yıldız Puanını Gönder",
-            use_container_width=True
-        ):
-            oy += 1
-            puan_toplami += secilen_puan
-
-            istatistik_kaydet(
-                takip,
-                begeni,
-                oy,
-                puan_toplami
-            )
-
-            st.session_state["yildiz_verildi"] = True
-            st.success("Yıldız puanınız kaydedildi.")
-            st.rerun()
-    else:
-        st.info("Bu oturumda daha önce yıldız verdiniz.")
-
-    st.metric(
-        "Ortalama Yıldız",
-        f"⭐ {ortalama:.2f} / 5"
-    )
+    with col4:
+        st.metric(
+            "👍 Beğeni Sayısı",
+            f"{begeni}"
+        )
 
 
 # ==================================================
-# PANEL 3: CANLI SOHBET
+# CANLI SOHBET PANELİ
 # ==================================================
 with tab_sohbet:
     st.header("💬 Canlı Sohbet")
@@ -803,7 +813,7 @@ with tab_sohbet:
         "mesaj_formu",
         clear_on_submit=True
     ):
-        metin = st.text_area(
+        mesaj = st.text_area(
             "Mesajınız",
             height=90,
             placeholder="Mesajınızı yazın..."
@@ -816,22 +826,31 @@ with tab_sohbet:
 
         if gonder:
             if not kullanici.strip():
-                st.error("Kullanıcı adı boş bırakılamaz.")
-            elif not metin.strip():
-                st.error("Mesaj boş bırakılamaz.")
+                st.error(
+                    "Kullanıcı adı boş bırakılamaz."
+                )
+            elif not mesaj.strip():
+                st.error(
+                    "Mesaj boş bırakılamaz."
+                )
             else:
                 mesaj_ekle(
                     kullanici.strip(),
-                    metin.strip()
+                    mesaj.strip()
                 )
 
-                st.success("Mesajınız gönderildi.")
+                st.success(
+                    "Mesajınız gönderildi."
+                )
+
                 st.rerun()
 
     mesajlar = mesajlari_oku()
 
     if mesajlar.empty:
-        st.info("Henüz mesaj bulunmuyor.")
+        st.info(
+            "Henüz mesaj bulunmuyor."
+        )
     else:
         for index, satir in mesajlar.iloc[::-1].iterrows():
             mesaj_id = str(satir["mesaj_id"])
@@ -851,7 +870,7 @@ with tab_sohbet:
             if is_admin:
                 if st.button(
                     "Mesajı Sil",
-                    key=f"sil_{mesaj_id}_{index}"
+                    key=f"mesaj_sil_{mesaj_id}_{index}"
                 ):
                     mesajlar = mesajlar[
                         mesajlar["mesaj_id"].astype(str)
@@ -868,7 +887,7 @@ with tab_sohbet:
 
 
 # ==================================================
-# PANEL 4: TARİHLİ KAYITLAR
+# TARİHLİ KAYIT PANELİ
 # ==================================================
 with tab_kayit:
     st.header("📒 Tarihli Kayıt Defteri")
@@ -876,7 +895,9 @@ with tab_kayit:
     df_kayitlar = kayitlari_oku()
 
     if df_kayitlar.empty:
-        st.info("Henüz kayıt bulunmuyor.")
+        st.info(
+            "Henüz kayıt bulunmuyor."
+        )
     else:
         df_kayitlar["bta_alim_fiyati"] = pd.to_numeric(
             df_kayitlar["bta_alim_fiyati"],
@@ -932,14 +953,16 @@ with tab_kayit:
 
 
 # ==================================================
-# SPK UYARISI
+# SPK YASAL UYARI
 # ==================================================
 st.markdown(
     """
     <div class="spk-uyari">
         <strong>⚠️ SPK YASAL UYARI:</strong>
-        Bu platformdaki bilgiler yalnızca genel bilgilendirme amacıyla
-        sunulmaktadır. Hiçbir veri, puan veya fiyat yatırım danışmanlığı,
+        Bu platformda yer alan veriler yalnızca genel bilgilendirme
+        amacıyla sunulmaktadır. Borsa verileri en az 15 dakika gecikmeli
+        olabilir ve anlık işlem verisi olarak kabul edilmemelidir.
+        Buradaki hiçbir veri, puan veya fiyat yatırım danışmanlığı,
         hedef fiyat ya da AL, SAT, TUT tavsiyesi değildir.
     </div>
     """,
