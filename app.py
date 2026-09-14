@@ -89,17 +89,7 @@ if os.path.exists(db_istatistik):
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
 
 # TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
-bist_mini_widget = """
-<div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
-  <div class="tradingview-widget-container__widget"></div>
-  <script type="text/javascript" src="https://tradingview.com" async>
-  {
-  "symbol": "BIST:XU100", "width": "100%", "height": "95", "locale": "tr",
-  "dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": false, "largeChartUrl": ""
-  }
-  </script>
-</div>
-"""
+bist_mini_widget = """<div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://tradingview.com" async>{"symbol": "BIST:XU100", "width": "100%", "height": "95", "locale": "tr","dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": false, "largeChartUrl": ""}</script></div>"""
 components.html(bist_mini_widget, height=100)
 
 tum_hisseler = [] 
@@ -178,27 +168,20 @@ else:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# ----------------- 🎯 SÖZ VERDİĞİM HATASIZ EK BORSA MODÜLLERİ -----------------
+# ----------------- 🎯 HATASIZ TEKNİK ANALİZ VE İŞLEM ODASI -----------------
 
-# A. SYNTAX HATASI ÇÖZÜLMÜŞ CANLI GRAFİK İNCELEME
+# A. TEK SATIRDA SIKIŞTIRILMIŞ CANLI GRAFİK İNCELEME (Syntax Hatası İhtimali Sıfır)
 if tum_hisseler:
     st.write("---")
     st.markdown("### 🔍 Gelişmiş Teknik Analiz Ekranı")
     grafik_hisse = st.selectbox("Grafiğini İncelemek İstediğiniz Hisseyi Seçin", tum_hisseler, key="main_chart_select")
     
-    # Hata veren f-string yerine güvenli formatlama yöntemi kullanıldı
-    tv_grafik_widget = """
-    <div class="tradingview-widget-container" style="height:450px; width:100%;">
-      <div id="tradingview_bta"></div>
-      <script type="text/javascript" src="https://tradingview.com"></script>
-      <script type="text/javascript">
-      new TradingView.widget({
-        "width": "100%",
-        "height": 450,
-        "symbol": "BIST:{SYMBOL_PLACEHOLDER}",
-        "interval": "D",
-        "timezone": "Etc/UTC",
-        "theme": "dark",
-        "style": "1",
-        "locale": "tr",
-        "toolbar_bg": "#f1f3f6",
+    tv_url = "https://tradingview.com"
+    tv_iframe = f'<div style="height:450px;"><div id="tv_chart"></div><script src="{tv_url}"></script><script>new TradingView.widget({{"width": "100%", "height": 450, "symbol": "BIST:{grafik_hisse}", "interval": "D", "theme": "dark", "style": "1", "locale": "tr", "container_id": "tv_chart"}});</script></div>'
+    components.html(tv_iframe, height=460)
+
+# B. SOL MENÜ (İşlem Odası, Manuel Not ve Hedef İstasyonu)
+with st.sidebar:
+    st.markdown("<h2 style='color:#00ffcc; text-align:center;'>🛠️ BTA İşlem Odası</h2>", unsafe_allow_html=True)
+    st.write("---")
+    
