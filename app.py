@@ -51,7 +51,7 @@ if excel_dosyalari:
         varsayilan_dosya = excel_dosyalari[0]
 
 # ==========================================
-# 0. EXCEL TABANLI KALICI VERİ MOTORU (SADE VE GÜVENLİ)
+# 0. EXCEL TABANLI KALICI VERİ MOTORU
 # ==========================================
 def excel_veri_hazirla(dosya):
     if not dosya:
@@ -71,26 +71,23 @@ if varsayilan_dosya:
     excel_veri_hazirla(varsayilan_dosya)
 
 def excel_mesaj_ekle(dosya, user, time, text):
-    if not dosya:
-        return
+    if not dosya: return
     try:
-        df_old = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
-    except:
-        df_old = pd.DataFrame(columns=["id", "Kullanici", "Saat", "Mesaj"])
-    
-    msg_id = int(datetime.now().timestamp() * 1000)
-    df_new = pd.DataFrame([{"id": msg_id, "Kullanici": user, "Saat": time, "Mesaj": text}])
-    df_total = pd.concat([df_old, df_new], ignore_index=True)
-    
-    try:
+        try:
+            df_old = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
+        except:
+            df_old = pd.DataFrame(columns=["id", "Kullanici", "Saat", "Mesaj"])
+        
+        msg_id = int(datetime.now().timestamp() * 1000)
+        df_new = pd.DataFrame([{"id": msg_id, "Kullanici": user, "Saat": time, "Mesaj": text}])
+        df_total = pd.concat([df_old, df_new], ignore_index=True)
         with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             df_total.to_excel(writer, sheet_name="Sohbet_Hafizasi", index=False)
     except:
         pass
 
 def excel_mesajlari_getir(dosya):
-    if not dosya:
-        return []
+    if not dosya: return []
     try:
         df = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
         return df.to_dict(orient="records")
@@ -98,8 +95,7 @@ def excel_mesajlari_getir(dosya):
         return []
 
 def excel_mesaj_sil(dosya, msg_id):
-    if not dosya:
-        return
+    if not dosya: return
     try:
         df = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
         df = df[df["id"] != msg_id]
@@ -109,26 +105,23 @@ def excel_mesaj_sil(dosya, msg_id):
         pass
 
 def excel_hissedar_ekle(dosya, isim, hisse, maliyet, adet):
-    if not dosya:
-        return
+    if not dosya: return
     try:
-        df_old = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
-    except:
-        df_old = pd.DataFrame(columns=["id", "Hissedar", "Hisse", "Maliyet", "Adet"])
-        
-    mem_id = int(datetime.now().timestamp() * 1000)
-    df_new = pd.DataFrame([{"id": mem_id, "Hissedar": isim, "Hisse": hisse, "Maliyet": maliyet, "Adet": adet}])
-    df_total = pd.concat([df_old, df_new], ignore_index=True)
-    
-    try:
+        try:
+            df_old = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
+        except:
+            df_old = pd.DataFrame(columns=["id", "Hissedar", "Hisse", "Maliyet", "Adet"])
+            
+        mem_id = int(datetime.now().timestamp() * 1000)
+        df_new = pd.DataFrame([{"id": mem_id, "Hissedar": isim, "Hisse": hisse, "Maliyet": maliyet, "Adet": adet}])
+        df_total = pd.concat([df_old, df_new], ignore_index=True)
         with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             df_total.to_excel(writer, sheet_name="Hissedar_Hafizasi", index=False)
     except:
         pass
 
 def excel_hissedarlari_getir(dosya):
-    if not dosya:
-        return []
+    if not dosya: return []
     try:
         df = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
         return df.to_dict(orient="records")
@@ -136,8 +129,7 @@ def excel_hissedarlari_getir(dosya):
         return []
 
 def excel_hissedar_sil(dosya, member_id):
-    if not dosya:
-        return
+    if not dosya: return
     try:
         df = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
         df = df[df["id"] != member_id]
@@ -181,8 +173,8 @@ with tab_excel:
             df = pd.read_excel(secilen_dosya, sheet_name=0, engine='openpyxl')
             df.columns = df.columns.astype(str).str.strip()
             
-            istenen_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
-            mevcut_istenenler = [col for col in df.columns if col in istenen_sutunlar]
+            istenan_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
+            mevcut_istenenler = [col for col in df.columns if col in istenan_sutunlar]
             
             if mevcut_istenenler:
                 df_goster = df[mevcut_istenenler]
@@ -203,32 +195,34 @@ with tab_excel:
         st.info("💡 Sistemde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ
+# MODÜL 2: KONYA CANLI TAKİP PANELİ (HİZALAMA KUSURSUZLAŞTIRILDI)
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     bta_alim_fiyati = st.session_state["global_bta_price"]
     kurumsal_ticker = "KONYA.IS"
     
+    guncel_fta_fiyati = bta_alim_fiyati
+    gunluk_degisim_yuzde = 0.0
+    borsa_verisi_tamam = False
+    
     try:
         hisse = yf.Ticker(kurumsal_ticker)
         tarihce = hisse.history(period="2d", interval="1d")
-        
         if not tarihce.empty:
             guncel_fta_fiyati = tarihce['Close'].iloc[-1]
             gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
-            
             if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
                 onceki_kapanis = tarihce['Close'].iloc[-2]
                 gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
-            
-            kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
-            kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
-            
-            if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
-                st.balloons()
-                st.snow()
-                st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
-            
-            st.subheader("📊 Canlı Hesap Tablosu (Excel'den Otomatik Çekilen Referansla)")
-            c1, c2, c3, c4 = st.columns(4)
+            borsa_verisi_tamam = True
+    except:
+        pass
+
+    if borsa_verisi_tamam:
+        kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
+        kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
+        
+        if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
+            st.balloons()
+            st.snow()
