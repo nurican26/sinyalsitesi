@@ -66,7 +66,7 @@ if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -74,7 +74,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
             df_ist.to_csv(db_istatistik, index=False)
@@ -106,6 +106,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -113,40 +114,37 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
-    try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        if len(df.columns) >= 5:
-            ham_liste = df.iloc[:, 4].dropna().unique()
-            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+    if len(df.columns) >= 5:
+        ham_liste = df.iloc[:, 4].dropna().unique()
+        tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+        
+    for idx in range(min(10, len(df))):
+        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+        puan_d = df.iloc[idx, 3]
+        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+            veri_var_mi = True
+            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+            c_fiyat = 0.0
+            try:
+                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+            except:
+                pass
+            alim_c_temiz = alim_c.replace(",", ".")
+            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                veri_var_mi = True
-                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                c_fiyat = 0.0
-                try:
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                except:
-                    pass
-                alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
-                
-                if maliyet > 0 and c_fiyat > 0:
-                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    if or_dg >= 9.0:
-                        basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                else:
-                    kz_str = "<span>-</span>"
-                
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-    except:
-        pass
+            if maliyet > 0 and c_fiyat > 0:
+                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                if or_dg >= 9.0:
+                    basariliHisse_adi = ha.replace(".IS", "")
+                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+            else:
+                kz_str = "<span>-</span>"
+            
+            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
@@ -168,7 +166,11 @@ else:
 yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
 st.markdown(yasal_html, unsafe_allow_html=True)
 
-# 11. ETKİLEŞİM PANELİ
+# 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
 st.write("---")
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
+
+toplam_oy = basarili + basarisiz
+begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
+
 st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
