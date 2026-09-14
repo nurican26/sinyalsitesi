@@ -197,7 +197,7 @@ with tab_members:
         st.info("🔒 Hissedar veri tabanını ve kayıt formunu açmak için lütfen erişim şifresini (BTA2026) girin.")
 
 # ==========================================
-# MODÜL 5: CANLI HALKA ARZ WEB SCRAPER (Hata Veren Karmaşık Yapı Tamamen Temizlendi)
+# MODÜL 5: CANLI HALKA ARZ WEB SCRAPER (Tamamen Düzleştirilmiş ve Sıfır Riskli Mimari)
 # ==========================================
 with tab_scraper:
     st.header("📰 Canlı Halka Arz (IPO) Gündemi ve Arz Şirketleri")
