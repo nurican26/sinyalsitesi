@@ -33,7 +33,7 @@ if "bta_members_list" not in st.session_state:
 # ==========================================
 # GÜVENLİ VE HATA VERMEYEN SPK YASAL METNİ
 # ==========================================
-spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilenize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
+spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
@@ -77,7 +77,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D SÜTUN FİLTRESİ)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (E ELENDİ & İNTERNETTEN CANLI VERİ EKLENDİ)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -109,24 +109,46 @@ with tab_excel:
             
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
-            df_ara = df[filtrelenmis_sutunlar]
+            # Adım 1: Sadece A, C ve D sütun adlarını isimlerine göre yakala ve E sütununu dışarıda bırak
+            tutulacak_sutunlar = []
+            for col in df.columns:
+                c_upper = str(col).upper()
+                # AL SAT, HİSSE, ZEDUR ve İsimsiz (Unnamed) veya boş gelen sütunları filtrele
+                if "AL SAT" not in c_upper and "HİSSE" not in c_upper and "UNNAMED" not in c_upper:
+                    tutulacak_sutunlar.append(col)
             
-            # Sadece A, C ve D sütunlarını ekrana basar (B ve E sütunları tamamen elenir)
-            if len(df_ara.columns) >= 4:
-                gosterilecek_indeksler = [0, 2, 3]
-                df_goster = df_ara.iloc[:, gosterilecek_indeksler]
-            else:
-                df_goster = df_ara.iloc[:, :min(len(df_ara.columns), 4)]
+            df_goster = df[tutulacak_sutunlar].copy()
 
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
                 filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
-                gosterilecek_df = df_goster[filtre_mask]
+                gosterilecek_df = df_goster[filtre_mask].copy()
             else:
-                gosterilecek_df = df_goster
-                
+                gosterilecek_df = df_goster.copy()
+
+            # Adım 2: İnternetten Canlı Verileri Çek ve KONYA Verisinin Yanına Kolon Olarak Ekle
+            try:
+                live_ticker = yf.Ticker("KONYA.IS")
+                live_hist = live_ticker.history(period="1d")
+                if not live_hist.empty:
+                    current_price = live_hist['Close'].iloc[-1]
+                    pct_change = live_ticker.info.get('regularMarketChangePercent', 0.0)
+                    
+                    # Dinamik olarak internet canlı verilerini sütun şeklinde dataframe'e ekliyoruz
+                    gosterilecek_df["İnternetten Canlı Fiyat"] = f"{current_price:.2f} TL"
+                    gosterilecek_df["Canlı Günlük Değişim"] = f"{pct_change:.2f}%"
+                    
+                    # Tablodaki alım fiyatı sütununu yakalayıp fark hesaplama (C sütunu kontrolü)
+                    alim_fiyati_col = [c for c in gosterilecek_df.columns if "ALIM" in str(c).upper()]
+                    if alim_fiyati_col:
+                        excel_alim_fiyati = float(gosterilecek_df[alim_fiyati_col[0]].iloc[0])
+                        canlı_kar_zarar = current_price - excel_alim_fiyati
+                        gosterilecek_df["Canlı Kar/Zarar Farkı"] = f"{canlı_kar_zarar:+.2f} TL"
+            except Exception as live_err:
+                st.caption(f"Anlık internet fiyat eşitlemesinde gecikme: {live_err}")
+
             st.dataframe(gosterilecek_df, use_container_width=True)
+            
         except Exception as e:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
     else:
@@ -171,30 +193,3 @@ with tab_bta:
     except Exception as e:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
-# ==========================================
-# MODÜL 3: CANLI SOHBET ODASI
-# ==========================================
-with tab_chat:
-    st.header("💬 BTA Genel Canlı Sohbet Odası")
-    st.write("Sohbet odası herkese açıktır. Mesajlaşmaya hemen başlayabilirsiniz.")
-    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
-    with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input("Mesajınızı yazın:")
-        submit_button = st.form_submit_button("Gönder 🚀")
-        if submit_button and user_message:
-            now_str = datetime.now().strftime("%H:%M:%S")
-            msg_id = int(datetime.now().timestamp() * 1000)
-            st.session_state["chat_messages"].append({"id": msg_id, "user": nickname, "time": now_str, "text": user_message})
-            st.rerun()
-
-    st.subheader("📝 Oda Akışı")
-    for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
-        if "id" in msg:
-            cols = st.columns([0.85, 0.15])
-            with cols[0]:
-                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols[1]:
-                if is_admin:
-                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
-                        st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
-                        st.rerun()
