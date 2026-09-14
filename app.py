@@ -50,7 +50,6 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     animation: btaYoru 15s infinite linear;
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
-/* Streamlit dizayn düzeltmeleri */
 h1, h2, h3, p, span { color: #ffffff !important; }
 .stSelectbox label, .stTextInput label { color: #00ffcc !important; font-weight: bold; }
 </style>
@@ -157,12 +156,10 @@ if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
         
-        # Excel'deki benzersiz takip listesini ayıkla
         if len(df.columns) >= 5:
-            ham_liste = df.iloc[:, 0].dropna().unique() # 0. sütundaki hisseleri alıyoruz
+            ham_liste = df.iloc[:, 0].dropna().unique()
             tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() not in ["", "BTA HİSSE", "HİSSE", "NAN", "NONE", "RAYSG"]])
         
-        # Döngüyü optimize etmek için toplu yfinance sorgusu hazırlığı
         sorgu_hisseler = [f"{h}.IS" if not h.endswith(".IS") else h for h in tum_hisseler[:15]]
         
         if sorgu_hisseler:
@@ -177,11 +174,10 @@ if os.path.exists(excel_yolu):
                 if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
                     p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
                     
-                    # Toplu veriden anlık fiyatı güvenle çekme
                     hisse_ticker = f"{ha}.IS"
                     c_fiyat = 0.0
                     try:
-                        if hisse_ticker in toplu_veri.columns.levels[0]:
+                        if hisse_ticker in toplu_veri.columns.levels:
                             c_fiyat = float(toplu_veri[hisse_ticker]['Close'].iloc[-1])
                     except:
                         c_fiyat = 0.0
@@ -189,7 +185,6 @@ if os.path.exists(excel_yolu):
                     alim_c_temiz = alim_c.replace(",", ".")
                     maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                     
-                    # Hafızaya kaydet (Sidebar araması için)
                     hisse_maliyetleri[ha] = maliyet
                     hisse_puanlari[ha] = p_temiz
                     
@@ -214,3 +209,4 @@ if basarili_hisseler:
 # 10. ANA PANEL TABLO ALANI
 st.write("")
 if veri_var_mi and tablo_rows_html != "":
+    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE SEMBOLÜ</th><th>ALGORİTMİK MALİYET</th><th>ANLIK FİYAT</th><th>KÂR / ZARAR DURUMU</th></tr>' + tablo_rows_html + '</table>'
