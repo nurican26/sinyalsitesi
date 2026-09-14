@@ -56,7 +56,7 @@ st.markdown("""
 
     /* 🧠 LOGO PANELİ KUTUSU */
     .bta-logo-box {
-        overflow: hidden; /* Taşmaları gizleyerek yürüyen bant oluşturur */
+        overflow: hidden;
         padding: 20px 0;
         margin-bottom: 20px;
         background: rgba(10, 20, 40, 0.75);
@@ -129,28 +129,21 @@ e_sutunu_arama_listesi = ["KONYA"]
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 if excel_dosyalari:
     hedef_dosyalar = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm')) and ("bta" in f.lower() or "nurican" in f.lower())]
-    if list(hedef_dosyalar):
-        secilen_excel = list(hedef_dosyalar)
-    else:
-        secilen_excel = excel_dosyalari
+    secilen_excel = hedef_dosyalar[0] if hedef_dosyalar else excel_dosyalari[0]
     
     try:
-        # Excel'in ilk sayfasını ham olarak oku
         df_excel = pd.read_excel(secilen_excel, sheet_name=0, engine='openpyxl')
-        
-        # Sütun isimlerinin başındaki ve sonundaki gizli boşlukları temizleyelim
         df_excel.columns = df_excel.columns.astype(str).str.strip()
         
-        # 📌 PANEL 1 İÇİN VERİ: A, C ve D sütunlarını güvenle al
+        # 📌 PANEL 1: A, C ve D sütunlarını güvenle al
         gerekli_bta_sutunlari = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
         if all(col in df_excel.columns for col in gerekli_bta_sutunlari):
             gecici_sabit_liste = []
             for idx, row in df_excel.iterrows():
-                a_val = str(row["BTA HİSSE"]).strip().upper()  # A Sütunu (BTA HİSSE)
-                c_val = row["BTA ALIM FİYATI"]                # C Sütunu (BTA ALIM FİYATI)
-                d_val = row["BTA PUAN"]                       # D Sütunu (BTA PUAN)
+                a_val = str(row["BTA HİSSE"]).strip().upper()
+                c_val = row["BTA ALIM FİYATI"]
+                d_val = row["BTA PUAN"]
                 
-                # Sadece A sütununda geçerli bir isim yazan dolu satırları eşleştir
                 if a_val and a_val != "NAN" and a_val != "NONE" and not a_val.replace('.','',1).isdigit():
                     gecici_sabit_liste.append({
                         "Hisse": a_val,
@@ -160,7 +153,7 @@ if excel_dosyalari:
             if gecici_sabit_liste:
                 sabit_bta_listesi = gecici_sabit_liste
 
-        # 📌 PANEL 2 İÇİN VERİ: E sütunundaki (indeks 4) diğer tüm hisseleri arama motoru için ayır
+        # 📌 PANEL 2: E sütunundaki diğer tüm hisseleri arama motoru için ayır
         if len(df_excel.columns) >= 5:
             e_sutunu_ham = df_excel.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
             temiz_e_hisseleri = [h for h in e_sutunu_ham if h != "" and h != "NONE" and h != "NAN" and not h.replace('.','',1).isdigit()]
@@ -190,7 +183,6 @@ st.markdown("---")
 st.header("🔍 E Sütunu Canlı Hisse Arama Motoru")
 st.warning("⏱️ Arama motoru verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** yansımaktadır.")
 
-# Arama kutusu E sütunundaki listeyi kasmadan süper hızlı filtreler
 secilen_arama_hissesi = st.selectbox(
     "Arama Motoru: Takip etmek istediğiniz E sütunu hissesini seçin veya yazın:",
     options=e_sutunu_arama_listesi,
@@ -204,7 +196,6 @@ if secilen_arama_hissesi:
     veri_okundu = False
     tarihce_data = pd.DataFrame()
     
-    # Sözdizimi hatası üreten := walrus operatörü kaldırılarak güvenli standart taramaya geçildi
     try:
         hisse_data = yf.Ticker(kurumsal_ticker)
         tarihce_data = hisse_data.history(period="2d", interval="1d")
@@ -219,14 +210,20 @@ if secilen_arama_hissesi:
         pass
         
     if veri_okundu:
-        card_border = "#089981" if gunluk_change >= 0 else "#da3637"
-        card_text_color = "#089981" if gunluk_change >= 0 else "#da3637"
-        isaret_is = "+" if gunluk_change >= 0 else ""
-        
+        # Tırnak hatası üreten karmaşık f-string yapısı kaldırılarak Streamlit native metrik kurgusuna geçildi
         if gunluk_change >= 9.85:
             st.balloons()
+            st.success(f"🚀 **KUTLAMALAR BAŞLASIN! {secilen_arama_hissesi} HİSSESİ TAVAN OLDU!** 🥳🎉")
             
-        # Aratılan tek bir hissenin canlı internet fiyatı kartı
-        st.markdown(f"""
-        <div class="borsa-canli-kart" style="border-left: 6px solid {card_border}; background: rgba(13, 21, 39, 0.9) !important;">
-            <table style="width:100%; border-collapse:collapse; border:none;">
+        st.subheader(f"🔎 Aranan Hisse: {secilen_arama_hissesi}")
+        
+        # Temiz ve kasmayan standart borsa kutuları
+        col_m1, col_m2 = st.columns(2)
+        col_m1.metric("Canlı İnternet Fiyatı", f"{guncel_price:.2f} TL")
+        col_m2.metric("Günlük Değişim", f"{gunluk_change:+.2f}%")
+        
+        if not tarihce_data.empty:
+            st.subheader(f"📊 {secilen_arama_hissesi} - Gün İçi Canlı Fiyat Grafik Trendi")
+            st.line_chart(tarihce_data['Close'])
+    else:
+        st.error(f"⚠️ {secilen_arama_hissesi} kodu için veri çekilemedi. Lütfen seans saatlerini veya kod biçimini kontrol edin.")
