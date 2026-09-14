@@ -10,13 +10,12 @@ st.set_page_config(
     page_title="BTA KONYA Canlı Veri Odası",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="collapsed" # Sol menüyü bulut seviyesinde tamamen kapatır
+    initial_sidebar_state="collapsed"
 )
 
 # Arka planda 5 saniyede bir otomatik yenileme tetikleyici
 st_autorefresh(interval=5000, key="bta_terminal_refresh")
 
-# Beğeni ve yıldız puanı hafızası (Sıfırlanmayı önlemek için)
 if "begeniler" not in st.session_state:
     st.session_state["begeniler"] = 0
 if "yildizlar" not in st.session_state:
@@ -26,11 +25,13 @@ if "yildizlar" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 TRADINGVIEW TARZI TERMİNAL VE YAN PANEL YOK ETME CSS
+# 🌌 TRADINGVIEW TERMİNALİ VE HAREKETLİ EL YAZISI LOGO (CSS)
 # ==========================================
 st.markdown("""
 <style>
-    /* Sol menüyü (Sidebar), açma okunu ve tüm panel butonlarını tamamen yok eder */
+    @import url('https://googleapis.com');
+
+    /* Sol menüyü tamamen yok etme */
     [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], button[title="View sidebar"] {
         display: none !important;
         width: 0px !important;
@@ -52,13 +53,42 @@ st.markdown("""
         border-radius: 6px !important;
         border: 1px solid #2a2e39 !important;
     }
+
+    /* 🧠 ŞIK HAREKETLİ BTA EL YAZISI ANIMASYONU */
+    .bta-logo-container {
+        text-align: center;
+        padding: 20px 0;
+        margin-bottom: 10px;
+    }
+    .bta-neon-text {
+        font-family: 'Great Vibes', cursive; /* Zarif ve Şık El Yazısı Fontu */
+        font-size: 90px;
+        font-weight: bold;
+        color: #089981;
+        text-shadow: 0 0 10px #089981, 0 0 20px #089981, 0 0 40px #2962ff;
+        animation: btaGlow 3s ease-in-out infinite alternate;
+        display: inline-block;
+    }
+    @keyframes btaGlow {
+        0% {
+            transform: scale(0.98);
+            text-shadow: 0 0 10px #089981, 0 0 20px #089981, 0 0 30px #2962ff;
+        }
+        100% {
+            transform: scale(1.02);
+            text-shadow: 0 0 15px #00e676, 0 0 30px #00e676, 0 0 50px #2979ff;
+            color: #00e676;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
+# 3. HAREKETLİ EL YAZISI BTA BAŞLIĞI & SPK UYARISI
 # ==========================================
-st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
+# Göz yoran standart başlık yerine hareketli şık logo basılıyor
+st.markdown("<div class='bta-logo-container'><div class='bta-neon-text'>Bta</div></div>", unsafe_allow_html=True)
+
 st.warning(spk_metni)
 st.markdown("---")
 
@@ -110,7 +140,6 @@ if borsa_verisi_tamam:
         c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
         c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
         
-    # 👍 GERİ GETİRİLEN CANLI BEĞENİ VE YILDIZ PUANLAMA ALANI (ORTA ALANA SABİTLENDİ)
     st.markdown("---")
     st.subheader("⭐ Oda Değerlendirmesi & Topluluk Reaksiyonu")
     
