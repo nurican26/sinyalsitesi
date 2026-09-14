@@ -23,11 +23,121 @@ if "global_bta_price" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
+# 🌌 PRO BORSA TERMİNALİ TASARIMI (CSS ENJEKSİYONU)
+# ==========================================
+st.markdown("""
+<style>
+    /* Ana Arka Plan ve Borsa Terminali Efekti */
+    .stApp {
+        background-color: #0d1117;
+        color: #c9d1d9;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    /* Sekme Başlık Modifikasyonu */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 24px;
+        background-color: #161b22;
+        padding: 10px;
+        border-radius: 8px;
+        border-bottom: 2px solid #238636;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #8b949e !important;
+        font-weight: bold;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #58a6ff !important;
+        border-bottom-color: #58a6ff !important;
+    }
+    /* Borsa Giriş Kartları Tasarımı */
+    .borsa-kart {
+        background: linear-gradient(135deg, #1f242c 0%, #161b22 100%);
+        border-left: 5px solid #238636;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .borsa-kart-hata {
+        border-left-color: #da3637;
+    }
+</style>
+""", unsafe_index=True)
+
+# ==========================================
+# 0. KALICI GÜVENLİ VERİ MOTORU (SQLite)
+# ==========================================
+def db_baglan():
+    return sqlite3.connect("bta_pro_hafiza.db", check_same_thread=False)
+
+def db_hazirla():
+    conn = db_baglan()
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS sohbet (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, time TEXT, text TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS hissedarlar (id INTEGER PRIMARY KEY AUTOINCREMENT, isim TEXT, hisse TEXT, maliyet REAL, adet INTEGER)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS reaksiyon (id INTEGER PRIMARY KEY, begeni_sayisi INTEGER, yildiz_puani REAL)")
+    # Reaksiyon satırı yoksa ilk referansı ekle
+    cursor.execute("INSERT OR IGNORE INTO reaksiyon (id, begeni_sayisi, yildiz_puani) VALUES (1, 0, 5.0)")
+    conn.commit()
+    conn.close()
+
+db_hazirla()
+
+# Veritabanı Yardımcı Fonksiyonları
+def db_mesaj_ekle(user, time, text):
+    conn = db_baglan()
+    conn.cursor().execute("INSERT INTO sohbet (user, time, text) VALUES (?, ?, ?)", (user, time, text))
+    conn.commit()
+    conn.close()
+
+def db_mesajlari_getir():
+    conn = db_baglan()
+    df = pd.read_sql_query("SELECT * FROM sohbet ORDER BY id DESC LIMIT 40", conn)
+    conn.close()
+    return df.to_dict(orient="records")
+
+def db_mesaj_sil(msg_id):
+    conn = db_baglan()
+    conn.cursor().execute("DELETE FROM sohbet WHERE id = ?", (msg_id,))
+    conn.commit()
+    conn.close()
+
+def db_hissedar_ekle(isim, hisse, maliyet, adet):
+    conn = db_baglan()
+    conn.cursor().execute("INSERT INTO hissedarlar (isim, hisse, maliyet, adet) VALUES (?, ?, ?, ?)", (isim, hisse, maliyet, adet))
+    conn.commit()
+    conn.close()
+
+def db_hissedarlari_getir():
+    conn = db_baglan()
+    df = pd.read_sql_query("SELECT * FROM hissedarlar ORDER BY id DESC", conn)
+    conn.close()
+    return df.to_dict(orient="records")
+
+def db_hissedar_sil(member_id):
+    conn = db_baglan()
+    conn.cursor().execute("DELETE FROM hissedarlar WHERE id = ?", (member_id,))
+    conn.commit()
+    conn.close()
+
+def reaksiyon_getir():
+    conn = db_baglan()
+    res = conn.cursor().execute("SELECT begeni_sayisi, yildiz_puani FROM reaksiyon WHERE id=1").fetchone()
+    conn.close()
+    return res if res else (0, 5.0)
+
+def reaksiyon_guncelle(begeniler, yildizlar):
+    conn = db_baglan()
+    conn.cursor().execute("UPDATE reaksiyon SET begeni_sayisi=?, yildiz_puani=? WHERE id=1", (begeniler, yildizlar))
+    conn.commit()
+    conn.close()
+
+# ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
 # ==========================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password", help="Excel yönetimini, mesaj silmeyi ve kayıt düzenlemeyi açar.")
+admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password", help="Excel yönetimini ve silme araçlarını açar.")
 is_admin = (admin_pass == "BTA2026")
 
 if is_admin:
@@ -41,106 +151,11 @@ if auto_refresh:
 st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
-# Klasördeki Excel dosyalarını bulma
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 varsayilan_dosya = None
 if excel_dosyalari:
     hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
-    if hedef_dosyalar:
-        varsayilan_dosya = hedef_dosyalar[0]
-    else:
-        varsayilan_dosya = excel_dosyalari[0]
-
-# ==========================================
-# 0. BULUT TABANLI VERİ MOTORU (SADE VE GÜVENLİ SQLITE KORUMASI)
-# ==========================================
-def db_baglan():
-    # Streamlit Cloud üzerinde verilerin sıfırlanmaması için kalıcı /tmp/ dizini veya yerel db oluşturulur
-    conn = sqlite3.connect("bta_bulut_hafiza.db", check_same_thread=False)
-    return conn
-
-def db_hazirla():
-    conn = db_baglan()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sohbet (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user TEXT,
-            time TEXT,
-            text TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS hissedarlar (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            isim TEXT,
-            hisse TEXT,
-            maliyet REAL,
-            adet INTEGER
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-db_hazirla()
-
-def db_mesaj_ekle(user, time, text):
-    try:
-        conn = db_baglan()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO sohbet (user, time, text) VALUES (?, ?, ?)", (user, time, text))
-        conn.commit()
-        conn.close()
-    except:
-        pass
-
-def db_mesajlari_getir():
-    try:
-        conn = db_baglan()
-        df = pd.read_sql_query("SELECT * FROM sohbet ORDER BY id DESC LIMIT 50", conn)
-        conn.close()
-        return df.to_dict(orient="records")
-    except:
-        return []
-
-def db_mesaj_sil(msg_id):
-    try:
-        conn = db_baglan()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM sohbet WHERE id = ?", (msg_id,))
-        conn.commit()
-        conn.close()
-    except:
-        pass
-
-def db_hissedar_ekle(isim, hisse, maliyet, adet):
-    try:
-        conn = db_baglan()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO hissedarlar (isim, hisse, maliyet, adet) VALUES (?, ?, ?, ?)", (isim, hisse, maliyet, adet))
-        conn.commit()
-        conn.close()
-    except:
-        pass
-
-def db_hissedarlari_getir():
-    try:
-        conn = db_baglan()
-        df = pd.read_sql_query("SELECT * FROM hissedarlar ORDER BY id DESC", conn)
-        conn.close()
-        return df.to_dict(orient="records")
-    except:
-        return []
-
-def db_hissedar_sil(member_id):
-    try:
-        conn = db_baglan()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM hissedarlar WHERE id = ?", (member_id,))
-        conn.commit()
-        conn.close()
-    except:
-        pass
+    varsayilan_dosya = hedef_dosyalar if hedef_dosyalar else excel_dosyalari
 
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
@@ -157,7 +172,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL VERİ İŞLEME (SADECE A, C, D KOLONLARI)
+# MODÜL 1: EXCEL VERİ İŞLEME (A, C, D KOLONLARI)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri Inceleme Merkezi")
@@ -180,11 +195,7 @@ with tab_excel:
             istenan_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
             mevcut_istenenler = [col for col in df.columns if col in istenan_sutunlar]
             
-            if mevcut_istenenler:
-                df_goster = df[mevcut_istenenler]
-            else:
-                df_goster = df
-            
+            df_goster = df[mevcut_istenenler] if mevcut_istenenler else df
             df_goster = df_goster.dropna(how='all')
             
             if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
@@ -199,7 +210,7 @@ with tab_excel:
         st.info("💡 Sistemde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ
+# MODÜL 2: KONYA CANLI TAKİP PANELİ (BEĞENİ & YILDIZ PUANLAMALI)
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
@@ -233,22 +244,3 @@ with tab_bta:
             st.snow()
             st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
         
-        st.subheader("📊 Canlı Hesap Tablosu (Excel'den Otomatik Çekilen Referansla)")
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-        c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
-        
-        if kar_zarar_tutari >= 0:
-            c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
-            c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
-        else:
-            c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
-            c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-            
-        st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
-        st.line_chart(tarihce['Close'])
-    else:
-        st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı. Lütfen sayfayı yenileyin veya borsa seans saatlerinde test edin.")
-
-# ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (BULUT SİSTEMİ)
