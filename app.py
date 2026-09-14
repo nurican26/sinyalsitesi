@@ -74,7 +74,7 @@ try:
 except:
     pass
 
-# SPK YASAL METNİ (Değişken olarak saklanıyor, sadece en altta gösterilecek)
+# SPK YASAL METNİ
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Buradaki yorumlar kişisel görüşlere dayanmaktadır. Sadece buradaki bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
@@ -129,9 +129,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = hedef_dosyalar
         else:
-            varsayilan_dosya = excel_dosyalari[0]
+            varsayilan_dosya = excel_dosyalari
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -147,19 +147,19 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Sayfa Seç (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
             if not df.empty:
-                df_goster = df[[df.columns[0]]]
+                df_goster = df[[df.columns]]
             else:
                 df_goster = df
             
-            arama_kelimesi = st.text_input("Filtrele:", value="KONYA")
-            if arama_kelimesi:
-                filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
+            arama_kelimesin = st.text_input("Filtrele:", value="KONYA")
+            if arama_kelimesin:
+                filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesin, case=False)).any(axis=1)
                 gosterilecek_df = df_goster[filtre_mask]
             else:
                 gosterilecek_df = df_goster
@@ -209,7 +209,7 @@ with tab_bta:
         st.error(f"Takip motoru hatası: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (TAMAMEN DÜZELTİLDİ)
+# MODÜL 3: CANLI SOHBET ODASI (WALRUS HATASI ÇÖZÜLDÜ)
 # ==========================================
 with tab_chat:
     st.header("💬 Canlı Sohbet Odası")
@@ -227,12 +227,12 @@ with tab_chat:
     st.write("---")
     st.subheader("📝 Mesaj Akışı")
     
-    # Hatalı 'with cols:' yapısı düzeltildi, kararlı yerleşime geçildi
+    # Hata veren 'with col_col2 := col_m2:' satırı tamamen düzeltildi
     for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
         col_m1, col_m2 = st.columns([0.8, 0.2])
         with col_m1:
             st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-        with col_col2 := col_m2:
+        with col_m2:
             if is_admin:
                 if st.button("❌ Sil", key=f"del_msg_{msg['id']}_{idx}"):
                     st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
@@ -247,3 +247,4 @@ with tab_members:
     
     with st.form("add_member_form", clear_on_submit=True):
         m_name = st.text_input("Hissedar Adı Soyadı:")
+        m_stock = st.text_input("Hissem:", value="KONYA.IS")
