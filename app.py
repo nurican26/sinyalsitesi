@@ -62,9 +62,26 @@ st.sidebar.warning(spk_metni)
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 
 # ==========================================
-# 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
+# 3. ANA PANEL BAŞLIĞI (EL YAZISI & KAYAN YAZI EFEKTİ)
 # ==========================================
-st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
+# Google Fonts üzerinden "Pacifico" el yazısı fontunu yükleyip kayan yazı içerisine entegre ediyoruz
+st.markdown(
+    """
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    
+    <div style="background-color: #1e1e1e; padding: 10px; border-radius: 10px; border: 1px solid #333;">
+        <marquee behavior="alternate" scrollamount="4">
+            <span style="font-family: 'Pacifico', cursive; font-size: 38px; color: #ffeb3b; text-shadow: 2px 2px 4px #000;">
+                🧠 BTA Algoritmik İşlem ve Analiz Portalı
+            </span>
+        </marquee>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.warning(spk_metni)
 st.markdown("---")
 
@@ -85,7 +102,7 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]  # Liste yerine ilk dosyayı tekil string olarak seçiyoruz
+            varsayilan_dosya = hedef_dosyalar[0]
         else:
             varsayilan_dosya = excel_dosyalari[0]
 
@@ -186,15 +203,3 @@ with tab_chat:
             with cols[0]:
                 st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
             with cols[1]:
-                if is_admin:
-                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
-                        st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
-                        st.rerun()
-            st.divider()
-
-# ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
-# ==========================================
-with tab_members:
-    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
-    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
