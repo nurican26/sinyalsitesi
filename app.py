@@ -113,14 +113,11 @@ with tab_excel:
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_ara = df[filtrelenmis_sutunlar]
             
-            # İstenen sütunlar (A, C, D) için dinamik indeks kontrolü ve filtreleme (E ve Unnamed sütunları elenir)
-            # Eğer excel dosyasındaki ilk 4 sütun sırasıyla A, B, C, D ise sadece A, C ve D'yi seçer:
+            # 0: A sütunu, 2: C sütunu, 3: D sütunu (B sütununu ve E sütununu tamamen gizler)
             if len(df_ara.columns) >= 4:
-                # 0: A sütunu, 2: C sütunu, 3: D sütunu (B sütununu ve E sütununu göstermez)
                 gosterilecek_indeksler = [0, 2, 3]
                 df_goster = df_ara.iloc[:, gosterilecek_indeksler]
             else:
-                # Eğer sütun sayısı 4'ten azsa hata vermemesi için güvenli sınırda kalır
                 df_goster = df_ara.iloc[:, :min(len(df_ara.columns), 4)]
 
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
@@ -176,7 +173,7 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI
+# MODÜL 3: CANLI SOHBET ODASI (GİRİNTİ HATALARI DÜZELTİLDİ)
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
@@ -196,3 +193,7 @@ with tab_chat:
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
             with cols[0]:
+                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
+            with cols[1]:
+                if is_admin:
+                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
