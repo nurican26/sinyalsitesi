@@ -38,19 +38,19 @@ st.set_page_config(
 # Canlı Sohbet Veritabanı Hafızası
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
-        {"id": 0, "user": "Sistem", "time": "12:00:00", "text": "BTA Genel Canlı Sohbet Odasına Hoş Geldiniz!"}
+        {"id": 111, "user": "Sistem", "time": "12:00:00", "text": "BTA Genel Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 
-# Hissedar Kayıt Listesi Hafızası (BTA Alım Fiyatı Eklendi)
+# Hissedar BTA Hisse Kayıt Listesi Hafızası (İstek Üzerine Güncellendi)
 if "bta_members_list" not in st.session_state:
     st.session_state["bta_members_list"] = [
-        {"id": 0, "İsim Soyisim": "Nurican Bey", "BTA Alım Fiyatı (TL)": 4100.0, "Kayıt Tarihi": "2026-09-14", "Durum": "Onaylı Üye"}
+        {"id": 222, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
     ]
 
 # Yan menü (Sidebar) kontrolleri
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-# GİZLİ YÖNETİCİ GİRİŞİ (Sadece Nurican Bey İçin)
+# GİZLİ YÖNETİCİ GİRİŞİ (Sadece Nurican Bey İçin - Şifre: BTA2026)
 st.sidebar.subheader("🔒 Yönetici Alanı")
 admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password", help="Küfür silme ve kayıt düzenleme yetkisi açar.")
 is_admin = (admin_pass == "BTA2026")
@@ -179,41 +179,37 @@ with tab_chat:
         if submit_button and user_message:
             now_str = datetime.now().strftime("%H:%M:%S")
             msg_id = int(datetime.now().timestamp() * 1000)
-            new_msg = {"id": msg_id, "user": nickname, "time": now_str, "text": user_message}
-            st.session_state["chat_messages"].append(new_msg)
+            st.session_state["chat_messages"].append({"id": msg_id, "user": nickname, "time": now_str, "text": user_message})
             st.rerun()
 
     st.subheader("📝 Oda Akışı")
     
-    # Mesajları döngüyle basıyoruz, admin ise yanına silme butonu koyuyoruz
     for msg in reversed(st.session_state["chat_messages"]):
         cols = st.columns([0.85, 0.15])
         with cols[0]:
             st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
         with cols[1]:
-            if is_admin: # Sadece Nurican Bey şifre girdiğinde görünür
+            if is_admin:
                 if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}"):
                     st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m["id"] != msg["id"]]
-                    st.success("Metin odadan temizlendi.")
                     st.rerun()
         st.divider()
 
 # ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Şifresiz Kayıt & Admin Düzenleme)
+# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Şifresiz BTA Hisse Kaydı & Admin Düzenleme)
 # ==========================================
 with tab_members:
-    st.header("👥 BTA Hissedarları Kayıt ve Takip Listesi")
-    st.write("BTA Grubuna dahil olan yatırımcıların şifresiz kayıt panelidir.")
+    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
+    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
     
-    # Herkese Açık Yeni Üye ve Alım Fiyatı Ekleme Formu
-    with st.expander("➕ Yeni Hissedar Kaydı Oluştur (Şifresiz)"):
+    # Herkese Açık Yeni BTA Hisse Kayıt Formu (Hata veren sözdizimi tamamen düzleştirildi)
+    with st.expander("➕ Yeni Hissedar & BTA Hisse Kaydı Oluştur (Şifresiz)"):
         with st.form("member_form", clear_on_submit=True):
-            new_name = st.text_input("Hissedar İsim Soyisim:")
-            new_price = st.number_input("BTA Alım Fiyatı (TL):", min_value=0.0, value=4100.0, step=10.0)
+            input_name = st.text_input("Hissedar İsim Soyisim:")
+            input_stock = st.text_input("Hisse Kodu (Örn: KONYA, THYAO, EREGL):", value="KONYA")
+            input_cost = st.number_input("Hisse Maliyeti (TL):", min_value=0.0, value=4100.0, step=10.0)
+            input_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1)
             add_member_btn = st.form_submit_button("Sisteme Güvenli Kaydet 💾")
             
-            if add_member_btn and new_name:
-                current_date = datetime.now().strftime("%Y-%m-%d")
-                member_id = int(datetime.now().timestamp() * 1000)
-                new_member = {
-                    "id": member_id,
+            if add_member_btn and input_name and input_stock:
+                m_id = int(datetime.now().timestamp() * 1000)
