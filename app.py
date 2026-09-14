@@ -81,15 +81,15 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (SADECE A, C, D SÜTUNLARI KİLİTLİ)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D KOLONLARI - KESİNTİSİZ LİSTE)
 # ==========================================
 with tab_excel:
-    st.header("📂 Excel Veri Inceleme Merkezi")
+    st.header("📂 Excel Veri İnceleme Merkezi")
     varsayilan_dosya = None
     if excel_dosyalari:
-        hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
+        hedef_dosyalar = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm')) and ("bta" in f.lower() or "nurican" in f.lower())]
         if list(hedef_dosyalar):
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = list(hedef_dosyalar)[0]
         else:
             varsayilan_dosya = excel_dosyalari[0]
 
@@ -106,19 +106,10 @@ with tab_excel:
 
     if secilen_dosya is not None:
         try:
-            excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
-            sayfa_isimleri = excel_obj.sheet_names
-            
-            # Hatayı çözen anahtar: İlk sayfayı ("WEB") zorunlu ve net olarak hedef alıyoruz (dict hatasını önler)
-            aktif_sayfa = sayfa_isimleri[0]
-            if is_admin and len(sayfa_isimleri) > 1:
-                aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
-            
-            # DataFrame olarak tek bir sayfayı net okuyoruz
-            df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
+            # Excel yapısını güvenli bir şekilde ilk sayfadan DataFrame olarak çekiyoruz (Sözlük hatasını önler)
+            df = pd.read_excel(secilen_dosya, sheet_name=0, engine='openpyxl')
             
             # 🚀 İSTEK: Sadece A, C ve D sütunları gösterilecek (BTA HİSSE, BTA ALIM FİYATI, BTA PUAN)
-            # İsme göre tam eşleşme filtresi uyguluyoruz
             istenen_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
             mevcut_istenenler = [col for col in df.columns if col in istenen_sutunlar]
             
@@ -127,17 +118,16 @@ with tab_excel:
             else:
                 df_goster = df
             
-            # BTA HİSSE sütunundaki boş (None) satırları temizleme
-            if "BTA HİSSE" in df_goster.columns:
-                df_goster = df_goster[df_goster["BTA HİSSE"].notna()]
-                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.strip() != ""]
-                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() != "NONE"]
-                
-                # KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip hafızaya alma
-                konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() == "KONYA"]
-                if not konya_satirlari.empty and "BTA ALIM FİYATI" in df_goster.columns:
+            # Formülleri bozmadan sadece tamamen boş satırları eliyoruz, böylece tüm hisseleriniz geri gelir
+            df_goster = df_goster.dropna(how='all')
+            
+            # KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip canlı odaya bağlama algoritması
+            if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
+                konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
+                if not konya_satirlari.empty:
                     st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
             
+            # Filtrelenmiş temiz A, C, D tablosunu listeliyoruz
             st.dataframe(df_goster, use_container_width=True)
             
         except Exception as e:
@@ -200,3 +190,13 @@ with tab_chat:
         submit_button = st.form_submit_button("Gönder 🚀")
         if submit_button and user_message:
             now_str = datetime.now().strftime("%H:%M:%S")
+            msg_id = int(datetime.now().timestamp() * 1000)
+            st.session_state["chat_messages"].append({"id": msg_id, "user": nickname, "time": now_str, "text": user_message})
+            st.rerun()
+
+    st.subheader("📝 Oda Akışı")
+    for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
+        if "id" in msg:
+            c_text, c_btn = st.columns([0.85, 0.15])
+            with c_text:
+                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
