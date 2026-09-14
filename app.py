@@ -21,7 +21,7 @@ st.sidebar.header("⚙️ Sistem Kontrolleri")
 # Otomatik Yenileme Ayarı (streamlit-autorefresh)
 auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
 if auto_refresh:
-    refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 5, 120, 30)
+    refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 5, 120, 10)
     st_autorefresh(interval=refresh_interval * 1000, key="bta_refresh_counter")
 
 # Klasördeki mevcut Excel/Macro dosyalarını algılama
@@ -33,15 +33,15 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 st.title("📊 BTA Kurumsal Analiz ve Finans Portalı")
 st.write("Excel veri entegrasyonu, sabit BTA veri takibi ve canlı halka arz haber akış paneli.")
 
-# Sekmeli Menü Tasarımı
+# Sekmeli Menü Tasarımı (AL-SAT hisseleri listelerden kaldırılmıştır)
 tab_excel, tab_bta, tab_scraper = st.tabs([
     "📂 BTA Excel & Makro Analizi", 
-    "📈 BTA Hisse Takip Modülü (KONYA)", 
+    "📈 KONYA Canlı Veri & Kar/Zarar Takibi", 
     "📰 Canlı Halka Arz (IPO) Gündemi"
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (pandas & openpyxl)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (AL-SAT Kısıtlamalı)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -64,86 +64,87 @@ with tab_excel:
             aktif_sayfa = st.selectbox("Görüntülenecek Sayfa:", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
+            # İstek: AL SAT listelenmesin, sadece ana BTA hisse mantığı kalsın.
+            # Tabloda "BTA AL SAT" kolonunu veya al sat verilerini kullanıcıya göstermiyoruz.
+            filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
+            df_goster = df[filtrelenmis_sutunlar]
+            
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:")
             if arama_kelimesi:
-                filtre_mask = df.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
-                gosterilecek_df = df[filtre_mask]
+                filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
+                gosterilecek_df = df_goster[filtre_mask]
             else:
-                gosterilecek_df = df
+                gosterilecek_df = df_goster
                 
             st.dataframe(gosterilecek_df, use_container_width=True)
             
-            sayisal_sutunlar = df.select_dtypes(include=['number']).columns.tolist()
-            if len(sayisal_sutunlar) >= 1:
-                with st.expander("📊 Veri Görselleştirme Ayarları"):
-                    x_ekseni = st.selectbox("X Ekseni:", df.columns.tolist())
-                    y_ekseni = st.multiselect("Y Ekseni (Sayısal):", sayisal_sutunlar, default=sayisal_sutunlar[:1])
-                    if x_ekseni and y_ekseni:
-                        st.line_chart(df.set_index(x_ekseni)[y_ekseni])
-                        
         except Exception as e:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
-    else:
-        st.info("💡 Lütfen işlem yapmak için bir veri kaynağı belirtin.")
 
 # ==========================================
-# MODÜL 2: SADECE KONYA HİSSE SENEDİ TAKİBİ
+# MODÜL 2: SADECE KONYA HİSSE TAKİBİ & +9 KUTLAMA ALGORİTMASI
 # ==========================================
 with tab_bta:
-    st.header("📈 BTA Özel Veri Takip Ekranı")
-    st.write("Sistem kurumsal analiz için sadece **KONYA.IS** verilerini çekecek şekilde kilitlenmiştir. Arama motoru ve AL-SAT tavsiyeleri bulunmamaktadır.")
+    st.header("📈 BTA Kurumsal Veri & Hedef Takip Ekranı")
     
-    # Tablonuzda yer alan KONYA hissesi BIST uzantısı (.IS) ile tanımlandı
-    kurumsal_ticker = "KONYA.IS" 
+    kurumsal_ticker = "KONYA.IS"
+    # Tablonuzun 1. satırındaki ALIM FİYATI: 41.00 TL
+    bta_alim_fiyati = 41.00 
     
     try:
         hisse = yf.Ticker(kurumsal_ticker)
         tarihce = hisse.history(period="1mo", interval="1d")
         
         if not tarihce.empty:
-            guncel_kapanis = tarihce['Close'].iloc[-1]
-            onceki_kapanis = tarihce['Close'].iloc[-2] if len(tarihce) > 1 else guncel_kapanis
-            degisim = guncel_kapanis - onceki_kapanis
-            yuzde_degisim = (degisim / onceki_kapanis) * 100
+            guncel_fta_fiyati = tarihce['Close'].iloc[-1]
+            
+            # Kar/Zarar Yüzdesi Hesaplama
+            kar_zarar_yuzdesi = ((guncel_fta_fiyati - bta_alim_fiyati) / bta_alim_fiyati) * 100
+            
+            # +9 VE ÜSTÜ YAPTIĞINDA ÇALIŞACAK TEBRİK / KUTLAMA ODASI
+            if kar_zarar_yuzdesi >= 9.0:
+                st.balloons()  # Ekranda uçan konfeti/balon efekti yaratır
+                st.snow()      # Görsel şöleni artırır
+                st.success(f"🚀 **TEBRİKLER! KONYA HİSSESİNDE +%9 HEDEFİ AŞILDI!** 🥳🎉\n\n Mevcut FTA Fiyatı: **{guncel_fta_fiyati:.2f} TL** seviyesine ulaşarak BTA alım fiyatınız olan {bta_alim_fiyati} TL üzerinden tam **% {kar_zarar_yuzdesi:.2f}** kar marjı yakalamıştır. Odada kutlamalar başlasın!")
             
             # Canlı Gösterge Kartları
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("KONYA Güncel Fiyat", f"{guncel_kapanis:.2f} TL", f"{yuzde_degisim:.2f}%")
-            m2.metric("Günlük En Yüksek", f"{tarihce['High'].iloc[-1]:.2f} TL")
-            m3.metric("Günlük En Düşük", f"{tarihce['Low'].iloc[-1]:.2f} TL")
-            m4.metric("İşlem Hacmi (Adet)", f"{tarihce['Volume'].iloc[-1]:,}")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("KONYA Güncel FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL")
+            m2.metric("Referans Alım Fiyatınız", f"{bta_alim_fiyati:.2f} TL")
+            
+            # Kar/Zarar durumuna göre renkli metrik gösterimi
+            if kar_zarar_yuzdesi >= 0:
+                m3.metric("Anlık Kar/Zarar Durumu", f"+% {kar_zarar_yuzdesi:.2f}", delta_color="normal")
+            else:
+                m3.metric("Anlık Kar/Zarar Durumu", f"% {kar_zarar_yuzdesi:.2f}", delta_color="inverse")
             
             # Canlı Grafik Alanı
-            st.subheader("📊 KONYA - 1 Aylık Canlı Trend Grafiği")
+            st.subheader("📊 KONYA - Canlı Fiyat Değişim Trendi")
             st.line_chart(tarihce['Close'])
         else:
-            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi alınamadı. Lütfen daha sonra tekrar deneyin.")
+            st.warning("Canlı borsa sunucularından anlık veri çekilemedi.")
     except Exception as e:
-        st.error(f"Canlı veri çekme motorunda hata oluştu: {e}")
+        st.error(f"Canlı takip motorunda hata: {e}")
 
 # ==========================================
-# MODÜL 3: YENİ HALKA ARZ WEB SCRAPER (Canlı Web Botu)
+# MODÜL 3: CANLI HALKA ARZ WEB SCRAPER (BloombergHT Entegrasyonu)
 # ==========================================
 with tab_scraper:
-    st.header("📰 Canlı Halka Arz Haber Botu")
-    st.write("Sistem doğrudan Türkiye piyasalarındaki **Yeni Halka Arz (IPO) Gündemine** odaklanacak şekilde güncellenmiştir.")
+    st.header("📰 Canlı Halka Arz (IPO) Haber Botu")
+    st.write("Sistem doğrudan Türkiye piyasalarındaki **Yeni Halka Arz Gündemine** odaklanmıştır.")
     
-    if st.button("Halka Arz Gündemini Yenile / Kazı"):
+    if st.button("Halka Arz Gündemini Yenile ve Kazı"):
         try:
-            # Bloomberg HT Halka Arz ve borsa haber akışı üzerinden scraping işlemi
-            hedef_url = "https://bloomberght.com"
-            tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            hedef_url = "https://www.bloomberght.com/halka-arz"
+            tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
             
             sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi)
             
             if sayfa_istegi.status_code == 200:
                 html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
-                
-                # Haber başlık bloklarını seçiyoruz
                 basliklar = html_icerik.find_all("span", class_="title", limit=10)
                 
                 if not basliklar:
-                    # Alternatif etiket kontrolü
                     basliklar = html_icerik.find_all("h3", limit=10)
                 
                 if basliklar:
@@ -160,11 +161,9 @@ with tab_scraper:
                 st.error(f"Finans sunucularına bağlanılamadı. Durum Kodu: {sayfa_istegi.status_code}")
         except Exception as e:
             st.error(f"Web Scraping işlemi sırasında bir hata meydana geldi: {e}")
-    else:
-        st.info("Piyasadaki en güncel halka arz gelişmelerini ve şirket listelerini çekmek için yukarıdaki butona basın.")
 
 # ==========================================
-# 3. YASAL UYARI - SPK RESMİ METNİ
+# 4. YASAL UYARI - SPK RESMİ METNİ
 # ==========================================
 st.markdown("---")
 st.warning("""
