@@ -8,7 +8,7 @@ from streamlit_autorefresh import st_autorefresh
 # ==========================================
 st.set_page_config(
     page_title="BTA KONYA Canlı Veri Odası",
-    page_icon="📈",
+    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -22,10 +22,10 @@ if "yildizlar" not in st.session_state:
     st.session_state["yildizlar"] = 5.0
 
 # SPK RESMİ YASAL UYARI METNİ
-spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. This görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
+spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 HAREKETLİ, RENKLİ VE SİBER NEON TERMİNAL TASARIMI (CSS)
+# 🌌 SİBER ALGORİTMA VE BEYİN TEMALI ARKA PLAN (CSS)
 # ==========================================
 st.markdown("""
 <style>
@@ -37,74 +37,87 @@ st.markdown("""
         width: 0px !important;
     }
     
-    /* Canlı Renkli Arka Plan ve Borsa Atmosferi */
+    /* 🌌 Boş Arka Planı Canlandırma: Dijital Matrix / Siber Borsa Terminal Arka Planı */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: #080b11 !important;
-        background-image: radial-gradient(circle at 20% 30%, #111827 0%, #030712 100%) !important;
+        background-color: #06090e !important;
+        background-image: 
+            radial-gradient(circle at 50% 50%, #0d1527 0%, #020408 100%),
+            linear-gradient(rgba(8, 153, 129, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(8, 153, 129, 0.03) 1px, transparent 1px) !important;
+        background-size: 100% 100%, 30px 30px, 30px 30px !important;
         color: #e5e7eb !important;
     }
     .stApp {
         background-color: transparent !important;
     }
-    
-    h1, h2, h3, h4, h5, h6, p, span, label {
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-    }
 
-    /* Renkli ve Işıklı Metrik Kutuları */
+    /* Siber Işıklı Hesaplama Kutuları */
     div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, #111827 0%, #1f2937 100%) !important;
-        padding: 20px !important;
-        border-radius: 12px !important;
-        border: 2px solid #3b82f6 !important;
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4) !important;
-        transition: transform 0.3s ease;
+        background: linear-gradient(135deg, #0b0f17 0%, #161c28 100%) !important;
+        padding: 22px !important;
+        border-radius: 14px !important;
+        border: 2px solid #089981 !important; /* TradingView Yeşili Hat */
+        box-shadow: 0 0 15px rgba(8, 153, 129, 0.3) !important;
+        transition: all 0.3s ease;
     }
     div[data-testid="stMetric"]:hover {
-        transform: translateY(-5px);
-        border-color: #10b981 !important;
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.5) !important;
+        transform: scale(1.03);
+        border-color: #2962ff !important; /* Matrix Mavisi Hat */
+        box-shadow: 0 0 25px rgba(41, 98, 255, 0.5) !important;
     }
 
-    /* 💎 BÜYÜK HARFLİ HAREKETLİ RENKLİ BTA LOGO TASARIMI */
-    .bta-logo-container {
+    /* 🧠 ALGORİTMİK BEYİN VE PARLAYAN BTA LOGO PANELİ */
+    .bta-logo-box {
         text-align: center;
-        padding: 25px 0;
-        margin-bottom: 15px;
+        padding: 30px 0;
+        margin-bottom: 20px;
+        background: rgba(13, 21, 39, 0.6);
+        border-radius: 16px;
+        border: 1px solid #1f2937;
+        box-shadow: inset 0 0 20px rgba(8, 153, 129, 0.1);
+    }
+    .bta-brain-icon {
+        font-size: 65px;
+        display: inline-block;
+        animation: brainPulse 2s infinite alternate;
+        vertical-align: middle;
+        margin-right: 15px;
     }
     .bta-neon-text {
-        font-family: 'Style Script', 'Great Vibes', cursive; /* Akıcı ve Keskin Büyük Harf El Yazısı */
-        font-size: 110px;
+        font-family: 'Orbitron', sans-serif; /* Teknoloji ve Algoritma Fontu */
+        font-size: 80px;
         font-weight: 900;
-        letter-spacing: 5px;
-        background: linear-gradient(90deg, #ff007f, #7000ff, #00e676, #00b0ff, #ff007f);
-        background-size: 400% 400%;
+        letter-spacing: 12px;
+        background: linear-gradient(90deg, #00e676, #00b0ff, #00e676);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: btaGradientFlow 6s ease infinite, btaPulse 2.5s ease-in-out infinite alternate;
+        animation: gradientShift 4s linear infinite;
         display: inline-block;
-        filter: drop-shadow(0 0 15px rgba(112, 0, 255, 0.6)) drop-shadow(0 0 30px rgba(0, 230, 118, 0.4));
+        vertical-align: middle;
     }
     
-    /* Renk Akış Animasyonu */
-    @keyframes btaGradientFlow {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+    @keyframes brainPulse {
+        0% { transform: scale(0.9) rotate(-5deg); filter: drop-shadow(0 0 10px #00b0ff); }
+        100% { transform: scale(1.1) rotate(5deg); filter: drop-shadow(0 0 25px #00e676); }
     }
-    /* Canlı Nefes Alma Animasyonu */
-    @keyframes btaPulse {
-        0% { transform: scale(0.96) rotate(-1deg); }
-        100% { transform: scale(1.04) rotate(1deg); filter: drop-shadow(0 0 20px #ff007f) drop-shadow(0 0 45px #00b0ff); }
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. HAREKETLİ RENKLİ BÜYÜK HARFLİ BTA LOGOSU
+# 3.🧠 HAREKETLİ ALGORİTMİK BEYİN LOGOLU BTA BAŞLIĞI
 # ==========================================
-# Tam istediğiniz gibi: Tamamen BÜYÜK HARFLERLE ve renk cümbüşüyle parlayan BTA
-st.markdown("<div class='bta-logo-container'><div class='bta-neon-text'>BTA</div></div>", unsafe_allow_html=True)
+# Büyük harflerle, parlayan algoritma fontu ve hareketli yapay zeka beyni bir arada!
+st.markdown("""
+<div class='bta-logo-box'>
+    <span class='bta-brain-icon'>🧠</span>
+    <div class='bta-neon-text'>BTA</div>
+</div>
+""", unsafe_allow_html=True)
 
 st.warning(spk_metni)
 st.markdown("---")
