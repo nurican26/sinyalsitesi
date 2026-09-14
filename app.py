@@ -12,7 +12,6 @@ from streamlit_autorefresh import st_autorefresh
 # SAYFA AYARLARI
 # ==================================================
 st.set_page_config(
-    page_title="BTA Algoritmik İşlem Analizi",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed"
