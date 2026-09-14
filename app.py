@@ -14,11 +14,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# Canlı Sohbet Hafızasındaki 'id' Hatası Kalıcı Olarak Çözüldü
+# Canlı Sohbet Hafızasındaki Geçmiş Hataları Tamir Eden Güvenli Yapı
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
+else:
+    # Sunucu hafızasında biriken 'id'siz eski hatalı mesajları otomatik temizleme/onarma mekanizması
+    for msg in st.session_state["chat_messages"]:
+        if "id" not in msg:
+            msg["id"] = int(datetime.now().timestamp() * 1000)
 
 # Hissedar BTA Hisse Kayıt Listesi Hafızası
 if "bta_members_list" not in st.session_state:
@@ -157,7 +162,7 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (Hata Çözülmüş Sürüm)
+# MODÜL 3: CANLI SOHBET ODASI
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
@@ -178,15 +183,17 @@ with tab_chat:
     st.subheader("📝 Oda Akışı")
     
     for msg in reversed(st.session_state["chat_messages"]):
-        cols = st.columns([0.85, 0.15])
-        with cols[0]:
-            st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-        with cols[1]:
-            if is_admin:
-                if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}"):
-                    st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m["id"] != msg["id"]]
-                    st.rerun()
-        st.divider()
+        # Hafıza güvenliği doğrulaması
+        if "id" in msg:
+            cols = st.columns([0.85, 0.15])
+            with cols[0]:
+                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
+            with cols[1]:
+                if is_admin:
+                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}"):
+                        st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
+                        st.rerun()
+            st.divider()
 
 # ==========================================
 # MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
@@ -206,9 +213,3 @@ with tab_members:
             if add_member_btn and input_name and input_stock:
                 m_id = int(datetime.now().timestamp() * 1000)
                 st.session_state["bta_members_list"].append({
-                    "id": m_id,
-                    "Hissedar Adı": input_name,
-                    "Sahip Oluğu BTA Hissesi": input_stock.upper() + ".IS",
-                    "Hisse Maliyeti (TL)": input_cost,
-                    "Adet": input_qty
-                })
