@@ -85,9 +85,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = hedef_dosyalar
         else:
-            varsayilan_dosya = excel_dosyalari[0]
+            varsayilan_dosya = excel_dosyalari
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -103,18 +103,33 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # --- E SÜTUNUNU VE "AL SAT" SÜTUNLARINI GİZLEYEN GÜNCEL FİLTRE ---
-            filtrelenmis_sutunlar = [
-                col for col in df.columns 
-                if "AL SAT" not in str(col).upper() and str(col).strip().upper() != "E"
-            ]
+            # --- B VE E SÜTUNLARINI TAMAMEN ENGELLEYEN YENİ SÜZGEÇ ---
+            filtrelenmis_sutunlar = []
+            for col_idx, col_name in enumerate(df.columns):
+                col_str = str(col_name).strip().upper()
+                
+                # 1. "AL SAT" içeren alanları eliyoruz
+                if "AL SAT" in col_str:
+                    continue
+                
+                # 2. B SÜTUNU ENGELLEME: İsmi tam "B" olan veya başlığı boş kalıp "UNNAMED: 1" (2. sütun) olan alanları eliyoruz
+                if col_str == "B" or "UNNAMED: 1" in col_str:
+                    continue
+                    
+                # 3. E SÜTUNU ENGELLEME: İsmi tam "E" olan veya başlığı boş kalıp "UNNAMED: 5" (6. sütun) olan alanları eliyoruz
+                if col_str == "E" or "UNNAMED: 5" in col_str:
+                    continue
+                
+                # Kriterleri geçen temiz sütunları listeye ekliyoruz
+                filtrelenmis_sutunlar.append(col_name)
+                
             df_goster = df[filtrelenmis_sutunlar]
-            # ----------------------------------------------------------------
+            # --------------------------------------------------------
             
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
@@ -183,18 +198,3 @@ with tab_chat:
             st.session_state["chat_messages"].append({"id": msg_id, "user": nickname, "time": now_str, "text": user_message})
             st.rerun()
 
-    st.subheader("📝 Oda Akışı")
-    for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
-        if "id" in msg:
-            cols = st.columns([0.85, 0.15])
-            with cols[0]:
-                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols[1]:
-                if is_admin:
-                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
-                        st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
-                        st.rerun()
-            st.divider()
-
-# ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
