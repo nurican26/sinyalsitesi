@@ -22,10 +22,10 @@ if "yildizlar" not in st.session_state:
     st.session_state["yildizlar"] = 5.0
 
 # SPK RESMİ YASAL UYARI METNİ
-spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
+spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. This görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 TRADINGVIEW TERMİNALİ VE HAREKETLİ EL YAZISI LOGO (CSS)
+# 🌌 HAREKETLİ, RENKLİ VE SİBER NEON TERMİNAL TASARIMI (CSS)
 # ==========================================
 st.markdown("""
 <style>
@@ -36,63 +36,80 @@ st.markdown("""
         display: none !important;
         width: 0px !important;
     }
+    
+    /* Canlı Renkli Arka Plan ve Borsa Atmosferi */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: #0c0f14 !important;
-        color: #d1d4dc !important;
+        background-color: #080b11 !important;
+        background-image: radial-gradient(circle at 20% 30%, #111827 0%, #030712 100%) !important;
+        color: #e5e7eb !important;
     }
     .stApp {
-        background-color: #0c0f14 !important;
+        background-color: transparent !important;
     }
+    
     h1, h2, h3, h4, h5, h6, p, span, label {
-        color: #d1d4dc !important;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-    }
-    .stMetric {
-        background-color: #131722 !important;
-        padding: 15px !important;
-        border-radius: 6px !important;
-        border: 1px solid #2a2e39 !important;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
     }
 
-    /* 🧠 ŞIK HAREKETLİ BTA EL YAZISI ANIMASYONU */
+    /* Renkli ve Işıklı Metrik Kutuları */
+    div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, #111827 0%, #1f2937 100%) !important;
+        padding: 20px !important;
+        border-radius: 12px !important;
+        border: 2px solid #3b82f6 !important;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4) !important;
+        transition: transform 0.3s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-5px);
+        border-color: #10b981 !important;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.5) !important;
+    }
+
+    /* 💎 BÜYÜK HARFLİ HAREKETLİ RENKLİ BTA LOGO TASARIMI */
     .bta-logo-container {
         text-align: center;
-        padding: 20px 0;
-        margin-bottom: 10px;
+        padding: 25px 0;
+        margin-bottom: 15px;
     }
     .bta-neon-text {
-        font-family: 'Great Vibes', cursive; /* Zarif ve Şık El Yazısı Fontu */
-        font-size: 90px;
-        font-weight: bold;
-        color: #089981;
-        text-shadow: 0 0 10px #089981, 0 0 20px #089981, 0 0 40px #2962ff;
-        animation: btaGlow 3s ease-in-out infinite alternate;
+        font-family: 'Style Script', 'Great Vibes', cursive; /* Akıcı ve Keskin Büyük Harf El Yazısı */
+        font-size: 110px;
+        font-weight: 900;
+        letter-spacing: 5px;
+        background: linear-gradient(90deg, #ff007f, #7000ff, #00e676, #00b0ff, #ff007f);
+        background-size: 400% 400%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: btaGradientFlow 6s ease infinite, btaPulse 2.5s ease-in-out infinite alternate;
         display: inline-block;
+        filter: drop-shadow(0 0 15px rgba(112, 0, 255, 0.6)) drop-shadow(0 0 30px rgba(0, 230, 118, 0.4));
     }
-    @keyframes btaGlow {
-        0% {
-            transform: scale(0.98);
-            text-shadow: 0 0 10px #089981, 0 0 20px #089981, 0 0 30px #2962ff;
-        }
-        100% {
-            transform: scale(1.02);
-            text-shadow: 0 0 15px #00e676, 0 0 30px #00e676, 0 0 50px #2979ff;
-            color: #00e676;
-        }
+    
+    /* Renk Akış Animasyonu */
+    @keyframes btaGradientFlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    /* Canlı Nefes Alma Animasyonu */
+    @keyframes btaPulse {
+        0% { transform: scale(0.96) rotate(-1deg); }
+        100% { transform: scale(1.04) rotate(1deg); filter: drop-shadow(0 0 20px #ff007f) drop-shadow(0 0 45px #00b0ff); }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. HAREKETLİ EL YAZISI BTA BAŞLIĞI & SPK UYARISI
+# 3. HAREKETLİ RENKLİ BÜYÜK HARFLİ BTA LOGOSU
 # ==========================================
-# Göz yoran standart başlık yerine hareketli şık logo basılıyor
-st.markdown("<div class='bta-logo-container'><div class='bta-neon-text'>Bta</div></div>", unsafe_allow_html=True)
+# Tam istediğiniz gibi: Tamamen BÜYÜK HARFLERLE ve renk cümbüşüyle parlayan BTA
+st.markdown("<div class='bta-logo-container'><div class='bta-neon-text'>BTA</div></div>", unsafe_allow_html=True)
 
 st.warning(spk_metni)
 st.markdown("---")
 
-st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
+st.subheader("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
 
 # Sabit BTA Alım Fiyat Referansı
 bta_alim_fiyati = 4100.00
@@ -126,8 +143,7 @@ if borsa_verisi_tamam:
         st.snow()
         st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
     
-    st.subheader("📊 Canlı Hesap Tablosu")
-    st.warning("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
+    st.info("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
     
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
