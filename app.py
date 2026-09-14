@@ -10,16 +10,16 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS VE HAREKETLİ ŞİMŞEKLİ ARKA PLAN TASARIMI (KESİN ÇÖZÜM)
+# 2. ÖZEL CSS VE HAREKETLİ ŞİMŞEKLİ ARKA PLAN TASARIMI
 css_kodu = """
 <style>
-/* Streamlit'in tüm iç katmanlarını ezen kesin arka plan gradyanı */
+/* Streamlit'in tüm katmanlarını zorlayan kesin arka plan gradyanı */
 html, body, [data-testid="stAppViewContainer"], .stApp { 
     background-color: #05070f !important; 
     background-image: 
-        radial-gradient(at 20% 20%, rgba(0, 242, 254, 0.18) 0px, transparent 40%),
-        radial-gradient(at 80% 40%, rgba(147, 51, 234, 0.12) 0px, transparent 50%),
-        radial-gradient(at 50% 80%, rgba(0, 255, 204, 0.1) 0px, transparent 40%) !important; 
+        radial-gradient(at 20% 20%, rgba(0, 242, 254, 0.22) 0px, transparent 45%),
+        radial-gradient(at 80% 40%, rgba(147, 51, 234, 0.15) 0px, transparent 50%),
+        radial-gradient(at 50% 80%, rgba(0, 255, 204, 0.12) 0px, transparent 45%) !important; 
     background-attachment: fixed !important;
 }
 
@@ -46,7 +46,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] {
 .spk-kirmizi-kutu {
     background-color: rgba(255, 51, 68, 0.08) !important;
     border: 1px solid #ff3344 !important;
-    box-shadow: 0px 0px 10px rgba(255, 51, 68, 0.2) !important;
+    box-shadow: 0px 0px 12px rgba(255, 51, 68, 0.25) !important;
     border-radius: 8px;
     padding: 12px;
     margin-top: 5px;
@@ -68,7 +68,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] {
     100% { transform: translateX(-10%); }
 }
 
-/* Şık Kayan El Yazısı Fontu ve Voltajı Yüksek Şimşek Parlaması */
+/* Kayan El Yazısı Fontu ve Voltajı Yüksek Şimşek Parlaması */
 .yuruyen-bta-logo {
     font-family: 'Pacifico', 'Brush Script MT', cursive, sans-serif !important;
     font-weight: bold; 
@@ -137,7 +137,6 @@ bist_mini_widget = """
 """
 components.html(bist_mini_widget, height=100)
 
-tum_hisseler = [] 
 veri_var_mi = False
 basarili_hisseler = []
 
@@ -146,7 +145,7 @@ excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
+# 7. EXCEL VERİLERİNİ OKUMA VE HATA BAĞIŞIKLIKLI ANALİZ MOTORU
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
@@ -168,7 +167,7 @@ if os.path.exists(excel_yolu):
                     h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
                     c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
                 except:
-                    pass
+                    c_fiyat = 0.0  # Canlı fiyat çekilemezse bile tablo kırılmaz, sıfır atanır
                 
                 alim_c_temiz = alim_c.replace(",", ".")
                 maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
@@ -192,6 +191,6 @@ if basarili_hisseler:
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#fffb00; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ
-if veri_var_mi and tablo_rows_html != "":
+# 9. TABLO PANELİNİ GÜVENLİ ÇİZME (Veri çekilemese bile tabloyu her koşulda gösterir)
+if tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>ANLIK FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
