@@ -125,7 +125,7 @@ with tab_excel:
     
     secilen_dosya = None
     if excel_dosyalari:
-        secilen_dosya = excel_dosyalari[0]
+        secilen_dosya = excel_dosyalari
 
     if is_admin:
         st.subheader("🛠️ Yönetici Excel Kontrolleri")
@@ -140,30 +140,27 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
                 
             df_orjinal = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # --- TAM OLARAK İSTEDİĞİN A, C VE D SÜTUNLARINI SEÇEN KESİN FİLTRE ---
-            # Excel'deki tam sütun isimlerine göre nokta atışı sadece bu üçünü alıyoruz
+            # NOKTA ATIŞI A, C VE D SÜTUNLARINI SEÇME MANTIĞI
             hedef_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUANI"]
-            
-            # Eğer dosyada bu isimler varsa sadece onları filtrele
             mevcut_sutunlar = [col for col in hedef_sutunlar if col in df_orjinal.columns]
+            
             if mevcut_sutunlar:
                 df_goster = df_orjinal[mevcut_sutunlar]
             else:
-                # İsimler uyuşmazsa indeks bazlı 0, 2 ve 3. sütunları (A, C, D) zorla seç
+                # İsim eşleşmesi yoksa Excel'in 0, 2 ve 3. indeksli sütunlarını çek
                 indeksler = [0, 2, 3]
                 gecerli_indeksler = [i for i in indeksler if i < len(df_orjinal.columns)]
                 df_goster = df_orjinal.iloc[:, gecerli_indeksler]
             
-            # None/NaN temizliği
+            # Boşlukları ve None ifadelerini tamamen temizleme
             df_goster = df_goster.fillna("")
             df_goster = df_goster.astype(str).replace(["None", "NaN", "nan", "NaT", "nat"], "")
-            # ------------------------------------------------------------------
             
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="")
             if arama_kelimesi:
@@ -233,3 +230,7 @@ with tab_bta:
 # MODÜL 3: CANLI SOHBET ODASI
 # ==========================================
 with tab_chat:
+    st.header("💬 BTA Genel Canlı Sohbet Odası")
+    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
+    with st.form("chat_form", clear_on_submit=True):
+        user_message = st.text_input("Mesajınızı yazın:")
