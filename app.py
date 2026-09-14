@@ -2,12 +2,13 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
+import os
 
 # ==========================================
 # 1. SAYFA VE KESİN SOL MENÜSÜZ AYARLAR
 # ==========================================
 st.set_page_config(
-    page_title="BTA KONYA Canlı Veri Odası",
+    page_title="BTA Çoklu Hisse Takip Terminali",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -15,11 +16,6 @@ st.set_page_config(
 
 # Arka planda 5 saniyede bir otomatik yenileme tetikleyici
 st_autorefresh(interval=5000, key="bta_terminal_refresh")
-
-if "begeniler" not in st.session_state:
-    st.session_state["begeniler"] = 0
-if "yildizlar" not in st.session_state:
-    st.session_state["yildizlar"] = 5.0
 
 # SPK RESMİ YASAL UYARI METNİ
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
@@ -29,8 +25,6 @@ spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum
 # ==========================================
 st.markdown("""
 <style>
-    @import url('https://googleapis.com');
-
     /* Sol menüyü tamamen yok etme */
     [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], button[title="View sidebar"] {
         display: none !important;
@@ -61,7 +55,7 @@ st.markdown("""
 
     /* 🧠 LOGO PANELİ KUTUSU */
     .bta-logo-box {
-        overflow: hidden; /* Taşmaları gizleyerek yürüyen bant oluşturur */
+        overflow: hidden;
         padding: 20px 0;
         margin-bottom: 20px;
         background: rgba(10, 20, 40, 0.75);
@@ -83,26 +77,25 @@ st.markdown("""
         z-index: 10;
     }
     
-    /* 🚀 SAĞDAN SOLA DOĞRU AĞIR YÜRÜYEN KURUMSAL BTA MİMARİSİ */
+    /* SAĞDAN SOLA DOĞRU AĞIR YÜRÜYEN KURUMSAL BTA MİMARİSİ */
     .bta-yuruyen-alan {
         width: 100%;
         overflow: hidden;
         white-space: nowrap;
     }
     .bta-neon-heavy {
-        font-family: 'Orbitron', sans-serif; /* Kurumsal Finans Fontu */
+        font-family: 'Orbitron', sans-serif;
         font-size: 70px;
         font-weight: 900;
         letter-spacing: 15px;
-        color: #00e676; /* Keskin Neon Yeşil */
+        color: #00e676;
         display: inline-block;
-        padding-left: 100%; /* Başlangıç noktasını ekranın sağ dışı yapar */
-        animation: agirYuruBta 25s linear infinite; /* Son derece ağır, elit akış hızı */
+        padding-left: 100%;
+        animation: agirYuruBta 25s linear infinite;
         filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.8)) 
                 drop-shadow(0 0 25px rgba(0, 176, 255, 0.6));
     }
     
-    /* 🔄 İSTEK: Sağdan Sola Doğru Ağır Yürüyüş Animasyonu */
     @keyframes agirYuruBta {
         0% { transform: translateX(0%); }
         100% { transform: translateX(-100%); }
@@ -111,13 +104,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 🧠 SABİT BEYNİLİ & SAĞDAN SOLA KUSURSUZ YÜRÜYEN KURUMSAL BTA PANELİ
+# 2. 🧠 HAREKETLİ ÜST BANT PANELİ
 # ==========================================
 st.markdown("""
 <div class='bta-logo-box'>
     <span class='bta-brain-fixed'>🧠</span>
     <div class='bta-yuruyen-alan'>
-        <div class='bta-neon-heavy'>BTA ALGORİTMİK İŞLEM MERKEZİ</div>
+        <div class='bta-neon-heavy'>BTA ALGORİTMİK MULTİ-HİSSE TAKİP TERMİNALİ</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -125,23 +118,56 @@ st.markdown("""
 st.warning(spk_metni)
 st.markdown("---")
 
-st.subheader("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
+# ==========================================
+# 3. EXCEL E SÜTUNUNDAN HİSSELERİ OTOMATİK ÇEKME MOTORU
+# ==========================================
+hisse_listesi = ["KONYA"] # Excel yoksa varsayılan yedek
 
-# Sabit BTA Alım Fiyat Referansı
-bta_alim_fiyati = 4100.00
-kurumsal_ticker = "KONYA.IS"
+excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
+if excel_dosyalari:
+    hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
+    secilen_excel = hedef_dosyalar[0] if hedef_dosyalar else excel_dosyalari[0]
+    
+    try:
+        # Excel dosyasını hızlıca oku
+        df_excel = pd.read_excel(secilen_excel, sheet_name=0, engine='openpyxl')
+        
+        # 🚀 5. sütun (E sütunu - indeks 4) mevcutsa hisse isimlerini ayıkla
+        if len(df_excel.columns) >= 5:
+            e_sutunu_verileri = df_excel.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
+            # Geçersiz, boş veya sayısal olmayan satırları temizle
+            temiz_hisseler = [h for h in e_sutunu_verileri if h != "" and h != "NONE" and not h.replace('.','',1).isdigit()]
+            if temiz_hisseler:
+                # Benzersiz kodları sıralı liste yap
+                hisse_listesi = sorted(list(set(temiz_hisseler)))
+    except:
+        pass
 
-guncel_fta_fiyati = bta_alim_fiyati
+# ==========================================
+# 4. 🔍 DİNAMIK HİSSE ARAMA MOTORU ARAYÜZÜ
+# ==========================================
+st.subheader("🔍 Algoritmik Hisse Arama ve Takip Motoru")
+secilen_hisse_kodu = st.selectbox(
+    "Excel E Sütunundan Çekilen Hisseler Listesi (Takip Etmek İstediğinizi Seçin):",
+    options=hisse_listesi,
+    index=0
+)
+
+# Yfinance taraması için hisse sonuna .IS ekliyoruz
+kurumsal_ticker = f"{secilen_hisse_kodu}.IS"
+
+# Canlı veri çekim katmanı
+guncel_fta_fiyati = 0.0
 gunluk_degisim_yuzde = 0.0
 borsa_verisi_tamam = False
 tarihce = pd.DataFrame()
 
 try:
-    hisse = yf.Ticker(kurumsal_ticker)
-    tarihce = hisse.history(period="2d", interval="1d")
+    hisse_motoru = yf.Ticker(kurumsal_ticker)
+    tarihce = hisse_motoru.history(period="2d", interval="1d")
     if not tarihce.empty:
         guncel_fta_fiyati = tarihce['Close'].iloc[-1]
-        gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
+        gunluk_degisim_yuzde = hisse_motoru.info.get('regularMarketChangePercent', 0.0)
         if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
             onceki_kapanis = tarihce['Close'].iloc[-2]
             gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
@@ -149,42 +175,26 @@ try:
 except:
     pass
 
+# ==========================================
+# 5. CANLI VERİ VE GRAFİK EKRANI
+# ==========================================
 if borsa_verisi_tamam:
-    kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
-    kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
+    st.markdown("---")
+    st.header(f"📊 {secilen_hisse_kodu} Canlı Analiz Paneli")
+    st.warning("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
     
-    if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
+    # Seçilen hissenin canlı borsa değerleri kartları
+    c1, c2 = st.columns(2)
+    c1.metric(f"Anlık Canlı {secilen_hisse_kodu} Fiyatı", f"{guncel_fta_fiyati:.2f} TL")
+    c2.metric("Günlük Değişim Oranı", f"{gunluk_degisim_yuzde:.2f}%")
+    
+    # Tavan / tavan yakınlığı durumunda ödül konfetileri tetiklenir
+    if gunluk_degisim_yuzde >= 9.85:
         st.balloons()
-        st.snow()
-        st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
-    
-    st.info("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
-    
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-    c2.metric("Sabit BTA Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
-    
-    if kar_zarar_tutari >= 0:
-        c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
-        c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
-    else:
-        c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
-        c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+        st.success(f"🚀 **KUTLAMALAR BAŞLASIN! {secilen_hisse_kodu} HİSSESİ ANLIK OLARAK TAVAN OLDU!** 🥳🎉")
         
     st.markdown("---")
-    st.subheader("⭐ Oda Değerlendirmesi & Topluluk Reaksiyonu")
-    
-    col_r1, col_r2 = st.columns(2)
-    with col_r1:
-        st.write(f"👍 Toplam Oda Beğenisi: **{st.session_state['begeniler']}**")
-        if st.button("Portföyü Beğen 👍", key="like_btn"):
-            st.session_state["begeniler"] += 1
-            st.rerun()
-    with col_r2:
-        st.session_state["yildizlar"] = st.slider("Algoritmaya Yıldız Ver:", 1.0, 5.0, float(st.session_state["yildizlar"]), step=0.5)
-        
-    st.markdown("---")
-    st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
+    st.subheader(f"📈 {secilen_hisse_kodu} - Gün İçi Canlı Fiyat Grafik Trendi")
     st.line_chart(tarihce['Close'])
 else:
-    st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı. Lütfen birkaç saniye sonra sayfayı yenileyin.")
+    st.error(f"⚠️ {secilen_hisse_kodu} hissesine ait canlı veriler Borsa İstanbul sunucularından çekilemedi. Kodun doğruluğunu veya internet bağlantısını kontrol edin.")
