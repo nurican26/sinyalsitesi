@@ -85,9 +85,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar
+            varsayilan_dosya = hedef_dosyalar[0]  # Liste yerine ilk dosyayı tekil string olarak seçiyoruz
         else:
-            varsayilan_dosya = excel_dosyalari
+            varsayilan_dosya = excel_dosyalari[0]
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -103,13 +103,13 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri
+            aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
             if not df.empty:
-                ilk_sutun_adi = df.columns
+                ilk_sutun_adi = df.columns[0]
                 df_goster = df[[ilk_sutun_adi]]
             else:
                 df_goster = df
@@ -183,9 +183,9 @@ with tab_chat:
     for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
-            with cols:
+            with cols[0]:
                 st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols:
+            with cols[1]:
                 if is_admin:
                     if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
                         st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
@@ -198,4 +198,3 @@ with tab_chat:
 with tab_members:
     st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
     st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
-    df_members = pd.DataFrame(st.session_state["bta_members_list"])
