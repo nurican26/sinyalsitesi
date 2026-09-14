@@ -43,13 +43,14 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* Borsa Hesaplama Kutuları */
-    div[data-testid="stMetric"] {
+    /* Borsa Canlı Kart Tasarımları */
+    .borsa-canli-kart {
         background: rgba(15, 32, 67, 0.85) !important;
-        padding: 22px !important;
-        border-radius: 14px !important;
+        padding: 20px !important;
+        border-radius: 12px !important;
         border: 2px solid #00b0ff !important;
-        box-shadow: 0 0 20px rgba(0, 176, 255, 0.4) !important;
+        box-shadow: 0 0 15px rgba(0, 176, 255, 0.3) !important;
+        margin-bottom: 15px;
         backdrop-filter: blur(5px);
     }
 
@@ -77,7 +78,7 @@ st.markdown("""
         z-index: 10;
     }
     
-    /* SAĞDAN SOLA DOĞRU AĞIR YÜRÜYEN KURUMSAL BTA MİMARİSİ */
+    /* SAĞDAN SOLA DOĞRU AĞIR YÜRÜYEN KURUMSAM BTA MİMARİSİ */
     .bta-yuruyen-alan {
         width: 100%;
         overflow: hidden;
@@ -110,7 +111,7 @@ st.markdown("""
 <div class='bta-logo-box'>
     <span class='bta-brain-fixed'>🧠</span>
     <div class='bta-yuruyen-alan'>
-        <div class='bta-neon-heavy'>BTA ALGORİTMİK MULTİ-HİSSE TAKİP TERMİNALİ</div>
+        <div class='bta-neon-heavy'>BTA ALGORİTMİK PORTFÖY TAKİP TERMİNALİ</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -121,80 +122,66 @@ st.markdown("---")
 # ==========================================
 # 3. EXCEL E SÜTUNUNDAN HİSSELERİ OTOMATİK ÇEKME MOTORU
 # ==========================================
-hisse_listesi = ["KONYA"] # Excel yoksa varsayılan yedek
+hisse_listesi = ["KONYA"] # Excel okunamama durumunda yedek ana hisse
 
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 if excel_dosyalari:
     hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
-    secilen_excel = hedef_dosyalar[0] if hedef_dosyalar else excel_dosyalari[0]
+    secilen_excel = hedef_dosyalar if hedef_dosyalar else excel_dosyalari
     
     try:
-        # Excel dosyasını hızlıca oku
         df_excel = pd.read_excel(secilen_excel, sheet_name=0, engine='openpyxl')
+        df_excel.columns = df_excel.columns.astype(str).str.strip()
         
-        # 🚀 5. sütun (E sütunu - indeks 4) mevcutsa hisse isimlerini ayıkla
+        # E sütunundaki (5. sütun) tüm hisse isimlerini çekiyoruz
         if len(df_excel.columns) >= 5:
             e_sutunu_verileri = df_excel.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
-            # Geçersiz, boş veya sayısal olmayan satırları temizle
             temiz_hisseler = [h for h in e_sutunu_verileri if h != "" and h != "NONE" and not h.replace('.','',1).isdigit()]
             if temiz_hisseler:
-                # Benzersiz kodları sıralı liste yap
                 hisse_listesi = sorted(list(set(temiz_hisseler)))
     except:
         pass
 
 # ==========================================
-# 4. 🔍 DİNAMIK HİSSE ARAMA MOTORU ARAYÜZÜ
+# 4. 📋 SIFIR ARAMA KUTULU - BTA CANLI HİSSE PANELİ
 # ==========================================
-st.subheader("🔍 Algoritmik Hisse Arama ve Takip Motoru")
-secilen_hisse_kodu = st.selectbox(
-    "Excel E Sütunundan Çekilen Hisseler Listesi (Takip Etmek İstediğinizi Seçin):",
-    options=hisse_listesi,
-    index=0
-)
+st.subheader("📊 BTA Canlı İzleme ve Portföy Paneli")
+st.info("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
 
-# Yfinance taraması için hisse sonuna .IS ekliyoruz
-kurumsal_ticker = f"{secilen_hisse_kodu}.IS"
-
-# Canlı veri çekim katmanı
-guncel_fta_fiyati = 0.0
-gunluk_degisim_yuzde = 0.0
-borsa_verisi_tamam = False
-tarihce = pd.DataFrame()
-
-try:
-    hisse_motoru = yf.Ticker(kurumsal_ticker)
-    tarihce = hisse_motoru.history(period="2d", interval="1d")
-    if not tarihce.empty:
-        guncel_fta_fiyati = tarihce['Close'].iloc[-1]
-        gunluk_degisim_yuzde = hisse_motoru.info.get('regularMarketChangePercent', 0.0)
-        if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
-            onceki_kapanis = tarihce['Close'].iloc[-2]
-            gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
-        borsa_verisi_tamam = True
-except:
-    pass
-
-# ==========================================
-# 5. CANLI VERİ VE GRAFİK EKRANI
-# ==========================================
-if borsa_verisi_tamam:
-    st.markdown("---")
-    st.header(f"📊 {secilen_hisse_kodu} Canlı Analiz Paneli")
-    st.warning("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
+# Arama motoru kutuları tamamen kaldırılmıştır. Tüm hisseler otomatik taranıp siber kartlar olarak basılır.
+for hisse_adi in hisse_listesi:
+    kurumsal_ticker = f"{hisse_adi}.IS"
+    guncel_price = 0.0
+    gunluk_change = 0.0
+    veri_okundu = False
     
-    # Seçilen hissenin canlı borsa değerleri kartları
-    c1, c2 = st.columns(2)
-    c1.metric(f"Anlık Canlı {secilen_hisse_kodu} Fiyatı", f"{guncel_fta_fiyati:.2f} TL")
-    c2.metric("Günlük Değişim Oranı", f"{gunluk_degisim_yuzde:.2f}%")
-    
-    # Tavan / tavan yakınlığı durumunda ödül konfetileri tetiklenir
-    if gunluk_degisim_yuzde >= 9.85:
-        st.balloons()
-        st.success(f"🚀 **KUTLAMALAR BAŞLASIN! {secilen_hisse_kodu} HİSSESİ ANLIK OLARAK TAVAN OLDU!** 🥳🎉")
+    try:
+        hisse_data = yf.Ticker(kurumsal_ticker)
+        tarihce_data = hisse_data.history(period="1d", interval="1d")
+        if not tarihce_data.empty:
+            guncel_price = tarihce_data['Close'].iloc[-1]
+            gunluk_change = hisse_data.info.get('regularMarketChangePercent', 0.0)
+            veri_okundu = True
+    except:
+        pass
         
-    st.markdown("---")
-    st.subheader(f"📈 {secilen_hisse_kodu} - Gün İçi Canlı Fiyat Grafik Trendi")
-    st.line_chart(tarihce['Close'])
-else:
-    st.error(f"⚠️ {secilen_hisse_kodu} hissesine ait canlı veriler Borsa İstanbul sunucularından çekilemedi. Kodun doğruluğunu veya internet bağlantısını kontrol edin.")
+    if veri_okundu:
+        # Renk koşullandırması (Artı ise yeşil, eksi ise kırmızı neon)
+        border_color = "#089981" if gunluk_change >= 0 else "#da3637"
+        text_color = "#089981" if gunluk_change >= 0 else "#da3637"
+        isaret = "+" if gunluk_change >= 0 else ""
+        
+        if gunluk_change >= 9.85:
+            st.balloons()
+            
+        st.markdown(f"""
+        <div class="borsa-canli-kart" style="border-left: 6px solid {border_color};">
+            <table style="width:100%; border-collapse:collapse; border:none;">
+                <tr style="background:transparent; border:none;">
+                    <td style="font-size:28px; font-weight:bold; color:#ffffff; border:none; width:30%; padding:0;">📈 {hisse_adi}</td>
+                    <td style="font-size:26px; font-weight:bold; color:#ffffff; text-align:center; border:none; width:40%; padding:0;">Fiyat: {guncel_price:.2f} TL</td>
+                    <td style="font-size:26px; font-weight:bold; color:{text_color}; text-align:right; border:none; width:30%; padding:0;">Değişim: {isaret}{gunluk_change:.2f}%</td>
+                </tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
