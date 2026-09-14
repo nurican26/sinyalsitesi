@@ -504,7 +504,7 @@ def mesaj_sesi_cal():
 
 
 # ==================================================
-# CANLI YENİLEME
+# CANLI YEN��LEME
 # ==================================================
 st_autorefresh(
     interval=5000,
@@ -548,6 +548,8 @@ if is_admin:
 # ==================================================
 # TAKİP VE BEĞENİ PANELİ
 # ==================================================
+st.header("⭐ BTA Oda Takip Paneli")
+
 takip, begeni = istatistik_oku()
 
 col1, col2, col3, col4 = st.columns(4)
@@ -571,8 +573,8 @@ with col1:
             st.session_state["takip_edildi"] = True
             st.rerun()
     else:
-        st.success(
-            "Odayı takip ediyorsunuz."
+        st.info(
+            "⭐ Odayı takip ediyorsunuz."
         )
 
 with col2:
@@ -594,8 +596,8 @@ with col2:
             st.session_state["begeni_verildi"] = True
             st.rerun()
     else:
-        st.success(
-            "Beğeniniz kaydedildi."
+        st.info(
+            "👍 Beğeniniz kaydedildi."
         )
 
 with col3:
@@ -735,7 +737,7 @@ with tab_algoritmik:
         )
     else:
         secilen_hisse = st.selectbox(
-            "Hisse seçin:",
+            "🔍 BTA Algoritma Hissesi Seç:",
             excel_df["Hisse Kodu"].tolist()
         )
 
