@@ -471,7 +471,7 @@ admin_sifre = st.sidebar.text_input(
     type="password"
 )
 
-is_admin = admin_sifre == "BTA2026"
+is_admin = admin_sifre == "3015"
 
 if is_admin:
     st.sidebar.success("Yönetici yetkileri aktif.")
