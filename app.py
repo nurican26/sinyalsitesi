@@ -3,7 +3,79 @@ import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 import os
+import sqlite3
 from datetime import datetime
+
+# ==========================================
+# 0. KALICI VERİTABANI BAĞLANTISI (SQLite)
+# (Sayfa yenilense bile sohbet ve kayıtlar asla silinmez)
+# ==========================================
+def veritabanini_hazirla():
+    conn = sqlite3.connect("bta_kurumsal_veri.db", check_same_thread=False)
+    cursor = conn.cursor()
+    # Sohbet tablosu
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sohbet (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user TEXT,
+            time TEXT,
+            text TEXT
+        )
+    """)
+    # Hissedar portföy tablosu
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hissedarlar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            isim TEXT,
+            hisse TEXT,
+            maliyet REAL,
+            adet INTEGER
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+veritabanini_hazirla()
+
+def mesaj_ekle(user, time, text):
+    conn = sqlite3.connect("bta_kurumsal_veri.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO sohbet (user, time, text) VALUES (?, ?, ?)", (user, time, text))
+    conn.commit()
+    conn.close()
+
+def mesajlari_getir():
+    conn = sqlite3.connect("bta_kurumsal_veri.db")
+    df = pd.read_sql_query("SELECT * FROM sohbet ORDER BY id DESC", conn)
+    conn.close()
+    return df.to_dict(orient="records")
+
+def mesaj_sil(msg_id):
+    conn = sqlite3.connect("bta_kurumsal_veri.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM sohbet WHERE id = ?", (msg_id,))
+    conn.commit()
+    conn.close()
+
+def hissedar_ekle(isim, hisse, maliyet, adet):
+    conn = sqlite3.connect("bta_kurumsal_veri.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO hissedarlar (isim, hisse, maliyet, adet) VALUES (?, ?, ?, ?)", (isim, hisse, maliyet, adet))
+    conn.commit()
+    conn.close()
+
+def hissedarlari_getir():
+    conn = sqlite3.connect("bta_kurumsal_veri.db")
+    df = pd.read_sql_query("SELECT * FROM hissedarlar ORDER BY id DESC", conn)
+    conn.close()
+    return df.to_dict(orient="records")
+
+def hissedar_sil(member_id):
+    conn = sqlite3.connect("bta_kurumsal_veri.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM hissedarlar WHERE id = ?", (member_id,))
+    conn.commit()
+    conn.close()
 
 # ==========================================
 # 1. SAYFA VE PANEL AYARLARI
@@ -14,23 +86,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Canlı Sohbet Hafızası Koruma Mekanizması
-if "chat_messages" not in st.session_state:
-    st.session_state["chat_messages"] = [
-        {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
-    ]
-else:
-    for i, msg in enumerate(st.session_state["chat_messages"]):
-        if "id" not in msg:
-            msg["id"] = int(datetime.now().timestamp() * 1000) + i
-
-# Hissedar BTA Hisse Kayıt Listesi Hafızası
-if "bta_members_list" not in st.session_state:
-    st.session_state["bta_members_list"] = [
-        {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
-    ]
-
-# Global BTA Fiyat Referansı
+# Global BTA Fiyat Referansı yedek değeri
 if "global_bta_price" not in st.session_state:
     st.session_state["global_bta_price"] = 4100.0
 
@@ -81,7 +137,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D KOLONLARI - KESİNTİSİZ LİSTE)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D SÜTUNLARI EKSİKSİZ VERİ GERİ GETİRME)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -106,8 +162,11 @@ with tab_excel:
 
     if secilen_dosya is not None:
         try:
-            # Excel yapısını güvenli bir şekilde ilk sayfadan DataFrame olarak çekiyoruz (Sözlük hatasını önler)
+            # Excel dosyasını sözlük hatası vermeden güvenle DataFrame olarak çekiyoruz
             df = pd.read_excel(secilen_dosya, sheet_name=0, engine='openpyxl')
+            
+            # Sütun isimlerinin başındaki ve sonundaki boşlukları temizleyerek algılamayı garanti ediyoruz
+            df.columns = df.columns.astype(str).str.strip()
             
             # 🚀 İSTEK: Sadece A, C ve D sütunları gösterilecek (BTA HİSSE, BTA ALIM FİYATI, BTA PUAN)
             istenen_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
@@ -118,16 +177,19 @@ with tab_excel:
             else:
                 df_goster = df
             
-            # Formülleri bozmadan sadece tamamen boş satırları eliyoruz, böylece tüm hisseleriniz geri gelir
-            df_goster = df_goster.dropna(how='all')
-            
-            # KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip canlı odaya bağlama algoritması
-            if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
+            # Kaybolan satırları ve fiyatları geri getirmek için hücre bazlı esnek temizleme mimarisi
+            # Sadece 'BTA HİSSE' sütunu tamamen boş veya kelime olarak 'None' olan gereksiz satırlar elenir
+            if "BTA HİSSE" in df_goster.columns:
+                df_goster = df_goster[df_goster["BTA HİSSE"].notna()]
+                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.strip() != ""]
+                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() != "NONE"]
+                
+                # KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip canlı odaya bağlama algoritması
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
-                if not konya_satirlari.empty:
+                if not konya_satirlari.empty and "BTA ALIM FİYATI" in df_goster.columns:
                     st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
             
-            # Filtrelenmiş temiz A, C, D tablosunu listeliyoruz
+            # Tüm hisselerinizi, fiyatları ve puanları içeren temizlenmiş A, C, D tablosunu listeliyoruz
             st.dataframe(df_goster, use_container_width=True)
             
         except Exception as e:
@@ -161,42 +223,3 @@ with tab_bta:
                 st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
             
             st.subheader("📊 Canlı Hesap Tablosu (Excel'den Otomatik Çekilen Referansla)")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-            c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
-            if kar_zarar_tutari >= 0:
-                c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
-                c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
-            else:
-                c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
-                c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-            st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
-            st.line_chart(tarihce['Close'])
-        else:
-            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
-    except Exception as e:
-        st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
-
-# ==========================================
-# MODÜL 3: CANLI SOHBET ODASI
-# ==========================================
-with tab_chat:
-    st.header("💬 BTA Genel Canlı Sohbet Odası")
-    st.write("Sohbet odası herkese açıktır. Mesajlaşmaya hemen başlayabilirsiniz.")
-    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
-    
-    with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input("Mesajınızı yazın:")
-        submit_button = st.form_submit_button("Gönder 🚀")
-        if submit_button and user_message:
-            now_str = datetime.now().strftime("%H:%M:%S")
-            msg_id = int(datetime.now().timestamp() * 1000)
-            st.session_state["chat_messages"].append({"id": msg_id, "user": nickname, "time": now_str, "text": user_message})
-            st.rerun()
-
-    st.subheader("📝 Oda Akışı")
-    for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
-        if "id" in msg:
-            c_text, c_btn = st.columns([0.85, 0.15])
-            with c_text:
-                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
