@@ -9,7 +9,6 @@ from datetime import datetime
 
 # ==========================================
 # 0. BAĞIMSIZ HABER KAZIMA FONKSİYONU
-# (Hizalama hatalarını engellemek için ana bloktan izole edilmiştir)
 # ==========================================
 def halka_arz_haberlerini_kazi():
     hedef_url = "https://bloomberght.com"
@@ -36,19 +35,28 @@ st.set_page_config(
     layout="wide"
 )
 
-# Canlı Sohbet ve Kayıt Veritabanı Hafızası (Session State) Kontrolü
+# Canlı Sohbet Veritabanı Hafızası
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
-        {"user": "Sistem", "time": "12:00:00", "text": "BTA Özel Canlı Sohbet Odasına Hoş Geldiniz!"}
+        {"id": 0, "user": "Sistem", "time": "12:00:00", "text": "BTA Genel Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 
-if "bta_members" not in st.session_state:
-    st.session_state["bta_members"] = pd.DataFrame([
-        {"İsim Soyisim": "Nurican Bey", "Kayıt Tarihi": "2026-09-14", "Durum": "Onaylı Üye"}
-    ])
+# Hissedar Kayıt Listesi Hafızası (BTA Alım Fiyatı Eklendi)
+if "bta_members_list" not in st.session_state:
+    st.session_state["bta_members_list"] = [
+        {"id": 0, "İsim Soyisim": "Nurican Bey", "BTA Alım Fiyatı (TL)": 4100.0, "Kayıt Tarihi": "2026-09-14", "Durum": "Onaylı Üye"}
+    ]
 
 # Yan menü (Sidebar) kontrolleri
 st.sidebar.header("⚙️ Sistem Kontrolleri")
+
+# GİZLİ YÖNETİCİ GİRİŞİ (Sadece Nurican Bey İçin)
+st.sidebar.subheader("🔒 Yönetici Alanı")
+admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password", help="Küfür silme ve kayıt düzenleme yetkisi açar.")
+is_admin = (admin_pass == "BTA2026")
+
+if is_admin:
+    st.sidebar.success("⚡ Yönetici Yetkileri Aktif!")
 
 # Otomatik Yenileme Ayarı (Sohbet ve veriler için 5 saniyede bir tetiklenir)
 auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
@@ -65,7 +73,7 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 st.title("📊 BTA Kurumsal Analiz ve Finans Portalı")
 st.write("Excel veri entegrasyonu, KONYA canlı kâr/zarar odası ve BTA özel topluluk paneli.")
 
-# Sekmeli Menü Tasarımı
+# Sekmeli Menü Tasarımı (Herkese Açık)
 tab_excel, tab_bta, tab_chat, tab_members, tab_scraper = st.tabs([
     "📂 BTA Excel Veri İnceleme", 
     "📈 KONYA Canlı Veri Odası", 
@@ -156,63 +164,56 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: KAPSAMLI CANLI SOHBET ODASI
+# MODÜL 3: CANLI SOHBET ODASI (Yönetici Silme Özellikli)
 # ==========================================
 with tab_chat:
-    st.header("💬 BTA Hissedarları Canlı Sohbet Odası")
-    st.write("Sohbet odası otomatik yenileme ile senkronize çalışmaktadır.")
+    st.header("💬 BTA Genel Canlı Sohbet Odası")
+    st.write("Sohbet odası herkese açıktır. Mesajlaşmaya hemen başlayabilirsiniz.")
     
-    bta_pass = st.text_input("Sohbet Odası Erişim Şifresi:", type="password", key="chat_pass")
+    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
     
-    if bta_pass == "BTA2026":
-        nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar")
+    with st.form("chat_form", clear_on_submit=True):
+        user_message = st.text_input("Mesajınızı yazın:")
+        submit_button = st.form_submit_button("Gönder 🚀")
         
-        with st.form("chat_form", clear_on_submit=True):
-            user_message = st.text_input("Mesajınızı yazın:")
-            submit_button = st.form_submit_button("Gönder 🚀")
-            
-            if submit_button and user_message:
-                now_str = datetime.now().strftime("%H:%M:%S")
-                new_msg = {"user": nickname, "time": now_str, "text": user_message}
-                st.session_state["chat_messages"].append(new_msg)
-                st.rerun()
+        if submit_button and user_message:
+            now_str = datetime.now().strftime("%H:%M:%S")
+            msg_id = int(datetime.now().timestamp() * 1000)
+            new_msg = {"id": msg_id, "user": nickname, "time": now_str, "text": user_message}
+            st.session_state["chat_messages"].append(new_msg)
+            st.rerun()
 
-        st.subheader("📝 Oda Akışı")
-        chat_box = ""
-        for msg in reversed(st.session_state["chat_messages"]):
-            chat_box += f"**[{msg['time']}] {msg['user']}:** {msg['text']}\n\n"
-        st.markdown(chat_box)
-    elif bta_pass != "":
-        st.error("❌ Hatalı şifre! Lütfen şifrenizi kontrol edin.")
-    else:
-        st.info("🔒 Canlı sohbet akışını görmek ve mesaj yazmak için lütfen erişim şifresini (BTA2026) girin.")
+    st.subheader("📝 Oda Akışı")
+    
+    # Mesajları döngüyle basıyoruz, admin ise yanına silme butonu koyuyoruz
+    for msg in reversed(st.session_state["chat_messages"]):
+        cols = st.columns([0.85, 0.15])
+        with cols[0]:
+            st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
+        with cols[1]:
+            if is_admin: # Sadece Nurican Bey şifre girdiğinde görünür
+                if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}"):
+                    st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m["id"] != msg["id"]]
+                    st.success("Metin odadan temizlendi.")
+                    st.rerun()
+        st.divider()
 
 # ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
+# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Şifresiz Kayıt & Admin Düzenleme)
 # ==========================================
 with tab_members:
     st.header("👥 BTA Hissedarları Kayıt ve Takip Listesi")
-    st.write("Bu panelden BTA grubuna ait güncel üye listesini tutabilir ve yeni kayıt ekleyebilirsiniz.")
+    st.write("BTA Grubuna dahil olan yatırımcıların şifresiz kayıt panelidir.")
     
-    member_pass = st.text_input("Kayıt Listesi Yönetim Şifresi:", type="password", key="mem_pass")
-    
-    if member_pass == "BTA2026":
-        with st.expander("➕ Yeni Hissedar Kaydı Oluştur"):
-            with st.form("member_form", clear_on_submit=True):
-                new_name = st.text_input("Hissedar İsim Soyisim:")
-                add_member_btn = st.form_submit_button("Sisteme Güvenli Kaydet 💾")
-                
-                if add_member_btn and new_name:
-                    current_date = datetime.now().strftime("%Y-%m-%d")
-                    new_row = pd.DataFrame([{"İsim Soyisim": new_name, "Kayıt Tarihi": current_date, "Durum": "Onaylı Üye"}])
-                    st.session_state["bta_members"] = pd.concat([st.session_state["bta_members"], new_row], ignore_index=True)
-                    st.success(f"✔️ {new_name} sisteme başarıyla işlendi!")
-                    st.rerun()
-        
-        st.subheader("📋 Onaylı BTA Üye Listesi")
-        st.dataframe(st.session_state["bta_members"], use_container_width=True)
-    elif member_pass != "":
-        st.error("❌ Yetkisiz Giriş! Lütfen doğru şifreyi girin.")
-    else:
-        st.info("🔒 Hissedar veri tabanını ve kayıt formunu açmak için lütfen erişim şifresini (BTA2026) girin.")
-
+    # Herkese Açık Yeni Üye ve Alım Fiyatı Ekleme Formu
+    with st.expander("➕ Yeni Hissedar Kaydı Oluştur (Şifresiz)"):
+        with st.form("member_form", clear_on_submit=True):
+            new_name = st.text_input("Hissedar İsim Soyisim:")
+            new_price = st.number_input("BTA Alım Fiyatı (TL):", min_value=0.0, value=4100.0, step=10.0)
+            add_member_btn = st.form_submit_button("Sisteme Güvenli Kaydet 💾")
+            
+            if add_member_btn and new_name:
+                current_date = datetime.now().strftime("%Y-%m-%d")
+                member_id = int(datetime.now().timestamp() * 1000)
+                new_member = {
+                    "id": member_id,
