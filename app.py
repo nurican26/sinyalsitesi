@@ -71,26 +71,17 @@ st.markdown("""
 # ==========================================
 PORTFOY_DOSYASI = "bta_portfoy_hafiza.json"
 
-def json_oku(dosya_adi, varsayilan_veri):
-    if not os.path.exists(dosya_adi):
-        with open(dosya_adi, "w", encoding="utf-8") as f:
-            json.dump(varsayilan_veri, f, ensure_ascii=False)
-        return varsayilan_veri
-    try:
-        with open(dosya_adi, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return varsayilan_veri
-
-def json_yaz(dosya_adi, veri):
-    try:
-        with open(dosya_adi, "w", encoding="utf-8") as f:
-            json.dump(veri, f, ensure_ascii=False, indent=4)
-    except:
-        pass
-
-# Portföy kayıt defteri verilerini yüklüyoruz
-canli_hissedarlar = json_oku(PORTFOY_DOSYASI, [{"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}])
+if "bta_members_list" not in st.session_state:
+    if os.path.exists(PORTFOY_DOSYASI):
+        try:
+            with open(PORTFOY_DOSYASI, "r", encoding="utf-8") as f:
+                st.session_state["bta_members_list"] = json.load(f)
+        except:
+            st.session_state["bta_members_list"] = []
+    else:
+        st.session_state["bta_members_list"] = [
+            {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
+        ]
 
 if "begeniler" not in st.session_state:
     st.session_state["begeniler"] = 0
@@ -120,7 +111,7 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 varsayilan_dosya = None
 if excel_dosyalari:
     hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
-    varsayilan_dosya = hedef_dosyalar if hedef_dosyalar else excel_dosyalari
+    varsayilan_dosya = hedef_dosyalar[0] if hedef_dosyalar else excel_dosyalari[0]
 
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
@@ -129,7 +120,6 @@ st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
 st.warning(spk_metni)
 st.markdown("---")
 
-# Sohbet odası tamamen kaldırıldı, 3 temiz kurumsal sekme bırakıldı
 tab_excel, tab_bta, tab_members = st.tabs([
     "📂 BTA Excel Veri Analizi", 
     "📈 KONYA Canlı Veri Odası", 
@@ -137,7 +127,7 @@ tab_excel, tab_bta, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL VERİ İŞLEME (A, C, D KOLONLARI)
+# MODÜL 1: EXCEL VERİ İŞLEME (A, C, D SÜTUNLARI TAM LİSTE)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri Inceleme Merkezi")
@@ -161,6 +151,8 @@ with tab_excel:
             mevcut_istenenler = [col for col in df.columns if col in istenan_sutunlar]
             
             df_goster = df[mevcut_istenenler] if mevcut_istenenler else df
+            
+            # Formüllerden gelen hisselerin kaybolmaması için sadece tamamen boş satırları eliyoruz
             df_goster = df_goster.dropna(how='all')
             
             if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
@@ -175,7 +167,7 @@ with tab_excel:
         st.info("💡 Sistemde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ (GİRİNTİ HATALARI TEMİZLENDİ)
+# MODÜL 2: KONYA CANLI TAKİP PANELİ & YENİLENEN KUTLAMA SİSTEMİ
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
@@ -204,6 +196,7 @@ with tab_bta:
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
         kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
         
+        # 🚀 KUTLAMA ALGORİTMASI GERİ GELDİ: Günlük tavan veya %9 üstü toplam kârda konfetiler patlar
         if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
             st.balloons()
             st.snow()
@@ -224,9 +217,8 @@ with tab_bta:
         st.markdown("---")
         st.subheader("⭐ Oda Değerlendirmesi & Topluluk Reaksiyonu")
         
-        # Hata veren iç içe geçmiş columns yapısı tamamen düzleştirildi
         st.write(f"👍 Toplam Oda Beğenisi: **{st.session_state['begeniler']}**")
-        if st.button("Portföyü Beğen 👍"):
+        if st.button("Portföyü Beğen 👍", key="like_btn"):
             st.session_state["begeniler"] += 1
             st.rerun()
             
@@ -234,3 +226,7 @@ with tab_bta:
                 
         st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
         st.line_chart(tarihce['Close'])
+    else:
+        st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
+
+# ==========================================
