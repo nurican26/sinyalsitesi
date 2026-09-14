@@ -9,7 +9,7 @@ from datetime import datetime
 # 1. SAYFA VE PANEL AYARLARI
 # ==========================================
 st.set_page_config(
-    page_title="BTA Algoritmik İşlem ve Analiz Portালী",
+    page_title="BTA Algoritmik İşlem ve Analiz Portalı",
     page_icon="🧠",
     layout="wide"
 )
