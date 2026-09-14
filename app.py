@@ -64,7 +64,7 @@ dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
 
 
 # ==================================================
-# FORMATLAMA FONKSİYONLARI
+# FORMATLAMA
 # ==================================================
 def tl_format(deger):
     try:
@@ -110,6 +110,7 @@ def turkce_sayi_cevir(deger):
         if "." in metin and "," in metin:
             metin = metin.replace(".", "")
             metin = metin.replace(",", ".")
+
         elif "," in metin:
             son_parca = metin.split(",")[-1]
 
@@ -117,6 +118,7 @@ def turkce_sayi_cevir(deger):
                 metin = metin.replace(",", "")
             else:
                 metin = metin.replace(",", ".")
+
         elif "." in metin:
             son_parca = metin.split(".")[-1]
 
@@ -196,27 +198,12 @@ st.markdown(
         }
     }
 
-    [data-testid="stMetric"],
-    [data-testid="stDataFrame"],
-    [data-testid="stForm"] {
-        background: rgba(9, 31, 48, 0.95) !important;
-        border-radius: 10px !important;
-    }
-
-    .teknik-karti {
-        background: rgba(9, 31, 48, 0.95);
-        border: 1px solid rgba(0, 245, 200, 0.35);
-        border-radius: 9px;
-        padding: 14px;
-        margin-bottom: 10px;
-    }
-
-    .mesaj-karti {
-        background: rgba(8, 29, 45, 0.95);
-        border-left: 3px solid #00f5c8;
-        border-radius: 7px;
-        padding: 10px;
-        margin: 7px 0;
+    .takip-paneli {
+        background: rgba(9, 31, 48, 0.96);
+        border: 1px solid rgba(0, 245, 200, 0.45);
+        border-radius: 12px;
+        padding: 18px;
+        margin: 15px 0 20px 0;
     }
 
     .kisayol-butonu {
@@ -229,7 +216,24 @@ st.markdown(
         text-align: center;
         text-decoration: none !important;
         font-weight: bold;
-        margin: 12px 0;
+        margin: 10px 0;
+    }
+
+    .mesaj-karti {
+        background: rgba(8, 29, 45, 0.95);
+        border-left: 3px solid #00f5c8;
+        border-radius: 7px;
+        padding: 10px;
+        margin: 7px 0;
+    }
+
+    .bilgi-karti {
+        background: rgba(9, 31, 48, 0.95);
+        border: 1px solid rgba(0, 245, 200, 0.35);
+        border-radius: 9px;
+        padding: 14px;
+        margin: 10px 0;
+        line-height: 1.8;
     }
 
     .spk-uyari {
@@ -247,10 +251,6 @@ st.markdown(
     @media screen and (max-width: 768px) {
         .main .block-container {
             padding: 0.8rem 0.6rem 1.5rem 0.6rem !important;
-        }
-
-        h1 {
-            font-size: 1.5rem !important;
         }
 
         .bta-logo {
@@ -374,7 +374,7 @@ def excel_kayitlarini_ekle(df):
 
 
 # ==================================================
-# İSTATİSTİK FONKSİYONLARI
+# TAKİP VE BEĞENİ FONKSİYONLARI
 # ==================================================
 def istatistik_oku():
     try:
@@ -505,16 +505,99 @@ admin_sifre = st.sidebar.text_input(
 is_admin = admin_sifre == "BTA2026"
 
 if is_admin:
-    st.sidebar.success("Yönetici yetkileri aktif.")
+    st.sidebar.success(
+        "Yönetici yetkileri aktif."
+    )
 
 
 # ==================================================
-# TAKİP PANELİNE KISA YOL
+# TAKİP PANELİ
 # ==================================================
+st.markdown(
+    '<div id="takip-paneli"></div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="takip-paneli">
+        <h2>⭐ BTA Oda Takip Paneli</h2>
+        <p>
+            Bu paneli tarayıcı yer imlerine ekleyebilir veya
+            telefonda “Ana ekrana ekle” seçeneğini kullanabilirsiniz.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+takip, begeni = istatistik_oku()
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    if "takip_edildi" not in st.session_state:
+        st.session_state["takip_edildi"] = False
+
+    if not st.session_state["takip_edildi"]:
+        if st.button(
+            "⭐ Odayı Takip Et",
+            use_container_width=True
+        ):
+            takip += 1
+
+            istatistik_kaydet(
+                takip,
+                begeni
+            )
+
+            st.session_state["takip_edildi"] = True
+            st.rerun()
+    else:
+        st.success(
+            "Odayı takip ediyorsunuz."
+        )
+
+with col2:
+    if "begeni_verildi" not in st.session_state:
+        st.session_state["begeni_verildi"] = False
+
+    if not st.session_state["begeni_verildi"]:
+        if st.button(
+            "👍 Beğen",
+            use_container_width=True
+        ):
+            begeni += 1
+
+            istatistik_kaydet(
+                takip,
+                begeni
+            )
+
+            st.session_state["begeni_verildi"] = True
+            st.rerun()
+    else:
+        st.success(
+            "Beğeniniz kaydedildi."
+        )
+
+with col3:
+    st.metric(
+        "👥 Takipçi",
+        f"{takip} kişi"
+    )
+
+with col4:
+    st.metric(
+        "👍 Beğeni",
+        f"{begeni}"
+    )
+
+
 st.markdown(
     """
     <a class="kisayol-butonu" href="#takip-paneli">
-        ⭐ Takip ve Beğeni Paneline Git
+        ⭐ Takip Paneline Git
     </a>
     """,
     unsafe_allow_html=True
@@ -530,7 +613,9 @@ st.markdown(
 excel_dosyalari = [
     dosya
     for dosya in os.listdir(".")
-    if dosya.lower().endswith((".xlsx", ".xlsm"))
+    if dosya.lower().endswith(
+        (".xlsx", ".xlsm")
+    )
 ]
 
 excel_df = pd.DataFrame(
@@ -614,16 +699,17 @@ if excel_dosyalari:
             excel_kayitlarini_ekle(excel_df)
 
     except Exception as hata:
-        st.error(f"Excel okunamadı: {hata}")
+        st.error(
+            f"Excel okunamadı: {hata}"
+        )
 
 
 # ==================================================
-# PANELLER
+# DİĞER PANELLER
 # ==================================================
-tab_algoritmik, tab_takip, tab_sohbet, tab_kayit = st.tabs(
+tab_algoritmik, tab_sohbet, tab_kayit = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
-        "⭐ Takip ve Beğeni",
         "💬 Canlı Sohbet",
         "📒 Tarihli Kayıtlar"
     ]
@@ -631,7 +717,7 @@ tab_algoritmik, tab_takip, tab_sohbet, tab_kayit = st.tabs(
 
 
 # ==================================================
-# ALGORİTMİK BİLGİLER PANELİ
+# ALGORİTMİK BİLGİLER
 # ==================================================
 with tab_algoritmik:
     st.header("🤖 Algoritmik İşlem Bilgileri")
@@ -653,7 +739,6 @@ with tab_algoritmik:
 
         try:
             hisse = yf.Ticker(sembol)
-
             bilgi = hisse.info
 
             fiyat = bilgi.get(
@@ -664,11 +749,11 @@ with tab_algoritmik:
                 "regularMarketPreviousClose"
             )
 
-            gunluk_en_yuksek = bilgi.get(
+            en_yuksek = bilgi.get(
                 "dayHigh"
             )
 
-            gunluk_en_dusuk = bilgi.get(
+            en_dusuk = bilgi.get(
                 "dayLow"
             )
 
@@ -688,12 +773,16 @@ with tab_algoritmik:
 
             col1.metric(
                 "BTA Alım Fiyatı",
-                tl_format(kayit["BTA Alım Fiyatı"])
+                tl_format(
+                    kayit["BTA Alım Fiyatı"]
+                )
             )
 
             col2.metric(
                 "BTA Puanı",
-                sayi_format(kayit["BTA Puanı"])
+                sayi_format(
+                    kayit["BTA Puanı"]
+                )
             )
 
             col3.metric(
@@ -703,14 +792,14 @@ with tab_algoritmik:
 
             st.markdown(
                 f"""
-                <div class="teknik-karti">
+                <div class="bilgi-karti">
                     <strong>Hisse Kodu:</strong> {secilen_hisse}<br>
                     <strong>Önceki Kapanış:</strong>
                     {tl_format(onceki_kapanis)}<br>
                     <strong>Günlük En Yüksek:</strong>
-                    {tl_format(gunluk_en_yuksek)}<br>
+                    {tl_format(en_yuksek)}<br>
                     <strong>Günlük En Düşük:</strong>
-                    {tl_format(gunluk_en_dusuk)}<br>
+                    {tl_format(en_dusuk)}<br>
                     <strong>İşlem Hacmi:</strong>
                     {sayi_format(hacim)}<br>
                     <strong>Piyasa Değeri:</strong>
@@ -729,77 +818,7 @@ with tab_algoritmik:
 
 
 # ==================================================
-# TAKİP VE BEĞENİ PANELİ
-# ==================================================
-with tab_takip:
-    st.markdown(
-        '<div id="takip-paneli"></div>',
-        unsafe_allow_html=True
-    )
-
-    st.header("⭐ Odayı Takip Et ve Beğen")
-
-    takip, begeni = istatistik_oku()
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        if "takip_edildi" not in st.session_state:
-            st.session_state["takip_edildi"] = False
-
-        if not st.session_state["takip_edildi"]:
-            if st.button(
-                "⭐ Odayı Takip Et",
-                use_container_width=True
-            ):
-                takip += 1
-
-                istatistik_kaydet(
-                    takip,
-                    begeni
-                )
-
-                st.session_state["takip_edildi"] = True
-                st.rerun()
-        else:
-            st.success("Odayı takip ediyorsunuz.")
-
-    with col2:
-        if "begeni_verildi" not in st.session_state:
-            st.session_state["begeni_verildi"] = False
-
-        if not st.session_state["begeni_verildi"]:
-            if st.button(
-                "👍 Beğen",
-                use_container_width=True
-            ):
-                begeni += 1
-
-                istatistik_kaydet(
-                    takip,
-                    begeni
-                )
-
-                st.session_state["begeni_verildi"] = True
-                st.rerun()
-        else:
-            st.success("Beğeniniz kaydedildi.")
-
-    with col3:
-        st.metric(
-            "👥 Takipçi Sayısı",
-            f"{takip} kişi"
-        )
-
-    with col4:
-        st.metric(
-            "👍 Beğeni Sayısı",
-            f"{begeni}"
-        )
-
-
-# ==================================================
-# CANLI SOHBET PANELİ
+# CANLI SOHBET
 # ==================================================
 with tab_sohbet:
     st.header("💬 Canlı Sohbet")
@@ -887,7 +906,7 @@ with tab_sohbet:
 
 
 # ==================================================
-# TARİHLİ KAYIT PANELİ
+# TARİHLİ KAYITLAR
 # ==================================================
 with tab_kayit:
     st.header("📒 Tarihli Kayıt Defteri")
@@ -953,7 +972,7 @@ with tab_kayit:
 
 
 # ==================================================
-# SPK YASAL UYARI
+# SPK UYARISI
 # ==================================================
 st.markdown(
     """
