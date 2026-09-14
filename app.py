@@ -193,15 +193,20 @@ if os.path.exists(excel_yolu):
                 else:
                     kz_str = "<span>-</span>"
                 
-                # SÖZLÜK/HATA VEREN ALAN TAMAMEN GÜVENLİ HALE GETİRİLDİ
+                # ÇÖKMEYE KARŞI %100 GÜVENLİ VERİ ÇEKME YÖNTEMİ
                 df_yildiz = pd.read_csv(db_hisse_yildiz)
                 hisse_kayit = df_yildiz[df_yildiz["hisse"] == ha]
-                if hisse_kayit.empty:
+                
+                if hisse_kayit.empty or len(hisse_kayit) == 0:
                     begeniler = 0
                     yildizlar = 0.0
                 else:
-                    begeniler = int(hisse_kayit["begeniler"].values[0])
-                    yildizlar = float(hisse_kayit["yildizlar"].values[0])
+                    try:
+                        begeniler = int(hisse_kayit["begeniler"].values[0])
+                        yildizlar = float(hisse_kayit["yildizlar"].values[0])
+                    except:
+                        begeniler = 0
+                        yildizlar = 0.0
                 
                 yildiz_str = "⭐" * int(round(yildizlar)) if yildizlar > 0 else "---"
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td><td>👍 {begeniler} | {yildiz_str}</td></tr>'
@@ -216,4 +221,3 @@ if basarili_hisseler:
 
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th><th>KAYIT DEFTERİ (BEĞENİ/YILDIZ)</th></tr>' + tablo_rows_html + '</table>'
-
