@@ -77,7 +77,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (YALNIZCA YÖNETİCİ AYARLI)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (GÜNCELLENMİŞ SÜTUN FİLTRESİ)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -106,15 +106,30 @@ with tab_excel:
             aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
+            
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
+            
+            # "AL SAT" içermeyen temel sütunları alıyoruz
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
-            df_goster = df[filtrelenmis_sutunlar]
+            df_ara = df[filtrelenmis_sutunlar]
+            
+            # İstenen sütunlar (A, C, D) için dinamik indeks kontrolü ve filtreleme (E ve Unnamed sütunları elenir)
+            # Eğer excel dosyasındaki ilk 4 sütun sırasıyla A, B, C, D ise sadece A, C ve D'yi seçer:
+            if len(df_ara.columns) >= 4:
+                # 0: A sütunu, 2: C sütunu, 3: D sütunu (B sütununu ve E sütununu göstermez)
+                gosterilecek_indeksler = [0, 2, 3]
+                df_goster = df_ara.iloc[:, gosterilecek_indeksler]
+            else:
+                # Eğer sütun sayısı 4'ten azsa hata vermemesi için güvenli sınırda kalır
+                df_goster = df_ara.iloc[:, :min(len(df_ara.columns), 4)]
+
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
                 filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
                 gosterilecek_df = df_goster[filtre_mask]
             else:
                 gosterilecek_df = df_goster
+                
             st.dataframe(gosterilecek_df, use_container_width=True)
         except Exception as e:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
@@ -181,17 +196,3 @@ with tab_chat:
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
             with cols[0]:
-                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols[1]:
-                if is_admin:
-                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
-                        st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
-                        st.rerun()
-            st.divider()
-
-# ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Hizalaması Tamamen Düzeltilen Alan)
-# ==========================================
-with tab_members:
-    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
-    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
