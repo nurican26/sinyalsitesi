@@ -30,11 +30,9 @@ if "bta_members_list" not in st.session_state:
         {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
     ]
 
-# HERKESE AÇIK TARİHLİ EXCEL NOT GEÇMİŞİ HAFIZASI
-if "excel_notes_history" not in st.session_state:
-    st.session_state["excel_notes_history"] = [
-        {"Tarih/Saat": "2026-09-14 12:00", "Dosya Adı": "Sistem_Baslangic.xlsx", "BTA Alım Fiyatı (TL)": 4100.0, "Yönetici Notu": "Sistem referans fiyatı başarıyla tanımlandı."}
-    ]
+# Global BTA Fiyat Referansı (Excel okunamazsa devreye girecek yedek maliyet)
+if "global_bta_price" not in st.session_state:
+    st.session_state["global_bta_price"] = 4100.0
 
 # ==========================================
 # GÜVENLİ VE HATA VERMEYEN SPK YASAL METNİ
@@ -83,7 +81,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (YALNIZCA YÖNETİCİ YÜKLEYEBİLİR, HERKES GÖRÜR)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (YÖNETİCİ GİZLİLİKLİ, OTOMATİK FILTRELEMELİ)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -100,25 +98,10 @@ with tab_excel:
     if is_admin:
         st.subheader("🛠️ Yönetici Excel Kontrolleri")
         dosya_kaynagi = st.radio("Dosya Kaynağı Seçin:", ["Klasördeki Dosyaları Kullan", "Yeni Dosya Yükle"])
-        
         if dosya_kaynagi == "Klasördeki Dosyaları Kullan" and excel_dosyalari:
             secilen_dosya = st.selectbox("Analiz Edilecek Dosya:", excel_dosyalari, index=excel_dosyalari.index(varsayilan_dosya) if varsayilan_dosya in excel_dosyalari else 0)
         else:
             secilen_dosya = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
-            
-        with st.expander("📝 Bu Excel Yüklemesi İçin Tarihli Not Düş"):
-            with st.form("excel_note_form", clear_on_submit=True):
-                note_price = st.number_input("Bu Dönem İçin Hedef BTA Alım Fiyatı (TL):", min_value=0.0, value=4100.0, step=10.0)
-                note_text = st.text_area("Yükleme Notu / Açıklama:", placeholder="Örn: Eylül ayı tadilat ve güncel bakiye verileri eklendi.")
-                submit_note = st.form_submit_button("Notu Geçmişe Kaydet 💾")
-                
-                if submit_note:
-                    zaman_damgasi = datetime.now().strftime("%Y-%m-%d %H:%M")
-                    dosya_adi_str = secilen_dosya.name if hasattr(secilen_dosya, 'name') else str(secilen_dosya)
-                    yeni_not_objesi = {"Tarih/Saat": zaman_damgasi, "Dosya Adı": dosya_adi_str, "BTA Alım Fiyatı (TL)": note_price, "Yönetici Notu": note_text}
-                    st.session_state["excel_notes_history"].append(yeni_not_objesi)
-                    st.success("Tarihli alım notu kurumsal hafızaya başarıyla işlendi!")
-                    st.rerun()
         st.markdown("---")
 
     if secilen_dosya is not None:
@@ -128,29 +111,40 @@ with tab_excel:
             aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
+            
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
+            
+            # AL SAT sütunlarını gizleme
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_goster = df[filtrelenmis_sutunlar]
-            arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
-            if arama_kelimesi:
-                filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
-                gosterilecek_df = df_goster[filtre_mask]
-            else:
-                gosterilecek_df = df_goster
-            st.dataframe(gosterilecek_df, use_container_width=True)
+            
+            # 🚀 İSTEK: BTA HİSSE sütunundaki boş (None) satırları tamamen temizleme algoritması
+            if "BTA HİSSE" in df_goster.columns:
+                df_goster = df_goster[df_goster["BTA HİSSE"].notna()]
+                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.strip() != ""]
+                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() != "NONE"]
+                
+                # 🚀 İSTEK: KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip hafızaya alma
+                konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() == "KONYA"]
+                if not konya_satirlari.empty and "BTA ALIM FİYATI" in df_goster.columns:
+                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
+            
+            # Arama kutusu kaldırılmıştır, doğrudan temiz veri çerçevesini basıyoruz
+            st.dataframe(df_goster, use_container_width=True)
+            
         except Exception as e:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
     else:
         st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP & TARİHLİ EXCEL NOT GEÇMİŞİ (HERKESE AÇIK)
+# MODÜL 2: KONYA CANLI TAKİP PANELİ (TAM OTOMATİK BAĞLANTILI)
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     
-    en_guncel_not = st.session_state["excel_notes_history"][-1]
-    bta_alim_fiyati = float(en_guncel_not["BTA Alım Fiyatı (TL)"])
+    # 🚀 İSTEK: BTA Fiyatı artık Excel'den gelen KONYA satırındaki alım maliyetine otomatik kilitlenmiştir
+    bta_alim_fiyati = st.session_state["global_bta_price"]
     
     kurumsal_ticker = "KONYA.IS"
     try:
@@ -162,23 +156,26 @@ with tab_bta:
             if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
                 onceki_kapanis = tarihce['Close'].iloc[-2]
                 gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
+            
             kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
             kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
+            
             if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
                 st.balloons()
                 st.snow()
                 st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
             
-            st.subheader("📊 Canlı Hesap Tablosu (En Son Yüklenen Excel Referansıyla)")
+            st.subheader("📊 Canlı Hesap Tablosu (Excel'den Otomatik Çekilen Referansla)")
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-            c2.metric("Excel'den Gelen Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
+            c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
             if kar_zarar_tutari >= 0:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
             else:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+            
             st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
             st.line_chart(tarihce['Close'])
         else:
@@ -186,5 +183,17 @@ with tab_bta:
     except Exception as e:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
-    st.markdown("---")
-    st.subheader("🗓️ Herkese Açık Excel Yükleme ve BTA Alım Fiyatı Not Geçmişi")
+# ==========================================
+# MODÜL 3: CANLI SOHBET ODASI (HIZALAMA HATASI TAMAMEN GİDERİLDİ)
+# ==========================================
+with tab_chat:
+    st.header("💬 BTA Genel Canlı Sohbet Odası")
+    st.write("Sohbet odası herkese açıktır. Mesajlaşmaya hemen başlayabilirsiniz.")
+    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
+    
+    with st.form("chat_form", clear_on_submit=True):
+        user_message = st.text_input("Mesajınızı yazın:")
+        submit_button = st.form_submit_button("Gönder 🚀")
+        if submit_button and user_message:
+            now_str = datetime.now().strftime("%H:%M:%S")
+            msg_id = int(datetime.now().timestamp() * 1000)
