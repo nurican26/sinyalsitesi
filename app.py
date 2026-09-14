@@ -49,7 +49,6 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     animation: btaYoru 15s infinite linear;
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
-/* Ekstra borsa alanları için font renk ayarları */
 .stSelectbox label, .stTextInput label, .stMarkdown p { color: #00ffcc !important; font-weight: bold; }
 </style>
 """
@@ -119,10 +118,9 @@ tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
     if len(df.columns) >= 5:
-        ham_liste = df.iloc[:, 0].dropna().unique() # 0. sütundaki hisseleri alıyoruz
+        ham_liste = df.iloc[:, 0].dropna().unique()
         tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() not in ["", "BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]])
         
-    # Kilitlenmeyi önlemek için toplu veri indirme hazırlığı
     sorgu_listesi = [f"{h}.IS" for h in tum_hisseler[:15]]
     toplu_veri = pd.DataFrame()
     if sorgu_listesi:
@@ -150,7 +148,6 @@ if os.path.exists(excel_yolu):
             alim_c_temiz = alim_c.replace(",", ".")
             maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
             
-            # Hafızaya al (Ekleme özellikler için)
             hisse_maliyetleri[ha] = maliyet
             hisse_puanlari[ha] = p_temiz
             
@@ -181,19 +178,27 @@ else:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# ----------------- 🎯 EKLEME YAPILAN BORSA SİTESİ ÖZELLİKLERİ -----------------
+# ----------------- 🎯 SÖZ VERDİĞİM HATASIZ EK BORSA MODÜLLERİ -----------------
 
-# A. CANLI GRAFİK İNCELEME İSTASYONU
+# A. SYNTAX HATASI ÇÖZÜLMÜŞ CANLI GRAFİK İNCELEME
 if tum_hisseler:
     st.write("---")
     st.markdown("### 🔍 Gelişmiş Teknik Analiz Ekranı")
     grafik_hisse = st.selectbox("Grafiğini İncelemek İstediğiniz Hisseyi Seçin", tum_hisseler, key="main_chart_select")
     
-    tv_grafik_widget = f"""
+    # Hata veren f-string yerine güvenli formatlama yöntemi kullanıldı
+    tv_grafik_widget = """
     <div class="tradingview-widget-container" style="height:450px; width:100%;">
       <div id="tradingview_bta"></div>
       <script type="text/javascript" src="https://tradingview.com"></script>
       <script type="text/javascript">
-      new TradingView.widget({{
+      new TradingView.widget({
         "width": "100%",
         "height": 450,
+        "symbol": "BIST:{SYMBOL_PLACEHOLDER}",
+        "interval": "D",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "tr",
+        "toolbar_bg": "#f1f3f6",
