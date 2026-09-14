@@ -40,7 +40,7 @@ if auto_refresh:
 st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
-# Klasördeki Excel dosyalarını otomatik bulma
+# Klasördeki Excel dosyalarını bulma
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 varsayilan_dosya = None
 if excel_dosyalari:
@@ -51,17 +51,18 @@ if excel_dosyalari:
         varsayilan_dosya = excel_dosyalari[0]
 
 # ==========================================
-# 0. EXCEL TABANLI KALICI VERİ MOTORU (ASLA SİLİNMEZ)
+# 0. EXCEL TABANLI KALICI VERİ MOTORU (SADE VE GÜVENLİ)
 # ==========================================
 def excel_veri_hazirla(dosya):
     if not dosya:
         return
     try:
-        # Sohbet ve Hissedar sayfaları yoksa boş oluşturup kaydet
+        reader = pd.ExcelFile(dosya, engine='openpyxl')
+        sheets = reader.sheet_names
         with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
-            if "Sohbet_Hafizasi" not in writer.book.sheetnames:
+            if "Sohbet_Hafizasi" not in sheets:
                 pd.DataFrame(columns=["id", "Kullanici", "Saat", "Mesaj"]).to_excel(writer, sheet_name="Sohbet_Hafizasi", index=False)
-            if "Hissedar_Hafizasi" not in writer.book.sheetnames:
+            if "Hissedar_Hafizasi" not in sheets:
                 pd.DataFrame(columns=["id", "Hissedar", "Hisse", "Maliyet", "Adet"]).to_excel(writer, sheet_name="Hissedar_Hafizasi", index=False)
     except:
         pass
@@ -70,58 +71,80 @@ if varsayilan_dosya:
     excel_veri_hazirla(varsayilan_dosya)
 
 def excel_mesaj_ekle(dosya, user, time, text):
-    if not dosya: return
+    if not dosya:
+        return
     try:
         df_old = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
-        msg_id = int(datetime.now().timestamp() * 1000)
-        df_new = pd.DataFrame([{"id": msg_id, "Kullanici": user, "Saat": time, "Mesaj": text}])
-        df_total = pd.concat([df_old, df_new], ignore_index=True)
+    except:
+        df_old = pd.DataFrame(columns=["id", "Kullanici", "Saat", "Mesaj"])
+    
+    msg_id = int(datetime.now().timestamp() * 1000)
+    df_new = pd.DataFrame([{"id": msg_id, "Kullanici": user, "Saat": time, "Mesaj": text}])
+    df_total = pd.concat([df_old, df_new], ignore_index=True)
+    
+    try:
         with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             df_total.to_excel(writer, sheet_name="Sohbet_Hafizasi", index=False)
-    except: pass
+    except:
+        pass
 
 def excel_mesajlari_getir(dosya):
-    if not dosya: return []
+    if not dosya:
+        return []
     try:
         df = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
         return df.to_dict(orient="records")
-    except: return []
+    except:
+        return []
 
 def excel_mesaj_sil(dosya, msg_id):
-    if not dosya: return
+    if not dosya:
+        return
     try:
         df = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
         df = df[df["id"] != msg_id]
         with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             df.to_excel(writer, sheet_name="Sohbet_Hafizasi", index=False)
-    except: pass
+    except:
+        pass
 
 def excel_hissedar_ekle(dosya, isim, hisse, maliyet, adet):
-    if not dosya: return
+    if not dosya:
+        return
     try:
         df_old = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
-        mem_id = int(datetime.now().timestamp() * 1000)
-        df_new = pd.DataFrame([{"id": mem_id, "Hissedar": isim, "Hisse": hisse, "Maliyet": maliyet, "Adet": adet}])
-        df_total = pd.concat([df_old, df_new], ignore_index=True)
+    except:
+        df_old = pd.DataFrame(columns=["id", "Hissedar", "Hisse", "Maliyet", "Adet"])
+        
+    mem_id = int(datetime.now().timestamp() * 1000)
+    df_new = pd.DataFrame([{"id": mem_id, "Hissedar": isim, "Hisse": hisse, "Maliyet": maliyet, "Adet": adet}])
+    df_total = pd.concat([df_old, df_new], ignore_index=True)
+    
+    try:
         with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             df_total.to_excel(writer, sheet_name="Hissedar_Hafizasi", index=False)
-    except: pass
+    except:
+        pass
 
 def excel_hissedarlari_getir(dosya):
-    if not dosya: return []
+    if not dosya:
+        return []
     try:
         df = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
         return df.to_dict(orient="records")
-    except: return []
+    except:
+        return []
 
 def excel_hissedar_sil(dosya, member_id):
-    if not dosya: return
+    if not dosya:
+        return
     try:
         df = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
         df = df[df["id"] != member_id]
         with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
             df.to_excel(writer, sheet_name="Hissedar_Hafizasi", index=False)
-    except: pass
+    except:
+        pass
 
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
@@ -155,7 +178,6 @@ with tab_excel:
 
     if secilen_dosya is not None:
         try:
-            # Sadece ilk ana sayfayı okuyoruz
             df = pd.read_excel(secilen_dosya, sheet_name=0, engine='openpyxl')
             df.columns = df.columns.astype(str).str.strip()
             
@@ -210,6 +232,3 @@ with tab_bta:
             
             st.subheader("📊 Canlı Hesap Tablosu (Excel'den Otomatik Çekilen Referansla)")
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-            c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
-            
