@@ -51,13 +51,12 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
 
-/* Yeni Eklenen Sohbet Kutusu CSS'leri */
 .chat-box {
     background-color: #121d33;
     border: 1px solid #1e3a5f;
     border-radius: 10px;
     padding: 15px;
-    height: 350px;
+    height: 300px;
     overflow-y: scroll;
     margin-bottom: 10px;
 }
@@ -83,7 +82,7 @@ db_istatistik = "bta_site_istatistik_db.csv"
 db_sohbet = "bta_canli_sohbet_db.csv"
 db_hisse_yildiz = "bta_hisse_yildiz_db.csv"
 
-# Veri tabanı dosyalarını oluşturma
+# Güvenli veri tabanı başlatma adımları
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
@@ -98,28 +97,29 @@ if not os.path.exists(db_hisse_yildiz):
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
-if os.path.exists(db_istatistik):
-    try:
-        df_ist = pd.read_csv(db_istatistik)
-        if df_ist.empty:
-            df_ist = pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}])
-        if "ziyaret_sayildi" not in st.session_state:
-            df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.session_state["ziyaret_sayildi"] = True
-        ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-        basarili = int(df_ist.at[0, "basarili_oy"])
-        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
-    except:
-        pass
+try:
+    df_ist = pd.read_csv(db_istatistik)
+    if df_ist.empty or len(df_ist) == 0:
+        df_ist = pd.DataFrame([{"ziyaret_sayisi": 1, "basarili_oy": 0, "basarisiz_oy": 0}])
+    
+    if "ziyaret_sayildi" not in st.session_state:
+        df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["ziyaret_sayildi"] = True
+        
+    ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+    basarili = int(df_ist.at[0, "basarili_oy"])
+    basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+except:
+    pass
 
-# YÖNETİCİ/KULLANICI GİRİŞ SİSTEMİ (Sohbet Odası ve Yönetim İçin)
+# KULLANICI / YÖNETİCİ DURUMLARI
 if "kullanici_adi" not in st.session_state:
     st.session_state["kullanici_adi"] = "Ziyaretci_" + str(int(time.time()) % 1000)
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Sol Menü (Sidebar) - Giriş ve Yetkilendirme Paneli
+# Sidebar Paneli
 with st.sidebar:
     st.markdown("### 🔐 Kullanıcı Profili")
     yeni_nick = st.text_input("Sohbet Takma Adınız (Nick):", st.session_state["kullanici_adi"])
@@ -129,17 +129,15 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 👑 Yönetici Girişi")
     admin_sifre = st.text_input("Yönetici Şifresi:", type="password")
-    # Örnek şifre: admin123 (Kendinize göre değiştirebilirsiniz)
     if admin_sifre == "admin123":
         st.session_state["is_admin"] = True
         st.success("Yönetici Yetkisi Aktif!")
     else:
         st.session_state["is_admin"] = False
 
-# 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
+# 6. LOGO VE TRADINGVIEW MODÜLLERİ
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
 
-# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
 bist_mini_widget = """
 <div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;">
   <div class="tradingview-widget-container__widget"></div>
@@ -157,64 +155,64 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# TARİH AYARI
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
+# 7. GÜVENLİ EXCEL ANALİZİ (Kilitlenmeyi Önleyen Alan)
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
-    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-    if len(df.columns) >= 5:
-        ham_liste = df.iloc[:, 4].dropna().unique()
-        tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
-        
-    for idx in range(min(10, len(df))):
-        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-        puan_d = df.iloc[idx, 3]
-        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-            veri_var_mi = True
-            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-            c_fiyat = 0.0
-            try:
-                h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-            except:
-                pass
-            alim_c_temiz = alim_c.replace(",", ".")
-            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+    try:
+        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+        if len(df.columns) >= 5:
+            ham_liste = df.iloc[:, 4].dropna().unique()
+            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
             
-            if maliyet > 0 and c_fiyat > 0:
-                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                if or_dg >= 9.0:
-                    basariliHisse_adi = ha.replace(".IS", "")
-                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-            else:
-                kz_str = "<span>-</span>"
-            
-            # Kayıt Defteri Yıldız/Beğeni Verilerini Çekme
-            df_yildiz = pd.read_csv(db_hisse_yildiz)
-            hisse_kayit = df_yildiz[df_yildiz["hisse"] == ha]
-            if hisse_kayit.empty:
-                begeniler = 0
-                yildizlar = 0.0
-            else:
-                begeniler = int(hisse_kayit.iloc[0]["begeniler"])
-                yildizlar = float(hisse_kayit.iloc[0]["yildizlar"])
-            
-            yildiz_str = "⭐" * int(round(yildizlar)) if yildizlar > 0 else "---"
-            
-            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td><td>👍 {begeniler} | {yildiz_str}</td></tr>'
+        for idx in range(min(10, len(df))):
+            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+            puan_d = df.iloc[idx, 3]
+            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                veri_var_mi = True
+                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                c_fiyat = 0.0
+                try:
+                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+                except:
+                    pass
+                alim_c_temiz = alim_c.replace(",", ".")
+                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                
+                if maliyet > 0 and c_fiyat > 0:
+                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                    if or_dg >= 9.0:
+                        basariliHisse_adi = ha.replace(".IS", "")
+                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                else:
+                    kz_str = "<span>-</span>"
+                
+                # Yıldız veritabanı güvenli okuma (.iloc hatası .iloc[0] olarak düzeltildi)
+                df_yildiz = pd.read_csv(db_hisse_yildiz)
+                hisse_kayit = df_yildiz[df_yildiz["hisse"] == ha]
+                if hisse_kayit.empty:
+                    begeniler = 0
+                    yildizlar = 0.0
+                else:
+                    begeniler = int(hisse_kayit.iloc[0]["begeniler"])
+                    yildizlar = float(hisse_kayit.iloc[0]["yildizlar"])
+                
+                yildiz_str = "⭐" * int(round(yildizlar)) if yildizlar > 0 else "---"
+                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td><td>👍 {begeniler} | {yildiz_str}</td></tr>'
+    except Exception as e:
+        pass
 
-# 8. OTOMATİK BAŞARI TEBRİK PANELİ
+# 8. PANEL ÇIKTILARI
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
     tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
-# 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th><th>KAYIT DEFTERİ (BEĞENİ/YILDIZ)</th></tr>' + tablo_rows_html + '</table>'
