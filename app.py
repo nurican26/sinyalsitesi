@@ -32,7 +32,7 @@ st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
 # ==========================================
-# 3. ANA PANEL - BTA ALGORİTMA
+# 3. ANA PANEL - BTA ALGORİTMA (SADECE LİSTE)
 # ==========================================
 st.title("🧠 BTA ALGORİTMA")
 st.warning(spk_metni)
@@ -57,15 +57,14 @@ try:
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
         kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
         
-        # Tavan / Kutlama kontrolü
+        # Tavan / Kutlama kontrolü (Yalnızca havai fişek efekti tetikler, kutu basmaz)
         if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
             st.balloons()
             st.snow()
-            st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
         
         st.subheader("📊 BTA Algoritma Anlık Veri Takip Listesi")
         
-        # Sadece A, C ve D yapısına uygun internetten beslenen liste
+        # Sadece A, C ve D yapısına uygun internetten beslenen sade liste
         canli_veri_sozlugu = {
             "BTA HİSSE (A)": ["KONYA"],
             "BTA ALIM FİYATI (C)": [f"{bta_alim_fiyati:.2f} TL"],
@@ -77,11 +76,6 @@ try:
         df_canli = pd.DataFrame(canli_veri_sozlugu)
         st.dataframe(df_canli, use_container_width=True, hide_index=True)
         
-        # Grafiğe geçmeden önce küçük bir boşluk bırakıyoruz
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
-        st.line_chart(tarihce['Close'])
     else:
         st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
 except Exception as e:
