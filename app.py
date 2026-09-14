@@ -14,17 +14,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# Canlı Sohbet Hafızasındaki Geçmiş Hataları Tamir Eden Güvenli Yapı
+# Canlı Sohbet Hafızasındaki Çift Kayıt Hatalarını Tamir Eden Güvenli Yapı
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 else:
-    for msg in st.session_state["chat_messages"]:
+    # Sunucu hafızasında mükerrer id veya id eksikliği varsa düzeltme koruması
+    for i, msg in enumerate(st.session_state["chat_messages"]):
         if "id" not in msg:
-            msg["id"] = int(datetime.now().timestamp() * 1000)
+            msg["id"] = int(datetime.now().timestamp() * 1000) + i
 
-# Hissedar BTA Hisse Kayıt Listesi Hafızası (Sözdizimi hatası vermeyen düz yapı)
+# Hissedar BTA Hisse Kayıt Listesi Hafızası
 if "bta_members_list" not in st.session_state:
     st.session_state["bta_members_list"] = [
         {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
@@ -56,7 +57,7 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
 st.write("BTA algoritmik veri entegrasyonu, KONYA canlı kâr/zarar odası ve kurumsal takip merkezi.")
 
-# Sekmeli Menü Tasarımı (Haber akışı tamamen kaldırılmıştır)
+# Sekmeli Menü Tasarımı
 tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
     "📂 BTA Excel Veri Analizi", 
     "📈 KONYA Canlı Veri Odası", 
@@ -161,7 +162,7 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI
+# MODÜL 3: CANLI SOHBET ODASI (Duplicate Anahtar Hatası Düzeltildi)
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
@@ -181,20 +182,22 @@ with tab_chat:
 
     st.subheader("📝 Oda Akışı")
     
-    for msg in reversed(st.session_state["chat_messages"]):
+    # Döngüye 'idx' ekleyerek buton key'lerinin benzersiz olmasını garanti ediyoruz
+    for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
             with cols[0]:
                 st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
             with cols[1]:
                 if is_admin:
-                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}"):
+                    # Hatanın çıktığı buton satırı dinamik hale getirildi: key=f"del_msg_{msg['id']}_{idx}"
+                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
                         st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
                         st.rerun()
             st.divider()
 
 # ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Parantez Açığı Kapatılan Kusursuz Yeni Sürüm)
+# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
 # ==========================================
 with tab_members:
     st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
@@ -208,7 +211,3 @@ with tab_members:
             input_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1)
             add_member_btn = st.form_submit_button("Sisteme Güvenli Kaydet 💾")
             
-            if add_member_btn and input_name and input_stock:
-                m_id = int(datetime.now().timestamp() * 1000)
-                formatted_stock = input_stock.upper() + ".IS"
-                
