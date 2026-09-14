@@ -3,6 +3,7 @@ import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 import os
+import sqlite3
 from datetime import datetime
 
 # ==========================================
@@ -51,90 +52,93 @@ if excel_dosyalari:
         varsayilan_dosya = excel_dosyalari[0]
 
 # ==========================================
-# 0. EXCEL TABANLI KALICI VERİ MOTORU
+# 0. BULUT TABANLI VERİ MOTORU (SADE VE GÜVENLİ SQLITE KORUMASI)
 # ==========================================
-def excel_veri_hazirla(dosya):
-    if not dosya:
-        return
+def db_baglan():
+    # Streamlit Cloud üzerinde verilerin sıfırlanmaması için kalıcı /tmp/ dizini veya yerel db oluşturulur
+    conn = sqlite3.connect("bta_bulut_hafiza.db", check_same_thread=False)
+    return conn
+
+def db_hazirla():
+    conn = db_baglan()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sohbet (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user TEXT,
+            time TEXT,
+            text TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hissedarlar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            isim TEXT,
+            hisse TEXT,
+            maliyet REAL,
+            adet INTEGER
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+db_hazirla()
+
+def db_mesaj_ekle(user, time, text):
     try:
-        reader = pd.ExcelFile(dosya, engine='openpyxl')
-        sheets = reader.sheet_names
-        with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
-            if "Sohbet_Hafizasi" not in sheets:
-                pd.DataFrame(columns=["id", "Kullanici", "Saat", "Mesaj"]).to_excel(writer, sheet_name="Sohbet_Hafizasi", index=False)
-            if "Hissedar_Hafizasi" not in sheets:
-                pd.DataFrame(columns=["id", "Hissedar", "Hisse", "Maliyet", "Adet"]).to_excel(writer, sheet_name="Hissedar_Hafizasi", index=False)
+        conn = db_baglan()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO sohbet (user, time, text) VALUES (?, ?, ?)", (user, time, text))
+        conn.commit()
+        conn.close()
     except:
         pass
 
-if varsayilan_dosya:
-    excel_veri_hazirla(varsayilan_dosya)
-
-def excel_mesaj_ekle(dosya, user, time, text):
-    if not dosya: return
+def db_mesajlari_getir():
     try:
-        try:
-            df_old = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
-        except:
-            df_old = pd.DataFrame(columns=["id", "Kullanici", "Saat", "Mesaj"])
-        
-        msg_id = int(datetime.now().timestamp() * 1000)
-        df_new = pd.DataFrame([{"id": msg_id, "Kullanici": user, "Saat": time, "Mesaj": text}])
-        df_total = pd.concat([df_old, df_new], ignore_index=True)
-        with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            df_total.to_excel(writer, sheet_name="Sohbet_Hafizasi", index=False)
-    except:
-        pass
-
-def excel_mesajlari_getir(dosya):
-    if not dosya: return []
-    try:
-        df = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
+        conn = db_baglan()
+        df = pd.read_sql_query("SELECT * FROM sohbet ORDER BY id DESC LIMIT 50", conn)
+        conn.close()
         return df.to_dict(orient="records")
     except:
         return []
 
-def excel_mesaj_sil(dosya, msg_id):
-    if not dosya: return
+def db_mesaj_sil(msg_id):
     try:
-        df = pd.read_excel(dosya, sheet_name="Sohbet_Hafizasi", engine='openpyxl')
-        df = df[df["id"] != msg_id]
-        with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            df.to_excel(writer, sheet_name="Sohbet_Hafizasi", index=False)
+        conn = db_baglan()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sohbet WHERE id = ?", (msg_id,))
+        conn.commit()
+        conn.close()
     except:
         pass
 
-def excel_hissedar_ekle(dosya, isim, hisse, maliyet, adet):
-    if not dosya: return
+def db_hissedar_ekle(isim, hisse, maliyet, adet):
     try:
-        try:
-            df_old = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
-        except:
-            df_old = pd.DataFrame(columns=["id", "Hissedar", "Hisse", "Maliyet", "Adet"])
-            
-        mem_id = int(datetime.now().timestamp() * 1000)
-        df_new = pd.DataFrame([{"id": mem_id, "Hissedar": isim, "Hisse": hisse, "Maliyet": maliyet, "Adet": adet}])
-        df_total = pd.concat([df_old, df_new], ignore_index=True)
-        with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            df_total.to_excel(writer, sheet_name="Hissedar_Hafizasi", index=False)
+        conn = db_baglan()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO hissedarlar (isim, hisse, maliyet, adet) VALUES (?, ?, ?, ?)", (isim, hisse, maliyet, adet))
+        conn.commit()
+        conn.close()
     except:
         pass
 
-def excel_hissedarlari_getir(dosya):
-    if not dosya: return []
+def db_hissedarlari_getir():
     try:
-        df = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
+        conn = db_baglan()
+        df = pd.read_sql_query("SELECT * FROM hissedarlar ORDER BY id DESC", conn)
+        conn.close()
         return df.to_dict(orient="records")
     except:
         return []
 
-def excel_hissedar_sil(dosya, member_id):
-    if not dosya: return
+def db_hissedar_sil(member_id):
     try:
-        df = pd.read_excel(dosya, sheet_name="Hissedar_Hafizasi", engine='openpyxl')
-        df = df[df["id"] != member_id]
-        with pd.ExcelWriter(dosya, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-            df.to_excel(writer, sheet_name="Hissedar_Hafizasi", index=False)
+        conn = db_baglan()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM hissedarlar WHERE id = ?", (member_id,))
+        conn.commit()
+        conn.close()
     except:
         pass
 
@@ -156,7 +160,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 # MODÜL 1: EXCEL VERİ İŞLEME (SADECE A, C, D KOLONLARI)
 # ==========================================
 with tab_excel:
-    st.header("📂 Excel Veri İnceleme Merkezi")
+    st.header("📂 Excel Veri Inceleme Merkezi")
     secilen_dosya = varsayilan_dosya
     
     if is_admin:
@@ -195,7 +199,7 @@ with tab_excel:
         st.info("💡 Sistemde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ (HİZALAMA KUSURSUZLAŞTIRILDI)
+# MODÜL 2: KONYA CANLI TAKİP PANELİ
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
@@ -205,6 +209,7 @@ with tab_bta:
     guncel_fta_fiyati = bta_alim_fiyati
     gunluk_degisim_yuzde = 0.0
     borsa_verisi_tamam = False
+    tarihce = pd.DataFrame()
     
     try:
         hisse = yf.Ticker(kurumsal_ticker)
@@ -226,3 +231,24 @@ with tab_bta:
         if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
             st.balloons()
             st.snow()
+            st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
+        
+        st.subheader("📊 Canlı Hesap Tablosu (Excel'den Otomatik Çekilen Referansla)")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
+        c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
+        
+        if kar_zarar_tutari >= 0:
+            c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
+            c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
+        else:
+            c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
+            c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+            
+        st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
+        st.line_chart(tarihce['Close'])
+    else:
+        st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı. Lütfen sayfayı yenileyin veya borsa seans saatlerinde test edin.")
+
+# ==========================================
+# MODÜL 3: CANLI SOHBET ODASI (BULUT SİSTEMİ)
