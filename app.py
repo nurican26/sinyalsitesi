@@ -10,8 +10,8 @@ import os
 # 1. SAYFA VE PANEL AYARLARI
 # ==========================================
 st.set_page_config(
-    page_title="BTA Finansal Analiz & Web Uygulaması",
-    page_icon="📈",
+    page_title="BTA Finansal Analiz Portalı",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -30,14 +30,14 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 # ==========================================
 # 2. ANA PANEL BAŞLIĞI
 # ==========================================
-st.title("📊 BTA Web Uygulaması & Finansal Analiz Portalı")
-st.write("Excel makro entegrasyonu, canlı hisse takibi ve web scraping modüllerinin birleşik paneli.")
+st.title("📊 BTA Kurumsal Analiz ve Finans Portalı")
+st.write("Excel veri işleme süreçleri ve BTA özel finansal analiz modülü.")
 
 # Sekmeli Menü Tasarımı
-tab_excel, tab_market, tab_scraper = st.tabs([
+tab_excel, tab_bta, tab_scraper = st.tabs([
     "📂 BTA Excel & Makro Analizi", 
-    "📈 Canlı Hisse Senedi Takibi (yfinance)", 
-    "📰 Global Finans Scraper"
+    "📈 BTA Hisse Analizi", 
+    "📰 Global Finans Gündemi"
 ])
 
 # ==========================================
@@ -46,7 +46,6 @@ tab_excel, tab_market, tab_scraper = st.tabs([
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
     
-    # Kullanıcı ister yerel dosyayı seçer, ister yeni yükler
     dosya_kaynagi = st.radio("Dosya Kaynağı Seçin:", ["Klasördeki Dosyaları Kullan", "Yeni Dosya Yükle"])
     
     secilen_dosya = None
@@ -57,7 +56,6 @@ with tab_excel:
         
     if secilen_dosya is not None:
         try:
-            # Excel yapısını okuma
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
             
@@ -66,7 +64,6 @@ with tab_excel:
             aktif_sayfa = st.selectbox("Görüntülenecek Sayfa:", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # Veri arama filtresi
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:")
             if arama_kelimesi:
                 filtre_mask = df.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
@@ -76,7 +73,6 @@ with tab_excel:
                 
             st.dataframe(gosterilecek_df, use_container_width=True)
             
-            # Sayısal grafik tetikleyici
             sayisal_sutunlar = df.select_dtypes(include=['number']).columns.tolist()
             if len(sayisal_sutunlar) >= 1:
                 with st.expander("📊 Veri Görselleştirme Ayarları"):
@@ -91,40 +87,39 @@ with tab_excel:
         st.info("💡 Lütfen işlem yapmak için bir veri kaynağı belirtin.")
 
 # ==========================================
-# MODÜL 2: YFINANCE CANLI HİSSE Senedi ANALİZİ
+# MODÜL 2: SADECE BTA HİSSE ANALİZİ (Arama motoru ve AL-SAT kaldırılmıştır)
 # ==========================================
-with tab_market:
-    st.header("📈 Canlı Piyasa Takip Ekranı")
+with tab_bta:
+    st.header("📈 BTA Özel Finansal Veri Modülü")
+    st.write("Bu panel sadece kurumsal takip amacıyla BTA verilerini izlemek üzere yapılandırılmıştır.")
     
-    # Kullanıcıdan Ticker Girişi Alma
-    ticker = st.text_input("Hisse / Emtia Kodu Giriniz (Örn: THYAO.IS, AAPL, BTC-USD):", value="THYAO.IS").upper()
+    # Sabit BTA hisse takibi (Kullanıcı başka hisse arayamaz, AL-SAT sinyali verilmez)
+    bta_ticker = "BTA" 
     
-    if ticker:
-        try:
-            hisse = yf.Ticker(ticker)
-            tarihce = hisse.history(period="1mo", interval="1d")
+    try:
+        hisse = yf.Ticker(bta_ticker)
+        tarihce = hisse.history(period="1mo", interval="1d")
+        
+        if not tarihce.empty:
+            guncel_kapanis = tarihce['Close'].iloc[-1]
+            onceki_kapanis = tarihce['Close'].iloc[-2] if len(tarihce) > 1 else guncel_kapanis
+            degisim = guncel_kapanis - onceki_kapanis
+            yuzde_degisim = (degisim / onceki_kapanis) * 100
             
-            if not tarihce.empty:
-                # Son gün ve bir önceki gün verileri
-                guncel_kapanis = tarihce['Close'].iloc[-1]
-                onceki_kapanis = tarihce['Close'].iloc[-2] if len(tarihce) > 1 else guncel_kapanis
-                degisim = guncel_kapanis - onceki_kapanis
-                yuzde_degisim = (degisim / onceki_kapanis) * 100
-                
-                # Özet Gösterge Kartları
-                m1, m2, m3, m4 = st.columns(4)
-                m1.metric("Son Fiyat", f"{guncel_kapanis:.2f}", f"{yuzde_degisim:.2f}%")
-                m2.metric("Günlük En Yüksek", f"{tarihce['High'].iloc[-1]:.2f}")
-                m3.metric("Günlük En Düşük", f"{tarihce['Low'].iloc[-1]:.2f}")
-                m4.metric("İşlem Hacmi", f"{tarihce['Volume'].iloc[-1]:,}")
-                
-                # Grafik Alanı
-                st.subheader(f"📊 {ticker} - 1 Aylık Kapanış Değişim Grafiği")
-                st.line_chart(tarihce['Close'])
-            else:
-                st.warning("Girdiğiniz koda ait piyasa verisi çekilemedi. Lütfen sembolü kontrol edin.")
-        except Exception as e:
-            st.error(f"yfinance entegrasyon hatası: {e}")
+            # Gösterge Kartları
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric(f"{bta_ticker} Son Fiyat", f"${guncel_kapanis:.2f}", f"{yuzde_degisim:.2f}%")
+            m2.metric("Günlük En Yüksek", f"${tarihce['High'].iloc[-1]:.2f}")
+            m3.metric("Günlük En Düşük", f"${tarihce['Low'].iloc[-1]:.2f}")
+            m4.metric("İşlem Hacmi", f"{tarihce['Volume'].iloc[-1]:,}")
+            
+            # Grafik Alanı
+            st.subheader(f"📊 {bta_ticker} - 1 Aylık Trend Grafiği")
+            st.line_chart(tarihce['Close'])
+        else:
+            st.warning("Kurumsal borsa verisi şu an çekilemiyor. Lütfen bağlantınızı kontrol edin.")
+    except Exception as e:
+        st.error(f"Veri çekme hatası: {e}")
 
 # ==========================================
 # MODÜL 3: WEB SCRAPER (requests & bs4)
@@ -142,20 +137,31 @@ with tab_scraper:
             
             if sayfa_istegi.status_code == 200:
                 html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
-                basliklar = html_icerik.find_all("h3", limit=12)
+                basliklar = html_icerik.find_all("h3", limit=10)
                 
                 if basliklar:
-                    st.success("Canlı veriler web sitesinden başarıyla kazındı!")
+                    st.success("Canlı finansal haberler başarıyla kazındı!")
                     for sira, baslik in enumerate(basliklar, 1):
                         metin = baslik.get_text(strip=True)
                         st.markdown(f"**{sira}.** {metin}")
-                        st.caption("Kaynak: Yahoo Finance")
                         st.divider()
                 else:
-                    st.warning("Web sitesinin veri yapısı (DOM) değiştiği için başlıklar ayrıştırılamadı.")
+                    st.warning("Web sitesinin veri yapısı değiştiği için başlıklar ayrıştırılamadı.")
             else:
                 st.error(f"Bağlantı başarısız oldu. Durum Kodu: {sayfa_istegi.status_code}")
         except Exception as e:
             st.error(f"Web Scraping işlemi sırasında hata: {e}")
     else:
         st.info("Piyasa gündemini ve kazınan başlıkları listelemek için yukarıdaki butona tıklayın.")
+
+# ==========================================
+# 3. YASAL UYARI - SPK NOTU (Tüm sayfalarda en altta görünür)
+# ==========================================
+st.markdown("---")
+st.warning("""
+**⚠️ SPK YASAL UYARI NOTU**
+
+Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. 
+
+Bu platformda sunulan veriler tamamen kurumsal analiz ve bilgilendirme amaçlı olup, kesinlikle bir **'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır.**
+""")
