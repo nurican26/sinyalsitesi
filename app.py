@@ -1,30 +1,9 @@
 import streamlit as st
 import pandas as pd
 import yfinance as yf
-import requests
-from bs4 import BeautifulSoup
 from streamlit_autorefresh import st_autorefresh
 import os
 from datetime import datetime
-
-# ==========================================
-# 0. BAĞIMSIZ HABER KAZIMA FONKSİYONU
-# ==========================================
-def halka_arz_haberlerini_kazi():
-    hedef_url = "https://bloomberght.com"
-    tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    try:
-        sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi, timeout=10)
-        if sayfa_istegi.status_code == 200:
-            html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
-            basliklar = html_icerik.find_all("span", class_="title", limit=10)
-            if len(basliklar) == 0:
-                basliklar = html_icerik.find_all("h3", limit=10)
-            return basliklar
-        else:
-            return []
-    except:
-        return []
 
 # ==========================================
 # 1. SAYFA VE PANEL AYARLARI
@@ -35,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Canlı Sohbet Veritabanı Hafızasındaki 'id' Hatası Kökten Çözüldü
+# Canlı Sohbet Hafızasındaki 'id' Hatası Kalıcı Olarak Çözüldü
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
@@ -73,13 +52,12 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
 st.write("BTA algoritmik veri entegrasyonu, KONYA canlı kâr/zarar odası ve kurumsal takip merkezi.")
 
-# Sekmeli Menü Tasarımı
-tab_excel, tab_bta, tab_chat, tab_members, tab_scraper = st.tabs([
+# Sekmeli Menü Tasarımı (Haber akışı tamamen kaldırılmıştır)
+tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
     "📂 BTA Excel Veri Analizi", 
     "📈 KONYA Canlı Veri Odası", 
     "💬 Canlı Sohbet Odası",
-    "👥 BTA Hissedarları Kayıt Listesi",
-    "📰 Canlı Halka Arz Gündemi"
+    "👥 BTA Hissedarları Kayıt Listesi"
 ])
 
 # ==========================================
@@ -88,17 +66,14 @@ tab_excel, tab_bta, tab_chat, tab_members, tab_scraper = st.tabs([
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
     
-    # VARSAYILAN DOSYA AYARI (Kullanıcılar paneli görmeden arkada yüklenir)
     varsayilan_dosya = None
     if excel_dosyalari:
-        # Klasörde bta.xlsx veya nurican.xlsm varsa ilk onu seçer
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
             varsayilan_dosya = hedef_dosyalar[0]
         else:
             varsayilan_dosya = excel_dosyalari[0]
 
-    # İSTEK: Dosya yükleme ve kaynak seçme alanlarını SADECE yönetici şifresini giren Nurican Bey görebilir!
     secilen_dosya = varsayilan_dosya
     if is_admin:
         st.subheader("🛠️ Yönetici Excel Kontrolleri")
@@ -114,14 +89,12 @@ with tab_excel:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
             
-            # Sayfa seçimi alanını da yöneticinin insiyatifine bırakıyoruz, kullanıcı direkt ilk sayfayı görür
             aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
                 
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # AL SAT verilerini kullanıcılardan tamamen gizleme filtresi
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_goster = df[filtrelenmis_sutunlar]
             
@@ -184,7 +157,7 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (Yönetici Silme Özellikli)
+# MODÜL 3: CANLI SOHBET ODASI (Hata Çözülmüş Sürüm)
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
@@ -216,5 +189,26 @@ with tab_chat:
         st.divider()
 
 # ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Şifresiz BTA Hisse Kaydı & Admin Düzenleme)
+# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
 # ==========================================
+with tab_members:
+    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
+    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
+    
+    with st.expander("➕ Yeni Hissedar & BTA Hisse Kaydı Oluştur (Şifresiz)"):
+        with st.form("member_form", clear_on_submit=True):
+            input_name = st.text_input("Hissedar İsim Soyisim:")
+            input_stock = st.text_input("Hisse Kodu (Örn: KONYA, THYAO, EREGL):", value="KONYA")
+            input_cost = st.number_input("Hisse Maliyeti (TL):", min_value=0.0, value=4100.0, step=10.0)
+            input_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1)
+            add_member_btn = st.form_submit_button("Sisteme Güvenli Kaydet 💾")
+            
+            if add_member_btn and input_name and input_stock:
+                m_id = int(datetime.now().timestamp() * 1000)
+                st.session_state["bta_members_list"].append({
+                    "id": m_id,
+                    "Hissedar Adı": input_name,
+                    "Sahip Oluğu BTA Hissesi": input_stock.upper() + ".IS",
+                    "Hisse Maliyeti (TL)": input_cost,
+                    "Adet": input_qty
+                })
