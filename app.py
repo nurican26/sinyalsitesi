@@ -4,6 +4,7 @@ from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 
@@ -196,27 +197,6 @@ st.markdown(
         100% {
             transform: translateX(-100%);
         }
-    }
-
-    .takip-paneli {
-        background: rgba(9, 31, 48, 0.96);
-        border: 1px solid rgba(0, 245, 200, 0.45);
-        border-radius: 12px;
-        padding: 18px;
-        margin: 15px 0 20px 0;
-    }
-
-    .kisayol-butonu {
-        display: block;
-        width: 100%;
-        background: #00a889;
-        color: white !important;
-        padding: 12px;
-        border-radius: 8px;
-        text-align: center;
-        text-decoration: none !important;
-        font-weight: bold;
-        margin: 10px 0;
     }
 
     .mesaj-karti {
@@ -457,7 +437,10 @@ def mesaj_ekle(kullanici, metin):
     )
 
     mesajlar = pd.concat(
-        [mesajlar, yeni_mesaj],
+        [
+            mesajlar,
+            yeni_mesaj
+        ],
         ignore_index=True
     )
 
@@ -465,6 +448,58 @@ def mesaj_ekle(kullanici, metin):
         MESAJ_DOSYASI,
         index=False,
         encoding="utf-8-sig"
+    )
+
+
+# ==================================================
+# MESAJ SESİ
+# ==================================================
+def mesaj_sesi_cal():
+    components.html(
+        """
+        <script>
+        try {
+            const audioContext = new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(
+                880,
+                audioContext.currentTime
+            );
+
+            gainNode.gain.setValueAtTime(
+                0.0001,
+                audioContext.currentTime
+            );
+
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.18,
+                audioContext.currentTime + 0.02
+            );
+
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.0001,
+                audioContext.currentTime + 0.35
+            );
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.35);
+        } catch (error) {
+            console.log("Bildirim sesi oynatılamadı:", error);
+        }
+        </script>
+        """,
+        height=0,
+        width=0
     )
 
 
@@ -511,25 +546,9 @@ if is_admin:
 
 
 # ==================================================
-# TAKİP PANELİ
+# TAKİP VE BEĞENİ PANELİ
 # ==================================================
-st.markdown(
-    '<div id="takip-paneli"></div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <div class="takip-paneli">
-        <h2>⭐ BTA Oda Takip Paneli</h2>
-        <p>
-            Bu paneli tarayıcı yer imlerine ekleyebilir veya
-            telefonda “Ana ekrana ekle” seçeneğini kullanabilirsiniz.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.header("⭐ BTA Oda Takip Paneli")
 
 takip, begeni = istatistik_oku()
 
@@ -592,16 +611,6 @@ with col4:
         "👍 Beğeni",
         f"{begeni}"
     )
-
-
-st.markdown(
-    """
-    <a class="kisayol-butonu" href="#takip-paneli">
-        ⭐ Takip Paneline Git
-    </a>
-    """,
-    unsafe_allow_html=True
-)
 
 
 # ==================================================
@@ -705,7 +714,7 @@ if excel_dosyalari:
 
 
 # ==================================================
-# DİĞER PANELLER
+# PANELLER
 # ==================================================
 tab_algoritmik, tab_sohbet, tab_kayit = st.tabs(
     [
@@ -865,6 +874,25 @@ with tab_sohbet:
                 st.rerun()
 
     mesajlar = mesajlari_oku()
+
+    if not mesajlar.empty:
+        son_mesaj_id = str(
+            mesajlar.iloc[-1]["mesaj_id"]
+        )
+
+        if "son_ses_mesaj_id" not in st.session_state:
+            st.session_state["son_ses_mesaj_id"] = (
+                son_mesaj_id
+            )
+        elif (
+            st.session_state["son_ses_mesaj_id"]
+            != son_mesaj_id
+        ):
+            mesaj_sesi_cal()
+
+            st.session_state["son_ses_mesaj_id"] = (
+                son_mesaj_id
+            )
 
     if mesajlar.empty:
         st.info(
