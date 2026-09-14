@@ -127,7 +127,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D KOLONLARI)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D KOLONLARI - GİRİNTİ DÜZELTİLDİ)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -174,11 +174,11 @@ with tab_excel:
             
         except Exception as e:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
-else:
-    st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
+    else:
+        st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ (GÜVENLİ VE HİZALANMIŞ SÜRÜM)
+# MODÜL 2: KONYA CANLI TAKİP PANELİ
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
