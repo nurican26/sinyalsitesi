@@ -548,8 +548,6 @@ if is_admin:
 # ==================================================
 # TAKİP VE BEĞENİ PANELİ
 # ==================================================
-st.header("⭐ BTA Oda Takip Paneli")
-
 takip, begeni = istatistik_oku()
 
 col1, col2, col3, col4 = st.columns(4)
