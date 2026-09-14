@@ -1,116 +1,118 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Tech Solutions | Geleceğe Adım Atın</title>
-    <!-- Google Fonts ve FontAwesome (İkonlar için) -->
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cloudflare.com">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+from flask import Flask, jsonify, render_template, request
+import yfinance as yf
+import pandas as pd
 
-    <!-- Navigasyon Menüsü -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="#" class="nav-logo"><i class="fa-solid fa-code"></i> TechCorp</a>
-            <ul class="nav-menu">
-                <li><a href="#home" class="nav-link">Ana Sayfa</a></li>
-                <li><a href="#services" class="nav-link">Hizmetler</a></li>
-                <li><a href="#about" class="nav-link">Hakkımızda</a></li>
-                <li><a href="#contact" class="nav-link">İletişim</a></li>
-            </ul>
-            <div class="hamburger">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
-        </div>
-    </nav>
+app = Flask(__name__)
 
-    <!-- Hero (Giriş) Bölümü -->
-    <header id="home" class="hero-section">
-        <div class="hero-content">
-            <h1>Dijital Dünyada <span class="highlight">Fark Yaratın</span></h1>
-            <p>Modern web teknolojileri ve kreatif tasarımlarla işinizi büyütmenize yardımcı oluyoruz.</p>
-            <div class="hero-buttons">
-                <a href="#services" class="btn btn-primary">Keşfet</a>
-                <a href="#contact" class="btn btn-secondary">İletişime Geç</a>
-            </div>
-        </div>
-    </header>
+# Varsayılan olarak takip edilecek borsa sembolleri listesi
+# BIST hisseleri için sonuna .IS eklenmelidir (Örn: THYAO.IS, EREGL.IS)
+WATCHLIST = ["THYAO.IS", "ASELS.IS", "EREGL.IS", "AAPL", "TSLA", "MSFT"]
 
-    <!-- Hizmetler Bölümü -->
-    <section id="services" class="services-section">
-        <div class="section-header">
-            <h2>Hizmetlerimiz</h2>
-            <p>Sizler için sunduğumuz profesyonel çözümler</p>
-        </div>
-        <div class="services-grid">
-            <div class="service-card">
-                <i class="fa-solid fa-laptop-code card-icon"></i>
-                <h3>Web Tasarım</h3>
-                <p>Kullanıcı dostu, hızlı ve tüm cihazlarla uyumlu (responsive) modern web siteleri üretiyoruz.</p>
-            </div>
-            <div class="service-card">
-                <i class="fa-solid fa-chart-line card-icon"></i>
-                <h3>Dijital Pazarlama</h3>
-                <p>SEO ve doğru reklam stratejileri ile markanızı arama motorlarında en üst sıralara taşıyoruz.</p>
-            </div>
-            <div class="service-card">
-                <i class="fa-solid fa-shield-halved card-icon"></i>
-                <h3>Siber Güvenlik</h3>
-                <p>Verilerinizi ve dijital varlıklarınızı en güncel güvenlik protokolleri ile koruma altına alıyoruz.</p>
-            </div>
-        </div>
-    </section>
+def fetch_stock_data(ticker_symbol):
+    """
+    Yahoo Finance API kullanarak tek bir hissenin canlı verilerini çeken fonksiyon.
+    """
+    try:
+        ticker = yf.Ticker(ticker_symbol)
+        
+        # En güncel günlük veriyi (1 günlük periyot, 1 dakikalık barlar) çekiyoruz
+        todays_data = ticker.history(period="1d", interval="1m")
+        
+        if todays_data.empty:
+            # Eğer bugünün verisi henüz yoksa (piyasa açılmadıysa) son 2 günün verisini kontrol et
+            todays_data = ticker.history(period="2d")
+            
+        if not todays_data.empty:
+            # Son kapanış fiyatı (Anlık Fiyat)
+            current_price = todays_data['Close'].iloc[-1]
+            
+            # Günün en yüksek ve en düşük değerleri
+            day_high = todays_data['High'].max()
+            day_low = todays_data['Low'].min()
+            
+            # Önceki günün kapanış fiyatını bularak değişim yüzdesini hesaplama
+            info = ticker.info
+            previous_close = info.get('previousClose', current_price)
+            
+            price_change = current_price - previous_close
+            pct_change = (price_change / previous_close) * 100
+            
+            # Şirket ismini al, yoksa sembolün kendisini kullan
+            company_name = info.get('longName', ticker_symbol)
+            
+            return {
+                "symbol": ticker_symbol,
+                "name": company_name,
+                "price": round(current_price, 2),
+                "change": round(pct_change, 2),
+                "high": round(day_high, 2),
+                "low": round(day_low, 2),
+                "status": "success"
+            }
+    except Exception as e:
+        print(f"Hata oluştu ({ticker_symbol}): {str(e)}")
+        
+    # Hata durumunda veya veri bulunamadığında döndürülecek şablon
+    return {
+        "symbol": ticker_symbol,
+        "name": "Veri Alınamadı",
+        "price": 0.0,
+        "change": 0.0,
+        "high": 0.0,
+        "low": 0.0,
+        "status": "error"
+    }
 
-    <!-- Hakkımızda Bölümü -->
-    <section id="about" class="about-section">
-        <div class="about-container">
-            <div class="about-text">
-                <h2>Biz Kimiz?</h2>
-                <p>TechCorp olarak, 2020 yılından beri küresel standartlarda yazılım ve tasarım hizmetleri sunan dinamik bir ekibiz. Müşterilerimizin dijital dönüşüm süreçlerini hızlandırıyor ve başarılarına ortak oluyoruz.</p>
-                <div class="stats">
-                    <div class="stat-item"><h3>150+</h3><p>Proje</p></div>
-                    <div class="stat-item"><h3>50+</h3><p>Mutlu Müşteri</p></div>
-                </div>
-            </div>
-            <div class="about-image">
-                <img src="https://unsplash.com" alt="Takım Çalışması">
-            </div>
-        </div>
-    </section>
+@app.route('/')
+def home():
+    """Ana sayfa rotası."""
+    return "Borsa API Backend Sistemi Aktif. Canlı veriler için /api/stocks adresini kullanın."
 
-    <!-- İletişim Bölümü -->
-    <section id="contact" class="contact-section">
-        <div class="section-header">
-            <h2>İletişime Geçin</h2>
-            <p>Bir projeniz mi var? Bizimle hemen paylaşın.</p>
-        </div>
-        <div class="contact-container">
-            <form id="contact-form" class="contact-form">
-                <input type="text" placeholder="Adınız Soyadınız" required>
-                <input type="email" placeholder="E-posta Adresiniz" required>
-                <textarea placeholder="Mesajınız" rows="5" required></textarea>
-                <button type="submit" class="btn btn-primary">Gönder</button>
-            </form>
-        </div>
-    </section>
+@app.route('/api/stocks', methods=['GET'])
+def get_all_stocks():
+    """
+    Takip listesindeki tüm hisse senetlerinin canlı verilerini 
+    JSON formatında döndüren API uç noktası (Endpoint).
+    """
+    data_list = []
+    for ticker in WATCHLIST:
+        stock_info = fetch_stock_data(ticker)
+        data_list.append(stock_info)
+    return jsonify(data_list)
 
-    <!-- Footer (Alt Bilgi) -->
-    <footer class="footer">
-        <p>&copy; 2026 TechCorp. Tüm Hakları Saklıdır.</p>
-        <div class="social-icons">
-            <a href="#"><i class="fa-brands fa-github"></i></a>
-            <a href="#"><i class="fa-brands fa-linkedin"></i></a>
-            <a href="#"><i class="fa-brands fa-twitter"></i></a>
-        </div>
-    </footer>
+@app.route('/api/add', methods=['POST'])
+def add_to_watchlist():
+    """
+    Takip listesine yeni bir borsa sembolü ekleme uç noktası.
+    Gelen veri JSON formatında 'ticker' parametresi içermelidir.
+    """
+    data = request.get_json()
+    if not data or 'ticker' not in data:
+        return jsonify({"error": "Geçersiz parametre. 'ticker' gönderilmelidir."}), 400
+        
+    new_ticker = data['ticker'].strip().toUpperCase()
+    
+    if new_ticker not in WATCHLIST:
+        WATCHLIST.append(new_ticker)
+        return jsonify({"message": f"{new_ticker} başarıyla takip listesine eklendi.", "watchlist": WATCHLIST}), 200
+    
+    return jsonify({"message": f"{new_ticker} zaten listede mevcut."}), 200
 
-    <script src="script.js"></script>
-</body>
-</html>
+@app.route('/api/delete', methods=['POST'])
+def delete_from_watchlist():
+    """Takip listesinden sembol silme uç noktası."""
+    data = request.get_json()
+    if not data or 'ticker' not in data:
+        return jsonify({"error": "Geçersiz parametre."}), 400
+        
+    ticker_to_delete = data['ticker'].strip()
+    
+    if ticker_to_delete in WATCHLIST:
+        WATCHLIST.remove(ticker_to_delete)
+        return jsonify({"message": f"{ticker_to_delete} listeden kaldırıldı.", "watchlist": WATCHLIST}), 200
+        
+    return jsonify({"error": "Sembol listede bulunamadı."}), 404
+
+if __name__ == '__main__':
+    # Uygulamayı lokal sunucuda debug modunda başlatıyoruz
+    app.run(debug=True, port=5000)
