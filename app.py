@@ -67,14 +67,14 @@ if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
 try:
     df_ist = pd.read_csv(db_istatistik)
     if df_ist.empty:
-        df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+        df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
     
     if "ziyaret_sayildi" not in st.session_state:
         df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
@@ -160,7 +160,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# 🔥 SİSTEM OTOMATİK SİNYAL GEÇMİŞİ KAYIT MOTORU
+# 🔥 SİSTEM OTOMATİK SİNYAL GEÇMİŞİ KAYIT MOTORU (Sorunlu İf-Else Yapısı Tamamen Düzeltildi)
 if aktif_tablo_verileri:
     try:
         df_notlar_aktif = pd.read_csv(db_notlar)
@@ -168,7 +168,7 @@ if aktif_tablo_verileri:
         
         for kalem in aktif_tablo_verileri:
             h_kod = kalem["hisse"]
-            h_maliyet = f"{calem['maliyet']:.2f} TL" if 'calem' in locals() else f"{kalem['maliyet']:.2f} TL"
+            h_maliyet = f"{kalem['maliyet']:.2f} TL"
             
             kontrol = df_notlar_aktif[(df_notlar_aktif["hisse"] == h_kod) & (df_notlar_aktif["hedef_fiyat"] == h_maliyet)]
             
