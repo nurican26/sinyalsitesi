@@ -31,15 +31,9 @@ if "bta_members_list" not in st.session_state:
     ]
 
 # ==========================================
-# YASAL UYARI METNİ DEĞİŞKENİ
+# GÜVENLİ VE HATA VERMEYEN SPK YASAL METNİ
 # ==========================================
-spk_metni = """
-**⚠️ SPK YASAL UYARI NOTU**
-
-Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. 
-
-Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir **'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır.**
-"""
+spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
@@ -60,7 +54,7 @@ if auto_refresh:
     refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 2, 60, 5)
     st_autorefresh(interval=refresh_interval * 1000, key="bta_refresh_counter")
 
-# Sol menü tabanına SPK uyarısını çakıyoruz (Asla kaybolmaz)
+# Sol menü tabanına SPK uyarısını çakıyoruz
 st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
@@ -71,7 +65,7 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
 # ==========================================
 st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
-st.warning(spk_metni) # Sayfa başında yasal olarak zorunlu gösterim
+st.warning(spk_metni)
 st.markdown("---")
 
 # Sekmeli Menü Tasarımı
@@ -87,14 +81,13 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
-    
     varsayilan_dosya = None
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar
+            varsayilan_dosya = hedef_dosyalar[0]
         else:
-            varsayilan_dosya = excel_dosyalari
+            varsayilan_dosya = excel_dosyalari[0]
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -110,16 +103,12 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            
-            aktif_sayfa = sayfa_isimleri
+            aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
-                
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
-            
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_goster = df[filtrelenmis_sutunlar]
-            
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
                 filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
@@ -139,38 +128,31 @@ with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     kurumsal_ticker = "KONYA.IS"
     bta_alim_fiyati = 4100.00 
-    
     try:
         hisse = yf.Ticker(kurumsal_ticker)
         tarihce = hisse.history(period="2d", interval="1d")
-        
         if not tarihce.empty:
             guncel_fta_fiyati = tarihce['Close'].iloc[-1]
             gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
             if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
                 onceki_kapanis = tarihce['Close'].iloc[-2]
                 gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
-            
             kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
             kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
-            
             if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
                 st.balloons()
                 st.snow()
-                st.success(f"🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
-            
+                st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
             st.subheader("📊 Canlı Hesap Tablosu ve Portföy Durumu")
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
             c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
-            
             if kar_zarar_tutari >= 0:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
             else:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-                
             st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
             st.line_chart(tarihce['Close'])
         else:
@@ -184,13 +166,10 @@ with tab_bta:
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
     st.write("Sohbet odası herkese açıktır. Mesajlaşmaya hemen başlayabilirsiniz.")
-    
     nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
-    
     with st.form("chat_form", clear_on_submit=True):
         user_message = st.text_input("Mesajınızı yazın:")
         submit_button = st.form_submit_button("Gönder 🚀")
-        
         if submit_button and user_message:
             now_str = datetime.now().strftime("%H:%M:%S")
             msg_id = int(datetime.now().timestamp() * 1000)
@@ -198,13 +177,12 @@ with tab_chat:
             st.rerun()
 
     st.subheader("📝 Oda Akışı")
-    
     for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
-            with cols:
+            with cols[0]:
                 st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols:
+            with cols[1]:
                 if is_admin:
                     if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
                         st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
@@ -212,6 +190,8 @@ with tab_chat:
             st.divider()
 
 # ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
+# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Hizalaması Tamamen Düzeltilen Alan)
 # ==========================================
 with tab_members:
+    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
+    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
