@@ -4,7 +4,7 @@ import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
-# 1. SAYFA VE PANEL AYARLARI
+# 1. SAYFA VE PANEL AYARLARI (TAM EKRAN)
 # ==========================================
 st.set_page_config(
     page_title="BTA KONYA Canlı Veri Odası",
@@ -12,17 +12,24 @@ st.set_page_config(
     layout="wide"
 )
 
+# 🔄 OTOMATİK YENİLEME ARKA PLANDA ÇALIŞIR (SOL PANEL OLMADAN)
+st_autorefresh(interval=5000, key="bta_background_refresh_counter")
+
 # SPK RESMİ YASAL UYARI METNİ
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 TRADINGVIEW TARZI BORSA TERMİNALİ TEMASI (CSS ENJEKSİYONU)
+# 🌌 TRADINGVIEW TARZI BORSA TERMİNALİ TEMASI
 # ==========================================
 st.markdown("""
 <style>
     html, body, [data-testid="stAppViewContainer"] {
         background-color: #0c0f14 !important;
         color: #d1d4dc !important;
+    }
+    /* Sol paneli (Sidebar) tamamen yok etme CSS kodu */
+    [data-testid="stSidebar"] {
+        display: none !important;
     }
     .stApp {
         background-color: #0c0f14 !important;
@@ -41,21 +48,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. SABİT SOL MENÜ (SIDEBAR) CONTROLLERİ
-# ==========================================
-st.sidebar.header("⚙️ Sistem Kontrolleri")
-
-# Otomatik Yenileme Ayarı (5 saniyede bir verileri tazeler)
-auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
-if auto_refresh:
-    refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 2, 60, 5)
-    st_autorefresh(interval=refresh_interval * 1000, key="bta_refresh_counter")
-
-st.sidebar.markdown("---")
-st.sidebar.warning(spk_metni)
-
-# ==========================================
-# 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
+# 2. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
 # ==========================================
 st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
 st.warning(spk_metni)
