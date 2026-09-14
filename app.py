@@ -9,7 +9,7 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS TASARIMI (Senin verdiğin tasarımın birebir aynısı)
+# 2. ÖZEL CSS TASARIMI (Senin asıl tasarımın)
 css_kodu = """
 <style>
 .stApp { 
@@ -49,6 +49,8 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     animation: btaYoru 15s infinite linear;
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
+/* Ekstra borsa alanları için font renk ayarları */
+.stSelectbox label, .stTextInput label, .stMarkdown p { color: #00ffcc !important; font-weight: bold; }
 </style>
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
@@ -62,7 +64,7 @@ db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
 if not os.path.exists(db_notlar):
-    pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
+    pd.DataFrame(columns=["tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
@@ -104,63 +106,64 @@ components.html(bist_mini_widget, height=100)
 tum_hisseler = [] 
 veri_var_mi = False
 basarili_hisseler = []
+hisse_maliyetleri = {}
+hisse_puanlari = {}
 
 # TARİH AYARI
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME (Sorgu Hatası Çözülmüş Hızlı Tablo Mantığı)
+# 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
-    try:
-        df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+    df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
+    if len(df.columns) >= 5:
+        ham_liste = df.iloc[:, 0].dropna().unique() # 0. sütundaki hisseleri alıyoruz
+        tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() not in ["", "BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]])
         
-        # Döngü içinde sürekli kilitlenme olmaması için listedeki hisseleri toplu hazırla
-        hisse_listesi = []
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                hisse_listesi.append(f"{ha}.IS")
-
-        # Hisselerin canlı verilerini tek seferde hızlıca indir
-        toplu_veri = pd.DataFrame()
-        if hisse_listesi:
-            toplu_veri = yf.download(hisse_listesi, period="1d", group_by='ticker', progress=False, timeout=3)
-
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
+    # Kilitlenmeyi önlemek için toplu veri indirme hazırlığı
+    sorgu_listesi = [f"{h}.IS" for h in tum_hisseler[:15]]
+    toplu_veri = pd.DataFrame()
+    if sorgu_listesi:
+        try:
+            toplu_veri = yf.download(sorgu_listesi, period="1d", group_by='ticker', progress=False, timeout=3)
+        except:
+            pass
+        
+    for idx in range(min(15, len(df))):
+        ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+        alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+        puan_d = df.iloc[idx, 3]
+        if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+            veri_var_mi = True
+            p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
             
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                veri_var_mi = True
-                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                
-                # İndirilen toplu veriden fiyatı güvenle çek
+            c_fiyat = 0.0
+            try:
+                h_ticker = f"{ha}.IS"
+                if h_ticker in toplu_veri.columns.levels:
+                    c_fiyat = float(toplu_veri[h_ticker]['Close'].iloc[-1])
+            except:
                 c_fiyat = 0.0
-                try:
-                    h_ticker = f"{ha}.IS"
-                    if h_ticker in toplu_veri.columns.levels[0]:
-                        c_fiyat = float(toplu_veri[h_ticker]['Close'].iloc[-1])
-                except:
-                    c_fiyat = 0.0
-                    
-                alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                 
-                if maliyet > 0 and c_fiyat > 0:
-                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    if or_dg >= 9.0:
-                        basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                else:
-                    kz_str = "<span>-</span>"
-                
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
-    except Exception as e:
-        pass
+            alim_c_temiz = alim_c.replace(",", ".")
+            maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+            
+            # Hafızaya al (Ekleme özellikler için)
+            hisse_maliyetleri[ha] = maliyet
+            hisse_puanlari[ha] = p_temiz
+            
+            if maliyet > 0 and c_fiyat > 0:
+                or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                if or_dg >= 9.0:
+                    basariliHisse_adi = ha.replace(".IS", "")
+                    basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+            else:
+                kz_str = "<span>-</span>"
+            
+            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
@@ -178,9 +181,19 @@ else:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# 10. YASAL UYARI BÖLÜMÜ
-yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
-st.markdown(yasal_html, unsafe_allow_html=True)
+# ----------------- 🎯 EKLEME YAPILAN BORSA SİTESİ ÖZELLİKLERİ -----------------
 
-# 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
-st.write("---")
+# A. CANLI GRAFİK İNCELEME İSTASYONU
+if tum_hisseler:
+    st.write("---")
+    st.markdown("### 🔍 Gelişmiş Teknik Analiz Ekranı")
+    grafik_hisse = st.selectbox("Grafiğini İncelemek İstediğiniz Hisseyi Seçin", tum_hisseler, key="main_chart_select")
+    
+    tv_grafik_widget = f"""
+    <div class="tradingview-widget-container" style="height:450px; width:100%;">
+      <div id="tradingview_bta"></div>
+      <script type="text/javascript" src="https://tradingview.com"></script>
+      <script type="text/javascript">
+      new TradingView.widget({{
+        "width": "100%",
+        "height": 450,
