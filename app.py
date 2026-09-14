@@ -3,7 +3,6 @@ import pandas as pd
 import datetime
 import yfinance as yf
 import os
-import streamlit.components.v1 as components
 from streamlit_autorefresh import st_autorefresh
 
 # 1. SAYFA AYARLARI
@@ -49,7 +48,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     animation: btaYoru 15s infinite linear;
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
-.stSelectbox label, .stTextInput label, .stMarkdown p { color: #00ffcc !important; font-weight: bold; }
+.stSelectbox label, .stTextInput label, .stMarkdown h3 { color: #00ffcc !important; font-weight: bold; }
 </style>
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
@@ -87,10 +86,6 @@ if os.path.exists(db_istatistik):
 
 # 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
-
-# TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
-bist_mini_widget = """<div class="tradingview-widget-container" style="margin: auto; text-align: center; width: 100%; max-width: 450px;"><div class="tradingview-widget-container__widget"></div><script type="text/javascript" src="https://tradingview.com" async>{"symbol": "BIST:XU100", "width": "100%", "height": "95", "locale": "tr","dateRange": "1D", "colorTheme": "dark", "isTransparent": true, "autosize": false, "largeChartUrl": ""}</script></div>"""
-components.html(bist_mini_widget, height=100)
 
 tum_hisseler = [] 
 veri_var_mi = False
@@ -168,20 +163,36 @@ else:
     tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
     st.markdown(tarama_html, unsafe_allow_html=True)
 
-# ----------------- 🎯 HATASIZ TEKNİK ANALİZ VE İŞLEM ODASI -----------------
+# ----------------- 🎯 YEREL VE KESİN ÇALIŞAN BORSA MODÜLLERİ -----------------
 
-# A. TEK SATIRDA SIKIŞTIRILMIŞ CANLI GRAFİK İNCELEME (Syntax Hatası İhtimali Sıfır)
+# A. YEREL CANLI FİYAT GRAFİĞİ (Asla Siyah Ekran Kalmaz)
 if tum_hisseler:
     st.write("---")
     st.markdown("### 🔍 Gelişmiş Teknik Analiz Ekranı")
     grafik_hisse = st.selectbox("Grafiğini İncelemek İstediğiniz Hisseyi Seçin", tum_hisseler, key="main_chart_select")
     
-    tv_url = "https://tradingview.com"
-    tv_iframe = f'<div style="height:450px;"><div id="tv_chart"></div><script src="{tv_url}"></script><script>new TradingView.widget({{"width": "100%", "height": 450, "symbol": "BIST:{grafik_hisse}", "interval": "D", "theme": "dark", "style": "1", "locale": "tr", "container_id": "tv_chart"}});</script></div>'
-    components.html(tv_iframe, height=460)
+    try:
+        # Son 1 aylık geçmiş fiyat verisini yfinance ile çekip çizdiriyoruz
+        hisse_gecmis = yf.download(f"{grafik_hisse}.IS", period="1mo", interval="1d", progress=False)
+        if not hisse_gecmis.empty:
+            chart_data = hisse_gecmis['Close']
+            st.line_chart(chart_data, use_container_width=True)
+        else:
+            st.warning("Seçilen hisse için grafik verisi şu an çekilemiyor.")
+    except Exception as e:
+        st.error("Grafik yükleme motorunda bir sorun oluştu.")
 
 # B. SOL MENÜ (İşlem Odası, Manuel Not ve Hedef İstasyonu)
 with st.sidebar:
     st.markdown("<h2 style='color:#00ffcc; text-align:center;'>🛠️ BTA İşlem Odası</h2>", unsafe_allow_html=True)
     st.write("---")
     
+    if tum_hisseler:
+        secilen_hisse = st.selectbox("Hisse Künyesi & Not Ekle", tum_hisseler, key="sidebar_select")
+        if secilen_hisse:
+            st.markdown(f"#### 📋 {secilen_hisse} Durumu")
+            st.write(f"**BTA Puanı:** {hisse_puanlari.get(secilen_hisse, '-')}")
+            st.write(f"**Maliyet:** {hisse_maliyetleri.get(secilen_hisse, 0.0):,.2f} TL")
+            
+            st.write("---")
+            st.markdown("**✏️ Özel Teknik Not Al**")
