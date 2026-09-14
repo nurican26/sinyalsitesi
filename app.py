@@ -178,7 +178,7 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 
 st.write("---")
 
-# 11. HİSSE KAYIT DEFTERİ (GİRİNTİLER TAMAMEN DÜZELTİLDİ)
+# 11. HİSSE KAYIT DEFTERİ (TÜM GİRİNTİLER KESİN OLARAK HİZALANDI)
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffaa00; margin-bottom:8px;">🗒️ BTA HİSSE KAYIT DEFTERİ</p>', unsafe_allow_html=True)
 with st.expander("📝 Yeni Hisse Notu Ekle / Geçmişi Gör"):
     col_not1, col_not2, col_not3 = st.columns(3)
