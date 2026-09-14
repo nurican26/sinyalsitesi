@@ -18,13 +18,10 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Ana Arka Plan ve Koyu Tonlama */
     .stApp {
         background: radial-gradient(circle, #0e1118 0%, #05070a 100%) !important;
         color: #ffffff !important;
     }
-    
-    /* Neon Efektli Başlık Paneli Tasarımı */
     .bta-header-box {
         background: linear-gradient(135deg, #151b26 0%, #0a0f18 100%) !important;
         padding: 20px; 
@@ -35,16 +32,12 @@ st.markdown(
         position: relative;
         overflow: hidden;
     }
-    
-    /* Sağa Sola Hareket Eden El Yazısı Metin Stili */
     .bta-marquee-text {
         font-family: 'Pacifico', cursive !important; 
         font-size: 40px !important; 
         color: #fffb00 !important; 
         text-shadow: 0 0 10px #fffb00, 0 0 20px #ff6c00 !important;
     }
-
-    /* Sekme Tasarımları */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
         background-color: transparent;
@@ -72,13 +65,11 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Canlı Sohbet Hafızası
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {"user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 
-# Hissedar Hafızası
 if "bta_members_list" not in st.session_state:
     st.session_state["bta_members_list"] = [
         {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
@@ -86,11 +77,7 @@ if "bta_members_list" not in st.session_state:
 
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
-# ==========================================
-# 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
-# ==========================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
-
 st.sidebar.subheader("🔒 Yönetici Alanı")
 admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password")
 is_admin = (admin_pass == "BTA2026")
@@ -107,9 +94,6 @@ st.sidebar.warning(spk_metni)
 
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 
-# ==========================================
-# 3. HAREKETLİ EL YAZISI BAŞLIK ALANI
-# ==========================================
 st.markdown(
     """
     <div class="bta-header-box">
@@ -160,13 +144,26 @@ with tab_excel:
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
                 
-            df_goster = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
+            df_orjinal = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # --- "NONE" VE "NAN" GİZLEME MANTIĞI ---
-            # Excel'deki tüm boşlukları, None ve NaN değerleri temizleyip düz boşluk yapıyoruz
+            # --- TAM OLARAK İSTEDİĞİN A, C VE D SÜTUNLARINI SEÇEN KESİN FİLTRE ---
+            # Excel'deki tam sütun isimlerine göre nokta atışı sadece bu üçünü alıyoruz
+            hedef_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUANI"]
+            
+            # Eğer dosyada bu isimler varsa sadece onları filtrele
+            mevcut_sutunlar = [col for col in hedef_sutunlar if col in df_orjinal.columns]
+            if mevcut_sutunlar:
+                df_goster = df_orjinal[mevcut_sutunlar]
+            else:
+                # İsimler uyuşmazsa indeks bazlı 0, 2 ve 3. sütunları (A, C, D) zorla seç
+                indeksler = [0, 2, 3]
+                gecerli_indeksler = [i for i in indeksler if i < len(df_orjinal.columns)]
+                df_goster = df_orjinal.iloc[:, gecerli_indeksler]
+            
+            # None/NaN temizliği
             df_goster = df_goster.fillna("")
             df_goster = df_goster.astype(str).replace(["None", "NaN", "nan", "NaT", "nat"], "")
-            # --------------------------------------
+            # ------------------------------------------------------------------
             
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="")
             if arama_kelimesi:
@@ -236,7 +233,3 @@ with tab_bta:
 # MODÜL 3: CANLI SOHBET ODASI
 # ==========================================
 with tab_chat:
-    st.header("💬 BTA Genel Canlı Sohbet Odası")
-    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
-    with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input("Mesajınızı yazın:")
