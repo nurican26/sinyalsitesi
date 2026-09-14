@@ -30,6 +30,12 @@ if "bta_members_list" not in st.session_state:
         {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
     ]
 
+# HERKESE AÇIK TARİHLİ EXCEL NOT GEÇMİŞİ HAFIZASI
+if "excel_notes_history" not in st.session_state:
+    st.session_state["excel_notes_history"] = [
+        {"Tarih/Saat": "2026-09-14 12:00", "Dosya Adı": "Sistem_Baslangic.xlsx", "BTA Alım Fiyatı (TL)": 4100.0, "Yönetici Notu": "Sistem referans fiyatı başarıyla tanımlandı."}
+    ]
+
 # ==========================================
 # GÜVENLİ VE HATA VERMEYEN SPK YASAL METNİ
 # ==========================================
@@ -77,33 +83,52 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (YALNIZCA YÖNETİCİ AYARLI)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (YALNIZCA YÖNETİCİ YÜKLEYEBİLİR, HERKES GÖRÜR)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
+    
     varsayilan_dosya = None
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = hedef_dosyalar
         else:
-            varsayilan_dosya = excel_dosyalari[0]
+            varsayilan_dosya = excel_dosyalari
 
     secilen_dosya = varsayilan_dosya
+    
+    # Excel yükleme yetkisini sadece yönetici paneline açıyoruz ancak not düşme herkese açık borsa takibini besleyecek
     if is_admin:
         st.subheader("🛠️ Yönetici Excel Kontrolleri")
         dosya_kaynagi = st.radio("Dosya Kaynağı Seçin:", ["Klasördeki Dosyaları Kullan", "Yeni Dosya Yükle"])
+        
         if dosya_kaynagi == "Klasördeki Dosyaları Kullan" and excel_dosyalari:
             secilen_dosya = st.selectbox("Analiz Edilecek Dosya:", excel_dosyalari, index=excel_dosyalari.index(varsayilan_dosya) if varsayilan_dosya in excel_dosyalari else 0)
         else:
             secilen_dosya = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
+            
+        # 📄 YENİ EXCEL İÇİN TARİHLİ NOT EKLEME FORMU (SADECE YÖNETİCİ DOLDURUR, HERKES GÖRÜR)
+        with st.expander("📝 Bu Excel Yüklemesi İçin Tarihli Not Düş"):
+            with st.form("excel_note_form", clear_on_submit=True):
+                note_price = st.number_input("Bu Dönem İçin Hedef BTA Alım Fiyatı (TL):", min_value=0.0, value=4100.0, step=10.0)
+                note_text = st.text_area("Yükleme Notu / Açıklama:", placeholder="Örn: Eylül ayı tadilat ve güncel bakiye verileri eklendi.")
+                submit_note = st.form_submit_button("Notu Geçmişe Kaydet 💾")
+                
+                if submit_note:
+                    zaman_damgasi = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    dosya_adi_str = secilen_dosya.name if hasattr(secilen_dosya, 'name') else str(secilen_dosya)
+                    yeni_not_objesi = {"Tarih/Saat": zaman_damgasi, "Dosya Adı": dosya_adi_str, "BTA Alım Fiyatı (TL)": note_price, "Yönetici Notu": note_text}
+                    st.session_state["excel_notes_history"].append(yeni_not_objesi)
+                    st.success("Tarihli alım notu kurumsal hafızaya başarıyla işlendi!")
+                    st.rerun()
         st.markdown("---")
 
     if secilen_dosya is not None:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
@@ -122,12 +147,16 @@ with tab_excel:
         st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP & KAR/ZARAR & TAVAN KUTLAMASI
+# MODÜL 2: KONYA CANLI TAKİP & TARİHLİ EXCEL NOT GEÇMİŞİ (HERKESE AÇIK)
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
+    
+    # Hafızadaki en son girilen BTA Alım Fiyatını otomatik olarak canlı takibe kilitler
+    en_guncel_not = st.session_state["excel_notes_history"][-1]
+    bta_alim_fiyati = float(en_guncel_not["BTA Alım Fiyatı (TL)"])
+    
     kurumsal_ticker = "KONYA.IS"
-    bta_alim_fiyati = 4100.00 
     try:
         hisse = yf.Ticker(kurumsal_ticker)
         tarihce = hisse.history(period="2d", interval="1d")
@@ -143,55 +172,18 @@ with tab_bta:
                 st.balloons()
                 st.snow()
                 st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
-            st.subheader("📊 Canlı Hesap Tablosu ve Portföy Durumu")
+            
+            st.subheader("📊 Canlı Hesap Tablosu (En Son Yüklenen Excel Referansıyla)")
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-            c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
+            c2.metric("Excel'den Gelen Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
             if kar_zarar_tutari >= 0:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
             else:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+            
             st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
             st.line_chart(tarihce['Close'])
         else:
-            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
-    except Exception as e:
-        st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
-
-# ==========================================
-# MODÜL 3: CANLI SOHBET ODASI
-# ==========================================
-with tab_chat:
-    st.header("💬 BTA Genel Canlı Sohbet Odası")
-    st.write("Sohbet odası herkese açıktır. Mesajlaşmaya hemen başlayabilirsiniz.")
-    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
-    with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input("Mesajınızı yazın:")
-        submit_button = st.form_submit_button("Gönder 🚀")
-        if submit_button and user_message:
-            now_str = datetime.now().strftime("%H:%M:%S")
-            msg_id = int(datetime.now().timestamp() * 1000)
-            st.session_state["chat_messages"].append({"id": msg_id, "user": nickname, "time": now_str, "text": user_message})
-            st.rerun()
-
-    st.subheader("📝 Oda Akışı")
-    for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
-        if "id" in msg:
-            cols = st.columns([0.85, 0.15])
-            with cols[0]:
-                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols[1]:
-                if is_admin:
-                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
-                        st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
-                        st.rerun()
-            st.divider()
-
-# ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Hizalaması Tamamen Düzeltilen Alan)
-# ==========================================
-with tab_members:
-    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
-    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
