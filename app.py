@@ -504,7 +504,7 @@ def mesaj_sesi_cal():
 
 
 # ==================================================
-# CANLI YEN��LEME
+# CANLI YENİLEME
 # ==================================================
 st_autorefresh(
     interval=5000,
@@ -542,74 +542,6 @@ is_admin = admin_sifre == "BTA2026"
 if is_admin:
     st.sidebar.success(
         "Yönetici yetkileri aktif."
-    )
-
-
-# ==================================================
-# TAKİP VE BEĞENİ PANELİ
-# ==================================================
-st.header("⭐ BTA Oda Takip Paneli")
-
-takip, begeni = istatistik_oku()
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    if "takip_edildi" not in st.session_state:
-        st.session_state["takip_edildi"] = False
-
-    if not st.session_state["takip_edildi"]:
-        if st.button(
-            "⭐ Odayı Takip Et",
-            use_container_width=True
-        ):
-            takip += 1
-
-            istatistik_kaydet(
-                takip,
-                begeni
-            )
-
-            st.session_state["takip_edildi"] = True
-            st.rerun()
-    else:
-        st.info(
-            "⭐ Odayı takip ediyorsunuz."
-        )
-
-with col2:
-    if "begeni_verildi" not in st.session_state:
-        st.session_state["begeni_verildi"] = False
-
-    if not st.session_state["begeni_verildi"]:
-        if st.button(
-            "👍 Beğen",
-            use_container_width=True
-        ):
-            begeni += 1
-
-            istatistik_kaydet(
-                takip,
-                begeni
-            )
-
-            st.session_state["begeni_verildi"] = True
-            st.rerun()
-    else:
-        st.info(
-            "👍 Beğeniniz kaydedildi."
-        )
-
-with col3:
-    st.metric(
-        "👥 Takipçi",
-        f"{takip} kişi"
-    )
-
-with col4:
-    st.metric(
-        "👍 Beğeni",
-        f"{begeni}"
     )
 
 
@@ -830,7 +762,81 @@ with tab_algoritmik:
 # CANLI SOHBET
 # ==================================================
 with tab_sohbet:
-    st.header("💬 Canlı Sohbet")
+    st.header("💬 Canlı Sohbet Odası")
+
+    # ==================================================
+    # TAKİP VE BEĞENİ PANELİ (Sohbet İçinde)
+    # ==================================================
+    st.subheader("⭐ BTA Oda Takip Paneli")
+
+    takip, begeni = istatistik_oku()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if "takip_edildi" not in st.session_state:
+            st.session_state["takip_edildi"] = False
+
+        if not st.session_state["takip_edildi"]:
+            if st.button(
+                "⭐ Odayı Takip Et",
+                use_container_width=True
+            ):
+                takip += 1
+
+                istatistik_kaydet(
+                    takip,
+                    begeni
+                )
+
+                st.session_state["takip_edildi"] = True
+                st.rerun()
+        else:
+            st.info(
+                "⭐ Odayı takip ediyorsunuz."
+            )
+
+    with col2:
+        if "begeni_verildi" not in st.session_state:
+            st.session_state["begeni_verildi"] = False
+
+        if not st.session_state["begeni_verildi"]:
+            if st.button(
+                "👍 Beğen",
+                use_container_width=True
+            ):
+                begeni += 1
+
+                istatistik_kaydet(
+                    takip,
+                    begeni
+                )
+
+                st.session_state["begeni_verildi"] = True
+                st.rerun()
+        else:
+            st.info(
+                "👍 Beğeniniz kaydedildi."
+            )
+
+    with col3:
+        st.metric(
+            "👥 Takipçi",
+            f"{takip} kişi"
+        )
+
+    with col4:
+        st.metric(
+            "👍 Beğeni",
+            f"{begeni}"
+        )
+
+    st.divider()
+
+    # ==================================================
+    # MESAJ FORMU
+    # ==================================================
+    st.subheader("💬 Mesaj Gönder")
 
     kullanici = st.text_input(
         "Kullanıcı adı",
@@ -872,6 +878,13 @@ with tab_sohbet:
                 )
 
                 st.rerun()
+
+    st.divider()
+
+    # ==================================================
+    # MESAJ LİSTESİ
+    # ==================================================
+    st.subheader("📨 Mesajlar")
 
     mesajlar = mesajlari_oku()
 
