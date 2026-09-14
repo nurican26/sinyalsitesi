@@ -33,7 +33,7 @@ if "bta_members_list" not in st.session_state:
 # ==========================================
 # GÜVENLİ VE HATA VERMEYEN SPK YASAL METNİ
 # ==========================================
-spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
+spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. This görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
@@ -85,9 +85,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = hedef_dosyalar
         else:
-            varsayilan_dosya = excel_dosyalari[0]
+            varsayilan_dosya = excel_dosyalari
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -103,19 +103,16 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # --- SADECE A SÜTUNUNU (İLK SÜTUNU) SEÇEN KESİN FİLTRE ---
             if not df.empty:
-                # DataFrame'in sadece 0. indeksindeki ilk sütunu alıyoruz
-                ilk_sutun_adi = df.columns[0]
+                ilk_sutun_adi = df.columns
                 df_goster = df[[ilk_sutun_adi]]
             else:
                 df_goster = df
-            # --------------------------------------------------------
             
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
@@ -161,8 +158,12 @@ with tab_bta:
             else:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-            st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
-            st.line_chart(tarihce['Close'])
+            
+            # --- SADECE GRAFİK PANELİ VE BAŞLIĞI KALDIRILDI ---
+            # st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
+            # st.line_chart(tarihce['Close'])
+            # --------------------------------------------------
+            
         else:
             st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
     except Exception as e:
@@ -188,9 +189,9 @@ with tab_chat:
     for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
-            with cols[0]:
+            with cols:
                 st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols[1]:
+            with cols:
                 if is_admin:
                     if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
                         st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
@@ -199,3 +200,5 @@ with tab_chat:
 
 # ==========================================
 # MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
+# ==========================================
+with tab_members:
