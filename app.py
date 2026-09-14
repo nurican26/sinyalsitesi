@@ -51,7 +51,7 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
 
-/* SOHBET ALANI EK CSS TASARIMLARI */
+/* SOHBET ALANI TASARIMLARI */
 .sohbet-kapsayici {
     background-color: #121d33;
     border: 1px solid #1e3a5f;
@@ -141,7 +141,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
+# TARİH AYARI
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
