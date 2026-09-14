@@ -4,7 +4,7 @@ import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
-# 1. SAYFA VE PANEL AYARLARI
+# 1. SAYFA PANEL AYARLARI
 # ==========================================
 st.set_page_config(
     page_title="BTA Algoritmik İşlem ve Analiz Portalı",
@@ -57,14 +57,7 @@ try:
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
         kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
         
-        # Tavan / Kutlama kontrolü (Yalnızca havai fişek efekti tetikler, kutu basmaz)
-        if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
-            st.balloons()
-            st.snow()
-        
-        st.subheader("📊 BTA Algoritma Anlık Veri Takip Listesi")
-        
-        # Sadece A, C ve D yapısına uygun internetten beslenen sade liste
+        # Sadece A, C ve D yapısına uygun internetten beslenen tek tablo
         canli_veri_sozlugu = {
             "BTA HİSSE (A)": ["KONYA"],
             "BTA ALIM FİYATI (C)": [f"{bta_alim_fiyati:.2f} TL"],
