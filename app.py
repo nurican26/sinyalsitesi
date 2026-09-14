@@ -20,16 +20,16 @@ st.markdown(
     <style>
     /* Ana Arka Plan ve Uzay Gri/Gece Mavisi Tonlama */
     .stApp {
-        background: radial-gradient(circle, #0e1118 0%, #05070a 100%);
-        color: #ffffff;
+        background: radial-gradient(circle, #0e1118 0%, #05070a 100%) !important;
+        color: #ffffff !important;
     }
     
     /* Neon Şimşek Efektli ve Parlak Çizgili Başlık Paneli Tasarımı */
     .bta-header-box {
-        background: linear-gradient(135px, #151b26 0%, #0a0f18 100%);
+        background: linear-gradient(135deg, #151b26 0%, #0a0f18 100%) !important;
         padding: 20px; 
         border-radius: 15px; 
-        border: 2px solid #00f2fe;
+        border: 2px solid #00f2fe !important;
         box-shadow: 0px 0px 20px #00f2fe, inset 0px 0px 15px rgba(0, 242, 254, 0.2);
         margin-bottom: 25px;
         position: relative;
@@ -38,10 +38,10 @@ st.markdown(
     
     /* Sağa Sola Hareket Eden El Yazısı Metin Stili */
     .bta-marquee-text {
-        font-family: 'Pacifico', cursive; 
-        font-size: 40px; 
-        color: #fffb00; 
-        text-shadow: 0 0 10px #fffb00, 0 0 20px #ff6c00;
+        font-family: 'Pacifico', cursive !important; 
+        font-size: 40px !important; 
+        color: #fffb00 !important; 
+        text-shadow: 0 0 10px #fffb00, 0 0 20px #ff6c00 !important;
     }
 
     /* Sekme Tasarımlarını Neon Çizgilere Dönüştürme */
@@ -50,18 +50,18 @@ st.markdown(
         background-color: transparent;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #111622;
-        border: 1px solid #1f293d;
-        border-radius: 8px 8px 0px 0px;
-        padding: 10px 20px;
-        color: #8892b0;
-        font-weight: bold;
-        transition: all 0.3s ease;
+        background-color: #111622 !important;
+        border: 1px solid #1f293d !important;
+        border-radius: 8px 8px 0px 0px !important;
+        padding: 10px 20px !important;
+        color: #8892b0 !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
     }
     .stTabs [data-baseweb="tab"]:hover {
-        color: #00f2fe;
-        border-color: #00f2fe;
-        box-shadow: 0px 0px 10px rgba(0, 242, 254, 0.5);
+        color: #00f2fe !important;
+        border-color: #00f2fe !important;
+        box-shadow: 0px 0px 10px rgba(0, 242, 254, 0.5) !important;
     }
     .stTabs [aria-selected="true"] {
         background-color: #162235 !important;
@@ -226,6 +226,3 @@ with tab_bta:
             st.subheader("📊 Canlı Hesap Tablosu ve Portföy Durumu")
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-            c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
-            if kar_zarar_tutari >= 0:
-                c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
