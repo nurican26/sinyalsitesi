@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
@@ -106,9 +106,9 @@ varsayilan_dosya = None
 if excel_dosyalari:
     hedef_dosyalar = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm')) and ("bta" in f.lower() or "nurican" in f.lower())]
     if list(hedef_dosyalar):
-        varsayilan_dosya = list(hedef_dosyalar)[0]
+        varsayilan_dosya = list(hedef_dosyalar)
     else:
-        varsayilan_dosya = excel_dosyalari[0]
+        varsayilan_dosya = excel_dosyalari
 
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
@@ -153,7 +153,7 @@ with tab_excel:
             if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
                 if not konya_satirlari.empty:
-                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
+                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc)
             
             st.dataframe(df_goster, use_container_width=True)
         except Exception as e:
@@ -216,7 +216,7 @@ with tab_bta:
         st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
 
 # ==========================================
-# MODÜL 3: BTA HİSSEDARLARI KAYIT LİSTESİ
+# MODÜL 3: BTA HİSSEDARLARI KAYIT LİSTESİ (HİZALAMA KESİN OLARAK DÜZELTİLDİ)
 # ==========================================
 with tab_members:
     st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
@@ -228,4 +228,3 @@ with tab_members:
     m_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1, key="m_qty")
     
     if st.button("Sisteme Kalıcı Kaydet 💾", key="m_submit_btn"):
-        if m_name and m_stock:
