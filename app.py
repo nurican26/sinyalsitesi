@@ -113,46 +113,83 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# TARİHİ KESİN OLARAS ŞU ANKİ ZAMANA EŞİTLİYORUZ
+# TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
+aktif_tablo_verileri = [] # Otomatik kayıt için verileri hafızada tutacağız
+
 if os.path.exists(excel_yolu):
     try:
         df = pd.read_excel(excel_yolu, sheet_name="WEB", engine="openpyxl")
-        if len(df.columns) >= 5:
-            ham_liste = df.iloc[:, 4].dropna().unique()
-            tum_hisseler = sorted([str(h).strip().upper() for h in ham_liste if str(h).strip() != ""])
+        if len(df.columns) >= 4:
+            for idx in range(min(10, len(df))):
+                ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
+                alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
+                puan_d = df.iloc[idx, 3]
+                
+                if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
+                    veri_var_mi = True
+                    p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
+                    
+                    c_fiyat = 0.0
+                    try:
+                        h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
+                        c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
+                    except:
+                        pass
+                        
+                    alim_c_temiz = alim_c.replace(",", ".")
+                    maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+                    
+                    # Otomatik kontrol listesine ekle
+                    aktif_tablo_verileri.append({"hisse": ha, "maliyet": maliyet})
+                    
+                    if maliyet > 0 and c_fiyat > 0:
+                        or_dg = ((c_fiyat - maliyet) / maliyet) * 100
+                        if or_dg >= 9.0:
+                            basariliHisse_adi = ha.replace(".IS", "")
+                            basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
+                        kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
+                    else:
+                        kz_str = "<span>-</span>"
+                    
+                    tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+    except:
+        pass
+
+# 🔥 SİSTEM OTOMATİK KAYIT MOTORU (Excel'e yeni hisse düştüğünde kaydeder)
+if aktif_tablo_verileri:
+    try:
+        df_notlar_aktif = pd.read_csv(db_notlar)
+        degisiklik_var_mi = False
+        
+        for kalem in aktif_tablo_verileri:
+            h_kod = kalem["hisse"]
+            h_maliyet = f"{kalem['maliyet']:.2f} TL"
             
-        for idx in range(min(10, len(df))):
-            ha = str(df.iloc[idx, 0]).strip().upper() if pd.notna(df.iloc[idx, 0]) else ""
-            alim_c = str(df.iloc[idx, 2]).strip() if pd.notna(df.iloc[idx, 2]) else ""
-            puan_d = df.iloc[idx, 3]
-            if ha != "" and ha not in ["BTA HİSSE", "HİSSE", "NAN", "NONE", "ANA", "RAYSG"]:
-                veri_var_mi = True
-                p_temiz = f"{float(puan_d):.2f}" if isinstance(puan_d, (int, float)) else str(puan_d).strip()
-                c_fiyat = 0.0
-                try:
-                    h_veri = yf.Ticker(f"{ha}.IS").history(period="1d", timeout=2)
-                    c_fiyat = float(h_veri['Close'].iloc[-1]) if len(h_veri) > 0 else 0.0
-                except:
-                    pass
-                alim_c_temiz = alim_c.replace(",", ".")
-                maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
+            # Bu hisse kodu ve bu algoritmik fiyat daha önce kaydedilmiş mi kontrol et
+            kontrol = df_notlar_aktif[(df_notlar_aktif["hisse"] == h_kod) & (df_notlar_aktif["hedef_fiyat"] == h_maliyet)]
+            
+            if kontrol.empty: # Eğer daha önce bu fiyatla kaydedilmemişse ilk kez kaydediyor
+                yeni_id = len(df_notlar_aktif) + 1
+                su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+                yeni_satir = pd.DataFrame([[
+                    yeni_id, 
+                    su_an, 
+                    h_kod, 
+                    "🤖 Otomatik Sistem Taraması: Algoritmik listeye eklendi.", 
+                    h_maliyet
+                ]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
                 
-                if maliyet > 0 and c_fiyat > 0:
-                    or_dg = ((c_fiyat - maliyet) / maliyet) * 100
-                    if or_dg >= 9.0:
-                        basariliHisse_adi = ha.replace(".IS", "")
-                        basarili_hisseler.append(f"<b>{basariliHisse_adi}</b> (%{or_dg:.2f})")
-                    kz_str = f'<span style="color:#00ff66;">▲ %{or_dg:.2f}</span>' if or_dg >= 0 else f'<span style="color:#ff3344;">▼ %{or_dg:.2f}</span>'
-                else:
-                    kz_str = "<span>-</span>"
-                
-                tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+                df_notlar_aktif = pd.concat([df_notlar_aktif, yeni_satir], ignore_index=True)
+                degisiklik_var_mi = True
+        
+        if degisiklik_var_mi:
+            df_notlar_aktif.to_csv(db_notlar, index=False)
     except:
         pass
 
@@ -169,20 +206,3 @@ if veri_var_mi and tablo_rows_html != "":
     st.markdown(panel_html, unsafe_allow_html=True)
     st.markdown(tablo_html, unsafe_allow_html=True)
 else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 10. YASAL UYARI BÖLÜMÜ
-yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
-st.markdown(yasal_html, unsafe_allow_html=True)
-
-st.write("---")
-
-# 11. HİSSE KAYIT DEFTERİ PANELİ (GİRİNTİ RİSKİ SIFIRA İNDİRİLDİ)
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffaa00; margin-bottom:8px;">🗒️ BTA HİSSE KAYIT DEFTERİ</p>', unsafe_allow_html=True)
-with st.expander("📝 Yeni Hisse Notu Ekle / Geçmişi Gör"):
-    col_not1, col_not2, col_not3 = st.columns(3)
-    not_hisse = col_not1.text_input("Hisse Kodu (Örn: THYAO):", key="k_hisse").strip().upper()
-    not_metni = col_not2.text_input("Hisse Hakkındaki Notunuz:", key="k_not")
-    not_hedef = col_not3.text_input("Hedef Fiyat (TL):", key="k_hedef")
-        
