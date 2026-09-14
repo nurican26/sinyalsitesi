@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
-import os
+from datetime import datetime
 
 # ==========================================
 # 1. SAYFA VE PANEL AYARLARI
@@ -33,22 +33,23 @@ st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
 # ==========================================
-# 3. ANA PANEL - BTA ALGORITMA (TEK ALAN)
+# 3. ANA PANEL - BTA ALGORİTMA
 # ==========================================
-st.title("🧠 BTA Algoritma")
+st.title("🧠 BTA ALGORİTMA")
 st.warning(spk_metni)
 st.markdown("---")
 
-st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
 kurumsal_ticker = "KONYA.IS"
 bta_alim_fiyati = 4100.00 
 
 try:
+    # İnternetten anlık borsa verilerini çekiyoruz
     hisse = yf.Ticker(kurumsal_ticker)
     tarihce = hisse.history(period="2d", interval="1d")
+    
     if not tarihce.empty:
-        guncel_fta_fiyati = tarihce['Close'].iloc[-1]
-        gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
+        guncel_fta_fiyati = float(tarihce['Close'].iloc[-1])
+        gunluk_degisim_yuzde = float(hisse.info.get('regularMarketChangePercent', 0.0))
         
         if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
             onceki_kapanis = tarihce['Close'].iloc[-2]
@@ -57,22 +58,41 @@ try:
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
         kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
         
+        # Tavan / Kutlama kontrolü
         if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
             st.balloons()
             st.snow()
             st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
         
-        st.subheader("📊 Canlı Hesap Tablosu ve Portföy Durumu")
+        # İstediğiniz A, C, D mantığını internet canlı verileriyle tablo şeklinde gösteriyoruz
+        st.subheader("📊 BTA Algoritma Anlık Veri Takip Listesi")
+        
+        # Sadece A (Hisse), C (Alım Fiyatı) ve D (Puan) mantığına uygun temiz canlı tablo oluşturuyoruz
+        # E SÜTUNU VEYA BAŞKA HİÇBİR FAZLALIK BULUNMAZ
+        canli_veri_sozlugu = {
+            "BTA HİSSE (A)": ["KONYA"],
+            "BTA ALIM FİYATI (C)": [f"{bta_alim_fiyati:.2f} TL"],
+            "ANLIK CANLI FİYAT": [f"{guncel_fta_fiyati:.2f} TL"],
+            "GÜNLÜK DEĞİŞİM": [f"{gunluk_degisim_yuzde:+.2f}%"],
+            "NET KAR/ZARAR DURUMU": [f"{kar_zarar_tutari:+.2f} TL (%{kar_zarar_yuzdesi:.2f})"]
+        }
+        
+        df_canli = pd.DataFrame(canli_veri_sozlugu)
+        st.dataframe(df_canli, use_container_width=True, hide_index=True)
+        
+        # Canlı Hesap Kutuları
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.subheader("📈 Portföy Durum Özet Kartları")
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
+        c1.metric("Anlık Canlı Fiyat", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
         c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
         
         if kar_zarar_tutari >= 0:
-            c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
-            c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
+            c3.metric("Net Kar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
+            c4.metric("Toplam Kar Oranı", f"+% {kar_zarar_yuzdesi:.2f}")
         else:
-            c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
-            c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+            c3.metric("Net Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
+            c4.metric("Toplam Zarar Oranı", f"% {kar_zarar_yuzdesi:.2f}")
         
         st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
         st.line_chart(tarihce['Close'])
