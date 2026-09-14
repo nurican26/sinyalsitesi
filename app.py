@@ -8,7 +8,7 @@ import os
 # 1. SAYFA VE KESİN SOL MENÜSÜZ AYARLAR
 # ==========================================
 st.set_page_config(
-    page_title="BTA Çoklu Hisse Takip Terminali",
+    page_title="BTA Algoritmik Finans Terminali",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -111,7 +111,7 @@ st.markdown("""
 <div class='bta-logo-box'>
     <span class='bta-brain-fixed'>🧠</span>
     <div class='bta-yuruyen-alan'>
-        <div class='bta-neon-heavy'>BTA ALGORİTMİK PORTFÖY TAKİP TERMİNALİ</div>
+        <div class='bta-neon-heavy'>BTA ALGORİTMİK İŞLEM VE TAKİP TERMİNALİ</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -119,106 +119,110 @@ st.markdown("""
 st.warning(spk_metni)
 st.markdown("---")
 
-# ==========================================
-# 3. EXCEL VERİLERİNİ BAĞLAMA VE EŞLEŞTİRME MOTORU
-# ==========================================
-# Excel okunamama ihtimaline karşı KONYA için sistem yedek havuzu
-hisse_verileri_havuzu = [
-    {"Hisse": "KONYA", "Alim_Fiyati": 4100.0, "Puan": "100"}
-]
+# Varsayılan Excel Okuma Hafıza Listeleri
+sabit_bta_listesi = [{"Hisse": "KONYA", "Maliyet": 4100.0, "Puan": "100"}]
+e_sutunu_arama_listesi = ["KONYA"]
 
+# ==========================================
+# 3. ALGORİTMİK VERİ AYRIŞTIRMA MOTORU
+# ==========================================
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 if excel_dosyalari:
     hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
-    secilen_excel = hedef_dosyalar[0] if hedef_dosyalar else excel_dosyalari[0]
+    secilen_excel = hedef_dosyalar if hedef_dosyalar else excel_dosyalari
     
     try:
+        # Excel'in ilk sayfasını ham olarak oku
         df_excel = pd.read_excel(secilen_excel, sheet_name=0, engine='openpyxl')
-        # Sütun isimlerinin etrafındaki boşlukları temizliyoruz
-        df_excel.columns = df_excel.columns.astype(str).str.strip()
         
-        # Talep Edilen Sütunların Excel'de var olup olmadığını doğrula
-        gerekli_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
-        if all(col in df_excel.columns for col in gerekli_sutunlar) and len(df_excel.columns) >= 5:
-            gecici_havuz = []
-            
-            # Satır satır tarayıp verileri birbirine bağlıyoruz
+        # 📌 PANEL 1 İÇİN VERİ: A (0), C (2) ve D (3) sütunlarını güvenle al
+        if len(df_excel.columns) >= 4:
+            gecici_sabit_liste = []
             for idx, row in df_excel.iterrows():
-                # E sütunundan (5. sütun) hisse kodunu çekiyoruz
-                hisse_kodu = str(row.iloc[4]).strip().upper()
+                a_val = str(row.iloc[0]).strip().upper()  # A Sütunu (BTA HİSSE)
+                c_val = row.iloc[2]                      # C Sütunu (BTA ALIM FİYATI)
+                d_val = row.iloc[3]                      # D Sütunu (BTA PUAN)
                 
-                # Geçersiz satırları ve boş hücreleri eliyoruz
-                if hisse_kodu and hisse_kodu != "NAN" and hisse_kodu != "NONE" and not hisse_kodu.replace('.','',1).isdigit():
-                    alim_maliyeti = row["BTA ALIM FİYATI"]
-                    bta_puan_degeri = row["BTA PUAN"]
-                    
-                    # Veriler boş değilse listeye mühürle
-                    if pd.notna(alim_maliyeti) and pd.notna(bta_puan_degeri):
-                        gecici_havuz.append({
-                            "Hisse": hisse_kodu,
-                            "Alim_Fiyati": float(alim_maliyeti),
-                            "Puan": str(bta_puan_degeri)
-                        })
-            
-            if gecici_havuz:
-                hisse_verileri_havuzu = gecici_havuz
+                # Sadece A sütununda geçerli bir isim yazan dolu satırları eşleştir
+                if a_val and a_val != "NAN" and a_val != "NONE" and not a_val.replace('.','',1).isdigit():
+                    gecici_sabit_liste.append({
+                        "Hisse": a_val,
+                        "Maliyet": float(c_val) if pd.notna(c_val) else 0.0,
+                        "Puan": str(d_val) if pd.notna(d_val) else "0"
+                    })
+            if gecici_sabit_liste:
+                sabit_bta_listesi = gecici_sabit_liste
+
+        # 📌 PANEL 2 İÇİN VERİ: E sütunundaki (indeks 4) diğer tüm hisseleri arama motoru için ayır
+        if len(df_excel.columns) >= 5:
+            e_sutunu_ham = df_excel.iloc[:, 4].dropna().astype(str).str.strip().str.upper()
+            temiz_e_hisseleri = [h for h in e_sutunu_ham if h != "" and h != "NONE" and h != "NAN" and not h.replace('.','',1).isdigit()]
+            if temiz_e_hisseleri:
+                e_sutunu_arama_listesi = sorted(list(set(temiz_e_hisseleri)))
     except:
         pass
 
 # ==========================================
-# 4. 📋 CANLI İZLEME VE KÂR/ZARAR DEFTERİ PANELİ
+# PANEL 1: SABİT BTA PORTFÖY LİSTESİ (KASMAMASI İÇİN STATİK VERİ)
 # ==========================================
-st.subheader("📊 BTA Canlı İzleme ve Portföy Paneli")
-st.info("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
+st.header("📋 Sabit BTA Portföy Listesi (A - C - D Sütunları)")
+for row_data in sabit_bta_listesi:
+    st.markdown(f"""
+    <div class="borsa-canli-kart" style="border-left: 6px solid #00b0ff; margin-bottom: 10px;">
+        <span style="font-size: 24px; font-weight: bold; color: #ffffff;">📈 BTA HİSSE: {row_data['Hisse']}</span> | 
+        <span style="font-size: 18px; color: #d1d4dc;">💰 BTA Alım Fiyatı (C): <b>{row_data['Maliyet']:.2f} TL</b></span> | 
+        <span style="font-size: 18px; color: #d1d4dc;">🎯 BTA Puan (D): <b style="color:#ffeb3b;">{row_data['Puan']}</b></span>
+    </div>
+    """, unsafe_allow_html=True)
 
-# Eşleşen tüm hisseleri alt alta borsa kartı formatında listeliyoruz
-for veri in hisse_verileri_havuzu:
-    hisse_adi = veri["Hisse"]
-    referans_maliyet = veri["Alim_Fiyati"]
-    algoritma_puani = veri["Puan"]
-    
-    kurumsal_ticker = f"{hisse_adi}.IS"
-    guncel_price = referans_maliyet
+st.markdown("---")
+
+# ==========================================
+# PANEL 2: AYRI CANLI HİSSE ARAMA MOTORU (E SÜTUNU - İNTERNETTEN CANLI)
+# ==========================================
+st.header("🔍 E Sütunu Canlı Hisse Arama Motoru")
+st.warning("⏱️ Arama motoru verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** yansımaktadır.")
+
+# Arama kutusu E sütunundaki benzersiz listeyi kasmadan anlık filtreler
+secilen_arama_hissesi = st.selectbox(
+    "Arama Motoru: Takip etmek istediğiniz E sütunu hissesini seçin veya yazın:",
+    options=e_sutunu_arama_listesi,
+    index=0
+)
+
+if secilen_arama_hissesi:
+    kurumsal_ticker = f"{secilen_arama_hissesi}.IS"
+    guncel_price = 0.0
     gunluk_change = 0.0
     veri_okundu = False
+    tarihce_data = pd.DataFrame()
     
-    # Canlı internet fiyatı çekme katmanı
+    # Sadece aratılan tek bir hisse için anlık internet taraması tetiklenir (Kasma yapmaz)
     try:
         hisse_data = yf.Ticker(kurumsal_ticker)
-        tarihce_data = hisse_data.history(period="1d", interval="1d")
-        if not tarihce_data.empty:
+        tarihce_data = hisse_data.history(period="2d", interval="1d")
+        if not string_check := tarihce_data.empty:
             guncel_price = tarihce_data['Close'].iloc[-1]
             gunluk_change = hisse_data.info.get('regularMarketChangePercent', 0.0)
+            if gunluk_change == 0.0 and len(tarihce_data) > 1:
+                onceki_kapanis = tarihce_data['Close'].iloc[-2]
+                gunluk_change = ((guncel_price - onceki_kapanis) / onceki_kapanis) * 100
             veri_okundu = True
     except:
         pass
         
     if veri_okundu:
-        # Algoritmik Canlı Kâr / Zarar Hesaplama Dengesi
-        net_tl_farki = guncel_price - referans_maliyet
-        net_yuzde_farki = (net_tl_farki / referans_maliyet) * 100
+        card_border = "#089981" if gunluk_change >= 0 else "#da3637"
+        card_text_color = "#089981" if gunluk_change >= 0 else "#da3637"
+        isaret_is = "+" if gunluk_change >= 0 else ""
         
-        # Renklerin koşullandırılması (Kârda yeşil neon, zararda kırmızı neon hat çeker)
-        border_color = "#089981" if net_tl_farki >= 0 else "#da3637"
-        tl_renk = "#089981" if net_tl_farki >= 0 else "#da3637"
-        isaret = "+" if net_tl_farki >= 0 else ""
-        
-        # Borsa tavan yaptığında kutlama balonları patlar
         if gunluk_change >= 9.85:
             st.balloons()
             
-        # 🚀 REKOR GÜNCELLEME: Tüm BTA Alım Fiyatları, Puanları ve Canlı Hesaplar Tek Kartta!
+        # Aratılan hissenin canlı fiyat ve değişim kutusu
         st.markdown(f"""
-        <div class="borsa-canli-kart" style="border-left: 6px solid {border_color};">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-size: 32px; font-weight: bold; color: #ffffff;">📈 {hisse_adi}</span>
-                <span style="font-size: 28px; font-weight: bold; color: #ffffff;">Anlık Canlı: {guncel_price:.2f} TL ({gunluk_change:+.2f}% Günlük)</span>
-            </div>
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.15); margin: 10px 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                <span style="font-size: 20px; color: #d1d4dc;">💰 Sizin Alım Maliyetiniz: <b style="color:#ffffff; font-size:22px;">{referans_maliyet:.2f} TL</b></span>
-                <span style="font-size: 20px; color: #d1d4dc;">🎯 BTA Algoritma Puanı: <b style="color:#ffeb3b; font-size:22px;">{algoritma_puani}</b></span>
-                <span style="font-size: 20px; color: #d1d4dc;">📊 Net Kâr/Zarar Durumu: <b style="color:{tl_renk}; font-size:24px;">{isaret}{net_tl_farki:.2f} TL ({isaret}{net_yuzde_farki:.2f}%)</b></span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        <div class="borsa-canli-kart" style="border-left: 6px solid {card_border}; background: rgba(13, 21, 39, 0.9) !important;">
+            <table style="width:100%; border-collapse:collapse; border:none;">
+                <tr style="background:transparent; border:none;">
+                    <td style="font-size:28px; font-weight:bold; color:#ffffff; border:none; padding:0;">🔍 Aranan Hisse: {secilen_arama_hissesi}</td>
+                    <td style="font-size:26px; font-weight:bold; color:#ffffff; text-align:center; border:none; padding:0;">Canlı İnternet Fiyatı: {guncel_price:.2f} TL</td>
