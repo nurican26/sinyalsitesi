@@ -64,7 +64,6 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI (EL YAZISI & KAYAN YAZI EFEKTİ)
 # ==========================================
-# Google Fonts üzerinden "Pacifico" el yazısı fontunu yükleyip kayan yazı içerisine entegre ediyoruz
 st.markdown(
     """
     <link rel="preconnect" href="https://googleapis.com">
@@ -102,9 +101,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = hedef_dosyalar
         else:
-            varsayilan_dosya = excel_dosyalari[0]
+            varsayilan_dosya = excel_dosyalari
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -120,13 +119,13 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
             if not df.empty:
-                ilk_sutun_adi = df.columns[0]
+                ilk_sutun_adi = df.columns
                 df_goster = df[[ilk_sutun_adi]]
             else:
                 df_goster = df
@@ -203,3 +202,5 @@ with tab_chat:
             with cols[0]:
                 st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
             with cols[1]:
+                if is_admin:
+                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
