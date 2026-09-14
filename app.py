@@ -82,11 +82,6 @@ if "bta_members_list" not in st.session_state:
             {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
         ]
 
-if "begeniler" not in st.session_state:
-    st.session_state["begeniler"] = 0
-if "yildizlar" not in st.session_state:
-    st.session_state["yildizlar"] = 5.0
-
 # ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
 # ==========================================
@@ -109,8 +104,11 @@ st.sidebar.warning(spk_metni)
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 varsayilan_dosya = None
 if excel_dosyalari:
-    hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
-    varsayilan_dosya = hedef_dosyalar if hedef_dosyalar else excel_dosyalari
+    hedef_dosyalar = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm')) and ("bta" in f.lower() or "nurican" in f.lower())]
+    if list(hedef_dosyalar):
+        varsayilan_dosya = list(hedef_dosyalar)[0]
+    else:
+        varsayilan_dosya = excel_dosyalari[0]
 
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
@@ -138,7 +136,7 @@ with tab_excel:
         if dosya_kaynagi == "Klasördeki Dosyaları Kullan" and excel_dosyalari:
             secilen_dosya = st.selectbox("Analiz Edilecek Dosya:", excel_dosyalari, index=excel_dosyalari.index(varsayilan_dosya) if varsayilan_dosya in excel_dosyalari else 0)
         else:
-            secilen_dosya = f = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
+            secilen_dosya = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
         st.markdown("---")
 
     if secilen_dosya is not None:
@@ -155,7 +153,7 @@ with tab_excel:
             if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
                 if not konya_satirlari.empty:
-                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc)
+                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
             
             st.dataframe(df_goster, use_container_width=True)
         except Exception as e:
@@ -164,7 +162,7 @@ with tab_excel:
         st.info("💡 Sistemde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ (15 DK GECİKME UYARISI EKLENDİ)
+# MODÜL 2: KONYA CANLI TAKİP PANELİ
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
@@ -199,7 +197,6 @@ with tab_bta:
             st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
         
         st.subheader("📊 Canlı Hesap Tablosu")
-        # 🔔 İSTEK: Borsa İstanbul yasal kuralları gereği 15 dakika gecikme ibaresi eklendi
         st.warning("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
         
         c1, c2, c3, c4 = st.columns(4)
@@ -213,19 +210,22 @@ with tab_bta:
             c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
             c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
             
-        st.markdown("---")
-        st.subheader("⭐ Oda Değerlendirmesi & Topluluk Reaksiyonu")
-        
-        st.write(f"👍 Toplam Oda Beğenisi: **{st.session_state['begeniler']}**")
-        if st.button("Portföyü Beğen 👍", key="like_btn"):
-            st.session_state["begeniler"] += 1
-            st.rerun()
-            
-        st.session_state["yildizlar"] = st.slider("Algoritmaya Yıldız Ver:", 1.0, 5.0, float(st.session_state["yildizlar"]), step=0.5)
-                
         st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
         st.line_chart(tarihce['Close'])
     else:
         st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
 
 # ==========================================
+# MODÜL 3: BTA HİSSEDARLARI KAYIT LİSTESİ
+# ==========================================
+with tab_members:
+    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
+    
+    st.subheader("➕ Yeni Hissedar Kaydı")
+    m_name = st.text_input("Hissedar İsim Soyisim:", key="m_name")
+    m_stock = st.text_input("Hisse Kodu (Örn: KONYA, THYAO):", value="KONYA", key="m_stock")
+    m_cost = st.number_input("Hisse Maliyeti (TL):", min_value=0.0, value=4100.0, step=10.0, key="m_cost")
+    m_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1, key="m_qty")
+    
+    if st.button("Sisteme Kalıcı Kaydet 💾", key="m_submit_btn"):
+        if m_name and m_stock:
