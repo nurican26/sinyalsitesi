@@ -183,9 +183,10 @@ with tab_excel:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # --- SADECE İLK SÜTUNU (A SÜTUNUNU) GÖSTERME ALANI (DÜZELTİLDİ) ---
+            # --- SADECE İLK SÜTUNU (A SÜTUNUNU) GÖSTERME ALANI (KESİN ÇÖZÜM) ---
             if len(df.columns) > 0:
-                df_goster = df[[df.columns[0]]]
+                ilk_kolon = [df.columns[0]]
+                df_goster = df[ilk_kolon]
             else:
                 df_goster = df
             # -----------------------------------------------------------------
@@ -234,4 +235,3 @@ with tab_bta:
             gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
         
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
-        kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
