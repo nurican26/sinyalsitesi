@@ -16,10 +16,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Canlı Sohbet ve Kayıt Veritabanı Hafızası (Session State) Initialization
+# Canlı Sohbet ve Kayıt Veritabanı Hafızası (Session State) Kontrolü
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
-        {"user": "Sistem", "time": "12:00", "text": "BTA Özel Canlı Sohbet Odasına Hoş Geldiniz!"}
+        {"user": "Sistem", "time": "12:00:00", "text": "BTA Özel Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 
 if "bta_members" not in st.session_state:
@@ -30,10 +30,10 @@ if "bta_members" not in st.session_state:
 # Yan menü (Sidebar) kontrolleri
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-# Otomatik Yenileme Ayarı (Sayfa 10 saniyede bir verileri ve sohbeti canlı tazeler)
+# Otomatik Yenileme Ayarı (Sohbet ve veriler için 5 saniyede bir tetiklenir)
 auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
 if auto_refresh:
-    refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 2, 60, 5) # Sohbet için 5 saniye idealdir
+    refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 2, 60, 5)
     st_autorefresh(interval=refresh_interval * 1000, key="bta_refresh_counter")
 
 # Klasördeki mevcut Excel/Macro dosyalarını algılama
@@ -61,6 +61,7 @@ with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
     dosya_kaynagi = st.radio("Dosya Kaynağı Seçin:", ["Klasördeki Dosyaları Kullan", "Yeni Dosya Yükle"])
     secilen_dosya = None
+    
     if dosya_kaynagi == "Klasördeki Dosyaları Kullan" and excel_dosyalari:
         secilen_dosya = st.selectbox("Analiz Edilecek Dosya:", excel_dosyalari)
     else:
@@ -71,6 +72,7 @@ with tab_excel:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
             st.success(f"Dosya başarıyla yüklendi! Toplam **{len(sayfa_isimleri)}** çalışma sayfası bulundu.")
+            
             aktif_sayfa = st.selectbox("Görüntülenecek Sayfa:", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
@@ -140,14 +142,11 @@ with tab_chat:
     st.header("💬 BTA Hissedarları Canlı Sohbet Odası")
     st.write("Sohbet odası otomatik yenileme ile senkronize çalışmaktadır.")
     
-    # Güvenlik Girişi
     bta_pass = st.text_input("Sohbet Odası Erişim Şifresi:", type="password", key="chat_pass")
     
-    # Güvenlik Kodu: BTA2026 (İstediğin şifreyi yapabilirsin)
     if bta_pass == "BTA2026":
-        nickname = st.text_input("Sohbet Takma Adınız (Örn: Nurican, Ahmet vb.):", value="Hissedar")
+        nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar")
         
-        # Mesaj Yazma Alanı
         with st.form("chat_form", clear_on_submit=True):
             user_message = st.text_input("Mesajınızı yazın:")
             submit_button = st.form_submit_button("Gönder 🚀")
@@ -158,17 +157,15 @@ with tab_chat:
                 st.session_state["chat_messages"].append(new_msg)
                 st.rerun()
 
-        # Mesajları Ekranda Listeleme Kutusu
         st.subheader("📝 Oda Akışı")
         chat_box = ""
         for msg in reversed(st.session_state["chat_messages"]):
             chat_box += f"**[{msg['time']}] {msg['user']}:** {msg['text']}\n\n"
-        
         st.markdown(chat_box)
     elif bta_pass != "":
-        st.error("❌ Hatalı şifre! Lütfen sadece BTA grup liderinden aldığınız kodu girin.")
+        st.error("❌ Hatalı şifre! Lütfen şifrenizi kontrol edin.")
     else:
-        st.info("🔒 Canlı sohbet akışını görmek ve mesaj yazmak için lütfen yukarıya BTA grubuna özel erişim şifresini girin.")
+        st.info("🔒 Canlı sohbet akışını görmek ve mesaj yazmak için lütfen erişim şifresini (BTA2026) girin.")
 
 # ==========================================
 # MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
@@ -180,7 +177,6 @@ with tab_members:
     member_pass = st.text_input("Kayıt Listesi Yönetim Şifresi:", type="password", key="mem_pass")
     
     if member_pass == "BTA2026":
-        # Yeni Üye Ekleme Formu
         with st.expander("➕ Yeni Hissedar Kaydı Oluştur"):
             with st.form("member_form", clear_on_submit=True):
                 new_name = st.text_input("Hissedar İsim Soyisim:")
@@ -193,22 +189,28 @@ with tab_members:
                     st.success(f"✔️ {new_name} sisteme başarıyla işlendi!")
                     st.rerun()
         
-        # Güncel Kayıt Listesi Tablosu
         st.subheader("📋 Onaylı BTA Üye Listesi")
         st.dataframe(st.session_state["bta_members"], use_container_width=True)
     elif member_pass != "":
-        st.error("❌ Yetkisiz Giriş! Hissedar listesini görmek için doğru şifreyi girmeniz gerekir.")
+        st.error("❌ Yetkisiz Giriş! Lütfen doğru şifreyi girin.")
     else:
-        st.info("🔒 Hissedar veri tabanını ve kayıt formunu açmak için lütfen erişim şifresini girin.")
+        st.info("🔒 Hissedar veri tabanını ve kayıt formunu açmak için lütfen erişim şifresini (BTA2026) girin.")
 
 # ==========================================
 # MODÜL 5: CANLI HALKA ARZ WEB SCRAPER
 # ==========================================
 with tab_scraper:
     st.header("📰 Canlı Halka Arz (IPO) Gündemi ve Arz Şirketleri")
+    
     if st.button("Halka Arz Gündemini Yenile ve Kazı"):
         try:
             hedef_url = "https://bloomberght.com"
             tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
             sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi)
             
+            if sayfa_istegi.status_code == 200:
+                html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
+                basliklar = html_icerik.find_all("span", class_="title", limit=10)
+                if not basliklar:
+                    basliklar = html_icerik.find_all("h3", limit=10)
+                
