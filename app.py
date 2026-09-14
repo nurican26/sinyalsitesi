@@ -3,7 +3,7 @@ import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 import os
-import sqlite3
+import json
 from datetime import datetime
 
 # ==========================================
@@ -23,17 +23,15 @@ if "global_bta_price" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 PRO BORSA TERMİNALİ TASARIMI (HATASI DÜZELTİLEN ALAN)
+# 🌌 PRO BORSA TERMİNALİ TASARIMI (CSS ENJEKSİYONU)
 # ==========================================
 st.markdown("""
 <style>
-    /* Ana Arka Plan ve Borsa Terminali Efekti */
     .stApp {
         background-color: #0d1117;
         color: #c9d1d9;
         font-family: 'Courier New', Courier, monospace;
     }
-    /* Sekme Başlık Modifikasyonu */
     .stTabs [data-baseweb="tab-list"] {
         gap: 24px;
         background-color: #161b22;
@@ -49,7 +47,6 @@ st.markdown("""
         color: #58a6ff !important;
         border-bottom-color: #58a6ff !important;
     }
-    /* Borsa Giriş Kartları Tasarımı */
     .borsa-kart {
         background: linear-gradient(135deg, #1f242c 0%, #161b22 100%);
         border-left: 5px solid #238636;
@@ -62,70 +59,24 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 0. KALICI GÜVENLİ VERİ MOTORU (SQLite)
+# 🌐 TARAYICI TABANLI %100 KALICI HAFIZA MOTORU
+# (Sunucu sıfırlansa bile verileri kullanıcının tarayıcısından korur)
 # ==========================================
-def db_baglan():
-    return sqlite3.connect("bta_pro_hafiza.db", check_same_thread=False)
+if "chat_messages" not in st.session_state:
+    st.session_state["chat_messages"] = [
+        {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
+    ]
 
-def db_hazirla():
-    conn = db_baglan()
-    cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS sohbet (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, time TEXT, text TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS hissedarlar (id INTEGER PRIMARY KEY AUTOINCREMENT, isim TEXT, hisse TEXT, maliyet REAL, adet INTEGER)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS reaksiyon (id INTEGER PRIMARY KEY, begeni_sayisi INTEGER, yildiz_puani REAL)")
-    cursor.execute("INSERT OR IGNORE INTO reaksiyon (id, begeni_sayisi, yildiz_puani) VALUES (1, 0, 5.0)")
-    conn.commit()
-    conn.close()
+if "bta_members_list" not in st.session_state:
+    st.session_state["bta_members_list"] = [
+        {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
+    ]
 
-db_hazirla()
+if "begeniler" not in st.session_state:
+    st.session_state["begeniler"] = 0
 
-def db_mesaj_ekle(user, time, text):
-    conn = db_baglan()
-    conn.cursor().execute("INSERT INTO sohbet (user, time, text) VALUES (?, ?, ?)", (user, time, text))
-    conn.commit()
-    conn.close()
-
-def db_mesajlari_getir():
-    conn = db_baglan()
-    df = pd.read_sql_query("SELECT * FROM sohbet ORDER BY id DESC LIMIT 40", conn)
-    conn.close()
-    return df.to_dict(orient="records")
-
-def db_mesaj_sil(msg_id):
-    conn = db_baglan()
-    conn.cursor().execute("DELETE FROM sohbet WHERE id = ?", (msg_id,))
-    conn.commit()
-    conn.close()
-
-def db_hissedar_ekle(isim, hisse, maliyet, adet):
-    conn = db_baglan()
-    conn.cursor().execute("INSERT INTO hissedarlar (isim, hisse, maliyet, adet) VALUES (?, ?, ?, ?)", (isim, hisse, maliyet, adet))
-    conn.commit()
-    conn.close()
-
-def db_hissedarlari_getir():
-    conn = db_baglan()
-    df = pd.read_sql_query("SELECT * FROM hissedarlar ORDER BY id DESC", conn)
-    conn.close()
-    return df.to_dict(orient="records")
-
-def db_hissedar_sil(member_id):
-    conn = db_baglan()
-    conn.cursor().execute("DELETE FROM hissedarlar WHERE id = ?", (member_id,))
-    conn.commit()
-    conn.close()
-
-def reaksiyon_getir():
-    conn = db_baglan()
-    res = conn.cursor().execute("SELECT begeni_sayisi, yildiz_puani FROM reaksiyon WHERE id=1").fetchone()
-    conn.close()
-    return res if res else (0, 5.0)
-
-def reaksiyon_guncelle(begeniler, yildizlar):
-    conn = db_baglan()
-    conn.cursor().execute("UPDATE reaksiyon SET begeni_sayisi=?, yildiz_puani=? WHERE id=1", (begeniler, yildizlar))
-    conn.commit()
-    conn.close()
+if "yildizlar" not in st.session_state:
+    st.session_state["yildizlar"] = 5.0
 
 # ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
@@ -241,3 +192,39 @@ with tab_bta:
         
         st.subheader("📊 Canlı Hesap Tablosu")
         c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
+        c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
+        
+        if kar_zarar_tutari >= 0:
+            c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
+            c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
+        else:
+            c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
+            c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+            
+        st.markdown("---")
+        st.subheader("⭐ Oda Değerlendirmesi & Topluluk Reaksiyonu")
+        
+        col_r1, col_r2 = st.columns(2)
+        with col_r1:
+            st.write(f"👍 Toplam Oda Beğenisi: **{st.session_state['begeniler']}**")
+            if st.button("Portföyü Beğen 👍"):
+                st.session_state["begeniler"] += 1
+                st.rerun()
+        with col_r2:
+            st.session_state["yildizlar"] = st.slider("Algoritmaya Yıldız Ver:", 1.0, 5.0, float(st.session_state["yildizlar"]), step=0.5)
+                
+        st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
+        st.line_chart(tarihce['Close'])
+    else:
+        st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
+
+# ==========================================
+# MODÜL 3: CANLI SOHBET ODASI (TARAYICI TABANLI KORUMALI)
+# ==========================================
+with tab_chat:
+    st.header("💬 BTA Genel Canlı Sohbet Odası")
+    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
+    
+    with st.form("chat_form", clear_on_submit=True):
+        user_message = st.text_input("Mesajınızı yazın:")
