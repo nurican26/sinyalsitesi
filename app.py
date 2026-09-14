@@ -10,7 +10,7 @@ import os
 # 1. SAYFA VE PANEL AYARLARI
 # ==========================================
 st.set_page_config(
-    page_title="BTA Finansal Analiz Portalı",
+    page_title="BTA Kurumsal Analiz Portalı",
     page_icon="📊",
     layout="wide"
 )
@@ -31,13 +31,13 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 # 2. ANA PANEL BAŞLIĞI
 # ==========================================
 st.title("📊 BTA Kurumsal Analiz ve Finans Portalı")
-st.write("Excel veri işleme süreçleri ve BTA özel finansal analiz modülü.")
+st.write("Excel veri entegrasyonu, sabit BTA veri takibi ve canlı halka arz haber akış paneli.")
 
 # Sekmeli Menü Tasarımı
 tab_excel, tab_bta, tab_scraper = st.tabs([
     "📂 BTA Excel & Makro Analizi", 
-    "📈 BTA Hisse Analizi", 
-    "📰 Global Finans Gündemi"
+    "📈 BTA Hisse Takip Modülü (KONYA)", 
+    "📰 Canlı Halka Arz (IPO) Gündemi"
 ])
 
 # ==========================================
@@ -87,17 +87,17 @@ with tab_excel:
         st.info("💡 Lütfen işlem yapmak için bir veri kaynağı belirtin.")
 
 # ==========================================
-# MODÜL 2: SADECE BTA HİSSE ANALİZİ (Arama motoru ve AL-SAT kaldırılmıştır)
+# MODÜL 2: SADECE KONYA HİSSE SENEDİ TAKİBİ
 # ==========================================
 with tab_bta:
-    st.header("📈 BTA Özel Finansal Veri Modülü")
-    st.write("Bu panel sadece kurumsal takip amacıyla BTA verilerini izlemek üzere yapılandırılmıştır.")
+    st.header("📈 BTA Özel Veri Takip Ekranı")
+    st.write("Sistem kurumsal analiz için sadece **KONYA.IS** verilerini çekecek şekilde kilitlenmiştir. Arama motoru ve AL-SAT tavsiyeleri bulunmamaktadır.")
     
-    # Sabit BTA hisse takibi (Kullanıcı başka hisse arayamaz, AL-SAT sinyali verilmez)
-    bta_ticker = "BTA" 
+    # Tablonuzda yer alan KONYA hissesi BIST uzantısı (.IS) ile tanımlandı
+    kurumsal_ticker = "KONYA.IS" 
     
     try:
-        hisse = yf.Ticker(bta_ticker)
+        hisse = yf.Ticker(kurumsal_ticker)
         tarihce = hisse.history(period="1mo", interval="1d")
         
         if not tarihce.empty:
@@ -106,56 +106,65 @@ with tab_bta:
             degisim = guncel_kapanis - onceki_kapanis
             yuzde_degisim = (degisim / onceki_kapanis) * 100
             
-            # Gösterge Kartları
+            # Canlı Gösterge Kartları
             m1, m2, m3, m4 = st.columns(4)
-            m1.metric(f"{bta_ticker} Son Fiyat", f"${guncel_kapanis:.2f}", f"{yuzde_degisim:.2f}%")
-            m2.metric("Günlük En Yüksek", f"${tarihce['High'].iloc[-1]:.2f}")
-            m3.metric("Günlük En Düşük", f"${tarihce['Low'].iloc[-1]:.2f}")
-            m4.metric("İşlem Hacmi", f"{tarihce['Volume'].iloc[-1]:,}")
+            m1.metric("KONYA Güncel Fiyat", f"{guncel_kapanis:.2f} TL", f"{yuzde_degisim:.2f}%")
+            m2.metric("Günlük En Yüksek", f"{tarihce['High'].iloc[-1]:.2f} TL")
+            m3.metric("Günlük En Düşük", f"{tarihce['Low'].iloc[-1]:.2f} TL")
+            m4.metric("İşlem Hacmi (Adet)", f"{tarihce['Volume'].iloc[-1]:,}")
             
-            # Grafik Alanı
-            st.subheader(f"📊 {bta_ticker} - 1 Aylık Trend Grafiği")
+            # Canlı Grafik Alanı
+            st.subheader("📊 KONYA - 1 Aylık Canlı Trend Grafiği")
             st.line_chart(tarihce['Close'])
         else:
-            st.warning("Kurumsal borsa verisi şu an çekilemiyor. Lütfen bağlantınızı kontrol edin.")
+            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi alınamadı. Lütfen daha sonra tekrar deneyin.")
     except Exception as e:
-        st.error(f"Veri çekme hatası: {e}")
+        st.error(f"Canlı veri çekme motorunda hata oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: WEB SCRAPER (requests & bs4)
+# MODÜL 3: YENİ HALKA ARZ WEB SCRAPER (Canlı Web Botu)
 # ==========================================
 with tab_scraper:
-    st.header("📰 Finans Haberleri Canlı Botu")
-    st.write("Aşağıdaki butona basarak web kazıma (scraping) motorunu anlık tetikleyebilirsiniz.")
+    st.header("📰 Canlı Halka Arz Haber Botu")
+    st.write("Sistem doğrudan Türkiye piyasalarındaki **Yeni Halka Arz (IPO) Gündemine** odaklanacak şekilde güncellenmiştir.")
     
-    if st.button("Haber Akışını Yenile ve Kazı"):
+    if st.button("Halka Arz Gündemini Yenile / Kazı"):
         try:
-            hedef_url = "https://yahoo.com"
-            tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            # Bloomberg HT Halka Arz ve borsa haber akışı üzerinden scraping işlemi
+            hedef_url = "https://bloomberght.com"
+            tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
             
             sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi)
             
             if sayfa_istegi.status_code == 200:
                 html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
-                basliklar = html_icerik.find_all("h3", limit=10)
+                
+                # Haber başlık bloklarını seçiyoruz
+                basliklar = html_icerik.find_all("span", class_="title", limit=10)
+                
+                if not basliklar:
+                    # Alternatif etiket kontrolü
+                    basliklar = html_icerik.find_all("h3", limit=10)
                 
                 if basliklar:
-                    st.success("Canlı finansal haberler başarıyla kazındı!")
+                    st.success("Anlık Halka Arz haberleri finans servislerinden başarıyla kazındı!")
                     for sira, baslik in enumerate(basliklar, 1):
                         metin = baslik.get_text(strip=True)
-                        st.markdown(f"**{sira}.** {metin}")
-                        st.divider()
+                        if metin:
+                            st.markdown(f"🚀 **{sira}.** {metin}")
+                            st.caption("Kaynak: Canlı Finans Servisleri (BloombergHT)")
+                            st.divider()
                 else:
-                    st.warning("Web sitesinin veri yapısı değiştiği için başlıklar ayrıştırılamadı.")
+                    st.warning("Veri kaynağının kod yapısı değiştiği için başlıklar okunamadı.")
             else:
-                st.error(f"Bağlantı başarısız oldu. Durum Kodu: {sayfa_istegi.status_code}")
+                st.error(f"Finans sunucularına bağlanılamadı. Durum Kodu: {sayfa_istegi.status_code}")
         except Exception as e:
-            st.error(f"Web Scraping işlemi sırasında hata: {e}")
+            st.error(f"Web Scraping işlemi sırasında bir hata meydana geldi: {e}")
     else:
-        st.info("Piyasa gündemini ve kazınan başlıkları listelemek için yukarıdaki butona tıklayın.")
+        st.info("Piyasadaki en güncel halka arz gelişmelerini ve şirket listelerini çekmek için yukarıdaki butona basın.")
 
 # ==========================================
-# 3. YASAL UYARI - SPK NOTU (Tüm sayfalarda en altta görünür)
+# 3. YASAL UYARI - SPK RESMİ METNİ
 # ==========================================
 st.markdown("---")
 st.warning("""
@@ -163,5 +172,5 @@ st.warning("""
 
 Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. 
 
-Bu platformda sunulan veriler tamamen kurumsal analiz ve bilgilendirme amaçlı olup, kesinlikle bir **'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır.**
+Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir **'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır.**
 """)
