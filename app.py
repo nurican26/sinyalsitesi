@@ -1,43 +1,36 @@
 from flask import Flask, jsonify, render_template, request
 import yfinance as yf
-import pandas as pd
 
 app = Flask(__name__)
 
-# Varsayılan olarak takip edilecek borsa sembolleri listesi
-# BIST hisseleri için sonuna .IS eklenmelidir (Örn: THYAO.IS, EREGL.IS)
-WATCHLIST = ["THYAO.IS", "ASELS.IS", "EREGL.IS", "AAPL", "TSLA", "MSFT"]
+# Varsayılan takip listesi sembolleri
+# BIST hisselerinin sonuna .IS eklemeyi unutmayın (Örn: THYAO.IS)
+WATCHLIST = ["THYAO.IS", "ASELS.IS", "EREGL.IS", "AAPL", "TSLA"]
 
 def fetch_stock_data(ticker_symbol):
     """
-    Yahoo Finance API kullanarak tek bir hissenin canlı verilerini çeken fonksiyon.
+    Yahoo Finance üzerinden tek bir hissenin canlı verilerini çeker.
     """
     try:
         ticker = yf.Ticker(ticker_symbol)
         
-        # En güncel günlük veriyi (1 günlük periyot, 1 dakikalık barlar) çekiyoruz
+        # Güncel gün içi verileri çekmek için en kararlı aralık
         todays_data = ticker.history(period="1d", interval="1m")
         
         if todays_data.empty:
-            # Eğer bugünün verisi henüz yoksa (piyasa açılmadıysa) son 2 günün verisini kontrol et
             todays_data = ticker.history(period="2d")
             
         if not todays_data.empty:
-            # Son kapanış fiyatı (Anlık Fiyat)
             current_price = todays_data['Close'].iloc[-1]
-            
-            # Günün en yüksek ve en düşük değerleri
             day_high = todays_data['High'].max()
             day_low = todays_data['Low'].min()
             
-            # Önceki günün kapanış fiyatını bularak değişim yüzdesini hesaplama
+            # Önceki kapanış fiyatını güvenli bir şekilde alma
             info = ticker.info
             previous_close = info.get('previousClose', current_price)
             
             price_change = current_price - previous_close
             pct_change = (price_change / previous_close) * 100
-            
-            # Şirket ismini al, yoksa sembolün kendisini kullan
             company_name = info.get('longName', ticker_symbol)
             
             return {
@@ -50,9 +43,8 @@ def fetch_stock_data(ticker_symbol):
                 "status": "success"
             }
     except Exception as e:
-        print(f"Hata oluştu ({ticker_symbol}): {str(e)}")
+        print(f"Veri çekme hatası ({ticker_symbol}): {str(e)}")
         
-    # Hata durumunda veya veri bulunamadığında döndürülecek şablon
     return {
         "symbol": ticker_symbol,
         "name": "Veri Alınamadı",
@@ -65,15 +57,11 @@ def fetch_stock_data(ticker_symbol):
 
 @app.route('/')
 def home():
-    """Ana sayfa rotası."""
-    return "Borsa API Backend Sistemi Aktif. Canlı veriler için /api/stocks adresini kullanın."
+    return "Borsa API Backend Sistemi Aktif. Canlı veriler için /api/stocks adresini sorgulayın."
 
 @app.route('/api/stocks', methods=['GET'])
 def get_all_stocks():
-    """
-    Takip listesindeki tüm hisse senetlerinin canlı verilerini 
-    JSON formatında döndüren API uç noktası (Endpoint).
-    """
+    """Takip listesindeki tüm verileri JSON formatında basar."""
     data_list = []
     for ticker in WATCHLIST:
         stock_info = fetch_stock_data(ticker)
@@ -82,37 +70,31 @@ def get_all_stocks():
 
 @app.route('/api/add', methods=['POST'])
 def add_to_watchlist():
-    """
-    Takip listesine yeni bir borsa sembolü ekleme uç noktası.
-    Gelen veri JSON formatında 'ticker' parametresi içermelidir.
-    """
-    data = request.get_json()
-    if not data or 'ticker' not in data:
-        return jsonify({"error": "Geçersiz parametre. 'ticker' gönderilmelidir."}), 400
-        
-    new_ticker = data['ticker'].strip().toUpperCase()
-    
-    if new_ticker not in WATCHLIST:
-        WATCHLIST.append(new_ticker)
-        return jsonify({"message": f"{new_ticker} başarıyla takip listesine eklendi.", "watchlist": WATCHLIST}), 200
-    
-    return jsonify({"message": f"{new_ticker} zaten listede mevcut."}), 200
-
-@app.route('/api/delete', methods=['POST'])
-def delete_from_watchlist():
-    """Takip listesinden sembol silme uç noktası."""
+    """Hata veren toUpperCase() yerine düzeltilmiş Python .upper() fonksiyonu"""
     data = request.get_json()
     if not data or 'ticker' not in data:
         return jsonify({"error": "Geçersiz parametre."}), 400
         
-    ticker_to_delete = data['ticker'].strip()
+    # Python uyumlu .upper() düzeltmesi yapıldı
+    new_ticker = data['ticker'].strip().upper()
+    
+    if new_ticker not in WATCHLIST:
+        WATCHLIST.append(new_ticker)
+        return jsonify({"message": f"{new_ticker} listeye eklendi.", "watchlist": WATCHLIST}), 200
+    return jsonify({"message": "Zaten listede var."}), 200
+
+@app.route('/api/delete', methods=['POST'])
+def delete_from_watchlist():
+    data = request.get_json()
+    if not data or 'ticker' not in data:
+        return jsonify({"error": "Geçersiz parametre."}), 400
+        
+    ticker_to_delete = data['ticker'].strip().upper()
     
     if ticker_to_delete in WATCHLIST:
         WATCHLIST.remove(ticker_to_delete)
-        return jsonify({"message": f"{ticker_to_delete} listeden kaldırıldı.", "watchlist": WATCHLIST}), 200
-        
-    return jsonify({"error": "Sembol listede bulunamadı."}), 404
+        return jsonify({"message": f"{ticker_to_delete} silindi.", "watchlist": WATCHLIST}), 200
+    return jsonify({"error": "Bulunamadı."}), 404
 
 if __name__ == '__main__':
-    # Uygulamayı lokal sunucuda debug modunda başlatıyoruz
     app.run(debug=True, port=5000)
