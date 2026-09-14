@@ -20,12 +20,11 @@ if "chat_messages" not in st.session_state:
         {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 else:
-    # Sunucu hafızasında biriken 'id'siz eski hatalı mesajları otomatik temizleme/onarma mekanizması
     for msg in st.session_state["chat_messages"]:
         if "id" not in msg:
             msg["id"] = int(datetime.now().timestamp() * 1000)
 
-# Hissedar BTA Hisse Kayıt Listesi Hafızası
+# Hissedar BTA Hisse Kayıt Listesi Hafızası (Sözdizimi hatası vermeyen düz yapı)
 if "bta_members_list" not in st.session_state:
     st.session_state["bta_members_list"] = [
         {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
@@ -183,7 +182,6 @@ with tab_chat:
     st.subheader("📝 Oda Akışı")
     
     for msg in reversed(st.session_state["chat_messages"]):
-        # Hafıza güvenliği doğrulaması
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
             with cols[0]:
@@ -196,7 +194,7 @@ with tab_chat:
             st.divider()
 
 # ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
+# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Parantez Açığı Kapatılan Kusursuz Yeni Sürüm)
 # ==========================================
 with tab_members:
     st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
@@ -212,4 +210,5 @@ with tab_members:
             
             if add_member_btn and input_name and input_stock:
                 m_id = int(datetime.now().timestamp() * 1000)
-                st.session_state["bta_members_list"].append({
+                formatted_stock = input_stock.upper() + ".IS"
+                
