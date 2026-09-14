@@ -10,17 +10,19 @@ from streamlit_autorefresh import st_autorefresh
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="BTA Merkez", layout="wide")
 
-# 2. ÖZEL CSS VE HAREKETLİ ŞİMŞEKLİ ARKA PLAN TASARIMI
+# 2. ÖZEL CSS VE HAREKETLİ ŞİMŞEKLİ ARKA PLAN TASARIMI (KESİN ÇÖZÜM)
 css_kodu = """
 <style>
-/* Derin Uzay Siyahı ve Şimşek Parıltılı Arka Plan */
-.stApp { 
+/* Streamlit'in tüm iç katmanlarını ezen kesin arka plan gradyanı */
+html, body, [data-testid="stAppViewContainer"], .stApp { 
     background-color: #05070f !important; 
     background-image: 
-        radial-gradient(at 20% 20%, rgba(0, 242, 254, 0.15) 0px, transparent 40%),
-        radial-gradient(at 80% 40%, rgba(147, 51, 234, 0.1) 0px, transparent 50%),
-        radial-gradient(at 50% 80%, rgba(0, 255, 204, 0.08) 0px, transparent 40%) !important; 
+        radial-gradient(at 20% 20%, rgba(0, 242, 254, 0.18) 0px, transparent 40%),
+        radial-gradient(at 80% 40%, rgba(147, 51, 234, 0.12) 0px, transparent 50%),
+        radial-gradient(at 50% 80%, rgba(0, 255, 204, 0.1) 0px, transparent 40%) !important; 
+    background-attachment: fixed !important;
 }
+
 .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
 div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
 
@@ -39,6 +41,17 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] {
 .borsa-tablo td { padding: 10px 8px; color: #ffffff; border-bottom: 1px solid #16223f; font-weight: bold; }
 .tebrik-kutusu { border: 2px solid #fffb00; box-shadow: 0 0 20px #fffb00, inset 0 0 10px rgba(255,251,0,0.3); background: #0d1527; border-radius: 10px; padding: 15px; text-align: center; margin-bottom: 15px; }
 .tarama-kutusu { border: 1px dashed #00f2fe; background: #070a14; border-radius: 10px; padding: 25px; text-align: center; margin: 20px 0; color: #b2c3d9; font-size: 16px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.05); }
+
+/* HTML Tabanlı Özel SPK Uyarı Kutusu */
+.spk-kirmizi-kutu {
+    background-color: rgba(255, 51, 68, 0.08) !important;
+    border: 1px solid #ff3344 !important;
+    box-shadow: 0px 0px 10px rgba(255, 51, 68, 0.2) !important;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
 
 .logo-yurume-alani {
     width: 100%;
@@ -75,6 +88,9 @@ st.markdown(css_kodu, unsafe_allow_html=True)
 # 3. 5 SANİYEDE BİR YENİLEME MOTORU
 st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 
+# YASAL UYARI METNİ ŞABLONU
+spk_metni_ham = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
+
 # 4. VERİ TABANLARI VE EXCEL YOLLARI
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
@@ -87,7 +103,7 @@ if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
-ziyaret, basarili, basarisiz = 0, 0, 0
+ziyaret = 0
 if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
@@ -98,13 +114,14 @@ if os.path.exists(db_istatistik):
             df_ist.to_csv(db_istatistik, index=False)
             st.session_state["ziyaret_sayildi"] = True
         ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
-        basarili = int(df_ist.at[0, "basarili_oy"])
-        basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
         pass
 
 # 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN EL YAZISI BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">⚡ 🧠 BTA Algoritmik İşlem Portalı 🧠 ⚡</h1></div>', unsafe_allow_html=True)
+
+# KESİN OLARAK EN ÜSTE SABİTLENEN KIRMZI SPK UYARI PANELİ
+st.markdown(f'<div class="spk-kirmizi-kutu"><p style="font-size:12px; color:#f2f4f8; font-weight:bold; line-height:1.6; text-align:justify; margin:0;">{spk_metni_ham}</p></div>', unsafe_allow_html=True)
 
 # TRADINGVIEW CANLI BIST 100 MINI GRAFİK KARTI
 bist_mini_widget = """
@@ -178,11 +195,3 @@ if basarili_hisseler:
 # 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>ANLIK FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#00f2fe; margin:0; text-shadow: 0 0 5px #00f2fe;">📈 BTA ALGORİTMİK HİSSE DETAYLARI</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#0d1527; padding:4px 10px; border-radius:6px; border:1px solid #00f2fe; margin:0;">Son Senkronizasyon: {excel_guncelleme_tarihi}</p></div>'
-    st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 10. YASAL UYARI BÖLÜMÜ
