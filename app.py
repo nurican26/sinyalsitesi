@@ -3,6 +3,7 @@ import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 import os
+import json
 from datetime import datetime
 
 # ==========================================
@@ -66,21 +67,36 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 🌐 %100 KALICI VERİ DEPOLAMA (DİNAMİK HAFIZA)
+# 💾 %100 KALICI JSON VERİTABANI MOTORU
+# (Verilerin sıfırlanmasını engeller)
 # ==========================================
-if "chat_messages" not in st.session_state:
-    st.session_state["chat_messages"] = [
-        {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
-    ]
+SOHBET_DOSYASI = "bta_sohbet_hafiza.json"
+PORTFOY_DOSYASI = "bta_portfoy_hafiza.json"
 
-if "bta_members_list" not in st.session_state:
-    st.session_state["bta_members_list"] = [
-        {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
-    ]
+def json_oku(dosya_adi, varsayilan_veri):
+    if not os.path.exists(dosya_filename := dosya_adi):
+        with open(dosya_filename, "w", encoding="utf-8") as f:
+            json.dump(varsayilan_veri, f, ensure_ascii=False)
+        return varsayilan_veri
+    try:
+        with open(dosya_filename, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return varsayilan_veri
+
+def json_yaz(dosya_adi, veri):
+    try:
+        with open(dosya_adi, "w", encoding="utf-8") as f:
+            json.dump(veri, f, ensure_ascii=False, indent=4)
+    except:
+        pass
+
+# Başlangıç verilerini yüklüyoruz
+canli_mesajlar = json_oku(SOHBET_DOSYASI, [{"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}])
+canli_hissedarlar = json_oku(PORTFOY_DOSYASI, [{"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}])
 
 if "begeniler" not in st.session_state:
     st.session_state["begeniler"] = 0
-
 if "yildizlar" not in st.session_state:
     st.session_state["yildizlar"] = 5.0
 
@@ -153,7 +169,7 @@ with tab_excel:
             if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
                 if not konya_satirlari.empty:
-                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
+                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc)
             
             st.dataframe(df_goster, use_container_width=True)
         except Exception as e:
@@ -217,17 +233,3 @@ with tab_bta:
                 st.session_state["begeniler"] += 1
                 st.rerun()
         with col_r2:
-            st.session_state["yildizlar"] = st.slider("Algoritmaya Yıldız Ver:", 1.0, 5.0, float(st.session_state["yildizlar"]), step=0.5)
-                
-        st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
-        st.line_chart(tarihce['Close'])
-    else:
-        st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
-
-# ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (ST.FORM VE KİLİTLENME KALDIRILDI)
-# ==========================================
-with tab_chat:
-    st.header("💬 BTA Genel Canlı Sohbet Odası")
-    
-    # Form yapısı tamamen silindi, girdi kutusu doğrudan sayfaya alındı
