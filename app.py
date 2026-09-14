@@ -65,15 +65,15 @@ st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
 st.warning(spk_metni)
 st.markdown("---")
 
-# Sekmeli Menü Tasarımı (Excel alanı silindi, ilk sekme BTA Algoritma yapıldı)
+# Sekmeli Menü Tasarımı (Talebiniz üzere Excel kalktı, ana sekme BTA Algoritma oldu)
 tab_bta, tab_chat, tab_members = st.tabs([
-    "📈 BTA Algoritmika Canlı Takip", 
+    "🧠 BTA Algoritma", 
     "💬 Canlı Sohbet Odası",
     "👥 BTA Hissedarları Kayıt Listesi"
 ])
 
 # ==========================================
-# MODÜL 1: BTA ALGORİTMİKA KONYA CANLI TAKİP & KAR/ZARAR & TAVAN KUTLAMASI
+# MODÜL 1: BTA ALGORİTMA - KONYA CANLI TAKİP
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
