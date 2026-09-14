@@ -1,125 +1,116 @@
-import streamlit as st
-import yfinance as yf
-import plotly.graph_objects as go
-from datetime import datetime
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Tech Solutions | Geleceğe Adım Atın</title>
+    <!-- Google Fonts ve FontAwesome (İkonlar için) -->
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-# Sayfa Genişlik Ayarları (Profesyonel Görünüm İçin Geniş Ekran)
-st.set_page_config(page_title="ProStock - Finans & Sosyal Panel", layout="wide", page_icon="📈")
+    <!-- Navigasyon Menüsü -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo"><i class="fa-solid fa-code"></i> TechCorp</a>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Ana Sayfa</a></li>
+                <li><a href="#services" class="nav-link">Hizmetler</a></li>
+                <li><a href="#about" class="nav-link">Hakkımızda</a></li>
+                <li><a href="#contact" class="nav-link">İletişim</a></li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
 
-# ──── BAŞLIK VE KULLANICI BİLGİSİ ────
-st.title("📈 ProStock Professional Trading & Chat Center")
-st.caption("Canlı Veriler, İndikatörler, Hisse Özel Sohbet Odaları ve Sosyal Etkileşim Paneli")
+    <!-- Hero (Giriş) Bölümü -->
+    <header id="home" class="hero-section">
+        <div class="hero-content">
+            <h1>Dijital Dünyada <span class="highlight">Fark Yaratın</span></h1>
+            <p>Modern web teknolojileri ve kreatif tasarımlarla işinizi büyütmenize yardımcı oluyoruz.</p>
+            <div class="hero-buttons">
+                <a href="#services" class="btn btn-primary">Keşfet</a>
+                <a href="#contact" class="btn btn-secondary">İletişime Geç</a>
+            </div>
+        </div>
+    </header>
 
-# Sol Menü - Hisse Seçimi ve Portföy Durumu
-with st.sidebar:
-    st.header("🔍 Piyasa Takibi")
-    hisse_turu = st.selectbox("Piyasa Seçin", ["BIST (Borsa İstanbul)", "Kripto Para", "ABD Borsaları"])
-    
-    if hisse_turu == "BIST (Borsa İstanbul)":
-        hisse_kodu = st.text_input("Hisse Kodu (Örn: THYAO.IS, EREGL.IS)", "THYAO.IS")
-    elif hisse_turu == "Kripto Para":
-        hisse_kodu = st.text_input("Kripto Kodu (Örn: BTC-USD, ETH-USD)", "BTC-USD")
-    else:
-        hisse_kodu = st.text_input("Hisse Kodu (Örn: AAPL, TSLA)", "AAPL")
+    <!-- Hizmetler Bölümü -->
+    <section id="services" class="services-section">
+        <div class="section-header">
+            <h2>Hizmetlerimiz</h2>
+            <p>Sizler için sunduğumuz profesyonel çözümler</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <i class="fa-solid fa-laptop-code card-icon"></i>
+                <h3>Web Tasarım</h3>
+                <p>Kullanıcı dostu, hızlı ve tüm cihazlarla uyumlu (responsive) modern web siteleri üretiyoruz.</p>
+            </div>
+            <div class="service-card">
+                <i class="fa-solid fa-chart-line card-icon"></i>
+                <h3>Dijital Pazarlama</h3>
+                <p>SEO ve doğru reklam stratejileri ile markanızı arama motorlarında en üst sıralara taşıyoruz.</p>
+            </div>
+            <div class="service-card">
+                <i class="fa-solid fa-shield-halved card-icon"></i>
+                <h3>Siber Güvenlik</h3>
+                <p>Verilerinizi ve dijital varlıklarınızı en güncel güvenlik protokolleri ile koruma altına alıyoruz.</p>
+            </div>
+        </div>
+    </section>
 
-    st.divider()
-    st.markdown("### 💼 Sanal Portföyüm (Paper Trading)")
-    st.metric(label="Toplam Bakiye", value="150,000 TL", delta="+4,250 TL (Bugün)")
+    <!-- Hakkımızda Bölümü -->
+    <section id="about" class="about-section">
+        <div class="about-container">
+            <div class="about-text">
+                <h2>Biz Kimiz?</h2>
+                <p>TechCorp olarak, 2020 yılından beri küresel standartlarda yazılım ve tasarım hizmetleri sunan dinamik bir ekibiz. Müşterilerimizin dijital dönüşüm süreçlerini hızlandırıyor ve başarılarına ortak oluyoruz.</p>
+                <div class="stats">
+                    <div class="stat-item"><h3>150+</h3><p>Proje</p></div>
+                    <div class="stat-item"><h3>50+</h3><p>Mutlu Müşteri</p></div>
+                </div>
+            </div>
+            <div class="about-image">
+                <img src="https://unsplash.com" alt="Takım Çalışması">
+            </div>
+        </div>
+    </section>
 
-# ──── VERİ ÇEKME MOTORU ────
-@st.cache_data(ttl=60) # Verileri her 60 saniyede bir günceller, sistemi yormaz
-def veri_getir(sembol):
-    ticker = yf.Ticker(sembol)
-    df = ticker.history(period="1mo", interval="1d")
-    info = ticker.info
-    return df, info
+    <!-- İletişim Bölümü -->
+    <section id="contact" class="contact-section">
+        <div class="section-header">
+            <h2>İletişime Geçin</h2>
+            <p>Bir projeniz mi var? Bizimle hemen paylaşın.</p>
+        </div>
+        <div class="contact-container">
+            <form id="contact-form" class="contact-form">
+                <input type="text" placeholder="Adınız Soyadınız" required>
+                <input type="email" placeholder="E-posta Adresiniz" required>
+                <textarea placeholder="Mesajınız" rows="5" required></textarea>
+                <button type="submit" class="btn btn-primary">Gönder</button>
+            </form>
+        </div>
+    </section>
 
-try:
-    df, info = veri_getir(hisse_kodu)
-    
-    # Ana Ekranı İkiye Bölüyoruz: Sol Taraf Grafikler ve Veri, Sağ Taraf Canlı Chat
-    col_grafik, col_sohbet = st.columns([2.2, 1])
+    <!-- Footer (Alt Bilgi) -->
+    <footer class="footer">
+        <p>&copy; 2026 TechCorp. Tüm Hakları Saklıdır.</p>
+        <div class="social-icons">
+            <a href="#"><i class="fa-brands fa-github"></i></a>
+            <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+            <a href="#"><i class="fa-brands fa-twitter"></i></a>
+        </div>
+    </footer>
 
-    # ──── SOL TARAF: BORSA VE GRAFİK MODÜLÜ ────
-    with col_grafik:
-        # Canlı Fiyat Kartları
-        guncel_fiyat = df['Close'].iloc[-1]
-        onceki_fiyat = df['Close'].iloc[-2]
-        degisim = ((guncel_fiyat - onceki_fiyat) / onceki_fiyat) * 100
-        
-        c1, c2, c3 = st.columns(3)
-        c1.metric(label=f"{hisse_kodu} Son Fiyat", value=f"{guncel_fiyat:.2f}", delta=f"{degisim:.2f}%")
-        c2.metric(label="En Yüksek (24s)", value=f"{df['High'].iloc[-1]:.2f}")
-        c3.metric(label="İşlem Hacmi", value=f"{df['Volume'].iloc[-1]:,}")
-
-        # Gelişmiş Mum (Candlestick) Grafiği
-        st.subheader("📊 İnteraktif Teknik Analiz Grafiği")
-        fig = go.Figure(data=[go.Candlestick(
-            x=df.index,
-            open=df['Open'], high=df['High'],
-            low=df['Low'], close=df['Close'],
-            name="Mumlar"
-        )])
-        
-        # Hareketli Ortalama İndikatörü (SMA 20) Ekleme
-        df['SMA20'] = df['Close'].rolling(window=20).mean()
-        fig.add_trace(go.Scatter(x=df.index, y=df['SMA20'], mode='lines', name='SMA 20', line=dict(color='orange')))
-        
-        fig.update_layout(xaxis_rangeslider_visible=False, height=450, template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Sosyal Etkileşim (Beğeniler ve Duygu Analizi)
-        st.subheader("💬 Topluluk Duygusu (Sentiment)")
-        col_like, col_bull, col_bear = st.columns(3)
-        
-        with col_like:
-            if st.button("❤️ Takip Listeme Ekle / Beğen"):
-                st.toast(f"{hisse_kodu} favorilerinize eklendi!", icon="❤️")
-        with col_bull:
-            if st.button("🚀 Boğa (Yükseliş Bekliyorum)"):
-                st.success("Yükseliş oyunuz kaydedildi!")
-        with col_bear:
-            if st.button("🐻 Ayı (Düşüş Bekliyorum)"):
-                st.error("Düşüş oyunuz kaydedildi!")
-
-    # ──── SAĞ TARAF: HİSSEYE ÖZEL SOHBET SALONU ────
-    with col_sohbet:
-        st.subheader(f"💬 {hisse_kodu} Özel Odası")
-        st.caption("Sadece bu hisseyi tutanların anlık yazışma alanı")
-        
-        # Sohbet Geçmişi Hafızası (Gerçek uygulamada veritabanından çekilir)
-        if "chat_history" not in st.session_state:
-            st.session_state.chat_history = {
-                hisse_kodu: [
-                    {"user": "Ahmet_Trader", "text": "Destek noktasına yaklaştı, buralardan tepki gelebilir.", "time": "19:30"},
-                    {"user": "Elif_K", "text": "Hacim çok düştü, bilanço bekleniyor herhalde.", "time": "19:32"}
-                ]
-            }
-        
-        if hisse_kodu not in st.session_state.chat_history:
-            st.session_state.chat_history[hisse_kodu] = []
-
-        # Mesaj kutusu kutusu ve listeleme arayüzü
-        chat_container = st.container(height=400)
-        with chat_container:
-            for msg in st.session_state.chat_history[hisse_kodu]:
-                st.markdown(f"**👤 {msg['user']}** <span style='font-size:11px; color:gray;'>{msg['time']}</span>", unsafe_allow_html=True)
-                st.info(msg['text'])
-
-        # Mesaj Gönderme Formu
-        with st.form(key="mesaj_formu", clear_on_submit=True):
-            kullanici = st.text_input("Kullanıcı Adınız", value="Yatırımcı_X")
-            mesaj_metni = st.text_area("Mesajınız (En fazla 200 karakter)", max_chars=200, height=70)
-            gonder_btn = st.form_submit_with_clicks(label="Odaya Gönder")
-            
-            if gonder_btn and mesaj_metni:
-                simdi = datetime.now().strftime("%H:%M")
-                st.session_state.chat_history[hisse_kodu].append({
-                    "user": kullanici,
-                    "text": mesaj_metni,
-                    "time": simdi
-                })
-                st.rerun()
-
-except Exception as e:
-    st.error(f"Veri yüklenirken hata oluştu veya geçersiz kod girdiniz. Hata: {e}")
+    <script src="script.js"></script>
+</body>
+</html>
