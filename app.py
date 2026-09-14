@@ -14,13 +14,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Canlı Sohbet Hafızasındaki Çift Kayıt Hatalarını Tamir Eden Güvenli Yapı
+# Canlı Sohbet Hafızası Koruma Mekanizması
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 else:
-    # Sunucu hafızasında mükerrer id veya id eksikliği varsa düzeltme koruması
     for i, msg in enumerate(st.session_state["chat_messages"]):
         if "id" not in msg:
             msg["id"] = int(datetime.now().timestamp() * 1000) + i
@@ -31,7 +30,20 @@ if "bta_members_list" not in st.session_state:
         {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
     ]
 
-# Yan menü (Sidebar) kontrolleri
+# ==========================================
+# YASAL UYARI METNİ DEĞİŞKENİ
+# ==========================================
+spk_metni = """
+**⚠️ SPK YASAL UYARI NOTU**
+
+Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. 
+
+Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir **'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır.**
+"""
+
+# ==========================================
+# 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
+# ==========================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
 # GİZLİ YÖNETİCİ GİRİŞİ (Şifre: BTA2026)
@@ -48,14 +60,19 @@ if auto_refresh:
     refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 2, 60, 5)
     st_autorefresh(interval=refresh_interval * 1000, key="bta_refresh_counter")
 
+# Sol menü tabanına SPK uyarısını çakıyoruz (Asla kaybolmaz)
+st.sidebar.markdown("---")
+st.sidebar.warning(spk_metni)
+
 # Klasördeki mevcut Excel/Macro dosyalarını algılama
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 
 # ==========================================
-# 2. ANA PANEL BAŞLIĞI
+# 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
 # ==========================================
 st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
-st.write("BTA algoritmik veri entegrasyonu, KONYA canlı kâr/zarar odası ve kurumsal takip merkezi.")
+st.warning(spk_metni) # Sayfa başında yasal olarak zorunlu gösterim
+st.markdown("---")
 
 # Sekmeli Menü Tasarımı
 tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
@@ -75,9 +92,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = hedef_dosyalar
         else:
-            varsayilan_dosya = excel_dosyalari[0]
+            varsayilan_dosya = excel_dosyalari
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -94,7 +111,7 @@ with tab_excel:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
             
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
                 
@@ -162,7 +179,7 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (Duplicate Anahtar Hatası Düzeltildi)
+# MODÜL 3: CANLI SOHBET ODASI
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
@@ -182,15 +199,13 @@ with tab_chat:
 
     st.subheader("📝 Oda Akışı")
     
-    # Döngüye 'idx' ekleyerek buton key'lerinin benzersiz olmasını garanti ediyoruz
     for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
         if "id" in msg:
             cols = st.columns([0.85, 0.15])
-            with cols[0]:
+            with cols:
                 st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols[1]:
+            with cols:
                 if is_admin:
-                    # Hatanın çıktığı buton satırı dinamik hale getirildi: key=f"del_msg_{msg['id']}_{idx}"
                     if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
                         st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
                         st.rerun()
@@ -200,14 +215,3 @@ with tab_chat:
 # MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
 # ==========================================
 with tab_members:
-    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
-    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
-    
-    with st.expander("➕ Yeni Hissedar & BTA Hisse Kaydı Oluştur (Şifresiz)"):
-        with st.form("member_form", clear_on_submit=True):
-            input_name = st.text_input("Hissedar İsim Soyisim:")
-            input_stock = st.text_input("Hisse Kodu (Örn: KONYA, THYAO, EREGL):", value="KONYA")
-            input_cost = st.number_input("Hisse Maliyeti (TL):", min_value=0.0, value=4100.0, step=10.0)
-            input_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1)
-            add_member_btn = st.form_submit_button("Sisteme Güvenli Kaydet 💾")
-            
