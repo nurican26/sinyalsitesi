@@ -15,7 +15,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Global BTA Fiyat Referansı yedek değeri
 if "global_bta_price" not in st.session_state:
     st.session_state["global_bta_price"] = 4100.0
 
@@ -111,7 +110,7 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 varsayilan_dosya = None
 if excel_dosyalari:
     hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
-    varsayilan_dosya = hedef_dosyalar[0] if hedef_dosyalar else excel_dosyalari[0]
+    varsayilan_dosya = hedef_dosyalar if hedef_dosyalar else excel_dosyalari
 
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
@@ -139,7 +138,7 @@ with tab_excel:
         if dosya_kaynagi == "Klasördeki Dosyaları Kullan" and excel_dosyalari:
             secilen_dosya = st.selectbox("Analiz Edilecek Dosya:", excel_dosyalari, index=excel_dosyalari.index(varsayilan_dosya) if varsayilan_dosya in excel_dosyalari else 0)
         else:
-            secilen_dosya = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
+            secilen_dosya = f = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
         st.markdown("---")
 
     if secilen_dosya is not None:
@@ -151,14 +150,12 @@ with tab_excel:
             mevcut_istenenler = [col for col in df.columns if col in istenan_sutunlar]
             
             df_goster = df[mevcut_istenenler] if mevcut_istenenler else df
-            
-            # Formüllerden gelen hisselerin kaybolmaması için sadece tamamen boş satırları eliyoruz
             df_goster = df_goster.dropna(how='all')
             
             if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
                 if not konya_satirlari.empty:
-                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
+                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc)
             
             st.dataframe(df_goster, use_container_width=True)
         except Exception as e:
@@ -167,7 +164,7 @@ with tab_excel:
         st.info("💡 Sistemde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ & YENİLENEN KUTLAMA SİSTEMİ
+# MODÜL 2: KONYA CANLI TAKİP PANELİ (15 DK GECİKME UYARISI EKLENDİ)
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
@@ -196,13 +193,15 @@ with tab_bta:
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
         kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
         
-        # 🚀 KUTLAMA ALGORİTMASI GERİ GELDİ: Günlük tavan veya %9 üstü toplam kârda konfetiler patlar
         if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
             st.balloons()
             st.snow()
             st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
         
         st.subheader("📊 Canlı Hesap Tablosu")
+        # 🔔 İSTEK: Borsa İstanbul yasal kuralları gereği 15 dakika gecikme ibaresi eklendi
+        st.warning("⏱️ Borsa İstanbul (BIST) verileri yasal mevzuatlar gereği en az **15 dakika gecikmeli** olarak yansımaktadır.")
+        
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
         c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
