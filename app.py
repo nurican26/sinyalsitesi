@@ -25,7 +25,7 @@ if "yildizlar" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 LÜKS VE CANLI VIP BORSA PANELİ ARKA PLANI (CSS)
+# 🌌 DEĞİŞTİRİLEN CANLI ARKA PLAN VE BTA GÖLGELENDİRME (CSS)
 # ==========================================
 st.markdown("""
 <style>
@@ -37,14 +37,14 @@ st.markdown("""
         width: 0px !important;
     }
     
-    /* 🌌 ARKA PLAN: Siyahlık Kaldırıldı! Lacivert, Gece Mavisi ve Platin Matrix Çizgileri */
+    /* 🌌 ARKA PLAN: Koyu mavilik açıldı! Canlı ve berrak bir kurumsal finans rengine kavuşturuldu */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: #060d1a !important;
+        background-color: #111e38 !important; /* Canlı kurumsal lacivert/mavi tonu */
         background-image: 
-            radial-gradient(circle at 50% 40%, #0a192f 0%, #030712 100%),
-            linear-gradient(rgba(59, 130, 246, 0.05) 1.5px, transparent 1px),
-            linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1.5px, transparent 1px) !important;
-        background-size: 100% 100%, 30px 30px, 30px 30px !important;
+            radial-gradient(circle at 50% 40%, #172c4f 0%, #0a1424 100%),
+            linear-gradient(rgba(255, 255, 255, 0.03) 1.5px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1.5px, transparent 1px) !important;
+        background-size: 100% 100%, 35px 30px, 35px 30px !important;
         color: #f3f4f6 !important;
     }
     .stApp {
@@ -53,11 +53,11 @@ st.markdown("""
 
     /* Siber Işıklı Borsa Hesaplama Kutuları */
     div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, #091326 0%, #112240 100%) !important;
+        background: linear-gradient(135deg, #0f2042 0%, #1a325c 100%) !important;
         padding: 22px !important;
         border-radius: 14px !important;
-        border: 2px solid #3b82f6 !important; /* Kurumsal Finans Mavisi Hat */
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.25) !important;
+        border: 2px solid #3b82f6 !important;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.3) !important;
     }
 
     /* 🧠 LOGO PANELİ */
@@ -65,22 +65,23 @@ st.markdown("""
         text-align: center;
         padding: 25px 0;
         margin-bottom: 20px;
-        background: rgba(10, 25, 47, 0.7);
+        background: rgba(15, 32, 66, 0.7);
         border-radius: 16px;
-        border: 1px solid #1e293b;
-        box-shadow: inset 0 0 25px rgba(59, 130, 246, 0.15);
+        border: 1px solid #2d4263;
+        box-shadow: inset 0 0 25px rgba(59, 130, 246, 0.2);
     }
-    /* ❌ Beynin arkasındaki parlayan neon gölge kapatıldı, net ve sabit duruyor */
+    /* Net ve sabit duran Beyin İkonu */
     .bta-brain-fixed {
         font-size: 60px;
         vertical-align: middle;
         margin-right: 20px;
         display: inline-block;
     }
-    /* Hareketli Gökkuşağı El Yazısı BTA */
+    
+    /* 💎 BTA HAREKETLİ GÖKKUŞAĞI VE YOĞUN GÖLGELENDİRME EFEKTİ */
     .bta-neon-rainbow {
         font-family: 'Great Vibes', cursive;
-        font-size: 105px;
+        font-size: 110px;
         font-weight: bold;
         letter-spacing: 6px;
         background: linear-gradient(90deg, #ff007f, #7000ff, #00b0ff, #00e676, #ffeb3b, #ff007f);
@@ -90,6 +91,10 @@ st.markdown("""
         animation: rainbowFlow 5s linear infinite, waveMotion 2.5s ease-in-out infinite alternate;
         display: inline-block;
         vertical-align: middle;
+        /* 🚀 İSTEK: BTA Yazısının arkasına çok katmanlı muazzam bir siber gölgelendirme eklendi */
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)) 
+                drop-shadow(0 0 15px rgba(112, 0, 255, 0.7)) 
+                drop-shadow(0 0 30px rgba(0, 176, 255, 0.5));
     }
     
     @keyframes rainbowFlow {
@@ -104,7 +109,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 🧠 SABİT BEYNİLİ & GÖKKUŞAĞI BTA LOGO PANELİ
+# 3. 🧠 SABİT BEYNİLİ & DERİN GÖLGELİ BTA LOGO PANELİ
 # ==========================================
 st.markdown("""
 <div class='bta-logo-box'>
