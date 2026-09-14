@@ -113,4 +113,3 @@ if borsa_verisi_tamam:
     st.line_chart(tarihce['Close'])
 else:
     st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı. Lütfen birkaç saniye sonra sayfayı yenileyin.")
- 
