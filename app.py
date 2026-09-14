@@ -71,13 +71,11 @@ st.markdown("""
 PORTFOY_DOSYASI = "bta_portfoy_hafiza.json"
 
 if "bta_members_list" not in st.session_state:
+    st.session_state["bta_members_list"] = []
     if os.path.exists(PORTFOY_DOSYASI):
-        try:
-            with open(PORTFOY_DOSYASI, "r", encoding="utf-8") as f:
-                st.session_state["bta_members_list"] = json.load(f)
-        except:
-            st.session_state["bta_members_list"] = []
-    else:
+        with open(PORTFOY_DOSYASI, "r", encoding="utf-8") as f:
+            st.session_state["bta_members_list"] = json.load(f)
+    if not st.session_state["bta_members_list"]:
         st.session_state["bta_members_list"] = [
             {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
         ]
@@ -106,9 +104,9 @@ varsayilan_dosya = None
 if excel_dosyalari:
     hedef_dosyalar = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm')) and ("bta" in f.lower() or "nurican" in f.lower())]
     if list(hedef_dosyalar):
-        varsayilan_dosya = list(hedef_dosyalar)
+        varsayilan_dosya = list(hedef_dosyalar)[0]
     else:
-        varsayilan_dosya = excel_dosyalari
+        varsayilan_dosya = excel_dosyalari[0]
 
 # ==========================================
 # 3. ANA PANEL BAŞLIĞI & EN ÜST SPK UYARISI
@@ -153,7 +151,7 @@ with tab_excel:
             if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
                 if not konya_satirlari.empty:
-                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc)
+                    st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
             
             st.dataframe(df_goster, use_container_width=True)
         except Exception as e:
@@ -216,7 +214,7 @@ with tab_bta:
         st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
 
 # ==========================================
-# MODÜL 3: BTA HİSSEDARLARI KAYIT LİSTESİ (HİZALAMA KESİN OLARAK DÜZELTİLDİ)
+# MODÜL 3: BTA HİSSEDARLARI KAYIT LİSTESİ (HİZALAMA VE BULUT AÇIĞI KAPATILDI)
 # ==========================================
 with tab_members:
     st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
@@ -227,4 +225,3 @@ with tab_members:
     m_cost = st.number_input("Hisse Maliyeti (TL):", min_value=0.0, value=4100.0, step=10.0, key="m_cost")
     m_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1, key="m_qty")
     
-    if st.button("Sisteme Kalıcı Kaydet 💾", key="m_submit_btn"):
