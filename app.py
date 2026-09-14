@@ -33,7 +33,7 @@ if "bta_members_list" not in st.session_state:
 # ==========================================
 # GÜVENLİ VE HATA VERMEYEN SPK YASAL METNİ
 # ==========================================
-spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
+spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilenize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
@@ -77,7 +77,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (GÜNCELLENMİŞ SÜTUN FİLTRESİ)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D SÜTUN FİLTRESİ)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -109,11 +109,10 @@ with tab_excel:
             
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # "AL SAT" içermeyen temel sütunları alıyoruz
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_ara = df[filtrelenmis_sutunlar]
             
-            # 0: A sütunu, 2: C sütunu, 3: D sütunu (B sütununu ve E sütununu tamamen gizler)
+            # Sadece A, C ve D sütunlarını ekrana basar (B ve E sütunları tamamen elenir)
             if len(df_ara.columns) >= 4:
                 gosterilecek_indeksler = [0, 2, 3]
                 df_goster = df_ara.iloc[:, gosterilecek_indeksler]
@@ -173,7 +172,7 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (GİRİNTİ HATALARI DÜZELTİLDİ)
+# MODÜL 3: CANLI SOHBET ODASI
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
@@ -197,3 +196,5 @@ with tab_chat:
             with cols[1]:
                 if is_admin:
                     if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
+                        st.session_state["chat_messages"] = [m for m in st.session_state["chat_messages"] if m.get("id") != msg["id"]]
+                        st.rerun()
