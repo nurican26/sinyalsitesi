@@ -6,12 +6,75 @@ import os
 from datetime import datetime
 
 # ==========================================
-# 1. SAYFA VE PANEL AYARLARI
+# 1. SAYFA, PANEL VE ÖZEL GÖRSEL TEMA AYARLARI
 # ==========================================
 st.set_page_config(
     page_title="BTA Algoritmik İşlem ve Analiz Portালী",
     page_icon="🧠",
     layout="wide"
+)
+
+# Arka Plan, Şimşek Efektleri ve Neon Çizgiler için Özel Gelişmiş CSS Tasarımı
+st.markdown(
+    """
+    <style>
+    /* Ana Arka Plan ve Uzay Gri/Gece Mavisi Tonlama */
+    .stApp {
+        background: radial-gradient(circle, #0e1118 0%, #05070a 100%);
+        color: #ffffff;
+    }
+    
+    /* Neon Şimşek Efektli ve Parlak Çizgili Başlık Paneli Tasarımı */
+    .bta-header-box {
+        background: linear-gradient(135px, #151b26 0%, #0a0f18 100%);
+        padding: 20px; 
+        border-radius: 15px; 
+        border: 2px solid #00f2fe;
+        box-shadow: 0px 0px 20px #00f2fe, inset 0px 0px 15px rgba(0, 242, 254, 0.2);
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    /* Sağa Sola Hareket Eden El Yazısı Metin Stili */
+    .bta-marquee-text {
+        font-family: 'Pacifico', cursive; 
+        font-size: 40px; 
+        color: #fffb00; 
+        text-shadow: 0 0 10px #fffb00, 0 0 20px #ff6c00;
+    }
+
+    /* Sekme Tasarımlarını Neon Çizgilere Dönüştürme */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #111622;
+        border: 1px solid #1f293d;
+        border-radius: 8px 8px 0px 0px;
+        padding: 10px 20px;
+        color: #8892b0;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #00f2fe;
+        border-color: #00f2fe;
+        box-shadow: 0px 0px 10px rgba(0, 242, 254, 0.5);
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #162235 !important;
+        color: #00f2fe !important;
+        border-color: #00f2fe !important;
+        border-bottom: 2px solid #00f2fe !important;
+    }
+    </style>
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    """,
+    unsafe_allow_html=True
 )
 
 # Canlı Sohbet Hafızası Koruma Mekanizması
@@ -62,18 +125,14 @@ st.sidebar.warning(spk_metni)
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 
 # ==========================================
-# 3. ANA PANEL BAŞLIĞI (EL YAZISI & KAYAN YAZI EFEKTİ)
+# 3. HAREKETLİ EL YAZISI VE ŞİMŞEK ÇİZGİLİ LOGO ALANI
 # ==========================================
 st.markdown(
     """
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-    
-    <div style="background-color: #1e1e1e; padding: 10px; border-radius: 10px; border: 1px solid #333;">
+    <div class="bta-header-box">
         <marquee behavior="alternate" scrollamount="4">
-            <span style="font-family: 'Pacifico', cursive; font-size: 38px; color: #ffeb3b; text-shadow: 2px 2px 4px #000;">
-                🧠 BTA Algoritmik İşlem ve Analiz Portalı
+            <span class="bta-marquee-text">
+                ⚡ 🧠 BTA Algoritmik İşlem ve Analiz Portalı 🧠 ⚡
             </span>
         </marquee>
     </div>
@@ -170,37 +229,3 @@ with tab_bta:
             c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
             if kar_zarar_tutari >= 0:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
-                c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
-            else:
-                c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
-                c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-        else:
-            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
-    except Exception as e:
-        st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
-
-# ==========================================
-# MODÜL 3: CANLI SOHBET ODASI
-# ==========================================
-with tab_chat:
-    st.header("💬 BTA Genel Canlı Sohbet Odası")
-    st.write("Sohbet odası herkese açıktır. Mesajlaşmaya hemen başlayabilirsiniz.")
-    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
-    with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input("Mesajınızı yazın:")
-        submit_button = st.form_submit_button("Gönder 🚀")
-        if submit_button and user_message:
-            now_str = datetime.now().strftime("%H:%M:%S")
-            msg_id = int(datetime.now().timestamp() * 1000)
-            st.session_state["chat_messages"].append({"id": msg_id, "user": nickname, "time": now_str, "text": user_message})
-            st.rerun()
-
-    st.subheader("📝 Oda Akışı")
-    for idx, msg in enumerate(reversed(st.session_state["chat_messages"])):
-        if "id" in msg:
-            cols = st.columns([0.85, 0.15])
-            with cols[0]:
-                st.markdown(f"**[{msg['time']}] {msg['user']}:** {msg['text']}")
-            with cols[1]:
-                if is_admin:
-                    if st.button("❌ Mesajı Sil", key=f"del_msg_{msg['id']}_{idx}"):
