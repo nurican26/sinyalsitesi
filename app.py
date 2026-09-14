@@ -50,6 +50,25 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     animation: btaYoru 15s infinite linear;
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
+
+/* Yeni Eklenen Sohbet Kutusu CSS'leri */
+.chat-box {
+    background-color: #121d33;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 15px;
+    height: 350px;
+    overflow-y: scroll;
+    margin-bottom: 10px;
+}
+.chat-mesaj {
+    padding: 6px 10px;
+    border-radius: 5px;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.chat-admin { background-color: rgba(255, 51, 68, 0.15); border-left: 4px solid #ff3344; color: #ff99a8; }
+.chat-user { background-color: rgba(0, 255, 204, 0.08); border-left: 4px solid #00ffcc; color: #e2fcf7; }
 </style>
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
@@ -61,12 +80,21 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
+db_sohbet = "bta_canli_sohbet_db.csv"
+db_hisse_yildiz = "bta_hisse_yildiz_db.csv"
 
+# Veri tabanı dosyalarını oluşturma
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}]).to_csv(db_istatistik, index=False)
+
+if not os.path.exists(db_sohbet):
+    pd.DataFrame(columns=["tarih", "kullanici", "mesaj", "rol"]).to_csv(db_sohbet, index=False)
+
+if not os.path.exists(db_hisse_yildiz):
+    pd.DataFrame(columns=["hisse", "begeniler", "yildizlar"]).to_csv(db_hisse_yildiz, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -74,7 +102,7 @@ if os.path.exists(db_istatistik):
     try:
         df_ist = pd.read_csv(db_istatistik)
         if df_ist.empty:
-            df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+            df_ist = pd.DataFrame([{"ziyaret_sayisi": 0, "basarili_oy": 0, "basarisiz_oy": 0}])
         if "ziyaret_sayildi" not in st.session_state:
             df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
             df_ist.to_csv(db_istatistik, index=False)
@@ -84,6 +112,29 @@ if os.path.exists(db_istatistik):
         basarisiz = int(df_ist.at[0, "basarisiz_oy"])
     except:
         pass
+
+# YÖNETİCİ/KULLANICI GİRİŞ SİSTEMİ (Sohbet Odası ve Yönetim İçin)
+if "kullanici_adi" not in st.session_state:
+    st.session_state["kullanici_adi"] = "Ziyaretci_" + str(int(time.time()) % 1000)
+if "is_admin" not in st.session_state:
+    st.session_state["is_admin"] = False
+
+# Sol Menü (Sidebar) - Giriş ve Yetkilendirme Paneli
+with st.sidebar:
+    st.markdown("### 🔐 Kullanıcı Profili")
+    yeni_nick = st.text_input("Sohbet Takma Adınız (Nick):", st.session_state["kullanici_adi"])
+    if yeni_nick:
+        st.session_state["kullanici_adi"] = yeni_nick
+    
+    st.markdown("---")
+    st.markdown("### 👑 Yönetici Girişi")
+    admin_sifre = st.text_input("Yönetici Şifresi:", type="password")
+    # Örnek şifre: admin123 (Kendinize göre değiştirebilirsiniz)
+    if admin_sifre == "admin123":
+        st.session_state["is_admin"] = True
+        st.success("Yönetici Yetkisi Aktif!")
+    else:
+        st.session_state["is_admin"] = False
 
 # 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
@@ -106,7 +157,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
+# TARİH AYARI
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -144,7 +195,19 @@ if os.path.exists(excel_yolu):
             else:
                 kz_str = "<span>-</span>"
             
-            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td></tr>'
+            # Kayıt Defteri Yıldız/Beğeni Verilerini Çekme
+            df_yildiz = pd.read_csv(db_hisse_yildiz)
+            hisse_kayit = df_yildiz[df_yildiz["hisse"] == ha]
+            if hisse_kayit.empty:
+                begeniler = 0
+                yildizlar = 0.0
+            else:
+                begeniler = int(hisse_kayit.iloc[0]["begeniler"])
+                yildizlar = float(hisse_kayit.iloc[0]["yildizlar"])
+            
+            yildiz_str = "⭐" * int(round(yildizlar)) if yildizlar > 0 else "---"
+            
+            tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td><td>👍 {begeniler} | {yildiz_str}</td></tr>'
 
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
@@ -154,23 +217,4 @@ if basarili_hisseler:
 
 # 9. TABLO VEYA ARAMA METNİ PANELİ
 if veri_var_mi and tablo_rows_html != "":
-    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th></tr>' + tablo_rows_html + '</table>'
-    panel_html = f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 5px;"><p style="font-size:16px; font-weight:bold; color:#1E90FF; margin:0;">📈 BTA ALGORİTMİK HİSSE</p><p style="font-size:12px; font-weight:bold; color:#00ffcc; background-color:#121d33; padding:4px 10px; border-radius:6px; border:1px solid #1e3a5f; margin:0;">Son Yükleme: {excel_guncelleme_tarihi}</p></div>'
-    st.markdown(panel_html, unsafe_allow_html=True)
-    st.markdown(tablo_html, unsafe_allow_html=True)
-else:
-    tarama_html = '<div class="tarama-kutusu"><div style="font-size: 32px; margin-bottom: 10px;">🔍</div><p style="color: #00ffcc; font-weight: bold; margin-bottom: 5px; font-size: 18px; text-shadow: 0 0 5px rgba(0,255,204,0.3);">BTA Algoritması Piyasaları Tarıyor...</p><p style="margin: 0; font-size: 14px; color: #a2b4cc; line-height:1.6;">Kriterlere tam uyum sağlayan yeni bir hisse tespit edildiğinde, analiz verileri anında bu ekrana yansıtılacaktır.</p></div>'
-    st.markdown(tarama_html, unsafe_allow_html=True)
-
-# 10. YASAL UYARI BÖLÜMÜ
-yasal_html = '<div style="background-color: #121d33; border: 1px solid #ff3344; border-radius: 8px; padding: 10px; margin-top: 10px;"><p style="font-size:11px; color:#b2c3d9; line-height:1.5; text-align:justify; margin:0;"><b style="color:#ff3344;">⚠️ YASAL UYARI:</b> Veriler en az 15 dakika gecikmelidir. Sitemiz genel bilgilendirme amacıyla yayın yapmakta olup, yer alan hiçbir veri, formül veya grafik çıktısı yatırım danışmanlığı, yatırım tavsiyesi, hedef fiyat öngörüsü veya al/sat/tut yönlendirmesi niteliği taşımamaktadır.</p></div>'
-st.markdown(yasal_html, unsafe_allow_html=True)
-
-# 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
-st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-
-toplam_oy = basarili + basarisiz
-begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
-
-st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
+    tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th><th>KAYIT DEFTERİ (BEĞENİ/YILDIZ)</th></tr>' + tablo_rows_html + '</table>'
