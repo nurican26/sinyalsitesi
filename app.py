@@ -87,18 +87,16 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
-    
     varsayilan_dosya = None
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
-        if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar
+        if list(hedef_dosyalar):
+            varsayilan_dosya = hedef_dosyalar[0]
         else:
-            varsayilan_dosya = excel_dosyalari
+            varsayilan_dosya = excel_dosyalari[0]
 
     secilen_dosya = varsayilan_dosya
     
-    # Excel yükleme yetkisini sadece yönetici paneline açıyoruz ancak not düşme herkese açık borsa takibini besleyecek
     if is_admin:
         st.subheader("🛠️ Yönetici Excel Kontrolleri")
         dosya_kaynagi = st.radio("Dosya Kaynağı Seçin:", ["Klasördeki Dosyaları Kullan", "Yeni Dosya Yükle"])
@@ -108,7 +106,6 @@ with tab_excel:
         else:
             secilen_dosya = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
             
-        # 📄 YENİ EXCEL İÇİN TARİHLİ NOT EKLEME FORMU (SADECE YÖNETİCİ DOLDURUR, HERKES GÖRÜR)
         with st.expander("📝 Bu Excel Yüklemesi İçin Tarihli Not Düş"):
             with st.form("excel_note_form", clear_on_submit=True):
                 note_price = st.number_input("Bu Dönem İçin Hedef BTA Alım Fiyatı (TL):", min_value=0.0, value=4100.0, step=10.0)
@@ -128,7 +125,7 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri
+            aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
@@ -152,7 +149,6 @@ with tab_excel:
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     
-    # Hafızadaki en son girilen BTA Alım Fiyatını otomatik olarak canlı takibe kilitler
     en_guncel_not = st.session_state["excel_notes_history"][-1]
     bta_alim_fiyati = float(en_guncel_not["BTA Alım Fiyatı (TL)"])
     
@@ -183,7 +179,12 @@ with tab_bta:
             else:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-            
             st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
             st.line_chart(tarihce['Close'])
         else:
+            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
+    except Exception as e:
+        st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
+
+    st.markdown("---")
+    st.subheader("🗓️ Herkese Açık Excel Yükleme ve BTA Alım Fiyatı Not Geçmişi")
