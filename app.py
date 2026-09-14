@@ -25,7 +25,7 @@ if "yildizlar" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 MATRİS ARKA PLAN VE GÖKKUŞAĞI EL YAZISI (CSS)
+# 🌌 LÜKS VE CANLI VIP BORSA PANELİ ARKA PLANI (CSS)
 # ==========================================
 st.markdown("""
 <style>
@@ -37,51 +37,50 @@ st.markdown("""
         width: 0px !important;
     }
     
-    /* 🌌 ARKA PLAN: Derin Borsa Odası & Milimetrik Dijital Matris Ağı */
+    /* 🌌 ARKA PLAN: Siyahlık Kaldırıldı! Lacivert, Gece Mavisi ve Platin Matrix Çizgileri */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: #06090e !important;
+        background-color: #060d1a !important;
         background-image: 
-            radial-gradient(circle at 50% 50%, #0d1527 0%, #020408 100%),
-            linear-gradient(rgba(8, 153, 129, 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(8, 153, 129, 0.04) 1px, transparent 1px) !important;
-        background-size: 100% 100%, 25px 20px, 25px 20px !important;
-        color: #e5e7eb !important;
+            radial-gradient(circle at 50% 40%, #0a192f 0%, #030712 100%),
+            linear-gradient(rgba(59, 130, 246, 0.05) 1.5px, transparent 1px),
+            linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1.5px, transparent 1px) !important;
+        background-size: 100% 100%, 30px 30px, 30px 30px !important;
+        color: #f3f4f6 !important;
     }
     .stApp {
         background-color: transparent !important;
     }
 
-    /* Işıklı Borsa Metrik Kutuları */
+    /* Siber Işıklı Borsa Hesaplama Kutuları */
     div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, #0b0f17 0%, #161c28 100%) !important;
+        background: linear-gradient(135deg, #091326 0%, #112240 100%) !important;
         padding: 22px !important;
         border-radius: 14px !important;
-        border: 2px solid #089981 !important;
-        box-shadow: 0 0 15px rgba(8, 153, 129, 0.3) !important;
+        border: 2px solid #3b82f6 !important; /* Kurumsal Finans Mavisi Hat */
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.25) !important;
     }
 
-    /* 🧠 LOGO ALANI: SABİT BEYİN & HAREKETLİ GÖKKUŞAĞI BTA */
+    /* 🧠 LOGO PANELİ */
     .bta-logo-box {
         text-align: center;
         padding: 25px 0;
         margin-bottom: 20px;
-        background: rgba(13, 21, 39, 0.6);
+        background: rgba(10, 25, 47, 0.7);
         border-radius: 16px;
-        border: 1px solid #1f2937;
-        box-shadow: inset 0 0 20px rgba(8, 153, 129, 0.1);
+        border: 1px solid #1e293b;
+        box-shadow: inset 0 0 25px rgba(59, 130, 246, 0.15);
     }
-    /* Sabit Kurumsal Beyin İkonu */
+    /* ❌ Beynin arkasındaki parlayan neon gölge kapatıldı, net ve sabit duruyor */
     .bta-brain-fixed {
         font-size: 60px;
         vertical-align: middle;
         margin-right: 20px;
         display: inline-block;
-        filter: drop-shadow(0 0 15px #00b0ff);
     }
     /* Hareketli Gökkuşağı El Yazısı BTA */
     .bta-neon-rainbow {
         font-family: 'Great Vibes', cursive;
-        font-size: 100px;
+        font-size: 105px;
         font-weight: bold;
         letter-spacing: 6px;
         background: linear-gradient(90deg, #ff007f, #7000ff, #00b0ff, #00e676, #ffeb3b, #ff007f);
@@ -93,12 +92,10 @@ st.markdown("""
         vertical-align: middle;
     }
     
-    /* Gökkuşağı Akış Animasyonu */
     @keyframes rainbowFlow {
         0% { background-position: 0% 50%; }
         100% { background-position: 400% 50%; }
     }
-    /* Dalgalanma / Yazı Hareketi Animasyonu */
     @keyframes waveMotion {
         0% { transform: translateY(-4px) scale(0.98); }
         100% { transform: translateY(4px) scale(1.02); }
@@ -107,7 +104,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 🧠 SABİT BEYİN & HAREKETLİ GÖKKUŞAĞI BTA LOGO PANELİ
+# 3. 🧠 SABİT BEYNİLİ & GÖKKUŞAĞI BTA LOGO PANELİ
 # ==========================================
 st.markdown("""
 <div class='bta-logo-box'>
