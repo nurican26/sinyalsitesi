@@ -199,4 +199,3 @@ with tab_members:
     st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
     st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
     df_members = pd.DataFrame(st.session_state["bta_members_list"])
-    if not df_members.empty:
