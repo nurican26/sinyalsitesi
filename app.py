@@ -4,32 +4,40 @@ import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
-# 1. SAYFA VE PANEL AYARLARI (TAM EKRAN)
+# 1. SAYFA VE KESİN SOL MENÜSÜZ AYARLAR
 # ==========================================
 st.set_page_config(
     page_title="BTA KONYA Canlı Veri Odası",
     page_icon="📈",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed" # Sol menüyü bulut seviyesinde tamamen kapatır
 )
 
-# 🔄 OTOMATİK YENİLEME ARKA PLANDA ÇALIŞIR (SOL PANEL OLMADAN)
-st_autorefresh(interval=5000, key="bta_background_refresh_counter")
+# Arka planda 5 saniyede bir otomatik yenileme tetikleyici
+st_autorefresh(interval=5000, key="bta_terminal_refresh")
+
+# Beğeni ve yıldız puanı hafızası (Sıfırlanmayı önlemek için)
+if "begeniler" not in st.session_state:
+    st.session_state["begeniler"] = 0
+if "yildizlar" not in st.session_state:
+    st.session_state["yildizlar"] = 5.0
 
 # SPK RESMİ YASAL UYARI METNİ
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 TRADINGVIEW TARZI BORSA TERMİNALİ TEMASI
+# 🌌 TRADINGVIEW TARZI TERMİNAL VE YAN PANEL YOK ETME CSS
 # ==========================================
 st.markdown("""
 <style>
+    /* Sol menüyü (Sidebar), açma okunu ve tüm panel butonlarını tamamen yok eder */
+    [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], button[title="View sidebar"] {
+        display: none !important;
+        width: 0px !important;
+    }
     html, body, [data-testid="stAppViewContainer"] {
         background-color: #0c0f14 !important;
         color: #d1d4dc !important;
-    }
-    /* Sol paneli (Sidebar) tamamen yok etme CSS kodu */
-    [data-testid="stSidebar"] {
-        display: none !important;
     }
     .stApp {
         background-color: #0c0f14 !important;
@@ -102,6 +110,20 @@ if borsa_verisi_tamam:
         c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
         c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
         
+    # 👍 GERİ GETİRİLEN CANLI BEĞENİ VE YILDIZ PUANLAMA ALANI (ORTA ALANA SABİTLENDİ)
+    st.markdown("---")
+    st.subheader("⭐ Oda Değerlendirmesi & Topluluk Reaksiyonu")
+    
+    col_r1, col_r2 = st.columns(2)
+    with col_r1:
+        st.write(f"👍 Toplam Oda Beğenisi: **{st.session_state['begeniler']}**")
+        if st.button("Portföyü Beğen 👍", key="like_btn"):
+            st.session_state["begeniler"] += 1
+            st.rerun()
+    with col_r2:
+        st.session_state["yildizlar"] = st.slider("Algoritmaya Yıldız Ver:", 1.0, 5.0, float(st.session_state["yildizlar"]), step=0.5)
+        
+    st.markdown("---")
     st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
     st.line_chart(tarihce['Close'])
 else:
