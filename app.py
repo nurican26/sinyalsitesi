@@ -62,7 +62,7 @@ excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
 
-# Veri tabanlarını ilk kez oluşturma güvenliği
+# Dosya Kontrolleri ve İlk Kurulumlar
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
@@ -71,22 +71,21 @@ if not os.path.exists(db_istatistik):
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
-if os.path.exists(db_istatistik):
-    try:
-        df_ist = pd.read_csv(db_istatistik)
-        if df_ist.empty:
-            df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+try:
+    df_ist = pd.read_csv(db_istatistik)
+    if df_ist.empty:
+        df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+    
+    if "ziyaret_sayildi" not in st.session_state:
+        df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
+        df_ist.to_csv(db_istatistik, index=False)
+        st.session_state["ziyaret_sayildi"] = True
         
-        if "ziyaret_sayildi" not in st.session_state:
-            df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.iloc[0]["ziyaret_sayisi"]) + 1
-            df_ist.to_csv(db_istatistik, index=False)
-            st.session_state["ziyaret_sayildi"] = True
-            
-        ziyaret = int(df_ist.iloc[0]["ziyaret_sayisi"])
-        basarili = int(df_ist.iloc[0]["basarili_oy"])
-        basarisiz = int(df_ist.iloc[0]["basarisiz_oy"])
-    except:
-        ziyaret, basarili, basarisiz = 1, 0, 0
+    ziyaret = int(df_ist.at[0, "ziyaret_sayisi"])
+    basarili = int(df_ist.at[0, "basarili_oy"])
+    basarisiz = int(df_ist.at[0, "basarisiz_oy"])
+except:
+    ziyaret, basarili, basarisiz = 1, 0, 0
 
 # 6. KÖŞEDEN KÖŞEYE SÜREKLİ YÜRÜYEN BTA LOGOSU
 st.markdown('<div class="logo-yurume-alani"><h1 class="yuruyen-bta-logo">BTA</h1></div>', unsafe_allow_html=True)
@@ -179,10 +178,12 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 
 st.write("---")
 
-# 11. YENİ EKLENEN PANEL: HİSSE KAYIT DEFTERİ (NOT ALMA SİSTEMİ)
+# 11. HİSSE KAYIT DEFTERİ (GİRİNTİLER TAMAMEN DÜZELTİLDİ)
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffaa00; margin-bottom:8px;">🗒️ BTA HİSSE KAYIT DEFTERİ</p>', unsafe_allow_html=True)
 with st.expander("📝 Yeni Hisse Notu Ekle / Geçmişi Gör"):
-    col_not1, col_not2, col_not3 = st.columns([1, 2, 1])
+    col_not1, col_not2, col_not3 = st.columns(3)
     with col_not1:
-        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):").strip().upper()
+        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", key="k_hisse").strip().upper()
     with col_not2:
+        not_metni = st.text_input("Hisse Hakkındaki Notunuz:", key="k_not")
+    with col_not3:
