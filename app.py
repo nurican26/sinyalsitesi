@@ -120,7 +120,7 @@ excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunl
 
 # 7. EXCEL VERİLERİNİ OKUMA VE ANALİZ ETME
 tablo_rows_html = ""
-aktif_tablo_verileri = [] # Otomatik kayıt için verileri hafızada tutacağız
+aktif_tablo_verileri = []
 
 if os.path.exists(excel_yolu):
     try:
@@ -145,7 +145,6 @@ if os.path.exists(excel_yolu):
                     alim_c_temiz = alim_c.replace(",", ".")
                     maliyet = float(alim_c_temiz) if alim_c_temiz.replace(".", "", 1).isdigit() else 0.0
                     
-                    # Otomatik kontrol listesine ekle
                     aktif_tablo_verileri.append({"hisse": ha, "maliyet": maliyet})
                     
                     if maliyet > 0 and c_fiyat > 0:
@@ -161,7 +160,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# 🔥 SİSTEM OTOMATİK KAYIT MOTORU (Excel'e yeni hisse düştüğünde kaydeder)
+# 🔥 SİSTEM OTOMATİK SİNYAL GEÇMİŞİ KAYIT MOTORU
 if aktif_tablo_verileri:
     try:
         df_notlar_aktif = pd.read_csv(db_notlar)
@@ -171,17 +170,16 @@ if aktif_tablo_verileri:
             h_kod = kalem["hisse"]
             h_maliyet = f"{kalem['maliyet']:.2f} TL"
             
-            # Bu hisse kodu ve bu algoritmik fiyat daha önce kaydedilmiş mi kontrol et
             kontrol = df_notlar_aktif[(df_notlar_aktif["hisse"] == h_kod) & (df_notlar_aktif["hedef_fiyat"] == h_maliyet)]
             
-            if kontrol.empty: # Eğer daha önce bu fiyatla kaydedilmemişse ilk kez kaydediyor
+            if kontrol.empty:
                 yeni_id = len(df_notlar_aktif) + 1
                 su_an = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
                 yeni_satir = pd.DataFrame([[
                     yeni_id, 
                     su_an, 
                     h_kod, 
-                    "🤖 Otomatik Sistem Taraması: Algoritmik listeye eklendi.", 
+                    "🤖 Otomatik Sistem Analizi: Algoritmik listeye eklendi.", 
                     h_maliyet
                 ]], columns=["id", "tarih", "hisse", "not", "hedef_fiyat"])
                 
@@ -196,7 +194,7 @@ if aktif_tablo_verileri:
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
+    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 og ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
 # 9. TABLO VEYA ARAMA METNİ PANELİ
