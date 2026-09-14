@@ -208,21 +208,30 @@ with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     kurumsal_ticker = "KONYA.IS"
     bta_alim_fiyati = 4100.00 
+    
+    # Try-Except hatasını kökten bitirmek için sadece tek satıra indirgendi
+    tarihce = pd.DataFrame()
+    gunluk_degisim_yuzde = 0.0
+    guncel_fta_fiyati = 0.0
+    canli_veri_hatasi = False
+    
     try:
         hisse = yf.Ticker(kurumsal_ticker)
         tarihce = hisse.history(period="2d", interval="1d")
         if not tarihce.empty:
             guncel_fta_fiyati = tarihce['Close'].iloc[-1]
             gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
-            if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
-                onceki_kapanis = tarihce['Close'].iloc[-2]
-                gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
-            kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
-            kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
-            if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
-                st.balloons()
-                st.snow()
-                st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
-            st.subheader("📊 Canlı Hesap Tablosu ve Portföy Durumu")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
+    except Exception as e:
+        canli_veri_hatasi = True
+
+    # Hesaplamalar ve arayüz çizimleri try-except dışına alınarak garantiye bağlandı
+    if canli_veri_hatasi:
+        st.error("Canlı takip motorunda teknik bir aksaklık oluştu veya sunucuya erişilemedi.")
+    elif tarihce.empty:
+        st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
+    else:
+        if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
+            onceki_kapanis = tarihce['Close'].iloc[-2]
+            gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
+        
+        kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
