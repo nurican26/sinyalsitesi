@@ -75,7 +75,7 @@ st.markdown(
 # Canlı Sohbet Hafızası
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
-        {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
+        {"user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 
 # Hissedar Hafızası
@@ -160,12 +160,17 @@ with tab_excel:
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
                 
-            # Filtrelerin hepsi kaldırıldı, dosya olduğu gibi okunuyor
             df_goster = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
+            
+            # --- "NONE" VE "NAN" GİZLEME MANTIĞI ---
+            # Excel'deki tüm boşlukları, None ve NaN değerleri temizleyip düz boşluk yapıyoruz
+            df_goster = df_goster.fillna("")
+            df_goster = df_goster.astype(str).replace(["None", "NaN", "nan", "NaT", "nat"], "")
+            # --------------------------------------
             
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="")
             if arama_kelimesi:
-                filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
+                filtre_mask = df_goster.apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
                 gosterilecek_df = df_goster[filtre_mask]
             else:
                 gosterilecek_df = df_goster
@@ -235,9 +240,3 @@ with tab_chat:
     nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
     with st.form("chat_form", clear_on_submit=True):
         user_message = st.text_input("Mesajınızı yazın:")
-        submit_button = st.form_submit_button("Gönder 🚀")
-        if submit_button and user_message:
-            now_str = datetime.now().strftime("%H:%M:%S")
-            st.session_state["chat_messages"].append({"user": nickname, "time": now_str, "text": user_message})
-            st.rerun()
-
