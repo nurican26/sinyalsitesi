@@ -107,8 +107,15 @@ with tab_excel:
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
-            filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
+            
+            # --- E SÜTUNUNU VE "AL SAT" SÜTUNLARINI GİZLEYEN GÜNCEL FİLTRE ---
+            filtrelenmis_sutunlar = [
+                col for col in df.columns 
+                if "AL SAT" not in str(col).upper() and str(col).strip().upper() != "E"
+            ]
             df_goster = df[filtrelenmis_sutunlar]
+            # ----------------------------------------------------------------
+            
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
                 filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
@@ -190,8 +197,4 @@ with tab_chat:
             st.divider()
 
 # ==========================================
-# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Hizalaması Tamamen Düzeltilen Alan)
-# ==========================================
-with tab_members:
-    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
-    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
+# MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
