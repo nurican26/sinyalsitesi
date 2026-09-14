@@ -25,18 +25,19 @@ if "yildizlar" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 EN ARKA PANELİN RENGİNİ TAMAMEN DEĞİŞTİREN KESİN CSS
+# 🌌 EN ARKA PANEL VE AĞIR YÜRÜYEN KURUMSAL BTA CSS
 # ==========================================
 st.markdown("""
 <style>
+    @import url('https://googleapis.com');
+
     /* Sol menüyü tamamen yok etme */
     [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], button[title="View sidebar"] {
         display: none !important;
         width: 0px !important;
     }
     
-    /* 🚀 İSTEK: EN ARKA PANELİ (TÜM TARAYICI DUVARINI VE SİYAH ALANLARI) CANLI VE RENKLİ YAPMA */
-    /* Streamlit'in tüm katmanları (html, body, main, block-container) siber yeşil ve borsa mavisi geçişli gradient ile kaplanır */
+    /* EN ARKA PANEL: Siber yeşil ve borsa mavisi geçişli gradient duvar kağıdı */
     html, body, [data-testid="stAppViewContainer"], .main, .block-container, [data-testid="stMainBlockContainer"] {
         background: linear-gradient(135deg, #0e3029 0%, #113052 50%, #291740 100%) !important;
         background-attachment: fixed !important;
@@ -44,25 +45,11 @@ st.markdown("""
         color: #ffffff !important;
     }
     
-    /* İçerik taşıyıcı katmanın arka plan temizliği */
     [data-testid="stHeader"], [data-testid="stLayoutWidgetOnMainBlock"] {
         background-color: transparent !important;
     }
 
-    /* Tam Ekran Dijital Matris Kare Çizgileri */
-    [data-testid="stAppViewContainer"]::before {
-        content: "";
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.02) 1.5px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1.5px, transparent 1px);
-        background-size: 40px 40px;
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    /* Şık ve Şeffaf Borsa Hesaplama Kutuları */
+    /* Borsa Hesaplama Kutuları */
     div[data-testid="stMetric"] {
         background: rgba(15, 32, 67, 0.85) !important;
         padding: 22px !important;
@@ -74,60 +61,63 @@ st.markdown("""
 
     /* 🧠 LOGO PANELİ KUTUSU */
     .bta-logo-box {
-        text-align: center;
-        padding: 25px 0;
+        overflow: hidden; /* Taşmaları gizleyerek yürüyen bant oluşturur */
+        padding: 20px 0;
         margin-bottom: 20px;
         background: rgba(10, 20, 40, 0.75);
         border-radius: 16px;
         border: 1px solid rgba(255, 255, 255, 0.15);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
     }
-    /* Net ve Sabit Beyin Amblemi (Arka gölge kapatıldı) */
+
+    /* Sabit Kurumsal Beyin Amblemi */
     .bta-brain-fixed {
-        font-size: 60px;
-        vertical-align: middle;
+        font-size: 55px;
+        margin-left: 30px;
         margin-right: 20px;
         display: inline-block;
+        z-index: 10;
     }
     
-    /* 💎 BTA HAREKETLİ GÖKKUŞAĞI YAZISI VE EKSTRA YOĞUN YOĞUN GÖLGELENDİRME */
-    .bta-neon-rainbow {
-        font-family: 'Great Vibes', cursive;
-        font-size: 110px;
-        font-weight: bold;
-        letter-spacing: 6px;
-        background: linear-gradient(90deg, #ff007f, #7000ff, #00b0ff, #00e676, #ffeb3b, #ff007f);
-        background-size: 400% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: rainbowFlow 5s linear infinite, waveMotion 2.5s ease-in-out infinite alternate;
+    /* 🚀 AĞIR VE ELİT YÜRÜYEN KURUMSAL BTA YAZISI MİMARİSİ */
+    .bta-yuruyen-alan {
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .bta-neon-heavy {
+        font-family: 'Orbitron', sans-serif; /* Kurumsal Finans Fontu */
+        font-size: 70px;
+        font-weight: 900;
+        letter-spacing: 15px;
+        color: #00e676; /* Keskin Neon Yeşil */
         display: inline-block;
-        vertical-align: middle;
-        /* Canlı fona uyumlu yoğun 3D siber gölge katmanları */
-        filter: drop-shadow(3px 6px 10px rgba(0, 0, 0, 0.9)) 
-                drop-shadow(0 0 25px rgba(255, 0, 127, 0.8)) 
-                drop-shadow(0 0 40px rgba(0, 230, 118, 0.6));
+        animation: agirYuruBta 25s linear infinite; /* Son derece ağır, elit akış hızı */
+        filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.8)) 
+                drop-shadow(0 0 25px rgba(0, 176, 255, 0.6));
     }
     
-    @keyframes rainbowFlow {
-        0% { background-position: 0% 50%; }
-        100% { background-position: 400% 50%; }
-    }
-    @keyframes waveMotion {
-        0% { transform: translateY(-4px) scale(0.98); }
-        100% { transform: translateY(4px) scale(1.02); }
+    /* Soldan Sağa/Karşı Panele Doğru Ağır Yürüyüş Animasyonu */
+    @keyframes agirYuruBta {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 🧠 SABİT BEYNİLİ & DERIN GÖLGELİ BTA LOGO PANELİ
+# 3. 🧠 SABİT BEYNİLİ & KARŞI PANELE AĞIR YÜRÜYEN KURUMSAL BTA PANELİ
 # ==========================================
 st.markdown("""
 <div class='bta-logo-box'>
     <span class='bta-brain-fixed'>🧠</span>
-    <div class='bta-neon-rainbow'>BTA</div>
+    <div class='bta-yuruyen-alan'>
+        <div class='bta-neon-heavy'>BTA ALGORİTMİK İŞLEM MERKEZİ</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -162,7 +152,6 @@ if borsa_verisi_tamam:
     kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
     kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
     
-    # KONYA Günlük tavan veya %9 üstü toplam kârda konfetiler patlar
     if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
         st.balloons()
         st.snow()
