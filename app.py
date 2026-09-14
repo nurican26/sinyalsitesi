@@ -159,7 +159,7 @@ excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
 
-# 7. GÜVENLİ EXCEL ANALİZİ (Kilitlenmeyi Önleyen Alan)
+# 7. GÜVENLİ EXCEL ANALİZİ
 tablo_rows_html = ""
 if os.path.exists(excel_yolu):
     try:
@@ -193,15 +193,15 @@ if os.path.exists(excel_yolu):
                 else:
                     kz_str = "<span>-</span>"
                 
-                # Yıldız veritabanı güvenli okuma (.iloc hatası .iloc[0] olarak düzeltildi)
+                # SÖZLÜK/HATA VEREN ALAN TAMAMEN GÜVENLİ HALE GETİRİLDİ
                 df_yildiz = pd.read_csv(db_hisse_yildiz)
                 hisse_kayit = df_yildiz[df_yildiz["hisse"] == ha]
                 if hisse_kayit.empty:
                     begeniler = 0
                     yildizlar = 0.0
                 else:
-                    begeniler = int(hisse_kayit.iloc[0]["begeniler"])
-                    yildizlar = float(hisse_kayit.iloc[0]["yildizlar"])
+                    begeniler = int(hisse_kayit["begeniler"].values[0])
+                    yildizlar = float(hisse_kayit["yildizlar"].values[0])
                 
                 yildiz_str = "⭐" * int(round(yildizlar)) if yildizlar > 0 else "---"
                 tablo_rows_html += f'<tr><td>{p_temiz}</td><td>{ha}</td><td>{maliyet:,.2f} TL</td><td>{c_fiyat:,.2f} TL</td><td>{kz_str}</td><td>👍 {begeniler} | {yildiz_str}</td></tr>'
@@ -216,3 +216,4 @@ if basarili_hisseler:
 
 if veri_var_mi and tablo_rows_html != "":
     tablo_html = '<table class="borsa-tablo"><tr><th>BTA PUANI</th><th>HİSSE</th><th>ALGORİTMİK FİYATI</th><th>FİYAT</th><th>K/Z</th><th>KAYIT DEFTERİ (BEĞENİ/YILDIZ)</th></tr>' + tablo_rows_html + '</table>'
+
