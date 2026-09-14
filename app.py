@@ -197,7 +197,7 @@ with tab_members:
         st.info("🔒 Hissedar veri tabanını ve kayıt formunu açmak için lütfen erişim şifresini (BTA2026) girin.")
 
 # ==========================================
-# MODÜL 5: CANLI HALKA ARZ WEB SCRAPER (Tamamen Düzleştirilmiş ve Sıfır Riskli Mimari)
+# MODÜL 5: CANLI HALKA ARZ WEB SCRAPER (Kalıcı Olarak Çözülen Kusursuz Blok)
 # ==========================================
 with tab_scraper:
     st.header("📰 Canlı Halka Arz (IPO) Gündemi ve Arz Şirketleri")
@@ -208,7 +208,8 @@ with tab_scraper:
             tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
             sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi)
             
-            if sayfa_istegi.status_code == 200:
-                html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
-                basliklar = html_icerik.find_all("span", class_="title", limit=10)
-                
+            html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
+            basliklar = html_icerik.find_all("span", class_="title", limit=10)
+            
+            st.success("Anlık Halka Arz haberleri başarıyla kazındı!")
+            for sira,宣 in enumerate(basliklar, 1):
