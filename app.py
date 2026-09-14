@@ -25,7 +25,7 @@ if "yildizlar" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 EN ARKA PANEL VE AĞIR YÜRÜYEN KURUMSAL BTA CSS
+# 🌌 EN ARKA PANEL VE SAĞDAN SOLA AĞIR YÜRÜYEN BTA CSS
 # ==========================================
 st.markdown("""
 <style>
@@ -83,7 +83,7 @@ st.markdown("""
         z-index: 10;
     }
     
-    /* 🚀 AĞIR VE ELİT YÜRÜYEN KURUMSAL BTA YAZISI MİMARİSİ */
+    /* 🚀 SAĞDAN SOLA DOĞRU AĞIR YÜRÜYEN KURUMSAL BTA MİMARİSİ */
     .bta-yuruyen-alan {
         width: 100%;
         overflow: hidden;
@@ -96,21 +96,22 @@ st.markdown("""
         letter-spacing: 15px;
         color: #00e676; /* Keskin Neon Yeşil */
         display: inline-block;
+        padding-left: 100%; /* Başlangıç noktasını ekranın sağ dışı yapar */
         animation: agirYuruBta 25s linear infinite; /* Son derece ağır, elit akış hızı */
         filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.8)) 
                 drop-shadow(0 0 25px rgba(0, 176, 255, 0.6));
     }
     
-    /* Soldan Sağa/Karşı Panele Doğru Ağır Yürüyüş Animasyonu */
+    /* 🔄 İSTEK: Sağdan Sola Doğru Ağır Yürüyüş Animasyonu */
     @keyframes agirYuruBta {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-100%); }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. 🧠 SABİT BEYNİLİ & KARŞI PANELE AĞIR YÜRÜYEN KURUMSAL BTA PANELİ
+# 3. 🧠 SABİT BEYNİLİ & SAĞDAN SOLA KUSURSUZ YÜRÜYEN KURUMSAL BTA PANELİ
 # ==========================================
 st.markdown("""
 <div class='bta-logo-box'>
