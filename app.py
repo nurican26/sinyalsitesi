@@ -4,7 +4,7 @@ import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
-# 1. SAYFA PANEL AYARLARI
+# 1. SAYFA VE PANEL AYARLARI
 # ==========================================
 st.set_page_config(
     page_title="BTA Algoritmik İşlem ve Analiz Portalı",
@@ -32,7 +32,7 @@ st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
 # ==========================================
-# 3. ANA PANEL - BTA ALGORİTMA (SADECE LİSTE)
+# 3. ANA PANEL - BTA ALGORİTMA (SADECE TEK TABLO)
 # ==========================================
 st.title("🧠 BTA ALGORİTMA")
 st.warning(spk_metni)
@@ -57,7 +57,7 @@ try:
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
         kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
         
-        # Sadece A, C ve D yapısına uygun internetten beslenen tek tablo
+        # Sadece A, C ve D mantığına uygun internetten beslenen tek temiz tablo
         canli_veri_sozlugu = {
             "BTA HİSSE (A)": ["KONYA"],
             "BTA ALIM FİYATI (C)": [f"{bta_alim_fiyati:.2f} TL"],
