@@ -50,6 +50,37 @@ div[data-testid="stMetric"], div[data-testid="stExpander"] { background-color: #
     animation: btaYoru 15s infinite linear;
     text-shadow: 0 0 10px #00ffcc, 0 0 20px #1e90ff, 0 0 35px #0d9488;
 }
+
+/* SOHBET ALANI EK CSS TASARIMLARI */
+.sohbet-kapsayici {
+    background-color: #121d33;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 15px;
+    max-height: 350px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+.mesaj-kutusu {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    background-color: #1a263f;
+    border-left: 4px solid #1e90ff;
+}
+.mesaj-yonetici {
+    border-left: 4px solid #00ffcc !important;
+    background-color: #133337 !important;
+}
+.mesaj-bilgi {
+    font-size: 11px;
+    color: #8fa0b8;
+}
+.mesaj-metin {
+    font-size: 14px;
+    color: #ffffff;
+    margin-top: 3px;
+}
 </style>
 """
 st.markdown(css_kodu, unsafe_allow_html=True)
@@ -61,12 +92,16 @@ st_autorefresh(interval=5 * 1000, key="bta_anlik_senkronize_motoru")
 excel_yolu = "bta.xls.xlsm"
 db_notlar = "bta_hisse_notlari_db.csv"
 db_istatistik = "bta_site_istatistik_db.csv"
+db_sohbet = "bta_sohbet_db.csv"
 
 if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
     pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+
+if not os.path.exists(db_sohbet):
+    pd.DataFrame(columns=["id", "tarih", "kullanici", "mesaj", "durum", "rol"]).to_csv(db_sohbet, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
@@ -106,7 +141,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ (Hata riski sıfırlandı)
+# 🚀 TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -168,9 +203,3 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 
 # 11. ETKİLEŞİM VE BAŞARI ORANI ANKETİ
 st.write("---")
-st.markdown('<p style="font-size:16px; font-weight:bold; color:#00ffcc; margin-bottom:8px;">📊 PLATFORM ETKİLEŞİM VE BAŞARI ANALİZİ</p>', unsafe_allow_html=True)
-
-toplam_oy = basarili + basarisiz
-begeni_orani = int((basarili / toplam_oy) * 100) if toplam_oy > 0 else 85
-
-st.metric("👁️ Toplam Ziyaret Sayısı", f"{ziyaret} Kez")
