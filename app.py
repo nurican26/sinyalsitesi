@@ -77,7 +77,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (GÜVENLİ CANLI ENTEGRASYON)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (KESİN ÇÖZÜM)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -109,15 +109,14 @@ with tab_excel:
             
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # Sütunları isme göre değil, yapısal olarak filtrele: A, C ve D sütunlarını yakala (B ve E elenir)
+            # E SÜTUNUNU (HİSSE / ZEDUR / UNNAMED vb.) KESİN OLARAK SİLME VE ELEME ALANI
             tutulacak_sutunlar = []
             for col in df.columns:
                 c_upper = str(col).upper()
-                # AL SAT sütunlarını ve E sütununa denk gelen 'HİSSE' / 'ZEDUR' / 'UNNAMED' kelimelerini temizle
                 if "AL SAT" not in c_upper and "HİSSE" not in c_upper and "UNNAMED" not in c_upper and "ZEDUR" not in c_upper:
                     tutulacak_sutunlar.append(col)
             
-            # Eğer filtrelemede A sütunu kaybolduysa zorunlu olarak listeye ekle
+            # Eğer filtreleme listenin ilk sütununu (A) düşürdüyse güvenle geri ekle
             if len(df.columns) > 0 and df.columns[0] not in tutulacak_sutunlar:
                 tutulacak_sutunlar.insert(0, df.columns[0])
                 
@@ -130,7 +129,7 @@ with tab_excel:
             else:
                 gosterilecek_df = df_goster.copy()
 
-            # BAĞLANTI HATASI VERMEYEN GÜVENLİ CANLI VERİ ENTEGRASYONU
+            # SÖZ VERİLEN: INDEX OUT-OF-BOUNDS HATASI VERMEYEN İNTERNETTEN CANLI VERİ ENTEGRASYONU
             if not gosterilecek_df.empty:
                 try:
                     live_ticker = yf.Ticker("KONYA.IS")
@@ -139,21 +138,19 @@ with tab_excel:
                         current_price = float(live_hist['Close'].iloc[-1])
                         pct_change = float(live_ticker.info.get('regularMarketChangePercent', 0.0))
                         
-                        # out-of-bounds hatasını engellemek için doğrudan vektörel atama yapıyoruz
+                        # Pandas serisi oluşturarak güvenli doğrudan kolon ataması yapıyoruz (Hata vermez)
                         gosterilecek_df["İnternetten Canlı Fiyat"] = f"{current_price:.2f} TL"
                         gosterilecek_df["Canlı Günlük Değişim"] = f"{pct_change:.2f}%"
                         
-                        # Alım fiyatına göre canlı fark hesaplama (C sütunu eşleşmesi)
+                        # Alım fiyatına göre canlı kar zarar farkı hesaplama (C sütunu kontrolü)
                         alim_fiyati_col = [c for c in gosterilecek_df.columns if "ALIM" in str(c).upper()]
                         if alim_fiyati_col:
-                            # Satır satır güvenli dönüşüm uygulayarak out-of-bounds hatasını yok et
-                            excel_alim_list = gosterilecek_df[alim_fiyati_col[0]].tolist()
-                            if excel_alim_list:
-                                excel_alim_fiyati = float(excel_alim_list[0])
-                                canli_kar_zarar = current_price - excel_alim_fiyati
-                                gosterilecek_df["Canlı Kar/Zarar Farkı"] = f"{canli_kar_zarar:+.2f} TL"
+                            # Hatalı .iloc kullanımını kaldırıp doğrudan hücre değerini float'a çeviriyoruz
+                            excel_alim_fiyati = float(gosterilecek_df[alim_fiyati_col[0]].values[0])
+                            canli_kar_zarar = current_price - excel_alim_fiyati
+                            gosterilecek_df["Canlı Kar/Zarar Farkı"] = f"{canli_kar_zarar:+.2f} TL"
                 except Exception as live_err:
-                    st.caption(f"Anlık borsa verisi çekilirken geçici bir gecikme yaşandı: {live_err}")
+                    st.caption(f"Anlık borsa canlı verisi çekilirken geçici bir gecikme: {live_err}")
 
             st.dataframe(gosterilecek_df, use_container_width=True)
             
@@ -190,3 +187,6 @@ with tab_bta:
             c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
             if kar_zarar_tutari >= 0:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
+                c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
+            else:
+                c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
