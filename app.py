@@ -30,35 +30,35 @@ def halka_arz_haberlerini_kazi():
 # 1. SAYFA VE PANEL AYARLARI
 # ==========================================
 st.set_page_config(
-    page_title="BTA Kurumsal Analiz Portalı",
-    page_icon="📊",
+    page_title="BTA Algoritmik İşlem ve Analiz Portalı",
+    page_icon="🧠",
     layout="wide"
 )
 
-# Canlı Sohbet Veritabanı Hafızası
+# Canlı Sohbet Veritabanı Hafızasındaki 'id' Hatası Kökten Çözüldü
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
-        {"id": 111, "user": "Sistem", "time": "12:00:00", "text": "BTA Genel Canlı Sohbet Odasına Hoş Geldiniz!"}
+        {"id": 9999, "user": "Sistem", "time": "12:00:00", "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"}
     ]
 
-# Hissedar BTA Hisse Kayıt Listesi Hafızası (İstek Üzerine Güncellendi)
+# Hissedar BTA Hisse Kayıt Listesi Hafızası
 if "bta_members_list" not in st.session_state:
     st.session_state["bta_members_list"] = [
-        {"id": 222, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
+        {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
     ]
 
 # Yan menü (Sidebar) kontrolleri
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-# GİZLİ YÖNETİCİ GİRİŞİ (Sadece Nurican Bey İçin - Şifre: BTA2026)
+# GİZLİ YÖNETİCİ GİRİŞİ (Şifre: BTA2026)
 st.sidebar.subheader("🔒 Yönetici Alanı")
-admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password", help="Küfür silme ve kayıt düzenleme yetkisi açar.")
+admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password", help="Excel yönetimini, mesaj silmeyi ve kayıt düzenlemeyi açar.")
 is_admin = (admin_pass == "BTA2026")
 
 if is_admin:
     st.sidebar.success("⚡ Yönetici Yetkileri Aktif!")
 
-# Otomatik Yenileme Ayarı (Sohbet ve veriler için 5 saniyede bir tetiklenir)
+# Otomatik Yenileme Ayarı (5 saniyede bir veri tazeleme)
 auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
 if auto_refresh:
     refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 2, 60, 5)
@@ -70,12 +70,12 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 # ==========================================
 # 2. ANA PANEL BAŞLIĞI
 # ==========================================
-st.title("📊 BTA Kurumsal Analiz ve Finans Portalı")
-st.write("Excel veri entegrasyonu, KONYA canlı kâr/zarar odası ve BTA özel topluluk paneli.")
+st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
+st.write("BTA algoritmik veri entegrasyonu, KONYA canlı kâr/zarar odası ve kurumsal takip merkezi.")
 
-# Sekmeli Menü Tasarımı (Herkese Açık)
+# Sekmeli Menü Tasarımı
 tab_excel, tab_bta, tab_chat, tab_members, tab_scraper = st.tabs([
-    "📂 BTA Excel Veri İnceleme", 
+    "📂 BTA Excel Veri Analizi", 
     "📈 KONYA Canlı Veri Odası", 
     "💬 Canlı Sohbet Odası",
     "👥 BTA Hissedarları Kayıt Listesi",
@@ -83,27 +83,45 @@ tab_excel, tab_bta, tab_chat, tab_members, tab_scraper = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (AL-SAT Gizlendi)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (YALNIZCA YÖNETİCİ AYARLI)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
-    dosya_kaynagi = st.radio("Dosya Kaynağı Seçin:", ["Klasördeki Dosyaları Kullan", "Yeni Dosya Yükle"])
-    secilen_dosya = None
     
-    if dosya_kaynagi == "Klasördeki Dosyaları Kullan" and excel_dosyalari:
-        secilen_dosya = st.selectbox("Analiz Edilecek Dosya:", excel_dosyalari)
-    else:
-        secilen_dosya = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
-        
+    # VARSAYILAN DOSYA AYARI (Kullanıcılar paneli görmeden arkada yüklenir)
+    varsayilan_dosya = None
+    if excel_dosyalari:
+        # Klasörde bta.xlsx veya nurican.xlsm varsa ilk onu seçer
+        hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
+        if hedef_dosyalar:
+            varsayilan_dosya = hedef_dosyalar[0]
+        else:
+            varsayilan_dosya = excel_dosyalari[0]
+
+    # İSTEK: Dosya yükleme ve kaynak seçme alanlarını SADECE yönetici şifresini giren Nurican Bey görebilir!
+    secilen_dosya = varsayilan_dosya
+    if is_admin:
+        st.subheader("🛠️ Yönetici Excel Kontrolleri")
+        dosya_kaynagi = st.radio("Dosya Kaynağı Seçin:", ["Klasördeki Dosyaları Kullan", "Yeni Dosya Yükle"])
+        if dosya_kaynagi == "Klasördeki Dosyaları Kullan" and excel_dosyalari:
+            secilen_dosya = st.selectbox("Analiz Edilecek Dosya:", excel_dosyalari, index=excel_dosyalari.index(varsayilan_dosya) if varsayilan_dosya in excel_dosyalari else 0)
+        else:
+            secilen_dosya = st.file_uploader("Bir Excel (.xlsx, .xlsm) dosyası yükleyin", type=["xlsx", "xlsm"])
+        st.markdown("---")
+
     if secilen_dosya is not None:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            st.success(f"Dosya başarıyla yüklendi! Toplam **{len(sayfa_isimleri)}** çalışma sayfası bulundu.")
             
-            aktif_sayfa = st.selectbox("Görüntülenecek Sayfa:", sayfa_isimleri)
+            # Sayfa seçimi alanını da yöneticinin insiyatifine bırakıyoruz, kullanıcı direkt ilk sayfayı görür
+            aktif_sayfa = sayfa_isimleri[0]
+            if is_admin and len(sayfa_isimleri) > 1:
+                aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
+                
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
+            # AL SAT verilerini kullanıcılardan tamamen gizleme filtresi
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_goster = df[filtrelenmis_sutunlar]
             
@@ -116,6 +134,8 @@ with tab_excel:
             st.dataframe(gosterilecek_df, use_container_width=True)
         except Exception as e:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
+    else:
+        st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
 # MODÜL 2: KONYA CANLI TAKİP & KAR/ZARAR & TAVAN KUTLAMASI
@@ -198,18 +218,3 @@ with tab_chat:
 # ==========================================
 # MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ (Şifresiz BTA Hisse Kaydı & Admin Düzenleme)
 # ==========================================
-with tab_members:
-    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
-    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
-    
-    # Herkese Açık Yeni BTA Hisse Kayıt Formu (Hata veren sözdizimi tamamen düzleştirildi)
-    with st.expander("➕ Yeni Hissedar & BTA Hisse Kaydı Oluştur (Şifresiz)"):
-        with st.form("member_form", clear_on_submit=True):
-            input_name = st.text_input("Hissedar İsim Soyisim:")
-            input_stock = st.text_input("Hisse Kodu (Örn: KONYA, THYAO, EREGL):", value="KONYA")
-            input_cost = st.number_input("Hisse Maliyeti (TL):", min_value=0.0, value=4100.0, step=10.0)
-            input_qty = st.number_input("Adet / Lot Miktarı:", min_value=1, value=10, step=1)
-            add_member_btn = st.form_submit_button("Sisteme Güvenli Kaydet 💾")
-            
-            if add_member_btn and input_name and input_stock:
-                m_id = int(datetime.now().timestamp() * 1000)
