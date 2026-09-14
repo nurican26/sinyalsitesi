@@ -160,9 +160,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar
+            varsayilan_dosya = hedef_dosyalar[0]
         else:
-            varsayilan_dosya = excel_dosyalari
+            varsayilan_dosya = excel_dosyalari[0]
 
     secilen_dosya = varsayilan_dosya
     if is_admin:
@@ -178,16 +178,17 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri
+            aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            if not df.empty:
-                ilk_sutun_adi = df.columns
-                df_goster = df[[ilk_sutun_adi]]
+            # --- SADECE İLK SÜTUNU (A SÜTUNUNU) GÖSTERME ALANI (DÜZELTİLDİ) ---
+            if len(df.columns) > 0:
+                df_goster = df[[df.columns[0]]]
             else:
                 df_goster = df
+            # -----------------------------------------------------------------
             
             arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
@@ -209,7 +210,6 @@ with tab_bta:
     kurumsal_ticker = "KONYA.IS"
     bta_alim_fiyati = 4100.00 
     
-    # Try-Except hatasını kökten bitirmek için sadece tek satıra indirgendi
     tarihce = pd.DataFrame()
     gunluk_degisim_yuzde = 0.0
     guncel_fta_fiyati = 0.0
@@ -224,7 +224,6 @@ with tab_bta:
     except Exception as e:
         canli_veri_hatasi = True
 
-    # Hesaplamalar ve arayüz çizimleri try-except dışına alınarak garantiye bağlandı
     if canli_veri_hatasi:
         st.error("Canlı takip motorunda teknik bir aksaklık oluştu veya sunucuya erişilemedi.")
     elif tarihce.empty:
@@ -235,3 +234,4 @@ with tab_bta:
             gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
         
         kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
+        kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
