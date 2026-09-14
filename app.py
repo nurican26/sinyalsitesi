@@ -8,12 +8,10 @@ from datetime import datetime
 
 # ==========================================
 # 0. KALICI VERİTABANI BAĞLANTISI (SQLite)
-# (Sayfa yenilense bile sohbet ve kayıtlar asla silinmez)
 # ==========================================
 def veritabanini_hazirla():
     conn = sqlite3.connect("bta_kurumsal_veri.db", check_same_thread=False)
     cursor = conn.cursor()
-    # Sohbet tablosu
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS sohbet (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,7 +20,6 @@ def veritabanini_hazirla():
             text TEXT
         )
     """)
-    # Hissedar portföy tablosu
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS hissedarlar (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +83,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Global BTA Fiyat Referansı yedek değeri
 if "global_bta_price" not in st.session_state:
     st.session_state["global_bta_price"] = 4100.0
 
@@ -100,25 +96,20 @@ spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum
 # ==========================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-# GİZLİ YÖNETİCİ GİRİŞİ (Şifre: BTA2026)
-st.sidebar.subheader("🔒 Yönetici Alanı")
 admin_pass = st.sidebar.text_input("Yönetici Şifresi:", type="password", help="Excel yönetimini, mesaj silmeyi ve kayıt düzenlemeyi açar.")
 is_admin = (admin_pass == "BTA2026")
 
 if is_admin:
     st.sidebar.success("⚡ Yönetici Yetkileri Aktif!")
 
-# Otomatik Yenileme Ayarı (5 saniyede bir veri tazeleme)
 auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
 if auto_refresh:
     refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 2, 60, 5)
     st_autorefresh(interval=refresh_interval * 1000, key="bta_refresh_counter")
 
-# Sol menü tabanına SPK uyarısını çakıyoruz
 st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
-# Klasördeki mevcut Excel/Macro dosyalarını algılama
 excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 
 # ==========================================
@@ -128,7 +119,6 @@ st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
 st.warning(spk_metni)
 st.markdown("---")
 
-# Sekmeli Menü Tasarımı
 tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
     "📂 BTA Excel Veri Analizi", 
     "📈 KONYA Canlı Veri Odası", 
@@ -137,7 +127,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D SÜTUNLARI EKSİKSİZ VERİ GERİ GETİRME)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (A, C, D KOLONLARI)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -162,13 +152,9 @@ with tab_excel:
 
     if secilen_dosya is not None:
         try:
-            # Excel dosyasını sözlük hatası vermeden güvenle DataFrame olarak çekiyoruz
             df = pd.read_excel(secilen_dosya, sheet_name=0, engine='openpyxl')
-            
-            # Sütun isimlerinin başındaki ve sonundaki boşlukları temizleyerek algılamayı garanti ediyoruz
             df.columns = df.columns.astype(str).str.strip()
             
-            # 🚀 İSTEK: Sadece A, C ve D sütunları gösterilecek (BTA HİSSE, BTA ALIM FİYATI, BTA PUAN)
             istenen_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
             mevcut_istenenler = [col for col in df.columns if col in istenen_sutunlar]
             
@@ -177,39 +163,36 @@ with tab_excel:
             else:
                 df_goster = df
             
-            # Kaybolan satırları ve fiyatları geri getirmek için hücre bazlı esnek temizleme mimarisi
-            # Sadece 'BTA HİSSE' sütunu tamamen boş veya kelime olarak 'None' olan gereksiz satırlar elenir
-            if "BTA HİSSE" in df_goster.columns:
-                df_goster = df_goster[df_goster["BTA HİSSE"].notna()]
-                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.strip() != ""]
-                df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() != "NONE"]
-                
-                # KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip canlı odaya bağlama algoritması
+            df_goster = df_goster.dropna(how='all')
+            
+            if "BTA HİSSE" in df_goster.columns and "BTA ALIM FİYATI" in df_goster.columns:
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper().str.strip() == "KONYA"]
-                if not konya_satirlari.empty and "BTA ALIM FİYATI" in df_goster.columns:
+                if not konya_satirlari.empty:
                     st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
             
-            # Tüm hisselerinizi, fiyatları ve puanları içeren temizlenmiş A, C, D tablosunu listeliyoruz
             st.dataframe(df_goster, use_container_width=True)
             
         except Exception as e:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
-    else:
-        st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
+else:
+    st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ
+# MODÜL 2: KONYA CANLI TAKİP PANELİ (GÜVENLİ VE HİZALANMIŞ SÜRÜM)
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     bta_alim_fiyati = st.session_state["global_bta_price"]
     kurumsal_ticker = "KONYA.IS"
+    
     try:
         hisse = yf.Ticker(kurumsal_ticker)
         tarihce = hisse.history(period="2d", interval="1d")
+        
         if not tarihce.empty:
             guncel_fta_fiyati = tarihce['Close'].iloc[-1]
             gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
+            
             if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
                 onceki_kapanis = tarihce['Close'].iloc[-2]
                 gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
@@ -223,3 +206,28 @@ with tab_bta:
                 st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
             
             st.subheader("📊 Canlı Hesap Tablosu (Excel'den Otomatik Çekilen Referansla)")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
+            c2.metric("Excel'den Gelen Otomatik Alım Fiyatı", f"{bta_alim_fiyati:.2f} TL")
+            
+            if kar_zarar_tutari >= 0:
+                c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
+                c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
+            else:
+                c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
+                c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+                
+            st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
+            st.line_chart(tarihce['Close'])
+        else:
+            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
+            
+    except Exception as borsa_hatasi:
+        st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {borsa_hatasi}")
+
+# ==========================================
+# MODÜL 3: CANLI SOHBET ODASI
+# ==========================================
+with tab_chat:
+    st.header("💬 BTA Genel Canlı Sohbet Odası")
+    st.write("Sohbet odası veritabanı desteklidir, yenilendiğinde mesajlar asla kaybolmaz.")
