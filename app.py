@@ -9,7 +9,7 @@ from datetime import datetime
 # 1. SAYFA VE PANEL AYARLARI
 # ==========================================
 st.set_page_config(
-    page_title="BTA Algoritmik İşlem ve Analiz Portalı",
+    page_title="BTA Algoritmik İşlem ve Analiz Portালী",
     page_icon="🧠",
     layout="wide"
 )
@@ -33,7 +33,7 @@ if "bta_members_list" not in st.session_state:
 # ==========================================
 # GÜVENLİ VE HATA VERMEYEN SPK YASAL METNİ
 # ==========================================
-spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. This görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
+spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
 # 2. SABİT SOL MENÜ (SIDEBAR) & GÜVENLİK
@@ -158,12 +158,6 @@ with tab_bta:
             else:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-            
-            # --- SADECE GRAFİK PANELİ VE BAŞLIĞI KALDIRILDI ---
-            # st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
-            # st.line_chart(tarihce['Close'])
-            # --------------------------------------------------
-            
         else:
             st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
     except Exception as e:
@@ -202,3 +196,8 @@ with tab_chat:
 # MODÜL 4: BTA HİSSEDARLARI KAYIT LİSTESİ
 # ==========================================
 with tab_members:
+    st.header("👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi")
+    st.write("BTA Grubuna dahil olan yatırımcıların elindeki BTA hisselerini şifresiz kayıt panelidir.")
+    
+    df_members = pd.DataFrame(st.session_state["bta_members_list"])
+    if not df_members.empty and "id" in df_members.columns:
