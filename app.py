@@ -18,7 +18,7 @@ st.set_page_config(
 # Yan menü (Sidebar) kontrolleri
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-# Otomatik Yenileme Ayarı (streamlit-autorefresh)
+# Otomatik Yenileme Ayarı (Sayfa 10 saniyede bir verileri tazeler)
 auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
 if auto_refresh:
     refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 5, 120, 10)
@@ -31,17 +31,17 @@ excel_dosyalari = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xlsm'))]
 # 2. ANA PANEL BAŞLIĞI
 # ==========================================
 st.title("📊 BTA Kurumsal Analiz ve Finans Portalı")
-st.write("Excel veri entegrasyonu, sabit BTA veri takibi ve canlı halka arz haber akış paneli.")
+st.write("Excel veri entegrasyonu, KONYA hissesi anlık kar/zarar analizi ve tavan takip ekranı.")
 
-# Sekmeli Menü Tasarımı (AL-SAT hisseleri listelerden kaldırılmıştır)
+# Sekmeli Menü Tasarımı (AL-SAT hisseleri listelerden tamamen kaldırılmıştır)
 tab_excel, tab_bta, tab_scraper = st.tabs([
-    "📂 BTA Excel & Makro Analizi", 
-    "📈 KONYA Canlı Veri & Kar/Zarar Takibi", 
+    "📂 BTA Excel Veri İnceleme", 
+    "📈 KONYA Canlı Veri & Kar/Zarar Odası", 
     "📰 Canlı Halka Arz (IPO) Gündemi"
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (AL-SAT Kısıtlamalı)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (AL-SAT Gizlendi)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -64,8 +64,7 @@ with tab_excel:
             aktif_sayfa = st.selectbox("Görüntülenecek Sayfa:", sayfa_isimleri)
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # İstek: AL SAT listelenmesin, sadece ana BTA hisse mantığı kalsın.
-            # Tabloda "BTA AL SAT" kolonunu veya al sat verilerini kullanıcıya göstermiyoruz.
+            # İstek Doğrultusunda: "BTA AL SAT" kolonu ve tüm türevleri tablodan gizleniyor
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_goster = df[filtrelenmis_sutunlar]
             
@@ -82,60 +81,71 @@ with tab_excel:
             st.error(f"Excel verisi işlenirken bir hata oluştu: {e}")
 
 # ==========================================
-# MODÜL 2: SADECE KONYA HİSSE TAKİBİ & +9 KUTLAMA ALGORİTMASI
+# MODÜL 2: KONYA CANLI TAKİP & KAR/ZARAR & TAVAN KUTLAMASI
 # ==========================================
 with tab_bta:
-    st.header("📈 BTA Kurumsal Veri & Hedef Takip Ekranı")
+    st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     
     kurumsal_ticker = "KONYA.IS"
-    # Tablonuzun 1. satırındaki ALIM FİYATI: 41.00 TL
-    bta_alim_fiyati = 41.00 
+    # Gerçek alım fiyatınız 4100 TL olarak tanımlandı
+    bta_alim_fiyati = 4100.00 
     
     try:
         hisse = yf.Ticker(kurumsal_ticker)
-        tarihce = hisse.history(period="1mo", interval="1d")
+        tarihce = hisse.history(period="2d", interval="1d")
         
         if not tarihce.empty:
             guncel_fta_fiyati = tarihce['Close'].iloc[-1]
+            gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
+            if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
+                # Alternatif hesaplama
+                onceki_kapanis = tarihce['Close'].iloc[-2]
+                gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
             
-            # Kar/Zarar Yüzdesi Hesaplama
-            kar_zarar_yuzdesi = ((guncel_fta_fiyati - bta_alim_fiyati) / bta_alim_fiyati) * 100
+            # Alım Fiyatına Göre Net Kar/Zarar Hesaplama
+            kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
+            kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
             
-            # +9 VE ÜSTÜ YAPTIĞINDA ÇALIŞACAK TEBRİK / KUTLAMA ODASI
-            if kar_zarar_yuzdesi >= 9.0:
-                st.balloons()  # Ekranda uçan konfeti/balon efekti yaratır
-                st.snow()      # Görsel şöleni artırır
-                st.success(f"🚀 **TEBRİKLER! KONYA HİSSESİNDE +%9 HEDEFİ AŞILDI!** 🥳🎉\n\n Mevcut FTA Fiyatı: **{guncel_fta_fiyati:.2f} TL** seviyesine ulaşarak BTA alım fiyatınız olan {bta_alim_fiyati} TL üzerinden tam **% {kar_zarar_yuzdesi:.2f}** kar marjı yakalamıştır. Odada kutlamalar başlasın!")
+            # 🚨 %9+ KAR VE GÜNLÜK HİSSE TAVAN OLDUĞUNDA KUTLAMA ODASI TETİKLENİR
+            # Borsa İstanbul'da günlük tavan marjı yaklaşık %9.90 ila %10.00 civarındadır.
+            if kar_zarar_yuzdesi >= 9.0 or gunluk_degisim_yuzde >= 9.90:
+                st.balloons()  # Ekranda uçan balon efekti
+                st.snow()      # Kar yağışı görsel efekti
+                st.success(f"🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ TAVAN OLDU VEYA +%9 KARA ULAŞTI!** 🥳🎉")
+                st.info(f"Hisse anlık olarak tavan serisine girdi veya alım maliyetiniz olan {bta_alim_fiyati} TL üzerinden büyük hedefe ulaştı!")
             
-            # Canlı Gösterge Kartları
-            m1, m2, m3 = st.columns(3)
-            m1.metric("KONYA Güncel FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL")
-            m2.metric("Referans Alım Fiyatınız", f"{bta_alim_fiyati:.2f} TL")
+            # Net ve Okunabilir Kar / Zarar Tablosu (Ekranda eksik olan kısım)
+            st.subheader("📊 Canlı Hesap Tablosu ve Portföy Durumu")
             
-            # Kar/Zarar durumuna göre renkli metrik gösterimi
-            if kar_zarar_yuzdesi >= 0:
-                m3.metric("Anlık Kar/Zarar Durumu", f"+% {kar_zarar_yuzdesi:.2f}", delta_color="normal")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Mevcut FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
+            c2.metric("Sizin Alım Fiyatınız", f"{bta_alim_fiyati:.2f} TL")
+            
+            # Kar/Zarar durum renk eşikleri
+            if kar_zarar_tutari >= 0:
+                c3.metric("Net Kar/Zarar (TL Bazında)", f"+{kar_zarar_tutari:.2f} TL")
+                c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
             else:
-                m3.metric("Anlık Kar/Zarar Durumu", f"% {kar_zarar_yuzdesi:.2f}", delta_color="inverse")
-            
+                c3.metric("Net Kar/Zarar (TL Bazında)", f"{kar_zarar_tutari:.2f} TL")
+                c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
+                
             # Canlı Grafik Alanı
-            st.subheader("📊 KONYA - Canlı Fiyat Değişim Trendi")
+            st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
             st.line_chart(tarihce['Close'])
         else:
-            st.warning("Canlı borsa sunucularından anlık veri çekilemedi.")
+            st.warning("Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
     except Exception as e:
-        st.error(f"Canlı takip motorunda hata: {e}")
+        st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
 # MODÜL 3: CANLI HALKA ARZ WEB SCRAPER (BloombergHT Entegrasyonu)
 # ==========================================
 with tab_scraper:
-    st.header("📰 Canlı Halka Arz (IPO) Haber Botu")
-    st.write("Sistem doğrudan Türkiye piyasalarındaki **Yeni Halka Arz Gündemine** odaklanmıştır.")
+    st.header("📰 Canlı Halka Arz (IPO) Gündemi ve Arz Şirketleri")
     
     if st.button("Halka Arz Gündemini Yenile ve Kazı"):
         try:
-            hedef_url = "https://www.bloomberght.com/halka-arz"
+            hedef_url = "https://bloomberght.com"
             tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
             
             sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi)
@@ -148,7 +158,7 @@ with tab_scraper:
                     basliklar = html_icerik.find_all("h3", limit=10)
                 
                 if basliklar:
-                    st.success("Anlık Halka Arz haberleri finans servislerinden başarıyla kazındı!")
+                    st.success("Anlık Halka Arz haberleri ve arz şirketleri başarıyla kazındı!")
                     for sira, baslik in enumerate(basliklar, 1):
                         metin = baslik.get_text(strip=True)
                         if metin:
