@@ -23,7 +23,7 @@ if "global_bta_price" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 PRO BORSA TERMİNALİ TASARIMI (CSS ENJEKSİYONU)
+# 🌌 PRO BORSA TERMİNALİ TASARIMI (HATASI DÜZELTİLEN ALAN)
 # ==========================================
 st.markdown("""
 <style>
@@ -58,11 +58,8 @@ st.markdown("""
         margin-bottom: 10px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
-    .borsa-kart-hata {
-        border-left-color: #da3637;
-    }
 </style>
-""", unsafe_index=True)
+""", unsafe_allow_html=True)
 
 # ==========================================
 # 0. KALICI GÜVENLİ VERİ MOTORU (SQLite)
@@ -76,14 +73,12 @@ def db_hazirla():
     cursor.execute("CREATE TABLE IF NOT EXISTS sohbet (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, time TEXT, text TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS hissedarlar (id INTEGER PRIMARY KEY AUTOINCREMENT, isim TEXT, hisse TEXT, maliyet REAL, adet INTEGER)")
     cursor.execute("CREATE TABLE IF NOT EXISTS reaksiyon (id INTEGER PRIMARY KEY, begeni_sayisi INTEGER, yildiz_puani REAL)")
-    # Reaksiyon satırı yoksa ilk referansı ekle
     cursor.execute("INSERT OR IGNORE INTO reaksiyon (id, begeni_sayisi, yildiz_puani) VALUES (1, 0, 5.0)")
     conn.commit()
     conn.close()
 
 db_hazirla()
 
-# Veritabanı Yardımcı Fonksiyonları
 def db_mesaj_ekle(user, time, text):
     conn = db_baglan()
     conn.cursor().execute("INSERT INTO sohbet (user, time, text) VALUES (?, ?, ?)", (user, time, text))
@@ -210,7 +205,7 @@ with tab_excel:
         st.info("💡 Sistemde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ (BEĞENİ & YILDIZ PUANLAMALI)
+# MODÜL 2: KONYA CANLI TAKİP PANELİ
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
@@ -244,3 +239,5 @@ with tab_bta:
             st.snow()
             st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
         
+        st.subheader("📊 Canlı Hesap Tablosu")
+        c1, c2, c3, c4 = st.columns(4)
