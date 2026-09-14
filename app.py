@@ -197,7 +197,7 @@ with tab_members:
         st.info("🔒 Hissedar veri tabanını ve kayıt formunu açmak için lütfen erişim şifresini (BTA2026) girin.")
 
 # ==========================================
-# MODÜL 5: CANLI HALKA ARZ WEB SCRAPER (Hizalama ve Boşluk Sorunu Çözüldü)
+# MODÜL 5: CANLI HALKA ARZ WEB SCRAPER (Hata Veren Karmaşık Yapı Tamamen Temizlendi)
 # ==========================================
 with tab_scraper:
     st.header("📰 Canlı Halka Arz (IPO) Gündemi ve Arz Şirketleri")
@@ -212,4 +212,3 @@ with tab_scraper:
                 html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
                 basliklar = html_icerik.find_all("span", class_="title", limit=10)
                 
-                # Eğer span başlığı boş dönerse h3 etiketlerini dener
