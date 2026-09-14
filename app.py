@@ -1,21 +1,24 @@
-import streamlit as st
-import pandas as pd
-import yfinance as yf
-from streamlit_autorefresh import st_autorefresh
 import os
 from datetime import datetime
 
+import pandas as pd
+import streamlit as st
+import yfinance as yf
+from streamlit_autorefresh import st_autorefresh
+
+
 # ==========================================
-# 1. SAYFA VE PANEL AYARLARI
+# SAYFA AYARLARI
 # ==========================================
 st.set_page_config(
-    page_title="BTA Algoritmik İşlem ve Analiz Portalı",
+    page_title="BTA Algoritmik İşlem Portalı",
     page_icon="🧠",
     layout="wide"
 )
 
+
 # ==========================================
-# SAYFA ARKA PLANI
+# ARKA PLAN TASARIMI
 # ==========================================
 st.markdown(
     """
@@ -34,7 +37,7 @@ st.markdown(
     }
 
     [data-testid="stSidebar"] > div:first-child {
-        background: rgba(7, 19, 31, 0.94) !important;
+        background: rgba(7, 19, 31, 0.95) !important;
     }
 
     [data-testid="stHeader"] {
@@ -45,536 +48,592 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Canlı Sohbet Hafızası
+
+# ==========================================
+# DOSYA AYARLARI
+# ==========================================
+KAYIT_DOSYASI = "bta_kayit_defteri.csv"
+
+KAYIT_SUTUNLARI = [
+    "id",
+    "tarih",
+    "hissedar",
+    "hisse_kodu",
+    "bta_puani",
+    "alim_fiyati",
+    "adet"
+]
+
+if not os.path.exists(KAYIT_DOSYASI):
+    pd.DataFrame(
+        columns=KAYIT_SUTUNLARI
+    ).to_csv(
+        KAYIT_DOSYASI,
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+
+# ==========================================
+# YARDIMCI FONKSİYONLAR
+# ==========================================
+def kayitlari_oku():
+    try:
+        return pd.read_csv(
+            KAYIT_DOSYASI,
+            encoding="utf-8-sig"
+        )
+    except Exception:
+        return pd.DataFrame(columns=KAYIT_SUTUNLARI)
+
+
+def kayit_ekle(
+    hissedar,
+    hisse_kodu,
+    bta_puani,
+    alim_fiyati,
+    adet
+):
+    df_kayitlar = kayitlari_oku()
+
+    yeni_kayit = pd.DataFrame(
+        [{
+            "id": int(datetime.now().timestamp() * 1000),
+            "tarih": datetime.now().strftime(
+                "%d.%m.%Y %H:%M:%S"
+            ),
+            "hissedar": hissedar,
+            "hisse_kodu": hisse_kodu.upper(),
+            "bta_puani": bta_puani,
+            "alim_fiyati": alim_fiyati,
+            "adet": adet
+        }]
+    )
+
+    df_kayitlar = pd.concat(
+        [df_kayitlar, yeni_kayit],
+        ignore_index=True
+    )
+
+    df_kayitlar.to_csv(
+        KAYIT_DOSYASI,
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+
+# ==========================================
+# OTURUM VERİLERİ
+# ==========================================
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {
-            "id": 9999,
+            "id": 1,
             "user": "Sistem",
-            "time": "12:00:00",
-            "text": "BTA Algoritmik Canlı Sohbet Odasına Hoş Geldiniz!"
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "text": "BTA canlı sohbet odasına hoş geldiniz."
         }
     ]
-else:
-    for i, msg in enumerate(st.session_state["chat_messages"]):
-        if "id" not in msg:
-            msg["id"] = int(datetime.now().timestamp() * 1000) + i
 
-# Hissedar Listesi
-if "bta_members_list" not in st.session_state:
-    st.session_state["bta_members_list"] = [
-        {
-            "id": 8888,
-            "Hissedar Adı": "Nurican Bey",
-            "Sahip Olduğu BTA Hissesi": "KONYA.IS",
-            "Hisse Maliyeti (TL)": 4100.0,
-            "Adet": 10
-        }
-    ]
 
 # ==========================================
-# SPK YASAL UYARI METNİ
+# YASAL UYARI
 # ==========================================
 spk_metni = (
-    "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri "
-    "yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı "
-    "kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri "
-    "arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. "
-    "Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel "
-    "görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri "
-    "tercihlerinize uygun olmayabilir. Bu platformda sunulan veriler tamamen "
-    "kurumsal bilgilendirme amaçlı olup kesinlikle 'AL', 'SAT' veya 'TUT' tavsiyesi "
-    "niteliği taşımamaktadır."
+    "⚠️ Bu platform yatırım danışmanlığı kapsamında değildir. "
+    "Buradaki veriler yalnızca genel bilgilendirme amacıyla sunulmaktadır. "
+    "Hiçbir bilgi AL, SAT veya TUT tavsiyesi değildir."
 )
+
 
 # ==========================================
 # SOL MENÜ
 # ==========================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-st.sidebar.subheader("🔒 Yönetici Alanı")
-
 admin_pass = st.sidebar.text_input(
-    "Yönetici Şifresi:",
-    type="password",
-    help="Excel yönetimini, mesaj silmeyi ve kayıt düzenlemeyi açar."
+    "Yönetici Şifresi",
+    type="password"
 )
 
 is_admin = admin_pass == "BTA2026"
 
 if is_admin:
-    st.sidebar.success("⚡ Yönetici Yetkileri Aktif!")
+    st.sidebar.success("Yönetici yetkileri aktif.")
 
-auto_refresh = st.sidebar.checkbox(
-    "Otomatik Yenilemeyi Aktif Et",
+otomatik_yenileme = st.sidebar.checkbox(
+    "Otomatik yenilemeyi aktif et",
     value=True
 )
 
-if auto_refresh:
-    refresh_interval = st.sidebar.slider(
-        "Yenileme Sıklığı (Saniye)",
-        2,
-        60,
-        5
+if otomatik_yenileme:
+    yenileme_suresi = st.sidebar.slider(
+        "Yenileme süresi",
+        min_value=5,
+        max_value=60,
+        value=15
     )
 
     st_autorefresh(
-        interval=refresh_interval * 1000,
-        key="bta_refresh_counter"
+        interval=yenileme_suresi * 1000,
+        key="bta_otomatik_yenileme"
     )
 
 st.sidebar.markdown("---")
 st.sidebar.warning(spk_metni)
 
-# Excel dosyalarını bul
-excel_dosyalari = [
-    f for f in os.listdir(".")
-    if f.endswith((".xlsx", ".xlsm"))
-]
 
 # ==========================================
 # ANA BAŞLIK
 # ==========================================
 st.title("🧠 BTA Algoritmik İşlem ve Analiz Portalı")
-
 st.warning(spk_metni)
 
-st.markdown("---")
 
-# Sekmeler
-tab_excel, tab_bta, tab_chat, tab_members = st.tabs(
+# ==========================================
+# SEKME MENÜSÜ
+# ==========================================
+tab_excel, tab_live, tab_search, tab_register, tab_chat = st.tabs(
     [
-        "📂 BTA Excel Veri Analizi",
-        "📈 KONYA Canlı Veri Odası",
-        "💬 Canlı Sohbet Odası",
-        "👥 BTA Hissedarları Kayıt Listesi"
+        "📂 Excel Analizi",
+        "📈 KONYA Canlı Takip",
+        "🔎 Borsa Arama Motoru",
+        "📒 BTA Kayıt Defteri",
+        "💬 Canlı Sohbet"
     ]
 )
 
+
 # ==========================================
-# MODÜL 1: EXCEL ANALİZİ
+# EXCEL ANALİZİ
 # ==========================================
 with tab_excel:
-    st.header("📂 Excel Veri İnceleme Merkezi")
+    st.header("📂 Excel Veri Analizi")
 
-    varsayilan_dosya = None
+    excel_dosyalari = [
+        dosya
+        for dosya in os.listdir(".")
+        if dosya.endswith((".xlsx", ".xlsm"))
+    ]
 
-    if excel_dosyalari:
-        hedef_dosyalar = [
-            f for f in excel_dosyalari
-            if "bta" in f.lower() or "nurican" in f.lower()
-        ]
-
-        if hedef_dosyalar:
-            varsayilan_dosya = hedef_dosyalar[0]
-        else:
-            varsayilan_dosya = excel_dosyalari[0]
-
-    secilen_dosya = varsayilan_dosya
-
-    if is_admin:
-        st.subheader("🛠️ Yönetici Excel Kontrolleri")
-
-        dosya_kaynagi = st.radio(
-            "Dosya Kaynağı Seçin:",
-            [
-                "Klasördeki Dosyaları Kullan",
-                "Yeni Dosya Yükle"
-            ]
+    if not excel_dosyalari:
+        st.info("Klasörde Excel dosyası bulunamadı.")
+    else:
+        secilen_dosya = st.selectbox(
+            "Excel dosyası seçin:",
+            excel_dosyalari
         )
 
-        if (
-            dosya_kaynagi == "Klasördeki Dosyaları Kullan"
-            and excel_dosyalari
-        ):
-            secilen_dosya = st.selectbox(
-                "Analiz Edilecek Dosya:",
-                excel_dosyalari,
-                index=(
-                    excel_dosyalari.index(varsayilan_dosya)
-                    if varsayilan_dosya in excel_dosyalari
-                    else 0
-                )
-            )
-        else:
-            secilen_dosya = st.file_uploader(
-                "Bir Excel (.xlsx, .xlsm) dosyası yükleyin",
-                type=["xlsx", "xlsm"]
-            )
-
-        st.markdown("---")
-
-    if secilen_dosya is not None:
         try:
-            excel_obj = pd.ExcelFile(
+            excel_objesi = pd.ExcelFile(
                 secilen_dosya,
                 engine="openpyxl"
             )
 
-            sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            sayfa = st.selectbox(
+                "Çalışma sayfası seçin:",
+                excel_objesi.sheet_names
+            )
 
-            if is_admin and len(sayfa_isimleri) > 1:
-                aktif_sayfa = st.selectbox(
-                    "Görüntülenecek Sayfa:",
-                    sayfa_isimleri
-                )
-
-            df = pd.read_excel(
+            df_excel = pd.read_excel(
                 secilen_dosya,
-                sheet_name=aktif_sayfa,
+                sheet_name=sayfa,
                 engine="openpyxl"
             )
 
-            if not df.empty:
-                ilk_sutun_adi = df.columns[0]
-                df_goster = df[[ilk_sutun_adi]]
-            else:
-                df_goster = df
-
-            arama_kelimesi = st.text_input(
-                "Tablo içinde dinamik filtreleme yapın:",
-                value="KONYA"
+            arama = st.text_input(
+                "Excel içinde arama yapın:"
             )
 
-            if arama_kelimesi:
-                filtre_mask = (
-                    df_goster
-                    .astype(str)
+            if arama:
+                filtre = (
+                    df_excel.astype(str)
                     .apply(
-                        lambda x: x.str.contains(
-                            arama_kelimesi,
-                            case=False
+                        lambda sutun: sutun.str.contains(
+                            arama,
+                            case=False,
+                            na=False
                         )
                     )
                     .any(axis=1)
                 )
 
-                gosterilecek_df = df_goster[filtre_mask]
-            else:
-                gosterilecek_df = df_goster
+                df_excel = df_excel[filtre]
 
             st.dataframe(
-                gosterilecek_df,
-                use_container_width=True
+                df_excel,
+                use_container_width=True,
+                hide_index=True
             )
 
-        except Exception as e:
-            st.error(
-                f"Excel verisi işlenirken bir hata oluştu: {e}"
-            )
-    else:
-        st.info(
-            "💡 Sistemde yüklü veya klasörde analiz edilecek "
-            "Excel dosyası bulunamadı."
-        )
+        except Exception as hata:
+            st.error(f"Excel okunamadı: {hata}")
+
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP
+# KONYA CANLI TAKİP
 # ==========================================
-with tab_bta:
-    st.header(
-        "📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli"
-    )
+with tab_live:
+    st.header("📈 KONYA Canlı Kar/Zarar Takip Paneli")
 
-    kurumsal_ticker = "KONYA.IS"
-    bta_alim_fiyati = 4100.00
+    sembol = "KONYA.IS"
+    alim_fiyati = 4100.00
 
     try:
-        hisse = yf.Ticker(kurumsal_ticker)
+        hisse = yf.Ticker(sembol)
 
-        tarihce = hisse.history(
-            period="2d",
+        veri = hisse.history(
+            period="5d",
             interval="1d"
         )
 
-        if not tarihce.empty:
-            guncel_fiyat = tarihce["Close"].iloc[-1]
-
-            gunluk_degisim_yuzde = (
-                hisse.info.get(
-                    "regularMarketChangePercent",
-                    0.0
-                )
-            )
-
-            if (
-                gunluk_degisim_yuzde == 0.0
-                and len(tarihce) > 1
-            ):
-                onceki_kapanis = tarihce["Close"].iloc[-2]
-
-                gunluk_degisim_yuzde = (
-                    (guncel_fiyat - onceki_kapanis)
-                    / onceki_kapanis
-                ) * 100
-
-            kar_zarar_tutari = (
-                guncel_fiyat - bta_alim_fiyati
-            )
-
-            kar_zarar_yuzdesi = (
-                kar_zarar_tutari / bta_alim_fiyati
+        if veri.empty:
+            st.warning("KONYA için veri bulunamadı.")
+        else:
+            son_fiyat = float(veri["Close"].iloc[-1])
+            kar_zarar = son_fiyat - alim_fiyati
+            kar_zarar_yuzde = (
+                kar_zarar / alim_fiyati
             ) * 100
 
-            if (
-                gunluk_degisim_yuzde >= 9.90
-                or kar_zarar_yuzdesi >= 9.0
-            ):
-                st.balloons()
-                st.snow()
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric(
+                "Anlık Fiyat",
+                f"{son_fiyat:.2f} TL"
+            )
+
+            col2.metric(
+                "BTA Alım Fiyatı",
+                f"{alim_fiyati:.2f} TL"
+            )
+
+            col3.metric(
+                "Kar/Zarar",
+                f"{kar_zarar_yuzde:.2f}%"
+            )
+
+            st.line_chart(
+                veri[["Close"]].rename(
+                    columns={"Close": "KONYA Fiyatı"}
+                )
+            )
+
+    except Exception as hata:
+        st.error(f"Canlı veri alınamadı: {hata}")
+
+
+# ==========================================
+# BORSA ARAMA MOTORU
+# ==========================================
+with tab_search:
+    st.header("🔎 Canlı Borsa Arama Motoru")
+
+    arama_kodu = st.text_input(
+        "Hisse kodunu yazın:",
+        placeholder="Örnek: KONYA, THYAO, ASELS"
+    )
+
+    ara = st.button(
+        "Canlı Veriyi Getir 🔍",
+        use_container_width=True
+    )
+
+    if ara:
+        if not arama_kodu.strip():
+            st.warning("Lütfen hisse kodu girin.")
+        else:
+            aranan_sembol = arama_kodu.strip().upper()
+
+            if not aranan_sembol.endswith(".IS"):
+                aranan_sembol += ".IS"
+
+            try:
+                hisse = yf.Ticker(aranan_sembol)
+
+                veri = hisse.history(
+                    period="1d",
+                    interval="1m"
+                )
+
+                if veri.empty:
+                    veri = hisse.history(
+                        period="5d",
+                        interval="1d"
+                    )
+
+                if veri.empty:
+                    st.warning(
+                        "Bu hisse için veri bulunamadı."
+                    )
+                else:
+                    son_fiyat = float(
+                        veri["Close"].iloc[-1]
+                    )
+
+                    if len(veri) > 1:
+                        onceki_fiyat = float(
+                            veri["Close"].iloc[-2]
+                        )
+
+                        fark = son_fiyat - onceki_fiyat
+                        fark_yuzde = (
+                            fark / onceki_fiyat
+                        ) * 100
+                    else:
+                        fark = 0
+                        fark_yuzde = 0
+
+                    st.subheader(
+                        f"📊 {aranan_sembol.replace('.IS', '')}"
+                    )
+
+                    col1, col2, col3 = st.columns(3)
+
+                    col1.metric(
+                        "Anlık Fiyat",
+                        f"{son_fiyat:.2f} TL"
+                    )
+
+                    col2.metric(
+                        "Değişim",
+                        f"{fark:.2f} TL",
+                        f"{fark_yuzde:.2f}%"
+                    )
+
+                    col3.metric(
+                        "Güncelleme",
+                        datetime.now().strftime(
+                            "%H:%M:%S"
+                        )
+                    )
+
+                    st.subheader("📈 Fiyat Grafiği")
+
+                    grafik = veri[["Close"]].rename(
+                        columns={"Close": "Fiyat"}
+                    )
+
+                    st.line_chart(grafik)
+
+                    st.subheader("Son Veriler")
+
+                    st.dataframe(
+                        veri.tail(20),
+                        use_container_width=True
+                    )
+
+            except Exception as hata:
+                st.error(
+                    f"Borsa verisi alınırken hata oluştu: {hata}"
+                )
+
+
+# ==========================================
+# BTA KAYIT DEFTERİ
+# ==========================================
+with tab_register:
+    st.header("📒 BTA Hisse Kayıt Defteri")
+
+    st.info(
+        "Hisse kodu, BTA puanı, alım fiyatı ve adet "
+        "bilgilerini geçmişe dönük kaydedebilirsiniz."
+    )
+
+    with st.form(
+        "bta_kayit_formu",
+        clear_on_submit=True
+    ):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            hissedar = st.text_input(
+                "Hissedar Adı",
+                placeholder="Örnek: Nurican Bey"
+            )
+
+            hisse_kodu = st.text_input(
+                "Hisse Kodu",
+                placeholder="Örnek: KONYA"
+            )
+
+            bta_puani = st.number_input(
+                "BTA Puanı",
+                min_value=0.0,
+                max_value=100.0,
+                value=0.0,
+                step=0.1
+            )
+
+        with col2:
+            kayit_alim_fiyati = st.number_input(
+                "BTA Alım Fiyatı TL",
+                min_value=0.0,
+                value=0.0,
+                step=0.01
+            )
+
+            adet = st.number_input(
+                "Hisse Adedi",
+                min_value=1,
+                value=1,
+                step=1
+            )
+
+        kaydet = st.form_submit_button(
+            "KAYDI DEFTERE EKLE ✅",
+            use_container_width=True
+        )
+
+        if kaydet:
+            if not hissedar.strip():
+                st.error("Hissedar adı boş bırakılamaz.")
+            elif not hisse_kodu.strip():
+                st.error("Hisse kodu boş bırakılamaz.")
+            elif kayit_alim_fiyati <= 0:
+                st.error("Alım fiyatı sıfırdan büyük olmalıdır.")
+            else:
+                kayit_ekle(
+                    hissedar=hissedar.strip(),
+                    hisse_kodu=hisse_kodu.strip(),
+                    bta_puani=bta_puani,
+                    alim_fiyati=kayit_alim_fiyati,
+                    adet=adet
+                )
 
                 st.success(
-                    "🚀 ODADA KUTLAMALAR BAŞLASIN! "
-                    "KONYA hissesi tavan oldu veya "
-                    "+%9 kar marjını aştı! 🥳🎉"
+                    "✅ BTA kaydı başarıyla oluşturuldu."
                 )
 
-            st.subheader(
-                "📊 Canlı Hesap Tablosu ve Portföy Durumu"
-            )
+                st.rerun()
 
-            c1, c2, c3, c4 = st.columns(4)
+    st.markdown("---")
+    st.subheader("📚 Geçmiş BTA Kayıtları")
 
-            c1.metric(
-                "Anlık Canlı Fiyat",
-                f"{guncel_fiyat:.2f} TL",
-                f"{gunluk_degisim_yuzde:.2f}% Günlük"
-            )
+    df_kayitlar = kayitlari_oku()
 
-            c2.metric(
-                "Sizin Alım Maliyetiniz",
-                f"{bta_alim_fiyati:.2f} TL"
-            )
-
-            if kar_zarar_tutari >= 0:
-                c3.metric(
-                    "Net Kar/Zarar Durumu",
-                    f"+{kar_zarar_tutari:.2f} TL"
-                )
-
-                c4.metric(
-                    "Toplam Kar Oranınız",
-                    f"+%{kar_zarar_yuzdesi:.2f}"
-                )
-            else:
-                c3.metric(
-                    "Net Kar/Zarar Durumu",
-                    f"{kar_zarar_tutari:.2f} TL"
-                )
-
-                c4.metric(
-                    "Toplam Zarar Oranınız",
-                    f"%{kar_zarar_yuzdesi:.2f}"
-                )
-        else:
-            st.warning(
-                "Borsa İstanbul canlı veri sunucularından "
-                "KONYA verisi alınamadı."
-            )
-
-    except Exception as e:
-        st.error(
-            f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}"
+    if df_kayitlar.empty:
+        st.info("Henüz kayıtlı geçmiş bulunmuyor.")
+    else:
+        gorunum = df_kayitlar.rename(
+            columns={
+                "tarih": "Kayıt Tarihi",
+                "hissedar": "Hissedar",
+                "hisse_kodu": "Hisse Kodu",
+                "bta_puani": "BTA Puanı",
+                "alim_fiyati": "BTA Alım Fiyatı",
+                "adet": "Adet"
+            }
         )
 
+        st.dataframe(
+            gorunum[
+                [
+                    "Kayıt Tarihi",
+                    "Hissedar",
+                    "Hisse Kodu",
+                    "BTA Puanı",
+                    "BTA Alım Fiyatı",
+                    "Adet"
+                ]
+            ],
+            use_container_width=True,
+            hide_index=True
+        )
+
+        csv_verisi = df_kayitlar.to_csv(
+            index=False,
+            encoding="utf-8-sig"
+        )
+
+        st.download_button(
+            "Kayıt Defterini İndir 📥",
+            data=csv_verisi,
+            file_name="bta_kayit_defteri.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+        if is_admin:
+            if st.button(
+                "Tüm Kayıtları Sil 🗑️",
+                use_container_width=True
+            ):
+                pd.DataFrame(
+                    columns=KAYIT_SUTUNLARI
+                ).to_csv(
+                    KAYIT_DOSYASI,
+                    index=False,
+                    encoding="utf-8-sig"
+                )
+
+                st.success("Tüm kayıtlar silindi.")
+                st.rerun()
+
+
 # ==========================================
-# MODÜL 3: CANLI SOHBET
+# CANLI SOHBET
 # ==========================================
 with tab_chat:
-    st.header("💬 BTA Genel Canlı Sohbet Odası")
+    st.header("💬 BTA Canlı Sohbet Odası")
 
-    st.write(
-        "Sohbet odası herkese açıktır. "
-        "Mesajlaşmaya hemen başlayabilirsiniz."
+    kullanici_adi = st.text_input(
+        "Kullanıcı adınız:",
+        value="Hissedar"
     )
 
-    nickname = st.text_input(
-        "Sohbet Takma Adınız:",
-        value="Hissedar",
-        key="chat_nick"
-    )
-
-    with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input(
-            "Mesajınızı yazın:"
+    with st.form(
+        "sohbet_formu",
+        clear_on_submit=True
+    ):
+        mesaj = st.text_input(
+            "Mesajınız:"
         )
 
-        submit_button = st.form_submit_button(
+        gonder = st.form_submit_button(
             "Gönder 🚀"
         )
 
-        if submit_button and user_message:
-            now_str = datetime.now().strftime("%H:%M:%S")
-            msg_id = int(datetime.now().timestamp() * 1000)
-
+        if gonder and mesaj.strip():
             st.session_state["chat_messages"].append(
                 {
-                    "id": msg_id,
-                    "user": nickname,
-                    "time": now_str,
-                    "text": user_message
+                    "id": int(datetime.now().timestamp() * 1000),
+                    "user": kullanici_adi,
+                    "time": datetime.now().strftime(
+                        "%H:%M:%S"
+                    ),
+                    "text": mesaj
                 }
             )
 
             st.rerun()
 
-    st.subheader("📝 Oda Akışı")
+    st.subheader("📝 Sohbet Akışı")
 
-    for idx, msg in enumerate(
+    for index, mesaj_data in enumerate(
         reversed(st.session_state["chat_messages"])
     ):
-        if "id" in msg:
-            cols = st.columns([0.85, 0.15])
-
-            with cols[0]:
-                st.markdown(
-                    f"**[{msg['time']}] "
-                    f"{msg['user']}:** {msg['text']}"
-                )
-
-            with cols[1]:
-                if is_admin:
-                    if st.button(
-                        "❌ Mesajı Sil",
-                        key=f"del_msg_{msg['id']}_{idx}"
-                    ):
-                        st.session_state["chat_messages"] = [
-                            m
-                            for m in st.session_state["chat_messages"]
-                            if m.get("id") != msg["id"]
-                        ]
-
-                        st.rerun()
-
-            st.divider()
-
-# ==========================================
-# MODÜL 4: HİSSEDAR KAYIT LİSTESİ
-# ==========================================
-with tab_members:
-    st.header(
-        "👥 BTA Hissedarları ve Sahip Olunan Hisse Kayıt Listesi"
-    )
-
-    st.write(
-        "BTA Grubuna dahil olan yatırımcıların "
-        "elindeki BTA hisselerinin kayıt panelidir."
-    )
-
-    st.subheader("➕ Yeni Hissedar Kaydı Ekle")
-
-    with st.form("member_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([0.85, 0.15])
 
         with col1:
-            hissedar_adi = st.text_input(
-                "Hissedar Adı:",
-                placeholder="Örn: Nurican Bey"
-            )
-
-            hisse_kodu = st.text_input(
-                "Sahip Olduğu BTA Hisse Kodu:",
-                placeholder="Örn: KONYA.IS",
-                value="KONYA.IS"
+            st.markdown(
+                f"**[{mesaj_data['time']}] "
+                f"{mesaj_data['user']}:** "
+                f"{mesaj_data['text']}"
             )
 
         with col2:
-            hisse_maliyeti = st.number_input(
-                "Hisse Maliyeti (TL):",
-                min_value=0.0,
-                step=100.0
-            )
+            if is_admin:
+                if st.button(
+                    "Sil",
+                    key=f"mesaj_sil_{mesaj_data['id']}_{index}"
+                ):
+                    st.session_state["chat_messages"] = [
+                        mesaj
+                        for mesaj in st.session_state["chat_messages"]
+                        if mesaj["id"] != mesaj_data["id"]
+                    ]
 
-            hisse_adeti = st.number_input(
-                "Hisse Adet:",
-                min_value=1,
-                step=1
-            )
+                    st.rerun()
 
-        submit_member = st.form_submit_button(
-            "Hissedarı Kaydet ✅"
-        )
-
-        if submit_member and hissedar_adi:
-            yeni_hissedar = {
-                "id": int(datetime.now().timestamp() * 1000),
-                "Hissedar Adı": hissedar_adi,
-                "Sahip Olduğu BTA Hissesi": hisse_kodu,
-                "Hisse Maliyeti (TL)": hisse_maliyeti,
-                "Adet": hisse_adeti
-            }
-
-            st.session_state["bta_members_list"].append(
-                yeni_hissedar
-            )
-
-            st.success(
-                f"✅ {hissedar_adi} başarıyla kayıt edildi!"
-            )
-
-            st.rerun()
-
-    st.markdown("---")
-
-    st.subheader("📋 Mevcut Hissedarlar")
-
-    if st.session_state["bta_members_list"]:
-        df_members = pd.DataFrame(
-            st.session_state["bta_members_list"]
-        )
-
-        st.dataframe(
-            df_members[
-                [
-                    "Hissedar Adı",
-                    "Sahip Olduğu BTA Hissesi",
-                    "Hisse Maliyeti (TL)",
-                    "Adet"
-                ]
-            ],
-            use_container_width=True
-        )
-
-        if is_admin:
-            st.subheader(
-                "🗑️ Yönetici: Hissedar Silme"
-            )
-
-            silinecek_hissedar = st.selectbox(
-                "Silinecek Hissedarı Seçin:",
-                options=[
-                    f"{m['Hissedar Adı']} - "
-                    f"{m['Sahip Olduğu BTA Hissesi']}"
-                    for m in st.session_state["bta_members_list"]
-                ],
-                key="delete_member_select"
-            )
-
-            if st.button("Hissedarı Sil ❌"):
-                secili_index = [
-                    i
-                    for i, m in enumerate(
-                        st.session_state["bta_members_list"]
-                    )
-                    if (
-                        f"{m['Hissedar Adı']} - "
-                        f"{m['Sahip Olduğu BTA Hissesi']}"
-                        == silinecek_hissedar
-                    )
-                ][0]
-
-                silinen = (
-                    st.session_state["bta_members_list"]
-                    .pop(secili_index)
-                )
-
-                st.warning(
-                    f"🗑️ {silinen['Hissedar Adı']} kaydı silindi!"
-                )
-
-                st.rerun()
-    else:
-        st.info(
-            "💡 Henüz kayıtlı hissedar bulunmamaktadır."
-        )
+        st.divider()
