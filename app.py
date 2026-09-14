@@ -18,7 +18,7 @@ st.set_page_config(
 # Yan menü (Sidebar) kontrolleri
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
-# Otomatik Yenileme Ayarı (Sayfa 10 saniyede bir verileri tazeler)
+# Otomatik Yenileme Ayarı (Sayfa 10 saniyede bir verileri canlı tazeler)
 auto_refresh = st.sidebar.checkbox("Otomatik Yenilemeyi Aktif Et", value=True)
 if auto_refresh:
     refresh_interval = st.sidebar.slider("Yenileme Sıklığı (Saniye)", 5, 120, 10)
@@ -68,7 +68,7 @@ with tab_excel:
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_goster = df[filtrelenmis_sutunlar]
             
-            arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:")
+            arama_kelimesi = st.text_input("Tablo içinde dinamik filtreleme yapın:", value="KONYA")
             if arama_kelimesi:
                 filtre_mask = df_goster.astype(str).apply(lambda x: x.str.contains(arama_kelimesi, case=False)).any(axis=1)
                 gosterilecek_df = df_goster[filtre_mask]
@@ -87,49 +87,50 @@ with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
     
     kurumsal_ticker = "KONYA.IS"
-    # Gerçek alım fiyatınız 4100 TL olarak tanımlandı
+    # Gönderdiğiniz son görseldeki net alım fiyatınız 4100 TL olarak sisteme işlendi
     bta_alim_fiyati = 4100.00 
     
     try:
         hisse = yf.Ticker(kurumsal_ticker)
+        # Gün içi değişim oranını doğru saptamak için son verileri çekiyoruz
         tarihce = hisse.history(period="2d", interval="1d")
         
         if not tarihce.empty:
-            guncel_fta_fiyati = tarihce['Close'].iloc[-1]
+            guncel_fta_fiyati = history_data = tarihce['Close'].iloc[-1]
+            
+            # Günlük yüzde değişim verisini alma
             gunluk_degisim_yuzde = hisse.info.get('regularMarketChangePercent', 0.0)
             if gunluk_degisim_yuzde == 0.0 and len(tarihce) > 1:
-                # Alternatif hesaplama
                 onceki_kapanis = tarihce['Close'].iloc[-2]
                 gunluk_degisim_yuzde = ((guncel_fta_fiyati - onceki_kapanis) / onceki_kapanis) * 100
             
-            # Alım Fiyatına Göre Net Kar/Zarar Hesaplama
+            # Alım Fiyatına Göre Net Kar/Zarar Hesaplaması
             kar_zarar_tutari = guncel_fta_fiyati - bta_alim_fiyati
             kar_zarar_yuzdesi = (kar_zarar_tutari / bta_alim_fiyati) * 100
             
-            # 🚨 %9+ KAR VE GÜNLÜK HİSSE TAVAN OLDUĞUNDA KUTLAMA ODASI TETİKLENİR
-            # Borsa İstanbul'da günlük tavan marjı yaklaşık %9.90 ila %10.00 civarındadır.
-            if kar_zarar_yuzdesi >= 9.0 or gunluk_degisim_yuzde >= 9.90:
-                st.balloons()  # Ekranda uçan balon efekti
-                st.snow()      # Kar yağışı görsel efekti
-                st.success(f"🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ TAVAN OLDU VEYA +%9 KARA ULAŞTI!** 🥳🎉")
-                st.info(f"Hisse anlık olarak tavan serisine girdi veya alım maliyetiniz olan {bta_alim_fiyati} TL üzerinden büyük hedefe ulaştı!")
+            # 🚨 GÜNLÜK HİSSE TAVAN OLDUĞUNDA (%9.90+) VEYA TOPLAM KARINIZ %9+ OLDUĞUNDA KUTLAMA ODASI
+            if gunluk_degisim_yuzde >= 9.90 or kar_zarar_yuzdesi >= 9.0:
+                st.balloons()  # Havada uçan konfeti balonları efekti
+                st.snow()      # Görsel coşkuyu artıran kar efekti
+                st.success(f"🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
+                st.info(f"Hisse Borsa İstanbul'da güçlü tavan serisine girdi veya alım maliyetiniz olan {bta_alim_fiyati} TL üzerinden hedeflenen büyük kârlılığa ulaştı!")
             
-            # Net ve Okunabilir Kar / Zarar Tablosu (Ekranda eksik olan kısım)
+            # İstediğiniz Canlı Kar / Zarar ve Anlık Fiyat Gösterim Tablosu
             st.subheader("📊 Canlı Hesap Tablosu ve Portföy Durumu")
             
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Mevcut FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-            c2.metric("Sizin Alım Fiyatınız", f"{bta_alim_fiyati:.2f} TL")
+            c1.metric("Anlık Canlı FTA Fiyatı", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
+            c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
             
-            # Kar/Zarar durum renk eşikleri
+            # Kar/Zarar durumlarının dinamik renk kodlamalı gösterimi
             if kar_zarar_tutari >= 0:
-                c3.metric("Net Kar/Zarar (TL Bazında)", f"+{kar_zarar_tutari:.2f} TL")
+                c3.metric("Net Kar/Zarar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Kar Oranınız", f"+% {kar_zarar_yuzdesi:.2f}")
             else:
-                c3.metric("Net Kar/Zarar (TL Bazında)", f"{kar_zarar_tutari:.2f} TL")
+                c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
                 
-            # Canlı Grafik Alanı
+            # Canlı Fiyat Grafik Alanı
             st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
             st.line_chart(tarihce['Close'])
         else:
