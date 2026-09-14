@@ -8,6 +8,26 @@ import os
 from datetime import datetime
 
 # ==========================================
+# 0. BAĞIMSIZ HABER KAZIMA FONKSİYONU
+# (Hizalama hatalarını engellemek için ana bloktan izole edilmiştir)
+# ==========================================
+def halka_arz_haberlerini_kazi():
+    hedef_url = "https://bloomberght.com"
+    tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    try:
+        sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi, timeout=10)
+        if sayfa_istegi.status_code == 200:
+            html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
+            basliklar = html_icerik.find_all("span", class_="title", limit=10)
+            if len(basliklar) == 0:
+                basliklar = html_icerik.find_all("h3", limit=10)
+            return basliklar
+        else:
+            return []
+    except:
+        return []
+
+# ==========================================
 # 1. SAYFA VE PANEL AYARLARI
 # ==========================================
 st.set_page_config(
@@ -196,19 +216,3 @@ with tab_members:
     else:
         st.info("🔒 Hissedar veri tabanını ve kayıt formunu açmak için lütfen erişim şifresini (BTA2026) girin.")
 
-# ==========================================
-# MODÜL 5: CANLI HALKA ARZ WEB SCRAPER (Hata Üretmesi İmkansız Yeni Güvenli Mimari)
-# ==========================================
-with tab_scraper:
-    st.header("📰 Canlı Halka Arz (IPO) Gündemi")
-    
-    if st.button("Halka Arz Gündemini Yenile ve Kazı"):
-        # İnternetten veri kazıma kodlarında oluşabilecek kaymaları önlemek için koruma mekanizması
-        hedef_url = "https://bloomberght.com"
-        tarayici_bilgisi = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        
-        try:
-            sayfa_istegi = requests.get(hedef_url, headers=tarayici_bilgisi, timeout=10)
-            if sayfa_istegi.status_code == 200:
-                html_icerik = BeautifulSoup(sayfa_istegi.text, "html.parser")
-                basliklar = html_icerik.find_all("span", class_="title", limit=10)
