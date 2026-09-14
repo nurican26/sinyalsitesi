@@ -20,7 +20,7 @@ st.set_page_config(
 
 
 # ==================================================
-# DOSYA AYARLARI
+# DOSYALAR
 # ==================================================
 KAYIT_DOSYASI = "bta_tarihli_kayit_defteri.csv"
 ISTATISTIK_DOSYASI = "bta_oda_istatistik.csv"
@@ -36,6 +36,7 @@ KAYIT_SUTUNLARI = [
 
 ISTATISTIK_SUTUNLARI = [
     "takip_sayisi",
+    "begeni_sayisi",
     "oy_sayisi",
     "puan_toplami"
 ]
@@ -48,12 +49,10 @@ MESAJ_SUTUNLARI = [
 ]
 
 
-def dosya_olustur(dosya_adi, sutunlar):
-    if not os.path.exists(dosya_adi):
-        pd.DataFrame(
-            columns=sutunlar
-        ).to_csv(
-            dosya_adi,
+def dosya_olustur(dosya, sutunlar):
+    if not os.path.exists(dosya):
+        pd.DataFrame(columns=sutunlar).to_csv(
+            dosya,
             index=False,
             encoding="utf-8-sig"
         )
@@ -65,14 +64,12 @@ dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
 
 
 # ==================================================
-# FORMAT FONKSİYONLARI
+# FORMATLAMA
 # ==================================================
 def tl_format(deger):
     try:
-        sayi = float(deger)
-
         return (
-            f"{sayi:,.2f}"
+            f"{float(deger):,.2f}"
             .replace(",", "X")
             .replace(".", ",")
             .replace("X", ".")
@@ -84,10 +81,8 @@ def tl_format(deger):
 
 def sayi_format(deger):
     try:
-        sayi = float(deger)
-
         return (
-            f"{sayi:,.2f}"
+            f"{float(deger):,.2f}"
             .replace(",", "X")
             .replace(".", ",")
             .replace("X", ".")
@@ -116,16 +111,16 @@ def turkce_sayi_cevir(deger):
             metin = metin.replace(".", "")
             metin = metin.replace(",", ".")
         elif "," in metin:
-            parcalar = metin.split(",")
+            son_parca = metin.split(",")[-1]
 
-            if len(parcalar[-1]) == 3:
+            if len(son_parca) == 3:
                 metin = metin.replace(",", "")
             else:
                 metin = metin.replace(",", ".")
         elif "." in metin:
-            parcalar = metin.split(".")
+            son_parca = metin.split(".")[-1]
 
-            if len(parcalar[-1]) == 3:
+            if len(son_parca) == 3:
                 metin = metin.replace(".", "")
 
         return float(metin)
@@ -135,7 +130,7 @@ def turkce_sayi_cevir(deger):
 
 
 # ==================================================
-# ARKA PLAN VE TASARIM
+# TASARIM
 # ==================================================
 st.markdown(
     """
@@ -144,8 +139,8 @@ st.markdown(
         background-color: #07131f !important;
         background-image:
             linear-gradient(
-                rgba(5, 14, 25, 0.88),
-                rgba(5, 14, 25, 0.96)
+                rgba(5, 14, 25, 0.89),
+                rgba(5, 14, 25, 0.97)
             ),
             url("https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=2400&q=85") !important;
         background-size: cover !important;
@@ -158,7 +153,7 @@ st.markdown(
     }
 
     [data-testid="stSidebar"] > div:first-child {
-        background: rgba(4, 13, 24, 0.97) !important;
+        background: rgba(4, 13, 24, 0.98) !important;
     }
 
     .main .block-container {
@@ -175,10 +170,10 @@ st.markdown(
         width: 100%;
         overflow: hidden;
         white-space: nowrap;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
-    .bta-kayan-logo {
+    .bta-logo {
         display: inline-block;
         color: #00f5c8;
         font-family: "Brush Script MT", "Segoe Script", cursive;
@@ -186,12 +181,12 @@ st.markdown(
         font-weight: bold;
         text-shadow:
             0 0 8px #00f5c8,
-            0 0 16px #00f5c8,
-            0 0 26px #168cff;
-        animation: bta-kayma 14s linear infinite;
+            0 0 18px #00f5c8,
+            0 0 28px #168cff;
+        animation: kayan_logo 14s linear infinite;
     }
 
-    @keyframes bta-kayma {
+    @keyframes kayan_logo {
         0% {
             transform: translateX(-100%);
         }
@@ -201,16 +196,23 @@ st.markdown(
         }
     }
 
-    .oda-karti {
-        background: rgba(9, 31, 48, 0.94);
-        border: 1px solid rgba(0, 245, 200, 0.4);
-        border-radius: 10px;
-        padding: 15px;
-        margin: 10px 0;
+    [data-testid="stMetric"],
+    [data-testid="stDataFrame"],
+    [data-testid="stForm"] {
+        background: rgba(9, 31, 48, 0.95) !important;
+        border-radius: 10px !important;
+    }
+
+    .teknik-karti {
+        background: rgba(9, 31, 48, 0.95);
+        border: 1px solid rgba(0, 245, 200, 0.35);
+        border-radius: 9px;
+        padding: 14px;
+        margin-bottom: 10px;
     }
 
     .mesaj-karti {
-        background: rgba(8, 29, 45, 0.94);
+        background: rgba(8, 29, 45, 0.95);
         border-left: 3px solid #00f5c8;
         border-radius: 7px;
         padding: 10px;
@@ -222,11 +224,11 @@ st.markdown(
         border: 1px solid #ff5264;
         border-radius: 8px;
         padding: 13px;
+        margin-top: 30px;
         color: white;
         font-size: 12px;
         line-height: 1.6;
         text-align: justify;
-        margin-top: 30px;
     }
 
     @media screen and (max-width: 768px) {
@@ -238,7 +240,7 @@ st.markdown(
             font-size: 1.5rem !important;
         }
 
-        .bta-kayan-logo {
+        .bta-logo {
             font-size: 38px;
         }
 
@@ -275,75 +277,42 @@ def kayitlari_oku():
         return df[KAYIT_SUTUNLARI]
 
     except Exception:
-        return pd.DataFrame(
-            columns=KAYIT_SUTUNLARI
-        )
+        return pd.DataFrame(columns=KAYIT_SUTUNLARI)
 
 
-def kayit_id_olustur(
-    hisse_kodu,
-    alim_fiyati,
-    bta_puani
-):
-    metin = (
-        f"{hisse_kodu}|"
-        f"{float(alim_fiyati):.4f}|"
-        f"{float(bta_puani):.4f}"
-    )
+def kayit_id_olustur(hisse, fiyat, puan):
+    metin = f"{hisse}|{float(fiyat):.4f}|{float(puan):.4f}"
 
     return hashlib.sha256(
         metin.encode("utf-8")
     ).hexdigest()[:20]
 
 
-def excel_kayitlarini_ekle(df_excel):
-    mevcut_kayitlar = kayitlari_oku()
+def excel_kayitlarini_ekle(df):
+    mevcut = kayitlari_oku()
     yeni_kayitlar = []
 
-    for _, satir in df_excel.iterrows():
-        hisse_kodu = str(
-            satir["Hisse Kodu"]
-        ).strip().upper()
+    for _, satir in df.iterrows():
+        hisse = str(satir["Hisse Kodu"]).strip().upper()
+        fiyat = satir["BTA Alım Fiyatı"]
+        puan = satir["BTA Puanı"]
 
-        alim_fiyati = satir["BTA Alım Fiyatı"]
-        bta_puani = satir["BTA Puanı"]
-
-        if not hisse_kodu:
+        if hisse in ["", "NONE", "NAN", "NULL", "NA"]:
             continue
 
-        if hisse_kodu in [
-            "NONE",
-            "NAN",
-            "NULL",
-            "NA",
-            "HİSSE",
-            "HISSE",
-            "HİSSE KODU",
-            "HISSE KODU"
-        ]:
+        if pd.isna(fiyat) or float(fiyat) <= 0:
             continue
 
-        if pd.isna(alim_fiyati):
-            continue
-
-        if float(alim_fiyati) <= 0:
-            continue
-
-        if pd.isna(bta_puani):
-            bta_puani = 0.0
+        if pd.isna(puan):
+            puan = 0.0
 
         kayit_id = kayit_id_olustur(
-            hisse_kodu,
-            alim_fiyati,
-            bta_puani
+            hisse,
+            fiyat,
+            puan
         )
 
-        if (
-            mevcut_kayitlar["kayit_id"]
-            .astype(str)
-            .eq(kayit_id)
-            .any()
-        ):
+        if mevcut["kayit_id"].astype(str).eq(kayit_id).any():
             continue
 
         yeni_kayitlar.append(
@@ -352,32 +321,27 @@ def excel_kayitlarini_ekle(df_excel):
                 "kayit_tarihi": datetime.now().strftime(
                     "%d.%m.%Y %H:%M:%S"
                 ),
-                "hisse_kodu": hisse_kodu,
-                "bta_alim_fiyati": float(alim_fiyati),
-                "bta_puani": float(bta_puani)
+                "hisse_kodu": hisse,
+                "bta_alim_fiyati": float(fiyat),
+                "bta_puani": float(puan)
             }
         )
 
-    if not yeni_kayitlar:
-        return
+    if yeni_kayitlar:
+        sonuc = pd.concat(
+            [mevcut, pd.DataFrame(yeni_kayitlar)],
+            ignore_index=True
+        )
 
-    sonuc_df = pd.concat(
-        [
-            mevcut_kayitlar,
-            pd.DataFrame(yeni_kayitlar)
-        ],
-        ignore_index=True
-    )
-
-    sonuc_df.to_csv(
-        KAYIT_DOSYASI,
-        index=False,
-        encoding="utf-8-sig"
-    )
+        sonuc.to_csv(
+            KAYIT_DOSYASI,
+            index=False,
+            encoding="utf-8-sig"
+        )
 
 
 # ==================================================
-# İSTATİSTİK FONKSİYONLARI
+# İSTATİSTİK VE MESAJ FONKSİYONLARI
 # ==================================================
 def istatistik_oku():
     try:
@@ -387,51 +351,45 @@ def istatistik_oku():
         )
 
         if df.empty:
-            return {
-                "takip_sayisi": 0,
-                "oy_sayisi": 0,
-                "puan_toplami": 0.0
-            }
+            return 0, 0, 0, 0.0
 
-        return {
-            "takip_sayisi": int(
-                pd.to_numeric(
-                    df.iloc[0]["takip_sayisi"],
-                    errors="coerce"
-                ) or 0
-            ),
-            "oy_sayisi": int(
-                pd.to_numeric(
-                    df.iloc[0]["oy_sayisi"],
-                    errors="coerce"
-                ) or 0
-            ),
-            "puan_toplami": float(
-                pd.to_numeric(
-                    df.iloc[0]["puan_toplami"],
-                    errors="coerce"
-                ) or 0
-            )
-        }
+        satir = df.iloc[0]
+
+        return (
+            int(pd.to_numeric(
+                satir.get("takip_sayisi", 0),
+                errors="coerce"
+            ) or 0),
+            int(pd.to_numeric(
+                satir.get("begeni_sayisi", 0),
+                errors="coerce"
+            ) or 0),
+            int(pd.to_numeric(
+                satir.get("oy_sayisi", 0),
+                errors="coerce"
+            ) or 0),
+            float(pd.to_numeric(
+                satir.get("puan_toplami", 0),
+                errors="coerce"
+            ) or 0)
+        )
 
     except Exception:
-        return {
-            "takip_sayisi": 0,
-            "oy_sayisi": 0,
-            "puan_toplami": 0.0
-        }
+        return 0, 0, 0, 0.0
 
 
 def istatistik_kaydet(
-    takip_sayisi,
-    oy_sayisi,
-    puan_toplami
+    takip,
+    begeni,
+    oy,
+    puan
 ):
     pd.DataFrame(
         [{
-            "takip_sayisi": takip_sayisi,
-            "oy_sayisi": oy_sayisi,
-            "puan_toplami": puan_toplami
+            "takip_sayisi": takip,
+            "begeni_sayisi": begeni,
+            "oy_sayisi": oy,
+            "puan_toplami": puan
         }]
     ).to_csv(
         ISTATISTIK_DOSYASI,
@@ -440,50 +398,37 @@ def istatistik_kaydet(
     )
 
 
-# ==================================================
-# MESAJ FONKSİYONLARI
-# ==================================================
 def mesajlari_oku():
     try:
-        df = pd.read_csv(
+        return pd.read_csv(
             MESAJ_DOSYASI,
             encoding="utf-8-sig"
         )
 
-        for sutun in MESAJ_SUTUNLARI:
-            if sutun not in df.columns:
-                df[sutun] = ""
-
-        return df[MESAJ_SUTUNLARI]
-
     except Exception:
-        return pd.DataFrame(
-            columns=MESAJ_SUTUNLARI
-        )
+        return pd.DataFrame(columns=MESAJ_SUTUNLARI)
 
 
-def mesaj_kaydet(kullanici, mesaj):
-    df_mesajlar = mesajlari_oku()
+def mesaj_ekle(kullanici, metin):
+    mesajlar = mesajlari_oku()
 
-    yeni_mesaj = pd.DataFrame(
+    yeni = pd.DataFrame(
         [{
-            "mesaj_id": int(
-                datetime.now().timestamp() * 1000
-            ),
+            "mesaj_id": int(datetime.now().timestamp() * 1000),
             "tarih": datetime.now().strftime(
                 "%d.%m.%Y %H:%M:%S"
             ),
             "kullanici": kullanici,
-            "mesaj": mesaj
+            "mesaj": metin
         }]
     )
 
-    df_mesajlar = pd.concat(
-        [df_mesajlar, yeni_mesaj],
+    mesajlar = pd.concat(
+        [mesajlar, yeni],
         ignore_index=True
     )
 
-    df_mesajlar.to_csv(
+    mesajlar.to_csv(
         MESAJ_DOSYASI,
         index=False,
         encoding="utf-8-sig"
@@ -491,7 +436,7 @@ def mesaj_kaydet(kullanici, mesaj):
 
 
 # ==================================================
-# OTOMATİK YENİLEME
+# CANLI YENİLEME
 # ==================================================
 st_autorefresh(
     interval=5000,
@@ -505,7 +450,7 @@ st_autorefresh(
 st.markdown(
     """
     <div class="bta-logo-alani">
-        <div class="bta-kayan-logo">
+        <div class="bta-logo">
             BTA ALGORİTMİK İŞLEM
         </div>
     </div>
@@ -517,7 +462,7 @@ st.title("BTA Algoritmik İşlem Analiz Portalı")
 
 
 # ==================================================
-# YÖNETİCİ GİRİŞİ
+# YÖNETİCİ
 # ==================================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
@@ -534,31 +479,19 @@ if is_admin:
 
 # ==================================================
 # EXCEL'İ OTOMATİK OKU
+# A = Hisse Kodu
+# C = BTA Alım Fiyatı
+# D = BTA Puanı
 # ==================================================
 excel_dosyalari = [
     dosya
     for dosya in os.listdir(".")
-    if dosya.lower().endswith(
-        (".xlsx", ".xlsm")
-    )
+    if dosya.lower().endswith((".xlsx", ".xlsm"))
 ]
 
-secilen_excel = None
-
 if excel_dosyalari:
-    bta_dosyalari = [
-        dosya
-        for dosya in excel_dosyalari
-        if "bta" in dosya.lower()
-    ]
+    secilen_excel = excel_dosyalari[0]
 
-    secilen_excel = (
-        bta_dosyalari[0]
-        if bta_dosyalari
-        else excel_dosyalari[0]
-    )
-
-if secilen_excel:
     try:
         ham_df = pd.read_excel(
             secilen_excel,
@@ -568,33 +501,33 @@ if secilen_excel:
         )
 
         if ham_df.shape[1] >= 4:
-            analiz_df = ham_df.iloc[:, [0, 2, 3]].copy()
+            excel_df = ham_df.iloc[:, [0, 2, 3]].copy()
 
-            analiz_df.columns = [
+            excel_df.columns = [
                 "Hisse Kodu",
                 "BTA Alım Fiyatı",
                 "BTA Puanı"
             ]
 
-            analiz_df["Hisse Kodu"] = (
-                analiz_df["Hisse Kodu"]
+            excel_df["Hisse Kodu"] = (
+                excel_df["Hisse Kodu"]
                 .astype(str)
                 .str.strip()
                 .str.upper()
             )
 
-            analiz_df["BTA Alım Fiyatı"] = (
-                analiz_df["BTA Alım Fiyatı"]
+            excel_df["BTA Alım Fiyatı"] = (
+                excel_df["BTA Alım Fiyatı"]
                 .apply(turkce_sayi_cevir)
             )
 
-            analiz_df["BTA Puanı"] = (
-                analiz_df["BTA Puanı"]
+            excel_df["BTA Puanı"] = (
+                excel_df["BTA Puanı"]
                 .apply(turkce_sayi_cevir)
             )
 
-            analiz_df = analiz_df[
-                ~analiz_df["Hisse Kodu"].isin(
+            excel_df = excel_df[
+                ~excel_df["Hisse Kodu"].isin(
                     [
                         "",
                         "NONE",
@@ -609,362 +542,406 @@ if secilen_excel:
                 )
             ]
 
-            analiz_df = analiz_df[
-                analiz_df["BTA Alım Fiyatı"].notna()
+            excel_df = excel_df[
+                excel_df["BTA Alım Fiyatı"].notna()
             ]
 
-            analiz_df = analiz_df[
-                analiz_df["BTA Alım Fiyatı"] > 0
+            excel_df = excel_df[
+                excel_df["BTA Alım Fiyatı"] > 0
             ]
 
-            analiz_df["BTA Puanı"] = (
-                analiz_df["BTA Puanı"].fillna(0)
+            excel_df["BTA Puanı"] = (
+                excel_df["BTA Puanı"].fillna(0)
             )
 
-            analiz_df = analiz_df.drop_duplicates(
+            excel_df = excel_df.drop_duplicates(
                 subset=["Hisse Kodu"],
                 keep="last"
             )
 
-            excel_kayitlarini_ekle(analiz_df)
-
-            gosterim_df = analiz_df.copy()
-
-            gosterim_df["BTA Alım Fiyatı"] = (
-                gosterim_df["BTA Alım Fiyatı"]
-                .apply(tl_format)
-            )
-
-            gosterim_df["BTA Puanı"] = (
-                gosterim_df["BTA Puanı"]
-                .apply(sayi_format)
-            )
-
-            st.subheader("📊 BTA Hisse Analizi")
-
-            st.dataframe(
-                gosterim_df[
-                    [
-                        "Hisse Kodu",
-                        "BTA Alım Fiyatı",
-                        "BTA Puanı"
-                    ]
-                ],
-                use_container_width=True,
-                hide_index=True
-            )
+            excel_kayitlarini_ekle(excel_df)
 
     except Exception as hata:
         st.error(f"Excel okunamadı: {hata}")
-else:
-    st.warning("Excel dosyası bulunamadı.")
 
 
 # ==================================================
-# ODA TAKİP VE YILDIZ PUANI
+# AYRI PANELLER
 # ==================================================
-st.markdown("---")
-st.header("💬 BTA Canlı Takip ve Mesajlaşma Odası")
-
-istatistik = istatistik_oku()
-
-takip_sayisi = istatistik["takip_sayisi"]
-oy_sayisi = istatistik["oy_sayisi"]
-puan_toplami = istatistik["puan_toplami"]
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    if "oda_takip_edildi" not in st.session_state:
-        st.session_state["oda_takip_edildi"] = False
-
-    if not st.session_state["oda_takip_edildi"]:
-        if st.button(
-            "⭐ Odayı Takip Et",
-            use_container_width=True
-        ):
-            takip_sayisi += 1
-            istatistik_kaydet(
-                takip_sayisi,
-                oy_sayisi,
-                puan_toplami
-            )
-
-            st.session_state["oda_takip_edildi"] = True
-            st.rerun()
-    else:
-        st.success("✅ Odayı takip ediyorsunuz.")
-
-with col2:
-    st.metric(
-        "👥 Odayı Takip Eden",
-        f"{takip_sayisi} kişi"
-    )
-
-with col3:
-    ortalama_puan = (
-        puan_toplami / oy_sayisi
-        if oy_sayisi > 0
-        else 0
-    )
-
-    st.metric(
-        "⭐ Ortalama Puan",
-        f"{ortalama_puan:.1f} / 5"
-    )
-
-
-# ==================================================
-# YILDIZLAMA
-# ==================================================
-st.subheader("⭐ BTA Odasını Puanla")
-
-if "puan_verildi" not in st.session_state:
-    st.session_state["puan_verildi"] = False
-
-if not st.session_state["puan_verildi"]:
-    secilen_puan = st.radio(
-        "Puanınız:",
-        [1, 2, 3, 4, 5],
-        format_func=lambda puan: "⭐" * puan,
-        horizontal=True
-    )
-
-    if st.button(
-        "Puanı Gönder",
-        use_container_width=True
-    ):
-        puan_toplami += secilen_puan
-        oy_sayisi += 1
-
-        istatistik_kaydet(
-            takip_sayisi,
-            oy_sayisi,
-            puan_toplami
-        )
-
-        st.session_state["puan_verildi"] = True
-        st.success("Puanınız kaydedildi.")
-        st.rerun()
-else:
-    st.info("Bu oturumda daha önce puan verdiniz.")
-
-
-# ==================================================
-# CANLI MESAJLAŞMA
-# ==================================================
-st.subheader("🟢 Canlı Mesajlaşma")
-
-kullanici_adi = st.text_input(
-    "Kullanıcı adınız",
-    value="Hissedar"
+tab_teknik, tab_oda, tab_sohbet, tab_kayit = st.tabs(
+    [
+        "📊 Hisse Teknik Bilgileri",
+        "⭐ Takip ve Beğeni",
+        "💬 Canlı Sohbet",
+        "📒 Tarihli Kayıtlar"
+    ]
 )
 
-with st.form(
-    "canli_mesaj_formu",
-    clear_on_submit=True
-):
-    mesaj = st.text_area(
-        "Mesajınızı yazın",
-        height=90,
-        placeholder="Odaya mesajınızı yazın..."
-    )
 
-    gonder = st.form_submit_button(
-        "Mesajı Gönder 🚀",
-        use_container_width=True
-    )
+# ==================================================
+# PANEL 1: TEKNİK BİLGİLER
+# ==================================================
+with tab_teknik:
+    st.header("📊 Hisse Teknik Bilgileri")
 
-    if gonder:
-        if not kullanici_adi.strip():
-            st.error("Kullanıcı adı boş bırakılamaz.")
-        elif not mesaj.strip():
-            st.error("Mesaj boş bırakılamaz.")
-        else:
-            mesaj_kaydet(
-                kullanici_adi.strip(),
-                mesaj.strip()
-            )
-
-            st.success("Mesajınız gönderildi.")
-            st.rerun()
-
-
-df_mesajlar = mesajlari_oku()
-
-if df_mesajlar.empty:
-    st.info("Henüz mesaj bulunmuyor.")
-else:
-    for index, satir in df_mesajlar.iloc[::-1].iterrows():
-        tarih = str(satir["tarih"])
-        kullanici = str(satir["kullanici"])
-        mesaj_metni = str(satir["mesaj"])
-        mesaj_id = str(satir["mesaj_id"])
-
-        st.markdown(
-            f"""
-            <div class="mesaj-karti">
-                <strong>👤 {kullanici}</strong>
-                <small> · {tarih}</small>
-                <br>
-                {mesaj_metni}
-            </div>
-            """,
-            unsafe_allow_html=True
+    if not excel_dosyalari:
+        st.warning("Excel dosyası bulunamadı.")
+    elif excel_df.empty:
+        st.warning("Geçerli hisse bulunamadı.")
+    else:
+        secilen_hisse = st.selectbox(
+            "Teknik bilgilerini görüntüle:",
+            excel_df["Hisse Kodu"].tolist()
         )
 
-        if is_admin:
-            if st.button(
-                "Mesajı Sil",
-                key=f"mesaj_sil_{mesaj_id}_{index}"
-            ):
-                df_mesajlar = df_mesajlar[
-                    df_mesajlar["mesaj_id"].astype(str)
-                    != mesaj_id
-                ]
+        sembol = secilen_hisse
 
-                df_mesajlar.to_csv(
-                    MESAJ_DOSYASI,
-                    index=False,
-                    encoding="utf-8-sig"
+        if not sembol.endswith(".IS"):
+            sembol += ".IS"
+
+        try:
+            hisse = yf.Ticker(sembol)
+            gecmis = hisse.history(
+                period="1mo",
+                interval="1d"
+            )
+
+            if gecmis.empty:
+                st.warning(
+                    "Bu hisse için teknik veri bulunamadı."
+                )
+            else:
+                son_fiyat = float(
+                    gecmis["Close"].iloc[-1]
+                )
+
+                onceki_fiyat = float(
+                    gecmis["Close"].iloc[-2]
+                ) if len(gecmis) > 1 else son_fiyat
+
+                degisim = son_fiyat - onceki_fiyat
+                degisim_yuzde = (
+                    degisim / onceki_fiyat * 100
+                    if onceki_fiyat
+                    else 0
+                )
+
+                en_yuksek = float(
+                    gecmis["High"].max()
+                )
+
+                en_dusuk = float(
+                    gecmis["Low"].min()
+                )
+
+                hacim = int(
+                    gecmis["Volume"].iloc[-1]
+                )
+
+                kayit = excel_df[
+                    excel_df["Hisse Kodu"] == secilen_hisse
+                ].iloc[0]
+
+                col1, col2, col3 = st.columns(3)
+
+                col1.metric(
+                    "Canlı Fiyat",
+                    tl_format(son_fiyat),
+                    f"%{sayi_format(degisim_yuzde)}"
+                )
+
+                col2.metric(
+                    "BTA Alım Fiyatı",
+                    tl_format(kayit["BTA Alım Fiyatı"])
+                )
+
+                col3.metric(
+                    "BTA Puanı",
+                    sayi_format(kayit["BTA Puanı"])
+                )
+
+                st.markdown(
+                    f"""
+                    <div class="teknik-karti">
+                        <strong>Hisse:</strong> {secilen_hisse}<br>
+                        <strong>Son fiyat:</strong> {tl_format(son_fiyat)}<br>
+                        <strong>Günlük fark:</strong> {tl_format(degisim)}<br>
+                        <strong>1 aylık en yüksek:</strong> {tl_format(en_yuksek)}<br>
+                        <strong>1 aylık en düşük:</strong> {tl_format(en_dusuk)}<br>
+                        <strong>Son işlem hacmi:</strong> {hacim:,}<br>
+                        <strong>Veri zamanı:</strong>
+                        {datetime.now().strftime("%d.%m.%Y %H:%M:%S")}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+        except Exception as hata:
+            st.error(f"Teknik bilgiler alınamadı: {hata}")
+
+
+# ==================================================
+# PANEL 2: TAKİP, BEĞENİ VE YILDIZ
+# ==================================================
+with tab_oda:
+    st.header("⭐ Oda Takip, Beğeni ve Yıldız Paneli")
+
+    takip, begeni, oy, puan_toplami = istatistik_oku()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if "takip_edildi" not in st.session_state:
+            st.session_state["takip_edildi"] = False
+
+        if not st.session_state["takip_edildi"]:
+            if st.button(
+                "⭐ Odayı Takip Et",
+                use_container_width=True
+            ):
+                takip += 1
+                st.session_state["takip_edildi"] = True
+
+                istatistik_kaydet(
+                    takip,
+                    begeni,
+                    oy,
+                    puan_toplami
                 )
 
                 st.rerun()
+        else:
+            st.success("Takiptesiniz.")
 
+    with col2:
+        if "begeni_verildi" not in st.session_state:
+            st.session_state["begeni_verildi"] = False
 
-# ==================================================
-# KONYA CANLI TAKİP
-# ==================================================
-st.markdown("---")
-st.header("📈 KONYA Canlı Takip")
+        if not st.session_state["begeni_verildi"]:
+            if st.button(
+                "👍 Beğen",
+                use_container_width=True
+            ):
+                begeni += 1
+                st.session_state["begeni_verildi"] = True
 
-try:
-    konya = yf.Ticker("KONYA.IS")
+                istatistik_kaydet(
+                    takip,
+                    begeni,
+                    oy,
+                    puan_toplami
+                )
 
-    konya_veri = konya.history(
-        period="5d",
-        interval="1d"
+                st.rerun()
+        else:
+            st.success("Beğeniniz kaydedildi.")
+
+    with col3:
+        st.metric("👥 Takipçi", f"{takip} kişi")
+
+    with col4:
+        st.metric("👍 Beğeni", f"{begeni}")
+
+    st.divider()
+
+    ortalama = (
+        puan_toplami / oy
+        if oy > 0
+        else 0
     )
 
-    if not konya_veri.empty:
-        son_fiyat = float(
-            konya_veri["Close"].iloc[-1]
+    st.subheader("⭐ Portalı Puanla")
+
+    if "yildiz_verildi" not in st.session_state:
+        st.session_state["yildiz_verildi"] = False
+
+    if not st.session_state["yildiz_verildi"]:
+        secilen_puan = st.radio(
+            "Yıldız seçin:",
+            [1, 2, 3, 4, 5],
+            format_func=lambda x: "⭐" * x,
+            horizontal=True
         )
 
-        konya_alim_fiyati = 4100.00
+        if st.button(
+            "Yıldız Puanını Gönder",
+            use_container_width=True
+        ):
+            oy += 1
+            puan_toplami += secilen_puan
 
-        kar_zarar_yuzde = (
-            (son_fiyat - konya_alim_fiyati)
-            / konya_alim_fiyati
-        ) * 100
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(
-            "Anlık Fiyat",
-            tl_format(son_fiyat)
-        )
-
-        col2.metric(
-            "BTA Alım Fiyatı",
-            tl_format(konya_alim_fiyati)
-        )
-
-        col3.metric(
-            "Kar/Zarar",
-            f"%{sayi_format(kar_zarar_yuzde)}"
-        )
-
-        st.line_chart(
-            konya_veri[["Close"]].rename(
-                columns={
-                    "Close": "KONYA Fiyatı"
-                }
+            istatistik_kaydet(
+                takip,
+                begeni,
+                oy,
+                puan_toplami
             )
-        )
+
+            st.session_state["yildiz_verildi"] = True
+            st.success("Yıldız puanınız kaydedildi.")
+            st.rerun()
     else:
-        st.warning("KONYA canlı verisi alınamadı.")
+        st.info("Bu oturumda daha önce yıldız verdiniz.")
 
-except Exception as hata:
-    st.error(f"KONYA verisi alınamadı: {hata}")
-
-
-# ==================================================
-# TARİHLİ KAYIT DEFTERİ
-# ==================================================
-st.markdown("---")
-st.header("📒 Tarihli Kayıt Defteri")
-
-df_kayitlar = kayitlari_oku()
-
-if df_kayitlar.empty:
-    st.info("Henüz kayıt bulunmuyor.")
-else:
-    df_kayitlar["bta_alim_fiyati"] = pd.to_numeric(
-        df_kayitlar["bta_alim_fiyati"],
-        errors="coerce"
-    )
-
-    df_kayitlar = df_kayitlar[
-        df_kayitlar["bta_alim_fiyati"] > 0
-    ]
-
-    gorunum_df = df_kayitlar.rename(
-        columns={
-            "kayit_tarihi": "Kayıt Tarihi",
-            "hisse_kodu": "Hisse Kodu",
-            "bta_alim_fiyati": "BTA Alım Fiyatı",
-            "bta_puani": "BTA Puanı"
-        }
-    )
-
-    gorunum_df["BTA Alım Fiyatı"] = (
-        gorunum_df["BTA Alım Fiyatı"]
-        .apply(tl_format)
-    )
-
-    gorunum_df["BTA Puanı"] = (
-        gorunum_df["BTA Puanı"]
-        .apply(sayi_format)
-    )
-
-    st.dataframe(
-        gorunum_df[
-            [
-                "Kayıt Tarihi",
-                "Hisse Kodu",
-                "BTA Alım Fiyatı",
-                "BTA Puanı"
-            ]
-        ],
-        use_container_width=True,
-        hide_index=True
-    )
-
-    st.download_button(
-        "Kayıt Defterini İndir",
-        data=df_kayitlar.to_csv(
-            index=False,
-            encoding="utf-8-sig"
-        ),
-        file_name="bta_tarihli_kayit_defteri.csv",
-        mime="text/csv",
-        use_container_width=True
+    st.metric(
+        "Ortalama Yıldız",
+        f"⭐ {ortalama:.2f} / 5"
     )
 
 
 # ==================================================
-# ALT SPK UYARISI
+# PANEL 3: CANLI SOHBET
+# ==================================================
+with tab_sohbet:
+    st.header("💬 Canlı Sohbet")
+
+    kullanici = st.text_input(
+        "Kullanıcı adı",
+        value="Hissedar"
+    )
+
+    with st.form(
+        "mesaj_formu",
+        clear_on_submit=True
+    ):
+        metin = st.text_area(
+            "Mesajınız",
+            height=90,
+            placeholder="Mesajınızı yazın..."
+        )
+
+        gonder = st.form_submit_button(
+            "Mesaj Gönder 🚀",
+            use_container_width=True
+        )
+
+        if gonder:
+            if not kullanici.strip():
+                st.error("Kullanıcı adı boş bırakılamaz.")
+            elif not metin.strip():
+                st.error("Mesaj boş bırakılamaz.")
+            else:
+                mesaj_ekle(
+                    kullanici.strip(),
+                    metin.strip()
+                )
+
+                st.success("Mesajınız gönderildi.")
+                st.rerun()
+
+    mesajlar = mesajlari_oku()
+
+    if mesajlar.empty:
+        st.info("Henüz mesaj bulunmuyor.")
+    else:
+        for index, satir in mesajlar.iloc[::-1].iterrows():
+            mesaj_id = str(satir["mesaj_id"])
+
+            st.markdown(
+                f"""
+                <div class="mesaj-karti">
+                    <strong>👤 {satir["kullanici"]}</strong>
+                    <small> · {satir["tarih"]}</small>
+                    <br>
+                    {satir["mesaj"]}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            if is_admin:
+                if st.button(
+                    "Mesajı Sil",
+                    key=f"sil_{mesaj_id}_{index}"
+                ):
+                    mesajlar = mesajlar[
+                        mesajlar["mesaj_id"].astype(str)
+                        != mesaj_id
+                    ]
+
+                    mesajlar.to_csv(
+                        MESAJ_DOSYASI,
+                        index=False,
+                        encoding="utf-8-sig"
+                    )
+
+                    st.rerun()
+
+
+# ==================================================
+# PANEL 4: TARİHLİ KAYITLAR
+# ==================================================
+with tab_kayit:
+    st.header("📒 Tarihli Kayıt Defteri")
+
+    df_kayitlar = kayitlari_oku()
+
+    if df_kayitlar.empty:
+        st.info("Henüz kayıt bulunmuyor.")
+    else:
+        df_kayitlar["bta_alim_fiyati"] = pd.to_numeric(
+            df_kayitlar["bta_alim_fiyati"],
+            errors="coerce"
+        )
+
+        df_kayitlar = df_kayitlar[
+            df_kayitlar["bta_alim_fiyati"] > 0
+        ]
+
+        gorunum = df_kayitlar.rename(
+            columns={
+                "kayit_tarihi": "Kayıt Tarihi",
+                "hisse_kodu": "Hisse Kodu",
+                "bta_alim_fiyati": "BTA Alım Fiyatı",
+                "bta_puani": "BTA Puanı"
+            }
+        )
+
+        gorunum["BTA Alım Fiyatı"] = (
+            gorunum["BTA Alım Fiyatı"]
+            .apply(tl_format)
+        )
+
+        gorunum["BTA Puanı"] = (
+            gorunum["BTA Puanı"]
+            .apply(sayi_format)
+        )
+
+        st.dataframe(
+            gorunum[
+                [
+                    "Kayıt Tarihi",
+                    "Hisse Kodu",
+                    "BTA Alım Fiyatı",
+                    "BTA Puanı"
+                ]
+            ],
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.download_button(
+            "Kayıtları İndir",
+            data=df_kayitlar.to_csv(
+                index=False,
+                encoding="utf-8-sig"
+            ),
+            file_name="bta_tarihli_kayitlar.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+
+# ==================================================
+# SPK UYARISI
 # ==================================================
 st.markdown(
     """
     <div class="spk-uyari">
         <strong>⚠️ SPK YASAL UYARI:</strong>
-        Bu platformda yer alan bilgiler yalnızca genel bilgilendirme
-        amacıyla sunulmaktadır. Buradaki hiçbir veri, puan veya fiyat
-        yatırım danışmanlığı, hedef fiyat ya da AL, SAT, TUT tavsiyesi
-        değildir. Yatırım kararlarınızı kendi araştırmanız ve yetkili
-        yatırım kuruluşlarıyla görüşerek vermeniz gerekir.
+        Bu platformdaki bilgiler yalnızca genel bilgilendirme amacıyla
+        sunulmaktadır. Hiçbir veri, puan veya fiyat yatırım danışmanlığı,
+        hedef fiyat ya da AL, SAT, TUT tavsiyesi değildir.
     </div>
     """,
     unsafe_allow_html=True
