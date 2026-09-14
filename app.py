@@ -160,7 +160,7 @@ if os.path.exists(excel_yolu):
     except:
         pass
 
-# 🔥 SİSTEM OTOMATİK SİNYAL GEÇMİŞİ KAYIT MOTORU (Sorunlu İf-Else Yapısı Tamamen Düzeltildi)
+# 🔥 SİSTEM OTOMATİK SİNYAL GEÇMİŞİ KAYIT MOTORU (Hatalı else blokları tamamen kaldırıldı)
 if aktif_tablo_verileri:
     try:
         df_notlar_aktif = pd.read_csv(db_notlar)
@@ -194,7 +194,7 @@ if aktif_tablo_verileri:
 # 8. OTOMATİK BAŞARI TEBRİK PANELİ
 if basarili_hisseler:
     hisseler_str = ", ".join(basarili_hisseler)
-    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
+    tebrik_html = f'<div class="tebrik-kutusu"><h3 style="color:#00ffcc; margin:0 0 5px 0; font-size:18px; font-weight:bold;">⚡ ALGORİTMİK BAŞARI ANALİZİ ⚡</h3><p style="color:#ffffff; font-size:14px; margin:0;">Sistemimizde takip edilen {hisseler_str} hedefine ulaşarak %9 og ve üzeri performans göstermiştir. Tebrik ederiz!</p></div>'
     st.markdown(tebrik_html, unsafe_allow_html=True)
 
 # 9. TABLO VEYA ARAMA METNİ PANELİ
