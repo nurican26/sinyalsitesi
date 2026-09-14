@@ -67,14 +67,14 @@ if not os.path.exists(db_notlar):
     pd.DataFrame(columns=["id", "tarih", "hisse", "not", "hedef_fiyat"]).to_csv(db_notlar, index=False)
 
 if not os.path.exists(db_istatistik):
-    pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
+    pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"]).to_csv(db_istatistik, index=False)
 
 # 5. ZİYARETÇİ SAYACINI TETİKLEME
 ziyaret, basarili, basarisiz = 0, 0, 0
 try:
     df_ist = pd.read_csv(db_istatistik)
     if df_ist.empty:
-        df_ist = pd.DataFrame([[0, 0, 0]], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
+        df_ist = pd.DataFrame([], columns=["ziyaret_sayisi", "basarili_oy", "basarisiz_oy"])
     
     if "ziyaret_sayildi" not in st.session_state:
         df_ist.at[0, "ziyaret_sayisi"] = int(df_ist.at[0, "ziyaret_sayisi"]) + 1
@@ -113,7 +113,7 @@ tum_hisseler = []
 veri_var_mi = False
 basarili_hisseler = []
 
-# TARİHİ KESİN OLARAK ŞU ANKİ ZAMANA EŞİTLİYORUZ
+# TARİHİ KESİN OLARAS ŞU ANKİ ZAMANA EŞİTLİYORUZ
 excel_tarih_objesi = datetime.datetime.now()
 gunler_tr = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 excel_guncelleme_tarihi = excel_tarih_objesi.strftime(f"%d.%m.%Y - %H:%M | {gunler_tr[excel_tarih_objesi.weekday()]}")
@@ -178,12 +178,11 @@ st.markdown(yasal_html, unsafe_allow_html=True)
 
 st.write("---")
 
-# 11. HİSSE KAYIT DEFTERİ (TÜM GİRİNTİLER KESİN OLARAK HİZALANDI)
+# 11. HİSSE KAYIT DEFTERİ PANELİ (GİRİNTİ RİSKİ SIFIRA İNDİRİLDİ)
 st.markdown('<p style="font-size:16px; font-weight:bold; color:#ffaa00; margin-bottom:8px;">🗒️ BTA HİSSE KAYIT DEFTERİ</p>', unsafe_allow_html=True)
 with st.expander("📝 Yeni Hisse Notu Ekle / Geçmişi Gör"):
     col_not1, col_not2, col_not3 = st.columns(3)
-    with col_not1:
-        not_hisse = st.text_input("Hisse Kodu (Örn: THYAO):", key="k_hisse").strip().upper()
-    with col_not2:
-        not_metni = st.text_input("Hisse Hakkındaki Notunuz:", key="k_not")
-    with col_not3:
+    not_hisse = col_not1.text_input("Hisse Kodu (Örn: THYAO):", key="k_hisse").strip().upper()
+    not_metni = col_not2.text_input("Hisse Hakkındaki Notunuz:", key="k_not")
+    not_hedef = col_not3.text_input("Hedef Fiyat (TL):", key="k_hedef")
+        
