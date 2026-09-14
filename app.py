@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
-from datetime import datetime
 
 # ==========================================
 # 1. SAYFA VE PANEL AYARLARI
@@ -64,11 +63,9 @@ try:
             st.snow()
             st.success("🚀 **ODADA KUTLAMALAR BAŞLASIN! KONYA HİSSESİ ANLIK OLARAK TAVAN OLDU VEYA +%9 KAR MARJINI AŞTI!** 🥳🎉")
         
-        # İstediğiniz A, C, D mantığını internet canlı verileriyle tablo şeklinde gösteriyoruz
         st.subheader("📊 BTA Algoritma Anlık Veri Takip Listesi")
         
-        # Sadece A (Hisse), C (Alım Fiyatı) ve D (Puan) mantığına uygun temiz canlı tablo oluşturuyoruz
-        # E SÜTUNU VEYA BAŞKA HİÇBİR FAZLALIK BULUNMAZ
+        # Sadece A, C ve D yapısına uygun internetten beslenen liste
         canli_veri_sozlugu = {
             "BTA HİSSE (A)": ["KONYA"],
             "BTA ALIM FİYATI (C)": [f"{bta_alim_fiyati:.2f} TL"],
@@ -80,19 +77,8 @@ try:
         df_canli = pd.DataFrame(canli_veri_sozlugu)
         st.dataframe(df_canli, use_container_width=True, hide_index=True)
         
-        # Canlı Hesap Kutuları
+        # Grafiğe geçmeden önce küçük bir boşluk bırakıyoruz
         st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("📈 Portföy Durum Özet Kartları")
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Anlık Canlı Fiyat", f"{guncel_fta_fiyati:.2f} TL", f"{gunluk_degisim_yuzde:.2f}% (Günlük)")
-        c2.metric("Sizin Alım Maliyetiniz", f"{bta_alim_fiyati:.2f} TL")
-        
-        if kar_zarar_tutari >= 0:
-            c3.metric("Net Kar Durumu (TL)", f"+{kar_zarar_tutari:.2f} TL")
-            c4.metric("Toplam Kar Oranı", f"+% {kar_zarar_yuzdesi:.2f}")
-        else:
-            c3.metric("Net Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
-            c4.metric("Toplam Zarar Oranı", f"% {kar_zarar_yuzdesi:.2f}")
         
         st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
         st.line_chart(tarihce['Close'])
