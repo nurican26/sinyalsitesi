@@ -3,7 +3,6 @@ import pandas as pd
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 import os
-import json
 from datetime import datetime
 
 # ==========================================
@@ -23,44 +22,51 @@ if "global_bta_price" not in st.session_state:
 spk_metni = "⚠️ SPK YASAL UYARI NOTU: Burada yer alan yatırım bilgi, yorum ve tavsiyeleri yatırım danışmanlığı kapsamında değildir. Yatırım danışmanlığı hizmeti; aracı kurumlar, portföy yönetim şirketleri, mevduat kabul etmeyen bankalar ile müşteri arasında imzalanacak yatırım danışmanlığı sözleşmesi çerçevesinde sunulmaktadır. Burada yer alan yorum ve tavsiyeler, yorum ve tavsiyede bulunanların kişisel görüşlerine dayanmaktadır. Bu görüşler mali durumunuz ile risk ve getiri tercihlerinize uygun olmayabilir. Bu nedenle, sadece burada yer alan bilgilere dayanılarak yatırım kararı verilmesi beklentilerinize uygun sonuçlar doğurmayabilir. Bu platformda sunulan veriler tamamen kurumsal bilgilendirme amaçlı olup, kesinlikle bir 'AL', 'SAT' veya 'TUT' tavsiyesi niteliği taşımamaktadır."
 
 # ==========================================
-# 🌌 PRO BORSA TERMİNALİ TASARIMI (CSS ENJEKSİYONU)
+# 🌌 TRADINGVIEW TARZI BORSA TERMİNALİ TEMASI (CSS ENJEKSİYONU)
 # ==========================================
 st.markdown("""
 <style>
+    html, body, [data-testid="stAppViewContainer"] {
+        background-color: #0c0f14 !important;
+        color: #d1d4dc !important;
+    }
     .stApp {
-        background-color: #0d1117;
-        color: #c9d1d9;
-        font-family: 'Courier New', Courier, monospace;
+        background-color: #0c0f14 !important;
+    }
+    h1, h2, h3, h4, h5, h6, p, span, label {
+        color: #d1d4dc !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
     }
     .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-        background-color: #161b22;
-        padding: 10px;
-        border-radius: 8px;
-        border-bottom: 2px solid #238636;
+        gap: 15px;
+        background-color: #131722;
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #2a2e39;
     }
     .stTabs [data-baseweb="tab"] {
-        color: #8b949e !important;
-        font-weight: bold;
+        color: #787b86 !important;
+        font-weight: 600;
+        padding: 10px 20px;
     }
     .stTabs [aria-selected="true"] {
-        color: #58a6ff !important;
-        border-bottom-color: #58a6ff !important;
+        color: #2962ff !important;
+        background-color: #1e222d;
+        border-radius: 4px;
     }
     .borsa-kart {
-        background: linear-gradient(135deg, #1f242c 0%, #161b22 100%);
-        border-left: 5px solid #238636;
-        padding: 15px;
+        background-color: #131722;
+        border: 1px solid #2a2e39;
+        border-left: 4px solid #089981;
+        padding: 14px;
         border-radius: 6px;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        margin-bottom: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 🌐 TARAYICI TABANLI %100 KALICI HAFIZA MOTORU
-# (Sunucu sıfırlansa bile verileri kullanıcının tarayıcısından korur)
+# 🌐 %100 KALICI VERİ DEPOLAMA (DİNAMİK HAFIZA)
 # ==========================================
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
@@ -204,7 +210,6 @@ with tab_bta:
             
         st.markdown("---")
         st.subheader("⭐ Oda Değerlendirmesi & Topluluk Reaksiyonu")
-        
         col_r1, col_r2 = st.columns(2)
         with col_r1:
             st.write(f"👍 Toplam Oda Beğenisi: **{st.session_state['begeniler']}**")
@@ -220,11 +225,9 @@ with tab_bta:
         st.warning("⚠️ Borsa İstanbul canlı veri sunucularından anlık KONYA verisi şu an alınamadı.")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (TARAYICI TABANLI KORUMALI)
+# MODÜL 3: CANLI SOHBET ODASI (ST.FORM VE KİLİTLENME KALDIRILDI)
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
-    nickname = st.text_input("Sohbet Takma Adınız:", value="Hissedar", key="chat_nick")
     
-    with st.form("chat_form", clear_on_submit=True):
-        user_message = st.text_input("Mesajınızı yazın:")
+    # Form yapısı tamamen silindi, girdi kutusu doğrudan sayfaya alındı
