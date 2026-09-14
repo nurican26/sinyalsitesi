@@ -81,17 +81,17 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (E SÜTUNU VE ZEDUR KALDIRILDI)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (SADECE A, C, D SÜTUNLARI KİLİTLİ)
 # ==========================================
 with tab_excel:
-    st.header("📂 Excel Veri İnceleme Merkezi")
+    st.header("📂 Excel Veri Inceleme Merkezi")
     varsayilan_dosya = None
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if list(hedef_dosyalar):
-            varsayilan_dosya = hedef_dosyalar
+            varsayilan_dosya = hedef_dosyalar[0]
         else:
-            varsayilan_dosya = excel_dosyalari
+            varsayilan_dosya = excel_dosyalari[0]
 
     secilen_dosya = varsayilan_dosya
     
@@ -108,21 +108,24 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri
+            
+            # Hatayı çözen anahtar: İlk sayfayı ("WEB") zorunlu ve net olarak hedef alıyoruz (dict hatasını önler)
+            aktif_sayfa = sayfa_isimleri[0]
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             
+            # DataFrame olarak tek bir sayfayı net okuyoruz
             df = pd.read_excel(secilen_dosya, sheet_name=aktif_sayfa, engine='openpyxl')
             
-            # AL SAT sütunlarını gizleme
-            filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
-            df_goster = df[filtrelenmis_sutunlar]
+            # 🚀 İSTEK: Sadece A, C ve D sütunları gösterilecek (BTA HİSSE, BTA ALIM FİYATI, BTA PUAN)
+            # İsme göre tam eşleşme filtresi uyguluyoruz
+            istenen_sutunlar = ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]
+            mevcut_istenenler = [col for col in df.columns if col in istenen_sutunlar]
             
-            # 🚀 İSTEK: E sütununu (ZEDUR içeren sütun) ve diğer isimsiz sütunları tamamen kaldırma filtresi
-            # Sadece "BTA HİSSE", "BTA ALIM FİYATI" ve "BTA PUAN" içeren sütunları koruyoruz
-            hedef_sutunlar = [col for col in df_goster.columns if col in ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]]
-            if hedef_sutunlar:
-                df_goster = df_goster[hedef_sutunlar]
+            if mevcut_istenenler:
+                df_goster = df[mevcut_istenenler]
+            else:
+                df_goster = df
             
             # BTA HİSSE sütunundaki boş (None) satırları temizleme
             if "BTA HİSSE" in df_goster.columns:
@@ -197,4 +200,3 @@ with tab_chat:
         submit_button = st.form_submit_button("Gönder 🚀")
         if submit_button and user_message:
             now_str = datetime.now().strftime("%H:%M:%S")
-            msg_id = int(datetime.now().timestamp() * 1000)
