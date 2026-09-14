@@ -30,7 +30,7 @@ if "bta_members_list" not in st.session_state:
         {"id": 8888, "Hissedar Adı": "Nurican Bey", "Sahip Olduğu BTA Hissesi": "KONYA.IS", "Hisse Maliyeti (TL)": 4100.0, "Adet": 10}
     ]
 
-# Global BTA Fiyat Referansı (Excel okunamazsa devreye girecek yedek maliyet)
+# Global BTA Fiyat Referansı
 if "global_bta_price" not in st.session_state:
     st.session_state["global_bta_price"] = 4100.0
 
@@ -81,7 +81,7 @@ tab_excel, tab_bta, tab_chat, tab_members = st.tabs([
 ])
 
 # ==========================================
-# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (YÖNETİCİ GİZLİLİKLİ, OTOMATİK FILTRELEMELİ)
+# MODÜL 1: EXCEL & MAKRO VERİ İŞLEME (E SÜTUNU VE ZEDUR KALDIRILDI)
 # ==========================================
 with tab_excel:
     st.header("📂 Excel Veri İnceleme Merkezi")
@@ -89,9 +89,9 @@ with tab_excel:
     if excel_dosyalari:
         hedef_dosyalar = [f for f in excel_dosyalari if "bta" in f.lower() or "nurican" in f.lower()]
         if list(hedef_dosyalar):
-            varsayilan_dosya = hedef_dosyalar[0]
+            varsayilan_dosya = hedef_dosyalar
         else:
-            varsayilan_dosya = excel_dosyalari[0]
+            varsayilan_dosya = excel_dosyalari
 
     secilen_dosya = varsayilan_dosya
     
@@ -108,7 +108,7 @@ with tab_excel:
         try:
             excel_obj = pd.ExcelFile(secilen_dosya, engine='openpyxl')
             sayfa_isimleri = excel_obj.sheet_names
-            aktif_sayfa = sayfa_isimleri[0]
+            aktif_sayfa = sayfa_isimleri
             if is_admin and len(sayfa_isimleri) > 1:
                 aktif_sayfa = st.selectbox("Görüntülenecek Sayfa (Yönetici):", sayfa_isimleri)
             
@@ -118,18 +118,23 @@ with tab_excel:
             filtrelenmis_sutunlar = [col for col in df.columns if "AL SAT" not in col.upper()]
             df_goster = df[filtrelenmis_sutunlar]
             
-            # 🚀 İSTEK: BTA HİSSE sütunundaki boş (None) satırları tamamen temizleme algoritması
+            # 🚀 İSTEK: E sütununu (ZEDUR içeren sütun) ve diğer isimsiz sütunları tamamen kaldırma filtresi
+            # Sadece "BTA HİSSE", "BTA ALIM FİYATI" ve "BTA PUAN" içeren sütunları koruyoruz
+            hedef_sutunlar = [col for col in df_goster.columns if col in ["BTA HİSSE", "BTA ALIM FİYATI", "BTA PUAN"]]
+            if hedef_sutunlar:
+                df_goster = df_goster[hedef_sutunlar]
+            
+            # BTA HİSSE sütunundaki boş (None) satırları temizleme
             if "BTA HİSSE" in df_goster.columns:
                 df_goster = df_goster[df_goster["BTA HİSSE"].notna()]
                 df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.strip() != ""]
                 df_goster = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() != "NONE"]
                 
-                # 🚀 İSTEK: KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip hafızaya alma
+                # KONYA satırındaki BTA ALIM FİYATI değerini otomatik çekip hafızaya alma
                 konya_satirlari = df_goster[df_goster["BTA HİSSE"].astype(str).str.upper() == "KONYA"]
                 if not konya_satirlari.empty and "BTA ALIM FİYATI" in df_goster.columns:
                     st.session_state["global_bta_price"] = float(konya_satirlari["BTA ALIM FİYATI"].iloc[0])
             
-            # Arama kutusu kaldırılmıştır, doğrudan temiz veri çerçevesini basıyoruz
             st.dataframe(df_goster, use_container_width=True)
             
         except Exception as e:
@@ -138,14 +143,11 @@ with tab_excel:
         st.info("💡 Sistemde yüklü veya klasörde analiz edilecek Excel dosyası bulunamadı.")
 
 # ==========================================
-# MODÜL 2: KONYA CANLI TAKİP PANELİ (TAM OTOMATİK BAĞLANTILI)
+# MODÜL 2: KONYA CANLI TAKİP PANELİ
 # ==========================================
 with tab_bta:
     st.header("📈 KONYA Hisse Senedi Canlı Kar/Zarar Takip Paneli")
-    
-    # 🚀 İSTEK: BTA Fiyatı artık Excel'den gelen KONYA satırındaki alım maliyetine otomatik kilitlenmiştir
     bta_alim_fiyati = st.session_state["global_bta_price"]
-    
     kurumsal_ticker = "KONYA.IS"
     try:
         hisse = yf.Ticker(kurumsal_ticker)
@@ -175,7 +177,6 @@ with tab_bta:
             else:
                 c3.metric("Net Kar/Zarar Durumu (TL)", f"{kar_zarar_tutari:.2f} TL")
                 c4.metric("Toplam Zarar Oranınız", f"% {kar_zarar_yuzdesi:.2f}")
-            
             st.subheader("📊 KONYA - Gün İçi Canlı Fiyat Grafik Trendi")
             st.line_chart(tarihce['Close'])
         else:
@@ -184,7 +185,7 @@ with tab_bta:
         st.error(f"Canlı takip motorunda teknik bir aksaklık oluştu: {e}")
 
 # ==========================================
-# MODÜL 3: CANLI SOHBET ODASI (HIZALAMA HATASI TAMAMEN GİDERİLDİ)
+# MODÜL 3: CANLI SOHBET ODASI
 # ==========================================
 with tab_chat:
     st.header("💬 BTA Genel Canlı Sohbet Odası")
