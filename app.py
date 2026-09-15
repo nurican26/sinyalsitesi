@@ -1241,51 +1241,74 @@ else:
                     "sembol denenemedi."
                 )
     else:
-        yukselenler = piyasa_df.sort_values(
-            "Değişim %",
-            ascending=False
-        ).head(5)
+        # ==================================================
+        # TIKLANABİLİR SEKME: YÜKSELEN / DÜŞEN
+        # ==================================================
+        if "piyasa_gorunum" not in st.session_state:
+            st.session_state["piyasa_gorunum"] = "yukselen"
 
-        dusenler = piyasa_df.sort_values(
-            "Değişim %",
-            ascending=True
-        ).head(5)
+        col_btn1, col_btn2 = st.columns(2)
 
-        col_yukselen, col_dusen = st.columns(2)
+        with col_btn1:
+            yukselen_secili = (
+                st.session_state["piyasa_gorunum"] == "yukselen"
+            )
 
-        with col_yukselen:
-            st.markdown("##### 🚀 Yükselen Hisseler")
+            if st.button(
+                "🚀 Yükselen Hisseler",
+                use_container_width=True,
+                type="primary" if yukselen_secili else "secondary",
+                key="btn_yukselen_goster"
+            ):
+                st.session_state["piyasa_gorunum"] = "yukselen"
+                st.rerun()
 
-            if yukselenler.empty:
-                st.caption("Veri yok.")
-            else:
-                for _, satir in yukselenler.iterrows():
-                    st.markdown(
-                        hisse_karti_format(
-                            satir["Hisse Kodu"],
-                            satir["Fiyat"],
-                            satir["Değişim %"],
-                            "#00f5c8"
-                        ),
-                        unsafe_allow_html=True
-                    )
+        with col_btn2:
+            dusen_secili = (
+                st.session_state["piyasa_gorunum"] == "dusen"
+            )
 
-        with col_dusen:
-            st.markdown("##### 🔻 Düşen Hisseler")
+            if st.button(
+                "🔻 Düşen Hisseler",
+                use_container_width=True,
+                type="primary" if dusen_secili else "secondary",
+                key="btn_dusen_goster"
+            ):
+                st.session_state["piyasa_gorunum"] = "dusen"
+                st.rerun()
 
-            if dusenler.empty:
-                st.caption("Veri yok.")
-            else:
-                for _, satir in dusenler.iterrows():
-                    st.markdown(
-                        hisse_karti_format(
-                            satir["Hisse Kodu"],
-                            satir["Fiyat"],
-                            satir["Değişim %"],
-                            "#ff5264"
-                        ),
-                        unsafe_allow_html=True
-                    )
+        st.write("")
+
+        if st.session_state["piyasa_gorunum"] == "yukselen":
+            gosterilecek_liste = piyasa_df.sort_values(
+                "Değişim %",
+                ascending=False
+            )
+            renk = "#00f5c8"
+            baslik = "🚀 Yükselen Hisseler"
+        else:
+            gosterilecek_liste = piyasa_df.sort_values(
+                "Değişim %",
+                ascending=True
+            )
+            renk = "#ff5264"
+            baslik = "🔻 Düşen Hisseler"
+
+        st.markdown(f"##### {baslik}")
+
+        if gosterilecek_liste.empty:
+            st.caption("Veri yok.")
+        else:
+            for _, satir in gosterilecek_liste.head(15).iterrows():
+                st.markdown(
+                    hisse_karti_format(
+                        satir["Hisse Kodu"],
+                        satir["Fiyat"],
+                        satir["Değişim %"],
+                        renk
+                    ),
+                    unsafe_allow_html=True
+                )
 
         if piyasa_hatalari:
             with st.expander(
