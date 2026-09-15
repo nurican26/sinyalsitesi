@@ -964,7 +964,7 @@ if excel_dosyalari:
 tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
-        "🧮 Bedelli/Bedelsiz",
+        "🧮 Bedelli/Bedelsiz- HESAPLAMA",
         "💬 Sohbet",
         "📒 Kayıtlar",
         "🔗 Paylaş"
