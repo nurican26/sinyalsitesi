@@ -1,8 +1,6 @@
 import os
 import hashlib
 from datetime import datetime
-import urllib.parse
-
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
@@ -38,51 +36,51 @@ dosya_olustur(KAYIT_DOSYASI, KAYIT_SUTUNLARI)
 dosya_olustur(ISTATISTIK_DOSYASI, ISTATISTIK_SUTUNLARI)
 dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
 
+# BİST TAKİP LİSTESİ (En popüler BİST 30/50 Hisseleri)
+BIST_TAKIP_LISTESI = [
+    "THYAO.IS", "GARAN.IS", "EREGL.IS", "ASELS.IS", "TUPRS.IS",
+    "AKBNK.IS", "KCHOL.IS", "SISE.IS", "SAHOL.IS", "BIMAS.IS",
+    "YKBNK.IS", "ISCTR.IS", "HEKTS.IS", "SASA.IS", "PETKM.IS",
+    "KONTR.IS", "ENKAI.IS", "PENTAS.IS", "ASTOR.IS", "ALARK.IS"
+]
+
 # ==================================================
-# ÖNBELLEK (CACHE) VE VERİ ÇEKME FONKSİYONLARI
+# CANLI BİST YÜKSELEN / DÜŞEN HESAPLAMA
 # ==================================================
+@st.cache_data(ttl=30)
+def bist_canli_piyasa_ozeti_getir():
+    """Yahoo Finance üzerinden BIST hisselerinin canlı değişimlerini çeker."""
+    veriler = []
+    for sembol in BIST_TAKIP_LISTESI:
+        try:
+            hisse = yf.Ticker(sembol)
+            info = hisse.info
+            fiyat = info.get("regularMarketPrice") or info.get("currentPrice") or 0.0
+            onceki_kapanis = info.get("regularMarketPreviousClose") or info.get("previousClose") or 0.0
+            
+            if fiyat > 0 and onceki_kapanis > 0:
+                degisim = ((fiyat - onceki_kapanis) / onceki_kapanis) * 100
+                veriler.append({
+                    "Hisse": sembol.replace(".IS", ""),
+                    "Son Fiyat (TL)": fiyat,
+                    "Değişim (%)": degisim
+                })
+        except Exception:
+            continue
+    
+    if not veriler:
+        return pd.DataFrame()
+    
+    df = pd.DataFrame(veriler)
+    return df
+
 @st.cache_data(ttl=15)
 def canli_hisse_verisi_getir(sembol):
-    """Yahoo Finance üzerinden veri çeker, 15 saniye cache'ler (kilitlenmeyi önler)."""
     try:
         hisse = yf.Ticker(sembol)
         return hisse.info
     except Exception:
         return {}
-
-def tradingview_piyasa_widget(filitre_tipi="top_gainers"):
-    """TradingView BIST En Çok Yükselenler / Düşenler Canlı Listesi."""
-    tv_html = f"""
-    <div class="tradingview-widget-container" style="height:600px;width:100%">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-hotlists.js" async>
-      {{
-      "colorTheme": "dark",
-      "dateRange": "1D",
-      "exchange": "BIST",
-      "showChart": true,
-      "locale": "tr",
-      "largeChartUrl": "",
-      "isTransparent": true,
-      "showSymbolLogo": true,
-      "showFloatingTooltip": false,
-      "width": "100%",
-      "height": "100%",
-      "plotLineColorGrowing": "rgba(0, 245, 200, 1)",
-      "plotLineColorFalling": "rgba(255, 82, 100, 1)",
-      "gridLineColor": "rgba(240, 243, 250, 0.1)",
-      "scaleFontColor": "rgba(120, 123, 134, 1)",
-      "belowLineFillColorGrowing": "rgba(41, 98, 255, 0.12)",
-      "belowLineFillColorFalling": "rgba(41, 98, 255, 0.12)",
-      "belowLineFillColorGrowingBottom": "rgba(41, 98, 255, 0)",
-      "belowLineFillColorFallingBottom": "rgba(41, 98, 255, 0)",
-      "symbolActiveColor": "rgba(41, 98, 255, 0.12)",
-      "activeFilter": "{filitre_tipi}"
-    }}
-      </script>
-    </div>
-    """
-    components.html(tv_html, height=620)
 
 # ==================================================
 # FORMATLAMA BİLEŞENLERİ
@@ -100,40 +98,29 @@ def sayi_format(deger):
         return "-"
 
 def turkce_sayi_cevir(deger):
-    if pd.isna(deger):
-        return None
-    if isinstance(deger, (int, float)):
-        return float(deger)
-
+    if pd.isna(deger): return None
+    if isinstance(deger, (int, float)): return float(deger)
     metin = str(deger).strip().lower().replace("tl", "").replace(" ", "")
-    if not metin:
-        return None
-
+    if not metin: return None
     try:
-        if "." in metin and "," in metin:
-            metin = metin.replace(".", "").replace(",", ".")
+        if "." in metin and "," in metin: metin = metin.replace(".", "").replace(",", ".")
         elif "," in metin:
             son_parca = metin.split(",")[-1]
             metin = metin.replace(",", "") if len(son_parca) == 3 else metin.replace(",", ".")
         elif "." in metin:
             son_parca = metin.split(".")[-1]
-            if len(son_parca) == 3:
-                metin = metin.replace(".", "")
+            if len(son_parca) == 3: metin = metin.replace(".", "")
         return float(metin)
-    except Exception:
-        return None
+    except Exception: return None
 
 def kar_yuzdesi_hesapla(bta_fiyat, anlik_fiyat):
-    if not bta_fiyat or not anlik_fiyat or bta_fiyat <= 0:
-        return None
+    if not bta_fiyat or not anlik_fiyat or bta_fiyat <= 0: return None
     return ((anlik_fiyat - bta_fiyat) / bta_fiyat) * 100
 
 def kar_yuzdesi_format(kar_yuzde):
-    if kar_yuzde is None:
-        return "-"
+    if kar_yuzde is None: return "-"
     durum = "📈" if kar_yuzde >= 0 else "📉"
     renk = "#00f5c8" if kar_yuzde >= 0 else "#ff5264"
-    
     return f"""
     <div style="background: rgba(0, 0, 0, 0.3); border-left: 4px solid {renk}; border-radius: 5px; padding: 12px; margin: 10px 0; text-align: center;">
         <div style="font-size: 24px; font-weight: bold; color: {renk};">{durum} {kar_yuzde:+.2f}%</div>
@@ -143,43 +130,24 @@ def kar_yuzdesi_format(kar_yuzde):
 
 def bedelli_bedelsiz_hesapla(eski_fiyat, sahip_lot, bedelli_orani, bedelli_fiyat, bedelsiz_orani):
     try:
-        eski_fiyat = float(eski_fiyat)
-        sahip_lot = float(sahip_lot)
-        bedelli_orani_yuzde = float(bedelli_orani)
-        bedelli_fiyat = float(bedelli_fiyat)
+        eski_fiyat, sahip_lot = float(eski_fiyat), float(sahip_lot)
+        bedelli_orani_yuzde, bedelli_fiyat = float(bedelli_orani), float(bedelli_fiyat)
         bedelsiz_orani_yuzde = float(bedelsiz_orani)
-    except Exception:
-        return None
+    except Exception: return None
 
-    if eski_fiyat <= 0 or sahip_lot < 0 or bedelli_orani_yuzde < 0 or bedelsiz_orani_yuzde < 0:
-        return None
-
-    bedelli_orani = bedelli_orani_yuzde / 100
-    bedelsiz_orani = bedelsiz_orani_yuzde / 100
+    if eski_fiyat <= 0 or sahip_lot < 0 or bedelli_orani_yuzde < 0 or bedelsiz_orani_yuzde < 0: return None
+    bedelli_orani, bedelsiz_orani = bedelli_orani_yuzde / 100, bedelsiz_orani_yuzde / 100
     payda = 1 + bedelli_orani + bedelsiz_orani
-
-    if payda <= 0:
-        return None
+    if payda <= 0: return None
 
     bedelli_yeni_lot = sahip_lot * bedelli_orani
     bedelsiz_yeni_lot = sahip_lot * bedelsiz_orani
-    toplam_yeni_lot = bedelli_yeni_lot + bedelsiz_yeni_lot
-    toplam_lot_sonrasi = sahip_lot + toplam_yeni_lot
-    odenecek_tutar = bedelli_yeni_lot * bedelli_fiyat
+    toplam_lot_sonrasi = sahip_lot + bedelli_yeni_lot + bedelsiz_yeni_lot
     teorik_fiyat = (eski_fiyat + (bedelli_orani * bedelli_fiyat)) / payda
 
     return {
-        "eski_fiyat": eski_fiyat,
-        "sahip_lot": sahip_lot,
-        "bedelli_yeni_lot": bedelli_yeni_lot,
-        "bedelsiz_yeni_lot": bedelsiz_yeni_lot,
-        "toplam_yeni_lot": toplam_yeni_lot,
-        "toplam_lot_sonrasi": toplam_lot_sonrasi,
-        "odenecek_tutar": odenecek_tutar,
         "teorik_fiyat": teorik_fiyat,
-        "eski_portfoy_degeri": sahip_lot * eski_fiyat,
-        "yeni_portfoy_degeri": toplam_lot_sonrasi * teorik_fiyat,
-        "fiyat_degisim_yuzde": ((teorik_fiyat - eski_fiyat) / eski_fiyat) * 100
+        "toplam_lot_sonrasi": toplam_lot_sonrasi
     }
 
 # ==================================================
@@ -204,7 +172,6 @@ st.markdown(
     }
     @keyframes kayan_logo { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
     .mesaj-karti { background: rgba(8, 29, 45, 0.95); border-left: 3px solid #00f5c8; border-radius: 7px; padding: 10px; margin: 7px 0; }
-    .bilgi-karti { background: rgba(9, 31, 48, 0.95); border: 1px solid rgba(0, 245, 200, 0.35); border-radius: 9px; padding: 14px; margin: 10px 0; line-height: 1.8; }
     .spk-uyari { background: rgba(70, 18, 27, 0.96); border: 1px solid #ff5264; border-radius: 8px; padding: 13px; margin-top: 30px; color: white; font-size: 12px; }
     </style>
     """,
@@ -212,7 +179,7 @@ st.markdown(
 )
 
 # ==================================================
-# YARDIMCI VERİ OKUMA / YAZMA FONKSİYONLARI
+# VERİ OKUMA / YAZMA FONKSİYONLARI
 # ==================================================
 def kayitlari_oku():
     try:
@@ -220,8 +187,7 @@ def kayitlari_oku():
         for s in KAYIT_SUTUNLARI:
             if s not in df.columns: df[s] = ""
         return df[KAYIT_SUTUNLARI]
-    except Exception:
-        return pd.DataFrame(columns=KAYIT_SUTUNLARI)
+    except Exception: return pd.DataFrame(columns=KAYIT_SUTUNLARI)
 
 def kayit_id_olustur(hisse, fiyat, puan):
     return hashlib.sha256(f"{hisse}|{float(fiyat):.4f}|{float(puan):.4f}".encode("utf-8")).hexdigest()[:20]
@@ -229,23 +195,17 @@ def kayit_id_olustur(hisse, fiyat, puan):
 def excel_kayitlarini_ekle(df):
     mevcut = kayitlari_oku()
     yeni_kayitlar = []
-
     for _, satir in df.iterrows():
         hisse = str(satir["Hisse Kodu"]).strip().upper()
-        fiyat = satir["BTA Alım Fiyatı"]
-        puan = satir["BTA Puanı"]
-
+        fiyat, puan = satir["BTA Alım Fiyatı"], satir["BTA Puanı"]
         if not hisse or pd.isna(fiyat) or float(fiyat) <= 0: continue
         puan = 0.0 if pd.isna(puan) else puan
         kayit_id = kayit_id_olustur(hisse, fiyat, puan)
-
         if mevcut["kayit_id"].astype(str).eq(kayit_id).any(): continue
-
         yeni_kayitlar.append({
             "kayit_id": kayit_id, "kayit_tarihi": datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
             "hisse_kodu": hisse, "bta_alim_fiyati": float(fiyat), "bta_puani": float(puan)
         })
-
     if yeni_kayitlar:
         pd.concat([mevcut, pd.DataFrame(yeni_kayitlar)], ignore_index=True).to_csv(KAYIT_DOSYASI, index=False, encoding="utf-8-sig")
 
@@ -265,8 +225,7 @@ def mesajlari_oku():
         for s in MESAJ_SUTUNLARI:
             if s not in df.columns: df[s] = ""
         return df[MESAJ_SUTUNLARI]
-    except Exception:
-        return pd.DataFrame(columns=MESAJ_SUTUNLARI)
+    except Exception: return pd.DataFrame(columns=MESAJ_SUTUNLARI)
 
 def mesaj_ekle(kullanici, metin):
     mesajlar = mesajlari_oku()
@@ -278,7 +237,7 @@ def mesaj_ekle(kullanici, metin):
     pd.concat([mesajlar, yeni], ignore_index=True).to_csv(MESAJ_DOSYASI, index=False, encoding="utf-8-sig")
 
 # CANLI DÖNGÜ & BAŞLIK
-st_autorefresh(interval=5000, key="bta_canli_yenileme")
+st_autorefresh(interval=10000, key="bta_canli_yenileme")
 st.markdown('<div class="bta-logo-alani"><div class="bta-logo">BTA ALGORİTMİK İŞLEM</div></div>', unsafe_allow_html=True)
 
 # YÖNETİCİ PANELİ
@@ -346,19 +305,42 @@ with tab_algoritmik:
 
         st.markdown(kar_yuzdesi_format(kar_yuzde), unsafe_allow_html=True)
 
+# PİYASA CANLI VERİSİ
+df_piyasa = bist_canli_piyasa_ozeti_getir()
+
 # --------------------------------------------------
 # TAB 2: BİST EN ÇOK YÜKSELEN HİSSELER
 # --------------------------------------------------
 with tab_yukselenler:
     st.header("🚀 BİST En Çok Yükselen Hisseler (Canlı)")
-    tradingview_piyasa_widget("top_gainers")
+    if not df_piyasa.empty:
+        df_yukselen = df_piyasa.sort_values(by="Değişim (%)", ascending=False).reset_index(drop=True)
+        st.dataframe(
+            df_yukselen.style.format({
+                "Son Fiyat (TL)": "{:.2f} TL",
+                "Değişim (%)": "{:+.2f}%"
+            }).background_gradient(subset=["Değişim (%)"], cmap="Greens"),
+            use_container_width=True
+        )
+    else:
+        st.info("Canlı borsa verisi çekiliyor, lütfen bekleyin...")
 
 # --------------------------------------------------
 # TAB 3: BİST EN ÇOK DÜŞEN HİSSELER
 # --------------------------------------------------
 with tab_dusenler:
     st.header("📉 BİST En Çok Düşen Hisseler (Canlı)")
-    tradingview_piyasa_widget("top_losers")
+    if not df_piyasa.empty:
+        df_dusen = df_piyasa.sort_values(by="Değişim (%)", ascending=True).reset_index(drop=True)
+        st.dataframe(
+            df_dusen.style.format({
+                "Son Fiyat (TL)": "{:.2f} TL",
+                "Değişim (%)": "{:+.2f}%"
+            }).background_gradient(subset=["Değişim (%)"], cmap="Reds_r"),
+            use_container_width=True
+        )
+    else:
+        st.info("Canlı borsa verisi çekiliyor, lütfen bekleyin...")
 
 # --------------------------------------------------
 # TAB 4: BEDELLİ / BEDELSİZ HESAPLAMA
@@ -387,10 +369,8 @@ with tab_bedelli:
 
     if st.button("🧮 Hesapla", use_container_width=True, type="primary"):
         res = bedelli_bedelsiz_hesapla(eski_fiyat, sahip_lot, bedelli_orani, bedelli_fiyat, bedelsiz_orani)
-        if res:
-            st.session_state["bedelli_sonuc"] = res
-        else:
-            st.error("Girdileri kontrol ediniz.")
+        if res: st.session_state["bedelli_sonuc"] = res
+        else: st.error("Girdileri kontrol ediniz.")
 
     if st.session_state.get("bedelli_sonuc"):
         r = st.session_state["bedelli_sonuc"]
