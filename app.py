@@ -174,9 +174,96 @@ def kar_yuzdesi_format(kar_yuzde):
 
 
 # ==================================================
-# BEDELLİ ASKERLİK SONUÇ KARTI
+# BEDELLİ / BEDELSİZ HESAPLAMA
 # ==================================================
-def bedelli_sonuc_karti(baslik, tutar, renk="#00f5c8", alt_yazi=None):
+def bedelli_bedelsiz_hesapla(
+    eski_fiyat,
+    sahip_lot,
+    bedelli_orani,
+    bedelli_fiyat,
+    bedelsiz_orani
+):
+    """
+    BIST sermaye artırımı (bedelli/bedelsiz) hesaplama makinesi.
+    Oranlar yüzde (%) cinsinden girilir (örn. %50 bedelsiz için 50).
+    Teorik (düzeltilmiş) fiyat, BIST'in resmi sermaye artırımı
+    fiyat düzeltme formülüne göre hesaplanır:
+
+        Teorik Fiyat =
+            (Eski Fiyat + (Bedelli Oranı x Bedelli Fiyatı))
+            / (1 + Bedelli Oranı + Bedelsiz Oranı)
+    """
+    try:
+        eski_fiyat = float(eski_fiyat)
+        sahip_lot = float(sahip_lot)
+        bedelli_orani_yuzde = float(bedelli_orani)
+        bedelli_fiyat = float(bedelli_fiyat)
+        bedelsiz_orani_yuzde = float(bedelsiz_orani)
+    except Exception:
+        return None
+
+    if eski_fiyat <= 0 or sahip_lot < 0:
+        return None
+
+    if bedelli_orani_yuzde < 0 or bedelsiz_orani_yuzde < 0:
+        return None
+
+    bedelli_orani = bedelli_orani_yuzde / 100
+    bedelsiz_orani = bedelsiz_orani_yuzde / 100
+
+    payda = 1 + bedelli_orani + bedelsiz_orani
+
+    if payda <= 0:
+        return None
+
+    # Yeni pay (lot) sayıları - mevcut sahiplik üzerinden
+    bedelli_yeni_lot = sahip_lot * bedelli_orani
+    bedelsiz_yeni_lot = sahip_lot * bedelsiz_orani
+    toplam_yeni_lot = bedelli_yeni_lot + bedelsiz_yeni_lot
+    toplam_lot_sonrasi = sahip_lot + toplam_yeni_lot
+
+    # Bedelli hakkının kullanılması için ödenecek tutar
+    odenecek_tutar = bedelli_yeni_lot * bedelli_fiyat
+
+    # Teorik (düzeltilmiş) fiyat
+    teorik_fiyat = (
+        eski_fiyat + (bedelli_orani * bedelli_fiyat)
+    ) / payda
+
+    # Portföy değerleri (bedelli tutarı yatırılmış varsayımıyla)
+    eski_portfoy_degeri = sahip_lot * eski_fiyat
+    yeni_portfoy_degeri = toplam_lot_sonrasi * teorik_fiyat
+
+    fiyat_degisim_yuzde = (
+        ((teorik_fiyat - eski_fiyat) / eski_fiyat) * 100
+    )
+
+    return {
+        "eski_fiyat": eski_fiyat,
+        "sahip_lot": sahip_lot,
+        "bedelli_yeni_lot": bedelli_yeni_lot,
+        "bedelsiz_yeni_lot": bedelsiz_yeni_lot,
+        "toplam_yeni_lot": toplam_yeni_lot,
+        "toplam_lot_sonrasi": toplam_lot_sonrasi,
+        "odenecek_tutar": odenecek_tutar,
+        "teorik_fiyat": teorik_fiyat,
+        "eski_portfoy_degeri": eski_portfoy_degeri,
+        "yeni_portfoy_degeri": yeni_portfoy_degeri,
+        "fiyat_degisim_yuzde": fiyat_degisim_yuzde
+    }
+
+
+def bedelli_bedelsiz_kart_format(sonuc):
+    if sonuc is None:
+        return "-"
+
+    durum = "📉" if sonuc["fiyat_degisim_yuzde"] < 0 else "📈"
+    renk = (
+        "#ff5264"
+        if sonuc["fiyat_degisim_yuzde"] < 0
+        else "#00f5c8"
+    )
+
     return f"""
     <div style="
         background: rgba(0, 0, 0, 0.3);
@@ -187,12 +274,14 @@ def bedelli_sonuc_karti(baslik, tutar, renk="#00f5c8", alt_yazi=None):
         text-align: center;
     ">
         <div style="font-size: 13px; color: #999;">
-            {baslik}
+            Teorik (Düzeltilmiş) Fiyat
         </div>
-        <div style="font-size: 24px; font-weight: bold; color: {renk};">
-            {tl_format(tutar)}
+        <div style="font-size: 26px; font-weight: bold; color: {renk};">
+            {tl_format(sonuc["teorik_fiyat"])}
         </div>
-        {f'<div style="font-size: 12px; color: #999;">{alt_yazi}</div>' if alt_yazi else ''}
+        <div style="font-size: 13px; color: {renk};">
+            {durum} {sonuc["fiyat_degisim_yuzde"]:+.2f}%
+        </div>
     </div>
     """
 
@@ -872,13 +961,13 @@ if excel_dosyalari:
 # ==================================================
 # PANELLER
 # ==================================================
-tab_algoritmik, tab_sohbet, tab_kayit, tab_paylas, tab_bedelli = st.tabs(
+tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
+        "🧮 Bedelli/Bedelsiz",
         "💬 Sohbet",
         "📒 Kayıtlar",
-        "🔗 Paylaş",
-        "🎖️ Bedelli/Bedelsiz"
+        "🔗 Paylaş"
     ]
 )
 
@@ -989,6 +1078,217 @@ with tab_algoritmik:
             st.warning(
                 f"Algoritmik bilgiler alınamadı: {hata}"
             )
+
+
+# ==================================================
+# BEDELLİ / BEDELSİZ HESAPLAMA MAKİNESİ
+# ==================================================
+with tab_bedelli:
+    st.header("🧮 Bedelli/Bedelsiz Hesaplama Makinesi")
+
+    st.markdown(
+        """
+        <div class="bilgi-karti">
+            Sermaye artırımı (bedelli/bedelsiz) sonrası portföyünüzde
+            oluşacak <strong>yeni pay sayısını</strong> ve
+            <strong>teorik (düzeltilmiş) fiyatı</strong> hesaplayın.
+            Oranları hisse için açıklanan sermaye artırımı
+            duyurusundaki yüzdelerle girin.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ==================================================
+    # FİYAT KAYNAĞI SEÇİMİ
+    # ==================================================
+    hisse_listesi = (
+        excel_df["Hisse Kodu"].tolist()
+        if not excel_df.empty
+        else []
+    )
+
+    kaynak_secenekleri = ["✍️ Manuel Fiyat Gir"]
+
+    if hisse_listesi:
+        kaynak_secenekleri = [
+            "📈 Listeden Hisse Seç (Anlık Fiyat)"
+        ] + kaynak_secenekleri
+
+    kaynak = st.radio(
+        "Fiyat Kaynağı",
+        kaynak_secenekleri,
+        horizontal=True
+    )
+
+    varsayilan_fiyat = 0.0
+    secilen_hisse_bedelli = None
+
+    if kaynak == "📈 Listeden Hisse Seç (Anlık Fiyat)":
+        secilen_hisse_bedelli = st.selectbox(
+            "🔍 Hisse Seç:",
+            hisse_listesi,
+            key="bedelli_hisse_secim"
+        )
+
+        sembol_bedelli = secilen_hisse_bedelli
+
+        if not sembol_bedelli.endswith(".IS"):
+            sembol_bedelli += ".IS"
+
+        try:
+            hisse_bedelli = yf.Ticker(sembol_bedelli)
+            bilgi_bedelli = hisse_bedelli.info
+
+            varsayilan_fiyat = bilgi_bedelli.get(
+                "regularMarketPrice"
+            ) or 0.0
+
+            st.caption(
+                f"Anlık fiyat otomatik dolduruldu: "
+                f"{tl_format(varsayilan_fiyat)} "
+                f"(en az 15 dakika gecikmeli olabilir)"
+            )
+
+        except Exception as hata:
+            st.warning(
+                f"Anlık fiyat alınamadı, manuel girebilirsiniz: {hata}"
+            )
+
+    st.divider()
+
+    # ==================================================
+    # GİRDİ FORMU
+    # ==================================================
+    col1, col2 = st.columns(2)
+
+    with col1:
+        eski_fiyat_girdi = st.number_input(
+            "Mevcut / Önceki Kapanış Fiyatı (TL)",
+            min_value=0.0,
+            value=float(varsayilan_fiyat or 0.0),
+            step=0.01,
+            format="%.4f"
+        )
+
+        sahip_lot_girdi = st.number_input(
+            "Sahip Olduğunuz Pay (Lot) Adedi",
+            min_value=0.0,
+            value=100.0,
+            step=1.0
+        )
+
+    with col2:
+        bedelli_orani_girdi = st.number_input(
+            "Bedelli Sermaye Artırım Oranı (%)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            help="Örn. %50 bedelli için 50 girin. Bedelli yoksa 0 bırakın."
+        )
+
+        bedelli_fiyat_girdi = st.number_input(
+            "Bedelli Pay Alım Fiyatı (TL)",
+            min_value=0.0,
+            value=1.00,
+            step=0.01,
+            format="%.4f",
+            help="Genellikle nominal değer (1 TL) üzerinden yapılır."
+        )
+
+        bedelsiz_orani_girdi = st.number_input(
+            "Bedelsiz Sermaye Artırım Oranı (%)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            help="Örn. %20 bedelsiz için 20 girin. Bedelsiz yoksa 0 bırakın."
+        )
+
+    st.divider()
+
+    hesapla_buton = st.button(
+        "🧮 Hesapla",
+        use_container_width=True,
+        type="primary"
+    )
+
+    if hesapla_buton:
+        if eski_fiyat_girdi <= 0:
+            st.error(
+                "Lütfen geçerli bir mevcut fiyat girin."
+            )
+        elif bedelli_orani_girdi == 0 and bedelsiz_orani_girdi == 0:
+            st.error(
+                "Lütfen bedelli veya bedelsiz oranından en az birini girin."
+            )
+        else:
+            sonuc = bedelli_bedelsiz_hesapla(
+                eski_fiyat_girdi,
+                sahip_lot_girdi,
+                bedelli_orani_girdi,
+                bedelli_fiyat_girdi,
+                bedelsiz_orani_girdi
+            )
+
+            if sonuc is None:
+                st.error(
+                    "Hesaplama yapılamadı, girdiğiniz değerleri kontrol edin."
+                )
+            else:
+                st.markdown(
+                    bedelli_bedelsiz_kart_format(sonuc),
+                    unsafe_allow_html=True
+                )
+
+                col1, col2, col3 = st.columns(3)
+
+                col1.metric(
+                    "Bedelli Yeni Pay",
+                    sayi_format(sonuc["bedelli_yeni_lot"])
+                )
+
+                col2.metric(
+                    "Bedelsiz Yeni Pay",
+                    sayi_format(sonuc["bedelsiz_yeni_lot"])
+                )
+
+                col3.metric(
+                    "Toplam Yeni Pay",
+                    sayi_format(sonuc["toplam_yeni_lot"])
+                )
+
+                col1, col2, col3 = st.columns(3)
+
+                col1.metric(
+                    "Artırım Sonrası Toplam Pay",
+                    sayi_format(sonuc["toplam_lot_sonrasi"])
+                )
+
+                col2.metric(
+                    "Bedelli İçin Ödenecek Tutar",
+                    tl_format(sonuc["odenecek_tutar"])
+                )
+
+                col3.metric(
+                    "Fiyat Değişimi",
+                    f"{sonuc['fiyat_degisim_yuzde']:+.2f}%"
+                )
+
+                st.markdown(
+                    f"""
+                    <div class="bilgi-karti">
+                        <strong>Sermaye Artırımı Öncesi Portföy Değeri:</strong>
+                        {tl_format(sonuc["eski_portfoy_degeri"])}<br>
+                        <strong>Sermaye Artırımı Sonrası Portföy Değeri:</strong>
+                        {tl_format(sonuc["yeni_portfoy_degeri"])}<br>
+                        <strong>Not:</strong> Sonrası değer, bedelli tutarının
+                        nakit olarak yatırıldığı varsayımıyla hesaplanmıştır.
+                        Teorik fiyat, borsanın ilan ettiği kesin referans
+                        fiyattan farklılık gösterebilir.
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
 
 # ==================================================
@@ -1361,168 +1661,6 @@ with tab_paylas:
 
     with col3:
         st.metric("💬 Mesajlar", len(mesajlari_oku()))
-
-
-# ==================================================
-# BEDELLİ / BEDELSİZ ASKERLİK HESAP MAKİNESİ
-# ==================================================
-with tab_bedelli:
-    st.header("🎖️ Bedelli / Bedelsiz Askerlik Hesap Makinesi")
-
-    st.markdown(
-        """
-        <div class="bilgi-karti">
-        <strong>ℹ️ Bilgi:</strong> Bedelli askerlik ücreti,
-        <em>gösterge rakamı × memur aylık katsayısı</em> formülü ile
-        hesaplanır ve tek seferde (defaten) ödenir, taksit imkânı
-        yoktur. Katsayı her yıl Ocak ve Temmuz aylarında güncellenir.
-        Aşağıdaki varsayılan değerler 1 Temmuz - 31 Aralık 2026 dönemi
-        içindir; güncel tutarı e-Devlet üzerinden teyit ediniz.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    hesap_turu = st.radio(
-        "Hesaplama Türü Seçin:",
-        ["💰 Bedelli Askerlik", "🩺 Bedelsiz Askerlik"],
-        horizontal=True
-    )
-
-    st.divider()
-
-    if hesap_turu == "💰 Bedelli Askerlik":
-        col1, col2 = st.columns(2)
-
-        with col1:
-            gosterge_rakami = st.number_input(
-                "Gösterge Rakamı",
-                min_value=0.0,
-                value=300000.0,
-                step=1000.0,
-                help="Kanunla belirlenen gösterge rakamı (2026 2. dönem: 300.000)"
-            )
-
-        with col2:
-            katsayi = st.number_input(
-                "Memur Aylık Katsayısı",
-                min_value=0.0,
-                value=1.575512,
-                step=0.000001,
-                format="%.6f",
-                help="Hazine ve Maliye Bakanlığı tarafından açıklanan güncel katsayı"
-            )
-
-        bedelli_ucreti = gosterge_rakami * katsayi
-
-        st.markdown(
-            bedelli_sonuc_karti(
-                "💵 Bedelli Askerlik Ücreti",
-                bedelli_ucreti,
-                renk="#00f5c8"
-            ),
-            unsafe_allow_html=True
-        )
-
-        st.divider()
-
-        st.subheader("⏳ Yoklama Kaçağı / Bakaya Gecikme Bedeli")
-
-        yoklama_kacagi = st.checkbox(
-            "Yoklama kaçağı, saklı veya bakaya durumu var"
-        )
-
-        if yoklama_kacagi:
-            col1, col2 = st.columns(2)
-
-            with col1:
-                ek_gosterge = st.number_input(
-                    "Aylık Ek Gösterge",
-                    min_value=0.0,
-                    value=3500.0,
-                    step=100.0,
-                    help="Gecikme bedeli için kullanılan aylık ek gösterge rakamı"
-                )
-
-            with col2:
-                gecikme_ay_sayisi = st.number_input(
-                    "Gecikilen Ay Sayısı",
-                    min_value=0,
-                    value=0,
-                    step=1,
-                    help="Askerlik çağına girdiği tarihten başvuru tarihine kadar geçen ay sayısı"
-                )
-
-            aylik_ek_bedel = ek_gosterge * katsayi
-            gecikme_bedeli = aylik_ek_bedel * gecikme_ay_sayisi
-            toplam_odenecek = bedelli_ucreti + gecikme_bedeli
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.markdown(
-                    bedelli_sonuc_karti(
-                        "📆 Aylık Ek Bedel",
-                        aylik_ek_bedel,
-                        renk="#ffb454"
-                    ),
-                    unsafe_allow_html=True
-                )
-
-            with col2:
-                st.markdown(
-                    bedelli_sonuc_karti(
-                        "⏳ Toplam Gecikme Bedeli",
-                        gecikme_bedeli,
-                        renk="#ffb454"
-                    ),
-                    unsafe_allow_html=True
-                )
-
-            st.markdown(
-                bedelli_sonuc_karti(
-                    "🧾 Toplam Ödenecek Tutar",
-                    toplam_odenecek,
-                    renk="#ff5264"
-                ),
-                unsafe_allow_html=True
-            )
-
-        st.caption(
-            "⚠️ Bu hesap makinesi genel bilgilendirme amaçlıdır, "
-            "resmi başvuru öncesi Milli Savunma Bakanlığı "
-            "Askeralma Daire Başkanlığı'ndan güncel tutarı teyit ediniz."
-        )
-
-    else:
-        st.markdown(
-            """
-            <div class="bilgi-karti">
-            <strong>🩺 Bedelsiz Askerlik Nedir?</strong><br><br>
-            Bedelsiz askerlik; herhangi bir bedel ödenmeksizin, sağlık
-            kurulu raporuyla "askerliğe elverişli değildir" kararı
-            alan, engellilik durumu bulunan ya da kanunda sayılan
-            diğer muafiyet şartlarını taşıyan yükümlülerin askerlik
-            hizmetinden tamamen muaf tutulmasıdır.<br><br>
-            <strong>Genel şartlar:</strong>
-            <ul>
-                <li>Tam teşekküllü asker hastanesinden "askerliğe elverişli değildir" raporu almak</li>
-                <li>Engellilik oranı ve türü ilgili yönetmelikteki hastalık listesine uygun olmak</li>
-                <li>Sağlık Bakanlığı'nca yetkilendirilen hastanelerden rapor süreci tamamlanmış olmak</li>
-            </ul>
-            Bedelsiz askerlikte ödenecek bir ücret bulunmadığından bu
-            bölümde bir tutar hesaplaması yapılmamaktadır; süreç
-            tamamen sağlık kurulu değerlendirmesine bağlıdır.
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.info(
-            "Sağlık durumunuzla ilgili değerlendirme için en yakın "
-            "asker hastanesi veya Askerlik Şubesi Başkanlığı ile "
-            "iletişime geçmeniz gerekmektedir."
-        )
 
 
 # ==================================================
