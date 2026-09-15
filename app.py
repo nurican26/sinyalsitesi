@@ -1,6 +1,7 @@
 import os
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import pytz
 
 import pandas as pd
 import streamlit as st
@@ -18,6 +19,18 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+
+# ==================================================
+# ZAMAN DİLİMİ AYARLARI
+# ==================================================
+TURKEY_TZ = pytz.timezone("Europe/Istanbul")
+
+def get_turkey_time():
+    """Türkiye saati ile geçerli tarih ve saati döndür"""
+    utc_now = datetime.now(pytz.UTC)
+    turkey_time = utc_now.astimezone(TURKEY_TZ)
+    return turkey_time
 
 
 # ==================================================
@@ -216,6 +229,16 @@ st.markdown(
         line-height: 1.8;
     }
 
+    .kar-metrik {
+        color: #00ff00;
+        font-weight: bold;
+    }
+
+    .zarar-metrik {
+        color: #ff0000;
+        font-weight: bold;
+    }
+
     .spk-uyari {
         background: rgba(70, 18, 27, 0.96);
         border: 1px solid #ff5264;
@@ -328,7 +351,7 @@ def excel_kayitlarini_ekle(df):
         yeni_kayitlar.append(
             {
                 "kayit_id": kayit_id,
-                "kayit_tarihi": datetime.now().strftime(
+                "kayit_tarihi": get_turkey_time().strftime(
                     "%d.%m.%Y %H:%M:%S"
                 ),
                 "hisse_kodu": hisse,
@@ -428,7 +451,7 @@ def mesaj_ekle(kullanici, metin):
             "mesaj_id": int(
                 datetime.now().timestamp() * 1000
             ),
-            "tarih": datetime.now().strftime(
+            "tarih": get_turkey_time().strftime(
                 "%d.%m.%Y %H:%M:%S"
             ),
             "kullanici": kullanici,
@@ -710,13 +733,27 @@ with tab_algoritmik:
                 excel_df["Hisse Kodu"] == secilen_hisse
             ].iloc[0]
 
+            bta_fiyati = kayit["BTA Alım Fiyatı"]
+            
+            # KAR/ZARAR HESAPLA
+            kar_zarar = 0
+            kar_zarar_yuzde = 0
+            kar_zarar_renk = "🔄"
+            
+            if fiyat and bta_fiyati:
+                kar_zarar = fiyat - bta_fiyati
+                kar_zarar_yuzde = (kar_zarar / bta_fiyati) * 100
+                
+                if kar_zarar > 0:
+                    kar_zarar_renk = "📈"
+                elif kar_zarar < 0:
+                    kar_zarar_renk = "📉"
+
             col1, col2, col3 = st.columns(3)
 
             col1.metric(
                 "BTA Alım Fiyatı",
-                tl_format(
-                    kayit["BTA Alım Fiyatı"]
-                )
+                tl_format(bta_fiyati)
             )
 
             col2.metric(
@@ -730,6 +767,37 @@ with tab_algoritmik:
                 "Anlık Fiyat",
                 tl_format(fiyat)
             )
+
+            # KAR/ZARAR METRİKLERİ
+            col4, col5 = st.columns(2)
+            
+            with col4:
+                if kar_zarar >= 0:
+                    st.markdown(f"""
+                    <div style="background: rgba(0, 200, 100, 0.2); border-left: 4px solid #00ff00; border-radius: 5px; padding: 10px; margin: 10px 0;">
+                        <span class="kar-metrik">{kar_zarar_renk} KAR: {tl_format(kar_zarar)}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style="background: rgba(255, 0, 0, 0.2); border-left: 4px solid #ff0000; border-radius: 5px; padding: 10px; margin: 10px 0;">
+                        <span class="zarar-metrik">{kar_zarar_renk} ZARAR: {tl_format(kar_zarar)}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            with col5:
+                if kar_zarar_yuzde >= 0:
+                    st.markdown(f"""
+                    <div style="background: rgba(0, 200, 100, 0.2); border-left: 4px solid #00ff00; border-radius: 5px; padding: 10px; margin: 10px 0;">
+                        <span class="kar-metrik">%{sayi_format(kar_zarar_yuzde)}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style="background: rgba(255, 0, 0, 0.2); border-left: 4px solid #ff0000; border-radius: 5px; padding: 10px; margin: 10px 0;">
+                        <span class="zarar-metrik">%{sayi_format(kar_zarar_yuzde)}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
 
             st.markdown(
                 f"""
