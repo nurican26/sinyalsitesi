@@ -1,5 +1,6 @@
 import os
 import hashlib
+import concurrent.futures
 from datetime import datetime
 import urllib.parse
 
@@ -287,6 +288,44 @@ def bedelli_bedelsiz_kart_format(sonuc):
 
 
 # ==================================================
+# TEK HİSSE / VARLIK FİYAT-DEĞİŞİM GETİR
+# ==================================================
+@st.cache_data(ttl=20, show_spinner=False)
+def fiyat_degisim_getir(sembol):
+    """
+    Tek bir sembol (hisse, endeks, döviz, emtia) için son fiyatı
+    ve bir önceki kapanışa göre değişim yüzdesini döndürür.
+    Ayrı ayrı sembol bazlı çekildiği için yf.download() ile toplu
+    çekimde yaşanan kolon yapısı sorunlarından etkilenmez.
+    Hata durumunda (None, None, hata_metni) döner.
+    """
+    try:
+        hisse = yf.Ticker(sembol)
+        gecmis = hisse.history(period="5d", interval="1d")
+
+        if gecmis is None or gecmis.empty or "Close" not in gecmis.columns:
+            return None, None, "veri boş döndü"
+
+        kapanislar = gecmis["Close"].dropna()
+
+        if len(kapanislar) < 2:
+            return None, None, "yetersiz geçmiş veri"
+
+        onceki = float(kapanislar.iloc[-2])
+        son = float(kapanislar.iloc[-1])
+
+        if onceki <= 0 or pd.isna(onceki) or pd.isna(son):
+            return None, None, "geçersiz fiyat"
+
+        degisim = ((son - onceki) / onceki) * 100
+
+        return son, degisim, None
+
+    except Exception as hata:
+        return None, None, str(hata)
+
+
+# ==================================================
 # YÜKSELEN / DÜŞEN HİSSELER (CANLI)
 # ==================================================
 @st.cache_data(ttl=20, show_spinner=False)
@@ -296,63 +335,54 @@ def yukselen_dusen_hesapla(hisse_listesi):
     kapanış karşılaştırmasıyla değişim yüzdesini hesaplar.
     Yahoo Finance verisi en az 15 dakika gecikmeli olabilir;
     sonuçlar 20 saniye önbelleklenir (aşırı istek atılmasın diye).
+    Her hisse ayrı ayrı ve paralel (thread havuzu) çekilir.
     """
+    bos_sonuc = pd.DataFrame(
+        columns=["Hisse Kodu", "Fiyat", "Değişim %"]
+    )
+
     if not hisse_listesi:
-        return pd.DataFrame(
-            columns=["Hisse Kodu", "Fiyat", "Değişim %"]
-        )
+        return bos_sonuc, []
 
-    semboller = [
-        (h if h.endswith(".IS") else f"{h}.IS")
+    semboller = {
+        h: (h if h.endswith(".IS") else f"{h}.IS")
         for h in hisse_listesi
-    ]
-
-    try:
-        veri = yf.download(
-            tickers=semboller,
-            period="2d",
-            interval="1d",
-            group_by="ticker",
-            progress=False,
-            threads=True
-        )
-    except Exception:
-        return pd.DataFrame(
-            columns=["Hisse Kodu", "Fiyat", "Değişim %"]
-        )
+    }
 
     sonuclar = []
+    hatalar = []
 
-    for hisse, sembol in zip(hisse_listesi, semboller):
-        try:
-            if len(semboller) == 1:
-                kapanislar = veri["Close"].dropna()
-            else:
-                kapanislar = veri[sembol]["Close"].dropna()
+    def tek_hisse_getir(oge):
+        hisse, sembol = oge
+        son, degisim, hata = fiyat_degisim_getir(sembol)
+        return hisse, son, degisim, hata
 
-            if len(kapanislar) < 2:
-                continue
+    try:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=10
+        ) as havuz:
+            for hisse, son, degisim, hata in havuz.map(
+                tek_hisse_getir,
+                semboller.items()
+            ):
+                if hata is not None or son is None:
+                    hatalar.append(f"{hisse}: {hata}")
+                    continue
 
-            onceki = float(kapanislar.iloc[-2])
-            son = float(kapanislar.iloc[-1])
+                sonuclar.append(
+                    {
+                        "Hisse Kodu": hisse,
+                        "Fiyat": son,
+                        "Değişim %": degisim
+                    }
+                )
+    except Exception as hata:
+        hatalar.append(f"Genel hata: {hata}")
 
-            if onceki <= 0 or pd.isna(onceki) or pd.isna(son):
-                continue
+    if not sonuclar:
+        return bos_sonuc, hatalar
 
-            degisim = ((son - onceki) / onceki) * 100
-
-            sonuclar.append(
-                {
-                    "Hisse Kodu": hisse,
-                    "Fiyat": son,
-                    "Değişim %": degisim
-                }
-            )
-
-        except Exception:
-            continue
-
-    return pd.DataFrame(sonuclar)
+    return pd.DataFrame(sonuclar), hatalar
 
 
 def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
@@ -376,6 +406,82 @@ def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
         </span>
     </div>
     """
+
+
+# ==================================================
+# PİYASA ÖZETİ (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
+# ==================================================
+@st.cache_data(ttl=20, show_spinner=False)
+def piyasa_ozeti_getir():
+    """
+    Ana endeks ve döviz/altın kartları için veri toplar.
+    Gram Altın (TL), ons altın (USD) fiyatının USDTRY ile
+    çarpılıp 31.1035 gramlık ons ağırlığına bölünmesiyle
+    yaklaşık olarak hesaplanır.
+    """
+    sonuclar = []
+
+    bist_son, bist_degisim, bist_hata = fiyat_degisim_getir(
+        "XU100.IS"
+    )
+    sonuclar.append(
+        {
+            "isim": "BIST100",
+            "fiyat": bist_son,
+            "degisim": bist_degisim,
+            "tur": "sayi",
+            "hata": bist_hata
+        }
+    )
+
+    usd_son, usd_degisim, usd_hata = fiyat_degisim_getir(
+        "USDTRY=X"
+    )
+    sonuclar.append(
+        {
+            "isim": "USDTRY",
+            "fiyat": usd_son,
+            "degisim": usd_degisim,
+            "tur": "sayi",
+            "hata": usd_hata
+        }
+    )
+
+    eur_son, eur_degisim, eur_hata = fiyat_degisim_getir(
+        "EURTRY=X"
+    )
+    sonuclar.append(
+        {
+            "isim": "EURTRY",
+            "fiyat": eur_son,
+            "degisim": eur_degisim,
+            "tur": "sayi",
+            "hata": eur_hata
+        }
+    )
+
+    ons_son, ons_degisim, ons_hata = fiyat_degisim_getir("GC=F")
+
+    if ons_son is not None and usd_son is not None:
+        gram_fiyat = (ons_son / 31.1035) * usd_son
+        gram_degisim = ons_degisim
+        gram_hata = None
+    else:
+        gram_fiyat = None
+        gram_degisim = None
+        gram_hata = ons_hata or usd_hata or "veri alınamadı"
+
+    sonuclar.append(
+        {
+            "isim": "GRAM ALTIN (yakl.)",
+            "fiyat": gram_fiyat,
+            "degisim": gram_degisim,
+            "tur": "tl",
+            "hata": gram_hata
+        }
+    )
+
+    return sonuclar
 
 
 # ==================================================
@@ -1051,6 +1157,47 @@ if excel_dosyalari:
 
 
 # ==================================================
+# PİYASA ÖZETİ KARTLARI (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
+# ==================================================
+st.subheader("📈 Piyasa Özeti")
+
+ozet_veriler = piyasa_ozeti_getir()
+
+ozet_kolonlar = st.columns(len(ozet_veriler))
+
+ozet_hatalari = []
+
+for kolon, veri in zip(ozet_kolonlar, ozet_veriler):
+    if veri["fiyat"] is None:
+        kolon.metric(veri["isim"], "-")
+        ozet_hatalari.append(
+            f"{veri['isim']}: {veri.get('hata') or 'bilinmeyen hata'}"
+        )
+    else:
+        if veri["tur"] == "tl":
+            deger_metni = tl_format(veri["fiyat"])
+        else:
+            deger_metni = sayi_format(veri["fiyat"])
+
+        kolon.metric(
+            veri["isim"],
+            deger_metni,
+            f"{veri['degisim']:+.2f}%"
+            if veri["degisim"] is not None
+            else None
+        )
+
+st.caption(
+    "BIST100, USDTRY, EURTRY canlı Yahoo Finance verisidir "
+    "(en az 15 dk. gecikmeli). Gram Altın, ons altın x USDTRY "
+    "üzerinden yaklaşık hesaplanır, gerçek bankamatik/kuyumcu "
+    "fiyatından farklı olabilir."
+)
+
+st.divider()
+
+
+# ==================================================
 # CANLI PİYASA PANELİ - YÜKSELEN / DÜŞEN HİSSELER
 # ==================================================
 st.subheader("📊 Canlı Yükselen / Düşen Hisseler")
@@ -1061,7 +1208,7 @@ if excel_df.empty:
         "takip listesi (Excel) yüklenmelidir."
     )
 else:
-    piyasa_df = yukselen_dusen_hesapla(
+    piyasa_df, piyasa_hatalari = yukselen_dusen_hesapla(
         tuple(excel_df["Hisse Kodu"].tolist())
     )
 
@@ -1069,6 +1216,30 @@ else:
         st.info(
             "Piyasa verisi şu anda alınamıyor, birazdan tekrar denenecek."
         )
+
+        with st.expander("🔧 Teknik detay (neden veri gelmiyor?)"):
+            if piyasa_hatalari:
+                st.write(
+                    f"Toplam {len(piyasa_hatalari)} sembol denendi, "
+                    "hepsi başarısız oldu. İlk birkaç hata:"
+                )
+                for satir in piyasa_hatalari[:10]:
+                    st.code(satir, language=None)
+
+                st.markdown(
+                    "Bu genelde şu sebeplerden olur: "
+                    "**(1)** uygulamanın çalıştığı sunucunun internete "
+                    "(finance.yahoo.com'a) çıkışı kısıtlı/engelli, "
+                    "**(2)** Yahoo Finance kısa süreliğine çok sayıda "
+                    "istekten dolayı geçici olarak engellemiş olabilir "
+                    "(rate limit), **(3)** hisse sembolleri Yahoo "
+                    "formatına uymuyor olabilir (örn. `.IS` uzantısı)."
+                )
+            else:
+                st.write(
+                    "Takip listesi boş görünüyor veya hiçbir "
+                    "sembol denenemedi."
+                )
     else:
         yukselenler = piyasa_df.sort_values(
             "Değişim %",
@@ -1115,6 +1286,13 @@ else:
                         ),
                         unsafe_allow_html=True
                     )
+
+        if piyasa_hatalari:
+            with st.expander(
+                f"⚠️ {len(piyasa_hatalari)} sembol için veri alınamadı"
+            ):
+                for satir in piyasa_hatalari[:15]:
+                    st.code(satir, language=None)
 
         st.caption(
             "Veriler en az 15 dakika gecikmeli olabilir ve "
