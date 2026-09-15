@@ -32,7 +32,7 @@ KAYIT_SUTUNLARI = [
     "kayit_id",
     "kayit_tarihi",
     "hisse_kodu",
-    "bta_Alım_fiyati",
+    "bta_alim_fiyati",
     "bta_puani"
 ]
 
@@ -134,41 +134,6 @@ def turkce_sayi_cevir(deger):
 
 
 # ==================================================
-# KAR/ZARAR FONKSİYONLARI
-# ==================================================
-def kar_zarar_hesapla(alim_fiyati, cari_fiyat):
-    """Kar/Zarar miktarını hesaplar"""
-    if pd.isna(alim_fiyati) or pd.isna(cari_fiyat):
-        return None
-    try:
-        return float(cari_fiyat) - float(alim_fiyati)
-    except Exception:
-        return None
-
-
-def kar_zarar_yuzde_hesapla(alim_fiyati, cari_fiyat):
-    """Kar/Zarar yüzdesini hesaplar"""
-    if pd.isna(alim_fiyati) or pd.isna(cari_fiyat) or float(alim_fiyati) == 0:
-        return None
-    try:
-        return ((float(cari_fiyat) - float(alim_fiyati)) / float(alim_fiyati)) * 100
-    except Exception:
-        return None
-
-
-def kar_zarar_rengi(deger):
-    """Kar/Zarar değerine göre renk döndürür"""
-    if deger is None:
-        return "#ffffff"
-    if deger > 0:
-        return "#00ff00"  # Yeşil (Kar)
-    elif deger < 0:
-        return "#ff0000"  # Kırmızı (Zarar)
-    else:
-        return "#ffffff"  # Beyaz (Eşit)
-
-
-# ==================================================
 # TASARIM
 # ==================================================
 st.markdown(
@@ -250,30 +215,6 @@ st.markdown(
         padding: 14px;
         margin: 10px 0;
         line-height: 1.8;
-    }
-
-    .kar-zarar-karti {
-        background: rgba(9, 31, 48, 0.95);
-        border: 2px solid;
-        border-radius: 9px;
-        padding: 16px;
-        margin: 15px 0;
-        line-height: 2;
-    }
-
-    .kar-zarar-karti-positive {
-        border-color: #00ff00;
-        box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-    }
-
-    .kar-zarar-karti-negative {
-        border-color: #ff0000;
-        box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-    }
-
-    .kar-zarar-karti-neutral {
-        border-color: #00f5c8;
-        box-shadow: 0 0 10px rgba(0, 245, 200, 0.3);
     }
 
     .paylas-container {
@@ -972,68 +913,6 @@ with tab_algoritmik:
                 unsafe_allow_html=True
             )
 
-            # ==================================================
-            # KAR/ZARAR HESAPLAMASI
-            # ==================================================
-            st.divider()
-            st.subheader("📊 Kar/Zarar Analizi")
-
-            alim_fiyati = kayit["BTA alim Fiyatı"]
-            kar_zarar = kar_zarar_hesapla(alim_fiyati, fiyat)
-            kar_zarar_yuzde = kar_zarar_yuzde_hesapla(alim_fiyati, fiyat)
-            renk = kar_zarar_rengi(kar_zarar)
-
-            if kar_zarar is not None and kar_zarar_yuzde is not None:
-                if kar_zarar > 0:
-                    durum = "✅ KAR"
-                    sınıf = "kar-zarar-karti-positive"
-                elif kar_zarar < 0:
-                    durum = "❌ ZARAR"
-                    sınıf = "kar-zarar-karti-negative"
-                else:
-                    durum = "➖ EŞIT"
-                    sınıf = "kar-zarar-karti-neutral"
-
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-                    st.metric(
-                        "💰 Kar/Zarar",
-                        tl_format(kar_zarar),
-                        delta=f"{kar_zarar_yuzde:+.2f}%"
-                    )
-
-                with col2:
-                    st.metric(
-                        "📈 Yüzde (%)",
-                        f"{kar_zarar_yuzde:+.2f}%"
-                    )
-
-                with col3:
-                    st.metric(
-                        "🎯 Durum",
-                        durum
-                    )
-
-                st.markdown(
-                    f"""
-                    <div class="kar-zarar-karti {sınıf}">
-                        <strong>📌 Kar/Zarar Özeti</strong><br>
-                        <strong>Alım Fiyatı:</strong> {tl_format(alim_fiyati)}<br>
-                        <strong>Cari Fiyat:</strong> {tl_format(fiyat)}<br>
-                        <strong>Kar/Zarar Miktarı:</strong> 
-                        <span style="color: {renk};">
-                            {tl_format(kar_zarar)}
-                        </span><br>
-                        <strong>Kar/Zarar Oranı:</strong> 
-                        <span style="color: {renk};">
-                            {kar_zarar_yuzde:+.2f}%
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
         except Exception as hata:
             st.warning(
                 f"Algoritmik bilgiler alınamadı: {hata}"
@@ -1235,50 +1114,34 @@ with tab_kayit:
             df_kayitlar["bta_alim_fiyati"] > 0
         ]
 
-        # ==================================================
-        # KAYITLARA KAR/ZARAR EKLE
-        # ==================================================
-        kayitlar_kar_zarar = []
+        gorunum = df_kayitlar.rename(
+            columns={
+                "kayit_tarihi": "Kayıt Tarihi",
+                "hisse_kodu": "Hisse Kodu",
+                "bta_alim_fiyati": "BTA Alım Fiyatı",
+                "bta_puani": "BTA Puanı"
+            }
+        )
 
-        for _, satir in df_kayitlar.iterrows():
-            hisse_kodu = satir["hisse_kodu"]
-            alim_fiyati = satir["bta_alim_fiyati"]
-            
-            sembol = hisse_kodu
-            if not sembol.endswith(".IS"):
-                sembol += ".IS"
-            
-            try:
-                hisse = yf.Ticker(sembol)
-                cari_fiyat = hisse.info.get("regularMarketPrice")
-                
-                kar_zarar = kar_zarar_hesapla(alim_fiyati, cari_fiyat)
-                kar_zarar_yuzde = kar_zarar_yuzde_hesapla(alim_fiyati, cari_fiyat)
-                
-                kayitlar_kar_zarar.append({
-                    "Kayıt Tarihi": satir["kayit_tarihi"],
-                    "Hisse Kodu": hisse_kodu,
-                    "BTA Alım Fiyatı": tl_format(alim_fiyati),
-                    "Cari Fiyat": tl_format(cari_fiyat) if cari_fiyat else "-",
-                    "Kar/Zarar": tl_format(kar_zarar) if kar_zarar is not None else "-",
-                    "Yüzde": f"{kar_zarar_yuzde:+.2f}%" if kar_zarar_yuzde is not None else "-",
-                    "BTA Puanı": sayi_format(satir["bta_puani"])
-                })
-            except Exception:
-                kayitlar_kar_zarar.append({
-                    "Kayıt Tarihi": satir["kayit_tarihi"],
-                    "Hisse Kodu": hisse_kodu,
-                    "BTA Alım Fiyatı": tl_format(alim_fiyati),
-                    "Cari Fiyat": "-",
-                    "Kar/Zarar": "-",
-                    "Yüzde": "-",
-                    "BTA Puanı": sayi_format(satir["bta_puani"])
-                })
+        gorunum["BTA Alım Fiyatı"] = (
+            gorunum["BTA Alım Fiyatı"]
+            .apply(tl_format)
+        )
 
-        gorunum_df = pd.DataFrame(kayitlar_kar_zarar)
+        gorunum["BTA Puanı"] = (
+            gorunum["BTA Puanı"]
+            .apply(sayi_format)
+        )
 
         st.dataframe(
-            gorunum_df,
+            gorunum[
+                [
+                    "Kayıt Tarihi",
+                    "Hisse Kodu",
+                    "BTA Alım Fiyatı",
+                    "BTA Puanı"
+                ]
+            ],
             use_container_width=True,
             hide_index=True
         )
@@ -1303,15 +1166,16 @@ with tab_kayit:
                     "🗑️ Tüm Kayıtları Sil",
                     use_container_width=True
                 ):
-                    pd.DataFrame(
-                        columns=KAYIT_SUTUNLARI
-                    ).to_csv(
-                        KAYIT_DOSYASI,
-                        index=False,
-                        encoding="utf-8-sig"
-                    )
-                    st.success("✅ Tüm kayıtlar silindi")
-                    st.rerun()
+                    if st.confirm("Emin misiniz?"):
+                        pd.DataFrame(
+                            columns=KAYIT_SUTUNLARI
+                        ).to_csv(
+                            KAYIT_DOSYASI,
+                            index=False,
+                            encoding="utf-8-sig"
+                        )
+                        st.success("✅ Tüm kayıtlar silindi")
+                        st.rerun()
 
 
 # ==================================================
