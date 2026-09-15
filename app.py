@@ -36,7 +36,7 @@ dosya_olustur(KAYIT_DOSYASI, KAYIT_SUTUNLARI)
 dosya_olustur(ISTATISTIK_DOSYASI, ISTATISTIK_SUTUNLARI)
 dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
 
-# BİST TAKİP LİSTESİ (En popüler BİST 30/50 Hisseleri)
+# BİST TAKİP LİSTESİ (Popüler BİST 30/50 Hisseleri)
 BIST_TAKIP_LISTESI = [
     "THYAO.IS", "GARAN.IS", "EREGL.IS", "ASELS.IS", "TUPRS.IS",
     "AKBNK.IS", "KCHOL.IS", "SISE.IS", "SAHOL.IS", "BIMAS.IS",
@@ -71,8 +71,7 @@ def bist_canli_piyasa_ozeti_getir():
     if not veriler:
         return pd.DataFrame()
     
-    df = pd.DataFrame(veriler)
-    return df
+    return pd.DataFrame(veriler)
 
 @st.cache_data(ttl=15)
 def canli_hisse_verisi_getir(sembol):
@@ -316,10 +315,11 @@ with tab_yukselenler:
     if not df_piyasa.empty:
         df_yukselen = df_piyasa.sort_values(by="Değişim (%)", ascending=False).reset_index(drop=True)
         st.dataframe(
-            df_yukselen.style.format({
-                "Son Fiyat (TL)": "{:.2f} TL",
-                "Değişim (%)": "{:+.2f}%"
-            }).background_gradient(subset=["Değişim (%)"], cmap="Greens"),
+            df_yukselen,
+            column_config={
+                "Son Fiyat (TL)": st.column_config.NumberColumn(format="%.2f TL"),
+                "Değişim (%)": st.column_config.NumberColumn(format="%+.2f%%")
+            },
             use_container_width=True
         )
     else:
@@ -333,10 +333,11 @@ with tab_dusenler:
     if not df_piyasa.empty:
         df_dusen = df_piyasa.sort_values(by="Değişim (%)", ascending=True).reset_index(drop=True)
         st.dataframe(
-            df_dusen.style.format({
-                "Son Fiyat (TL)": "{:.2f} TL",
-                "Değişim (%)": "{:+.2f}%"
-            }).background_gradient(subset=["Değişim (%)"], cmap="Reds_r"),
+            df_dusen,
+            column_config={
+                "Son Fiyat (TL)": st.column_config.NumberColumn(format="%.2f TL"),
+                "Değişim (%)": st.column_config.NumberColumn(format="%+.2f%%")
+            },
             use_container_width=True
         )
     else:
