@@ -1,59 +1,73 @@
+import streamlit as st
+
+# Streamlit sayfa konfigürasyonu
+st.set_page_config(
+    page_title="Borsa Canlı Takip",
+    page_icon="📈",
+    layout="centered"
+)
+
+# HTML, CSS ve JS kod bloğu
+html_code = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Tablosu</title>
   <style>
     * {
       box-sizing: border-box;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 0;
     }
 
     body {
-      background-color: #f5f5f5;
+      background-color: transparent;
       display: flex;
       justify-content: center;
-      padding: 20px;
+      padding: 5px;
     }
 
     .widget-container {
-      width: 400px;
-      background: #fff;
-      border: 1px solid #e0e0e0;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
     }
 
     /* Üst Başlık */
     .header-title {
       background-color: #2ed599;
-      color: #000;
+      color: #000000;
       text-align: center;
       padding: 12px;
-      font-weight: bold;
+      font-weight: 700;
       font-size: 16px;
+      letter-spacing: 0.3px;
     }
 
-    /* Tab/Sekme Butonları */
+    /* Tab / Sekme Butonları */
     .tabs {
       display: flex;
-      background-color: #f9f9f9;
-      border-bottom: 1px solid #ddd;
+      background-color: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     .tab-btn {
       flex: 1;
-      padding: 10px 5px;
+      padding: 12px 5px;
       text-align: center;
       background: none;
       border: none;
-      border-right: 1px solid #ddd;
+      border-right: 1px solid #e2e8f0;
       font-size: 14px;
-      font-weight: bold;
-      color: #333;
+      font-weight: 700;
+      color: #334155;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .tab-btn:last-child {
@@ -61,9 +75,9 @@
     }
 
     .tab-btn.active {
-      background-color: #fff;
+      background-color: #ffffff;
       border-top: 3px solid #2ed599;
-      color: #000;
+      color: #000000;
     }
 
     /* Tablo Tasarımı */
@@ -75,11 +89,11 @@
 
     .stock-table th {
       text-align: left;
-      padding: 8px;
-      background-color: #fff;
-      border-bottom: 1px solid #ddd;
-      color: #000;
-      font-weight: bold;
+      padding: 10px 8px;
+      background-color: #ffffff;
+      border-bottom: 1px solid #cbd5e1;
+      color: #000000;
+      font-weight: 700;
     }
 
     .stock-table th:nth-child(2),
@@ -89,12 +103,13 @@
     }
 
     .stock-table td {
-      padding: 8px;
-      border-bottom: 1px dashed #e0e0e0;
+      padding: 9px 8px;
+      border-bottom: 1px dashed #e2e8f0;
+      color: #0f172a;
     }
 
     .stock-table tr:nth-child(even) {
-      background-color: #fdfdfd;
+      background-color: #f8fafc;
     }
 
     .stock-table td:nth-child(2),
@@ -105,17 +120,17 @@
 
     /* Değişim Oranı Renkleri */
     .pos-change {
-      color: #2ed599;
-      font-weight: bold;
+      color: #10b981;
+      font-weight: 700;
     }
 
     .neg-change {
-      color: #e74c3c;
-      font-weight: bold;
+      color: #ef4444;
+      font-weight: 700;
     }
 
     .symbol {
-      font-weight: bold;
+      font-weight: 700;
     }
   </style>
 </head>
@@ -125,9 +140,9 @@
   <div class="header-title">Endeks/Dönem Seçimi</div>
   
   <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('yukselenler')">Yükselenler</button>
-    <button class="tab-btn" onclick="showTab('dusenler')">Düşenler</button>
-    <button class="tab-btn" onclick="showTab('hacimliler')">Hacimliler</button>
+    <button class="tab-btn active" onclick="showTab('yukselenler', event)">Yükselenler</button>
+    <button class="tab-btn" onclick="showTab('dusenler', event)">Düşenler</button>
+    <button class="tab-btn" onclick="showTab('hacimliler', event)">Hacimliler</button>
   </div>
 
   <table class="stock-table">
@@ -140,13 +155,13 @@
       </tr>
     </thead>
     <tbody id="table-body">
-      <!-- Veriler JavaScript ile buraya eklenecek -->
+      <!-- Veriler JavaScript ile eklenecek -->
     </tbody>
   </table>
 </div>
 
 <script>
-  // Örnek Borsa Verileri
+  // Borsa Tablosu Verileri
   const data = {
     yukselenler: [
       { symbol: 'PATEK', price: '25.16', change: '9.97 %', volume: '1,904.22' },
@@ -160,20 +175,24 @@
     ],
     dusenler: [
       { symbol: 'THYAO', price: '280.50', change: '-3.20 %', volume: '4,120.00' },
-      { symbol: 'GARAN', price: '112.00', change: '-2.15 %', volume: '3,850.50' }
+      { symbol: 'GARAN', price: '112.00', change: '-2.15 %', volume: '3,850.50' },
+      { symbol: 'EREGL', price: '45.10', change: '-1.80 %', volume: '2,100.30' },
+      { symbol: 'AKBNK', price: '54.25', change: '-1.10 %', volume: '1,950.00' }
     ],
     hacimliler: [
       { symbol: 'ASELS', price: '377.00', change: '1.21 %', volume: '9,858.86' },
-      { symbol: 'THYAO', price: '280.50', change: '-3.20 %', volume: '4,120.00' }
+      { symbol: 'THYAO', price: '280.50', change: '-3.20 %', volume: '4,120.00' },
+      { symbol: 'GARAN', price: '112.00', change: '-2.15 %', volume: '3,850.50' },
+      { symbol: 'TKFEN', price: '230.00', change: '6.33 %', volume: '2,595.34' }
     ]
   };
 
-  function showTab(type) {
-    // Sekme aktifliğini değiştir
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+  function showTab(type, evt) {
+    if (evt) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      evt.target.classList.add('active');
+    }
 
-    // Tablo içeriğini doldur
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '';
 
@@ -193,9 +212,13 @@
     });
   }
 
-  // Başlangıçta Yükselenler sekmesini yükle
+  // Varsayılan Yükselenler sekmesini göster
   showTab('yukselenler');
 </script>
 
 </body>
 </html>
+"""
+
+# Streamlit bileşeni olarak ekrana basma
+st.components.v1.html(html_code, height=520, scrolling=False)
