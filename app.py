@@ -32,7 +32,7 @@ KAYIT_SUTUNLARI = [
     "kayit_id",
     "kayit_tarihi",
     "hisse_kodu",
-    "bta_Algoritmik_fiyati",
+    "bta_Alım_fiyati",
     "bta_puani"
 ]
 
