@@ -36,7 +36,7 @@ dosya_olustur(KAYIT_DOSYASI, KAYIT_SUTUNLARI)
 dosya_olustur(ISTATISTIK_DOSYASI, ISTATISTIK_SUTUNLARI)
 dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
 
-# BİST TAKİP LİSTESİ (Popüler BİST 30/50 Hisseleri)
+# BİST TAKİP LİSTESİ
 BIST_TAKIP_LISTESI = [
     "THYAO.IS", "GARAN.IS", "EREGL.IS", "ASELS.IS", "TUPRS.IS",
     "AKBNK.IS", "KCHOL.IS", "SISE.IS", "SAHOL.IS", "BIMAS.IS",
@@ -45,25 +45,26 @@ BIST_TAKIP_LISTESI = [
 ]
 
 # ==================================================
-# CANLI BİST YÜKSELEN / DÜŞEN HESAPLAMA
+# GÜNCEL VE DOĞRU BİST VERİSİ ÇEKME
 # ==================================================
 @st.cache_data(ttl=30)
 def bist_canli_piyasa_ozeti_getir():
-    """Yahoo Finance üzerinden BIST hisselerinin canlı değişimlerini çeker."""
+    """yfinance fast_info kullanarak doğru BIST son fiyat ve değişimini çeker."""
     veriler = []
     for sembol in BIST_TAKIP_LISTESI:
         try:
             hisse = yf.Ticker(sembol)
-            info = hisse.info
-            fiyat = info.get("regularMarketPrice") or info.get("currentPrice") or 0.0
-            onceki_kapanis = info.get("regularMarketPreviousClose") or info.get("previousClose") or 0.0
+            fast = hisse.fast_info
+            
+            fiyat = fast.last_price or fast.previous_close or 0.0
+            onceki_kapanis = fast.previous_close or 0.0
             
             if fiyat > 0 and onceki_kapanis > 0:
                 degisim = ((fiyat - onceki_kapanis) / onceki_kapanis) * 100
                 veriler.append({
                     "Hisse": sembol.replace(".IS", ""),
-                    "Son Fiyat (TL)": fiyat,
-                    "Değişim (%)": degisim
+                    "Son Fiyat (TL)": float(fiyat),
+                    "Değişim (%)": float(degisim)
                 })
         except Exception:
             continue
@@ -77,7 +78,10 @@ def bist_canli_piyasa_ozeti_getir():
 def canli_hisse_verisi_getir(sembol):
     try:
         hisse = yf.Ticker(sembol)
-        return hisse.info
+        fast = hisse.fast_info
+        return {
+            "regularMarketPrice": fast.last_price or fast.previous_close or 0.0
+        }
     except Exception:
         return {}
 
@@ -163,7 +167,7 @@ st.markdown(
     }
     [data-testid="stHeader"] { background: transparent !important; }
     [data-testid="stSidebar"] > div:first-child { background: rgba(4, 13, 24, 0.98) !important; }
-    .main .block-container { max-width: 1450px !important; padding-top: 1rem !important; }
+    .main .block-container { max-width: 1200px !important; padding-top: 1rem !important; }
     .bta-logo-alani { width: 100%; overflow: hidden; white-space: nowrap; margin-bottom: 12px; }
     .bta-logo {
         display: inline-block; color: #00f5c8; font-family: "Brush Script MT", cursive; font-size: 58px; font-weight: bold;
@@ -291,7 +295,7 @@ with tab_algoritmik:
         sembol = secilen_hisse if secilen_hisse.endswith(".IS") else f"{secilen_hisse}.IS"
 
         bilgi = canli_hisse_verisi_getir(sembol)
-        fiyat = bilgi.get("regularMarketPrice") or bilgi.get("currentPrice") or 0.0
+        fiyat = bilgi.get("regularMarketPrice", 0.0)
 
         kayit = excel_df[excel_df["Hisse Kodu"] == secilen_hisse].iloc[0]
         bta_alim_fiyati = kayit["BTA Alım Fiyatı"]
@@ -314,14 +318,21 @@ with tab_yukselenler:
     st.header("🚀 BİST En Çok Yükselen Hisseler (Canlı)")
     if not df_piyasa.empty:
         df_yukselen = df_piyasa.sort_values(by="Değişim (%)", ascending=False).reset_index(drop=True)
-        st.dataframe(
-            df_yukselen,
-            column_config={
-                "Son Fiyat (TL)": st.column_config.NumberColumn(format="%.2f TL"),
-                "Değişim (%)": st.column_config.NumberColumn(format="%+.2f%%")
-            },
-            use_container_width=True
-        )
+        
+        # Ekranı kaplamaması için kolon düzeni
+        col_sol, col_orta, col_sag = st.columns([1, 3, 1])
+        with col_orta:
+            st.dataframe(
+                df_yukselen,
+                column_config={
+                    "Hisse": st.column_config.TextColumn("Hisse", width="small"),
+                    "Son Fiyat (TL)": st.column_config.NumberColumn("Son Fiyat (TL)", format="%.2f TL", width="medium"),
+                    "Değişim (%)": st.column_config.NumberColumn("Değişim (%)", format="%+.2f%%", width="medium")
+                },
+                hide_index=True,
+                height=380,
+                use_container_width=True
+            )
     else:
         st.info("Canlı borsa verisi çekiliyor, lütfen bekleyin...")
 
@@ -332,14 +343,21 @@ with tab_dusenler:
     st.header("📉 BİST En Çok Düşen Hisseler (Canlı)")
     if not df_piyasa.empty:
         df_dusen = df_piyasa.sort_values(by="Değişim (%)", ascending=True).reset_index(drop=True)
-        st.dataframe(
-            df_dusen,
-            column_config={
-                "Son Fiyat (TL)": st.column_config.NumberColumn(format="%.2f TL"),
-                "Değişim (%)": st.column_config.NumberColumn(format="%+.2f%%")
-            },
-            use_container_width=True
-        )
+        
+        # Ekranı kaplamaması için kolon düzeni
+        col_sol, col_orta, col_sag = st.columns([1, 3, 1])
+        with col_orta:
+            st.dataframe(
+                df_dusen,
+                column_config={
+                    "Hisse": st.column_config.TextColumn("Hisse", width="small"),
+                    "Son Fiyat (TL)": st.column_config.NumberColumn("Son Fiyat (TL)", format="%.2f TL", width="medium"),
+                    "Değişim (%)": st.column_config.NumberColumn("Değişim (%)", format="%+.2f%%", width="medium")
+                },
+                hide_index=True,
+                height=380,
+                use_container_width=True
+            )
     else:
         st.info("Canlı borsa verisi çekiliyor, lütfen bekleyin...")
 
@@ -357,7 +375,7 @@ with tab_bedelli:
         sh = st.selectbox("🔍 Hisse Seç:", hisse_listesi)
         sem = sh if sh.endswith(".IS") else f"{sh}.IS"
         b_info = canli_hisse_verisi_getir(sem)
-        varsayilan_fiyat = b_info.get("regularMarketPrice") or 0.0
+        varsayilan_fiyat = b_info.get("regularMarketPrice", 0.0)
 
     c1, c2 = st.columns(2)
     with c1:
