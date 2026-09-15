@@ -1,154 +1,1711 @@
-# ==================================================
-# BORSA YÜKSELEN / DÜŞEN HİSSELER
-# ==================================================
+import os
+import hashlib
+from datetime import datetime
+import urllib.parse
 
-HAREKET_SUTUNLARI = [
-    "Hisse Kodu",
-    "Son Fiyat",
-    "Önceki Kapanış",
-    "Değişim %",
-    "Yön"
+import pandas as pd
+import streamlit as st
+import streamlit.components.v1 as components
+import yfinance as yf
+from streamlit_autorefresh import st_autorefresh
+
+
+# ==================================================
+# SAYFA AYARLARI
+# ==================================================
+st.set_page_config(
+    page_title="BTA Algoritmik İşlem",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+
+# ==================================================
+# DOSYA AYARLARI
+# ==================================================
+KAYIT_DOSYASI = "bta_tarihli_kayit_defteri.csv"
+ISTATISTIK_DOSYASI = "bta_oda_istatistik.csv"
+MESAJ_DOSYASI = "bta_canli_mesajlar.csv"
+
+KAYIT_SUTUNLARI = [
+    "kayit_id",
+    "kayit_tarihi",
+    "hisse_kodu",
+    "bta_alim_fiyati",
+    "bta_puani"
+]
+
+ISTATISTIK_SUTUNLARI = [
+    "takip_sayisi",
+    "begeni_sayisi"
+]
+
+MESAJ_SUTUNLARI = [
+    "mesaj_id",
+    "tarih",
+    "kullanici",
+    "mesaj"
 ]
 
 
-@st.cache_data(ttl=60, show_spinner=False)
-def borsa_hareketlerini_getir(hisse_listesi):
+def dosya_olustur(dosya, sutunlar):
+    if not os.path.exists(dosya):
+        pd.DataFrame(
+            columns=sutunlar
+        ).to_csv(
+            dosya,
+            index=False,
+            encoding="utf-8-sig"
+        )
+
+
+dosya_olustur(KAYIT_DOSYASI, KAYIT_SUTUNLARI)
+dosya_olustur(ISTATISTIK_DOSYASI, ISTATISTIK_SUTUNLARI)
+dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
+
+
+# ==================================================
+# FORMATLAMA
+# ==================================================
+def tl_format(deger):
+    try:
+        return (
+            f"{float(deger):,.2f}"
+            .replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+            + " TL"
+        )
+    except Exception:
+        return "-"
+
+
+def sayi_format(deger):
+    try:
+        return (
+            f"{float(deger):,.2f}"
+            .replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+        )
+    except Exception:
+        return "-"
+
+
+def turkce_sayi_cevir(deger):
+    if pd.isna(deger):
+        return None
+
+    if isinstance(deger, (int, float)):
+        return float(deger)
+
+    metin = str(deger).strip()
+    metin = metin.replace("TL", "")
+    metin = metin.replace("tl", "")
+    metin = metin.replace(" ", "")
+
+    if not metin:
+        return None
+
+    try:
+        if "." in metin and "," in metin:
+            metin = metin.replace(".", "")
+            metin = metin.replace(",", ".")
+
+        elif "," in metin:
+            son_parca = metin.split(",")[-1]
+
+            if len(son_parca) == 3:
+                metin = metin.replace(",", "")
+            else:
+                metin = metin.replace(",", ".")
+
+        elif "." in metin:
+            son_parca = metin.split(".")[-1]
+
+            if len(son_parca) == 3:
+                metin = metin.replace(".", "")
+
+        return float(metin)
+
+    except Exception:
+        return None
+
+
+# ==================================================
+# KAR YÜZDESI HESAPLA
+# ==================================================
+def kar_yuzdesi_hesapla(bta_fiyat, anlık_fiyat):
+    if bta_fiyat <= 0 or pd.isna(bta_fiyat) or pd.isna(anlık_fiyat):
+        return None
+    
+    kar = ((anlık_fiyat - bta_fiyat) / bta_fiyat) * 100
+    return kar
+
+
+# ==================================================
+# KAR YÜZDESI FORMATLAMA
+# ==================================================
+def kar_yuzdesi_format(kar_yuzde):
+    if kar_yuzde is None:
+        return "-"
+    
+    durum = "📈" if kar_yuzde >= 0 else "📉"
+    renk = "#00f5c8" if kar_yuzde >= 0 else "#ff5264"
+    
+    return f"""
+    <div style="
+        background: rgba(0, 0, 0, 0.3);
+        border-left: 4px solid {renk};
+        border-radius: 5px;
+        padding: 12px;
+        margin: 10px 0;
+        text-align: center;
+    ">
+        <div style="font-size: 24px; font-weight: bold; color: {renk};">
+            {durum} {kar_yuzde:+.2f}%
+        </div>
+        <div style="font-size: 12px; color: #999;">
+            {'💰 Kar' if kar_yuzde >= 0 else '📊 Zarar'}
+        </div>
+    </div>
     """
-    Excel dosyasındaki hisselerin son iki günlük fiyat değişimini hesaplar.
-    Veriler en fazla 60 saniyede bir güncellenir.
+
+
+# ==================================================
+# BEDELLİ / BEDELSİZ HESAPLAMA
+# ==================================================
+def bedelli_bedelsiz_hesapla(
+    eski_fiyat,
+    sahip_lot,
+    bedelli_orani,
+    bedelli_fiyat,
+    bedelsiz_orani
+):
+    """
+    BIST sermaye artırımı (bedelli/bedelsiz) hesaplama makinesi.
+    Oranlar yüzde (%) cinsinden girilir (örn. %50 bedelsiz için 50).
+    Teorik (düzeltilmiş) fiyat, BIST'in resmi sermaye artırımı
+    fiyat düzeltme formülüne göre hesaplanır:
+
+        Teorik Fiyat =
+            (Eski Fiyat + (Bedelli Oranı x Bedelli Fiyatı))
+            / (1 + Bedelli Oranı + Bedelsiz Oranı)
+    """
+    try:
+        eski_fiyat = float(eski_fiyat)
+        sahip_lot = float(sahip_lot)
+        bedelli_orani_yuzde = float(bedelli_orani)
+        bedelli_fiyat = float(bedelli_fiyat)
+        bedelsiz_orani_yuzde = float(bedelsiz_orani)
+    except Exception:
+        return None
+
+    if eski_fiyat <= 0 or sahip_lot < 0:
+        return None
+
+    if bedelli_orani_yuzde < 0 or bedelsiz_orani_yuzde < 0:
+        return None
+
+    bedelli_orani = bedelli_orani_yuzde / 100
+    bedelsiz_orani = bedelsiz_orani_yuzde / 100
+
+    payda = 1 + bedelli_orani + bedelsiz_orani
+
+    if payda <= 0:
+        return None
+
+    # Yeni pay (lot) sayıları - mevcut sahiplik üzerinden
+    bedelli_yeni_lot = sahip_lot * bedelli_orani
+    bedelsiz_yeni_lot = sahip_lot * bedelsiz_orani
+    toplam_yeni_lot = bedelli_yeni_lot + bedelsiz_yeni_lot
+    toplam_lot_sonrasi = sahip_lot + toplam_yeni_lot
+
+    # Bedelli hakkının kullanılması için ödenecek tutar
+    odenecek_tutar = bedelli_yeni_lot * bedelli_fiyat
+
+    # Teorik (düzeltilmiş) fiyat
+    teorik_fiyat = (
+        eski_fiyat + (bedelli_orani * bedelli_fiyat)
+    ) / payda
+
+    # Portföy değerleri (bedelli tutarı yatırılmış varsayımıyla)
+    eski_portfoy_degeri = sahip_lot * eski_fiyat
+    yeni_portfoy_degeri = toplam_lot_sonrasi * teorik_fiyat
+
+    fiyat_degisim_yuzde = (
+        ((teorik_fiyat - eski_fiyat) / eski_fiyat) * 100
+    )
+
+    return {
+        "eski_fiyat": eski_fiyat,
+        "sahip_lot": sahip_lot,
+        "bedelli_yeni_lot": bedelli_yeni_lot,
+        "bedelsiz_yeni_lot": bedelsiz_yeni_lot,
+        "toplam_yeni_lot": toplam_yeni_lot,
+        "toplam_lot_sonrasi": toplam_lot_sonrasi,
+        "odenecek_tutar": odenecek_tutar,
+        "teorik_fiyat": teorik_fiyat,
+        "eski_portfoy_degeri": eski_portfoy_degeri,
+        "yeni_portfoy_degeri": yeni_portfoy_degeri,
+        "fiyat_degisim_yuzde": fiyat_degisim_yuzde
+    }
+
+
+def bedelli_bedelsiz_kart_format(sonuc):
+    if sonuc is None:
+        return "-"
+
+    durum = "📉" if sonuc["fiyat_degisim_yuzde"] < 0 else "📈"
+    renk = (
+        "#ff5264"
+        if sonuc["fiyat_degisim_yuzde"] < 0
+        else "#00f5c8"
+    )
+
+    return f"""
+    <div style="
+        background: rgba(0, 0, 0, 0.3);
+        border-left: 4px solid {renk};
+        border-radius: 5px;
+        padding: 12px;
+        margin: 10px 0;
+        text-align: center;
+    ">
+        <div style="font-size: 13px; color: #999;">
+            Teorik (Düzeltilmiş) Fiyat
+        </div>
+        <div style="font-size: 26px; font-weight: bold; color: {renk};">
+            {tl_format(sonuc["teorik_fiyat"])}
+        </div>
+        <div style="font-size: 13px; color: {renk};">
+            {durum} {sonuc["fiyat_degisim_yuzde"]:+.2f}%
+        </div>
+    </div>
     """
 
-    if not hisse_listesi:
-        return pd.DataFrame(columns=HAREKET_SUTUNLARI)
 
-    sembol_haritasi = {}
+# ==================================================
+# TASARIM
+# ==================================================
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #07131f !important;
+        background-image:
+            linear-gradient(
+                rgba(5, 14, 25, 0.89),
+                rgba(5, 14, 25, 0.97)
+            ),
+            url("https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=2400&q=85") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
+    }
 
-    for hisse in hisse_listesi:
-        kod = str(hisse).strip().upper()
+    [data-testid="stHeader"] {
+        background: transparent !important;
+    }
 
-        if kod in [
+    [data-testid="stSidebar"] > div:first-child {
+        background: rgba(4, 13, 24, 0.98) !important;
+    }
+
+    .main .block-container {
+        max-width: 1450px !important;
+        padding-top: 1rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    h1, h2, h3, h4, p, label, span, div {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+    }
+
+    .bta-logo-alani {
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        margin-bottom: 12px;
+    }
+
+    .bta-logo {
+        display: inline-block;
+        color: #00f5c8;
+        font-family: "Brush Script MT", "Segoe Script", cursive;
+        font-size: 58px;
+        font-weight: bold;
+        text-shadow:
+            0 0 8px #00f5c8,
+            0 0 18px #00f5c8,
+            0 0 28px #168cff;
+        animation: kayan_logo 14s linear infinite;
+    }
+
+    @keyframes kayan_logo {
+        0% {
+            transform: translateX(100vw);
+        }
+
+        100% {
+            transform: translateX(-100%);
+        }
+    }
+
+    .mesaj-karti {
+        background: rgba(8, 29, 45, 0.95);
+        border-left: 3px solid #00f5c8;
+        border-radius: 7px;
+        padding: 10px;
+        margin: 7px 0;
+    }
+
+    .bilgi-karti {
+        background: rgba(9, 31, 48, 0.95);
+        border: 1px solid rgba(0, 245, 200, 0.35);
+        border-radius: 9px;
+        padding: 14px;
+        margin: 10px 0;
+        line-height: 1.8;
+    }
+
+    .paylas-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        margin: 20px 0;
+    }
+
+    .paylas-buton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        text-align: center;
+        min-width: 140px;
+        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .paylas-twitter {
+        background-color: #1DA1F2;
+        color: white;
+    }
+
+    .paylas-twitter:hover {
+        background-color: #1a8cd8;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.6);
+    }
+
+    .paylas-facebook {
+        background-color: #1877F2;
+        color: white;
+    }
+
+    .paylas-facebook:hover {
+        background-color: #0a66c2;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(24, 119, 242, 0.6);
+    }
+
+    .paylas-linkedin {
+        background-color: #0A66C2;
+        color: white;
+    }
+
+    .paylas-linkedin:hover {
+        background-color: #084998;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(10, 102, 194, 0.6);
+    }
+
+    .paylas-whatsapp {
+        background-color: #25D366;
+        color: white;
+    }
+
+    .paylas-whatsapp:hover {
+        background-color: #1eaa54;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.6);
+    }
+
+    .paylas-telegram {
+        background-color: #0088cc;
+        color: white;
+    }
+
+    .paylas-telegram:hover {
+        background-color: #006ba3;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 136, 204, 0.6);
+    }
+
+    .paylas-email {
+        background-color: #EA4335;
+        color: white;
+    }
+
+    .paylas-email:hover {
+        background-color: #c5221f;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(234, 67, 53, 0.6);
+    }
+
+    .paylas-kopya {
+        background-color: #00f5c8;
+        color: #07131f;
+        font-weight: bold;
+    }
+
+    .paylas-kopya:hover {
+        background-color: #00d4a8;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 245, 200, 0.6);
+    }
+
+    .spk-uyari {
+        background: rgba(70, 18, 27, 0.96);
+        border: 1px solid #ff5264;
+        border-radius: 8px;
+        padding: 13px;
+        margin-top: 30px;
+        color: white;
+        font-size: 12px;
+        line-height: 1.6;
+        text-align: justify;
+    }
+
+    @media screen and (max-width: 768px) {
+        .main .block-container {
+            padding: 0.8rem 0.6rem 1.5rem 0.6rem !important;
+        }
+
+        .bta-logo {
+            font-size: 38px;
+        }
+
+        [data-testid="stTabs"] button {
+            font-size: 10px !important;
+            padding: 7px 4px !important;
+        }
+
+        .spk-uyari {
+            font-size: 11px;
+            text-align: left;
+        }
+
+        .paylas-buton {
+            min-width: 120px;
+            padding: 12px 16px;
+            font-size: 12px;
+        }
+
+        .paylas-container {
+            gap: 8px;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ==================================================
+# KAYIT FONKSİYONLARI
+# ==================================================
+def kayitlari_oku():
+    try:
+        df = pd.read_csv(
+            KAYIT_DOSYASI,
+            encoding="utf-8-sig"
+        )
+
+        for sutun in KAYIT_SUTUNLARI:
+            if sutun not in df.columns:
+                df[sutun] = ""
+
+        return df[KAYIT_SUTUNLARI]
+
+    except Exception:
+        return pd.DataFrame(columns=KAYIT_SUTUNLARI)
+
+
+def kayit_id_olustur(hisse, fiyat, puan):
+    metin = (
+        f"{hisse}|"
+        f"{float(fiyat):.4f}|"
+        f"{float(puan):.4f}"
+    )
+
+    return hashlib.sha256(
+        metin.encode("utf-8")
+    ).hexdigest()[:20]
+
+
+def excel_kayitlarini_ekle(df):
+    mevcut = kayitlari_oku()
+    yeni_kayitlar = []
+
+    for _, satir in df.iterrows():
+        hisse = str(
+            satir["Hisse Kodu"]
+        ).strip().upper()
+
+        fiyat = satir["BTA Alım Fiyatı"]
+        puan = satir["BTA Puanı"]
+
+        if hisse in [
             "",
-            "NAN",
             "NONE",
+            "NAN",
             "NULL",
-            "NA"
+            "NA",
+            "HİSSE",
+            "HISSE",
+            "HİSSE KODU",
+            "HISSE KODU"
         ]:
             continue
 
-        sembol = kod if kod.endswith(".IS") else f"{kod}.IS"
+        if pd.isna(fiyat) or float(fiyat) <= 0:
+            continue
 
-        gorunum_kodu = kod
+        if pd.isna(puan):
+            puan = 0.0
 
-        if gorunum_kodu.endswith(".IS"):
-            gorunum_kodu = gorunum_kodu[:-3]
-
-        sembol_haritasi[sembol] = gorunum_kodu
-
-    semboller = tuple(sembol_haritasi.keys())
-
-    if not semboller:
-        return pd.DataFrame(columns=HAREKET_SUTUNLARI)
-
-    try:
-        veri = yf.download(
-            tickers=list(semboller),
-            period="5d",
-            interval="1d",
-            auto_adjust=False,
-            progress=False,
-            threads=False,
-            group_by="column"
+        kayit_id = kayit_id_olustur(
+            hisse,
+            fiyat,
+            puan
         )
 
-        if veri is None or veri.empty:
-            return pd.DataFrame(columns=HAREKET_SUTUNLARI)
+        if mevcut["kayit_id"].astype(str).eq(kayit_id).any():
+            continue
 
-        # yfinance bazen MultiIndex, bazen normal kolon döndürür
-        if isinstance(veri.columns, pd.MultiIndex):
-            seviye_0 = list(veri.columns.get_level_values(0))
-            seviye_1 = list(veri.columns.get_level_values(1))
+        yeni_kayitlar.append(
+            {
+                "kayit_id": kayit_id,
+                "kayit_tarihi": datetime.now().strftime(
+                    "%d.%m.%Y %H:%M:%S"
+                ),
+                "hisse_kodu": hisse,
+                "bta_alim_fiyati": float(fiyat),
+                "bta_puani": float(puan)
+            }
+        )
 
-            if "Close" in seviye_0:
-                kapanislar = veri.xs(
-                    "Close",
-                    axis=1,
-                    level=0
-                )
-            elif "Close" in seviye_1:
-                kapanislar = veri.xs(
-                    "Close",
-                    axis=1,
-                    level=1
-                )
-            else:
-                return pd.DataFrame(columns=HAREKET_SUTUNLARI)
+    if yeni_kayitlar:
+        sonuc = pd.concat(
+            [
+                mevcut,
+                pd.DataFrame(yeni_kayitlar)
+            ],
+            ignore_index=True
+        )
 
-        else:
-            if "Close" not in veri.columns:
-                return pd.DataFrame(columns=HAREKET_SUTUNLARI)
+        sonuc.to_csv(
+            KAYIT_DOSYASI,
+            index=False,
+            encoding="utf-8-sig"
+        )
 
-            kapanislar = veri["Close"]
 
-            if isinstance(kapanislar, pd.Series):
-                kapanislar = kapanislar.to_frame(
-                    name=semboller[0]
-                )
+# ==================================================
+# TAKİP VE BEĞENİ FONKSİYONLARI
+# ==================================================
+def istatistik_oku():
+    try:
+        df = pd.read_csv(
+            ISTATISTIK_DOSYASI,
+            encoding="utf-8-sig"
+        )
 
-        kapanislar.columns = [
-            str(kolon)
-            for kolon in kapanislar.columns
-        ]
+        if df.empty:
+            return 0, 0
 
-        sonuc_listesi = []
+        satir = df.iloc[0]
 
-        for sembol in semboller:
-            if sembol not in kapanislar.columns:
-                continue
+        takip = pd.to_numeric(
+            satir.get("takip_sayisi", 0),
+            errors="coerce"
+        )
 
-            seri = pd.to_numeric(
-                kapanislar[sembol],
-                errors="coerce"
-            ).dropna()
+        begeni = pd.to_numeric(
+            satir.get("begeni_sayisi", 0),
+            errors="coerce"
+        )
 
-            if len(seri) < 2:
-                continue
-
-            onceki_kapanis = float(seri.iloc[-2])
-            son_fiyat = float(seri.iloc[-1])
-
-            if onceki_kapanis <= 0:
-                continue
-
-            degisim_yuzde = (
-                (son_fiyat - onceki_kapanis)
-                / onceki_kapanis
-            ) * 100
-
-            sonuc_listesi.append(
-                {
-                    "Hisse Kodu": sembol_haritasi[sembol],
-                    "Son Fiyat": son_fiyat,
-                    "Önceki Kapanış": onceki_kapanis,
-                    "Değişim %": degisim_yuzde,
-                    "Yön": (
-                        "📈 Yükselen"
-                        if degisim_yuzde > 0
-                        else "📉 Düşen"
-                        if degisim_yuzde < 0
-                        else "⏸️ Sabit"
-                    )
-                }
-            )
-
-        if not sonuc_listesi:
-            return pd.DataFrame(columns=HAREKET_SUTUNLARI)
-
-        sonuc_df = pd.DataFrame(sonuc_listesi)
-
-        return sonuc_df.sort_values(
-            by="Değişim %",
-            ascending=False
-        ).reset_index(drop=True)
+        return (
+            int(takip) if pd.notna(takip) else 0,
+            int(begeni) if pd.notna(begeni) else 0
+        )
 
     except Exception:
-        return pd.DataFrame(columns=HAREKET_SUTUNLARI)
+        return 0, 0
+
+
+def istatistik_kaydet(takip, begeni):
+    pd.DataFrame(
+        [{
+            "takip_sayisi": takip,
+            "begeni_sayisi": begeni
+        }]
+    ).to_csv(
+        ISTATISTIK_DOSYASI,
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+
+# ==================================================
+# MESAJ FONKSİYONLARI
+# ==================================================
+def mesajlari_oku():
+    try:
+        df = pd.read_csv(
+            MESAJ_DOSYASI,
+            encoding="utf-8-sig"
+        )
+
+        for sutun in MESAJ_SUTUNLARI:
+            if sutun not in df.columns:
+                df[sutun] = ""
+
+        return df[MESAJ_SUTUNLARI]
+
+    except Exception:
+        return pd.DataFrame(columns=MESAJ_SUTUNLARI)
+
+
+def mesaj_ekle(kullanici, metin):
+    mesajlar = mesajlari_oku()
+
+    yeni_mesaj = pd.DataFrame(
+        [{
+            "mesaj_id": int(
+                datetime.now().timestamp() * 1000
+            ),
+            "tarih": datetime.now().strftime(
+                "%d.%m.%Y %H:%M:%S"
+            ),
+            "kullanici": kullanici,
+            "mesaj": metin
+        }]
+    )
+
+    mesajlar = pd.concat(
+        [
+            mesajlar,
+            yeni_mesaj
+        ],
+        ignore_index=True
+    )
+
+    mesajlar.to_csv(
+        MESAJ_DOSYASI,
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+
+# ==================================================
+# PAYLAŞIM FONKSİYONLARI
+# ==================================================
+def paylas_linki_olustur(platform, url, baslik):
+    """
+    Farklı platformlar için paylaşım linki oluşturur
+    """
+    encoded_url = urllib.parse.quote(url)
+    encoded_baslik = urllib.parse.quote(baslik)
+    
+    linkler = {
+        "twitter": f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_baslik}",
+        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}",
+        "linkedin": f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}",
+        "whatsapp": f"https://wa.me/?text={encoded_baslik}%0A{encoded_url}",
+        "telegram": f"https://t.me/share/url?url={encoded_url}&text={encoded_baslik}",
+        "email": f"mailto:?subject={encoded_baslik}&body={encoded_url}"
+    }
+    
+    return linkler.get(platform, "#")
+
+
+# ==================================================
+# MESAJ SESİ
+# ==================================================
+def mesaj_sesi_cal():
+    components.html(
+        """
+        <script>
+        try {
+            const audioContext = new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(
+                880,
+                audioContext.currentTime
+            );
+
+            gainNode.gain.setValueAtTime(
+                0.0001,
+                audioContext.currentTime
+            );
+
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.18,
+                audioContext.currentTime + 0.02
+            );
+
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.0001,
+                audioContext.currentTime + 0.35
+            );
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.35);
+        } catch (error) {
+            console.log("Bildirim sesi oynatılamadı:", error);
+        }
+        </script>
+        """,
+        height=0,
+        width=0
+    )
+
+
+# ==================================================
+# CANLI YENİLEME
+# ==================================================
+st_autorefresh(
+    interval=5000,
+    key="bta_canli_yenileme"
+)
+
+
+# ==================================================
+# LOGO
+# ==================================================
+st.markdown(
+    """
+    <div class="bta-logo-alani">
+        <div class="bta-logo">
+            BTA ALGORİTMİK İŞLEM
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ==================================================
+# YÖNETİCİ SİSTEMİ
+# ==================================================
+st.sidebar.header("⚙️ Sistem Kontrolleri")
+
+admin_sifre = st.sidebar.text_input(
+    "Yönetici Şifresi",
+    type="password",
+    help="Yönetici paneline erişmek için şifre girin"
+)
+
+is_admin = admin_sifre == "3015"
+
+if is_admin:
+    st.sidebar.success("✅ Yönetici yetkileri aktif")
+    
+    with st.sidebar.expander("🔧 Yönetici Paneli"):
+        st.subheader("İstatistikleri Yönet")
+        
+        takip, begeni = istatistik_oku()
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            yeni_takip = st.number_input(
+                "Takipçi Sayısı",
+                value=takip,
+                min_value=0
+            )
+        
+        with col2:
+            yeni_begeni = st.number_input(
+                "Beğeni Sayısı",
+                value=begeni,
+                min_value=0
+            )
+        
+        if st.button("İstatistikleri Kaydet", use_container_width=True):
+            istatistik_kaydet(yeni_takip, yeni_begeni)
+            st.success("✅ İstatistikler güncellendi")
+
+
+# ==================================================
+# EXCEL'İ OTOMATİK OKU
+# A = Hisse Kodu
+# C = BTA Alım Fiyatı
+# D = BTA Puanı
+# ==================================================
+excel_dosyalari = [
+    dosya
+    for dosya in os.listdir(".")
+    if dosya.lower().endswith(
+        (".xlsx", ".xlsm")
+    )
+]
+
+excel_df = pd.DataFrame(
+    columns=[
+        "Hisse Kodu",
+        "BTA Alım Fiyatı",
+        "BTA Puanı"
+    ]
+)
+
+if excel_dosyalari:
+    secilen_excel = excel_dosyalari[0]
+
+    try:
+        ham_df = pd.read_excel(
+            secilen_excel,
+            sheet_name=0,
+            engine="openpyxl",
+            header=None
+        )
+
+        if ham_df.shape[1] >= 4:
+            excel_df = ham_df.iloc[:, [0, 2, 3]].copy()
+
+            excel_df.columns = [
+                "Hisse Kodu",
+                "BTA Alım Fiyatı",
+                "BTA Puanı"
+            ]
+
+            excel_df["Hisse Kodu"] = (
+                excel_df["Hisse Kodu"]
+                .astype(str)
+                .str.strip()
+                .str.upper()
+            )
+
+            excel_df["BTA Alım Fiyatı"] = (
+                excel_df["BTA Alım Fiyatı"]
+                .apply(turkce_sayi_cevir)
+            )
+
+            excel_df["BTA Puanı"] = (
+                excel_df["BTA Puanı"]
+                .apply(turkce_sayi_cevir)
+            )
+
+            excel_df = excel_df[
+                ~excel_df["Hisse Kodu"].isin(
+                    [
+                        "",
+                        "NONE",
+                        "NAN",
+                        "NULL",
+                        "NA",
+                        "HİSSE",
+                        "HISSE",
+                        "HİSSE KODU",
+                        "HISSE KODU"
+                    ]
+                )
+            ]
+
+            excel_df = excel_df[
+                excel_df["BTA Alım Fiyatı"].notna()
+            ]
+
+            excel_df = excel_df[
+                excel_df["BTA Alım Fiyatı"] > 0
+            ]
+
+            excel_df["BTA Puanı"] = (
+                excel_df["BTA Puanı"].fillna(0)
+            )
+
+            excel_df = excel_df.drop_duplicates(
+                subset=["Hisse Kodu"],
+                keep="last"
+            )
+
+            excel_kayitlarini_ekle(excel_df)
+
+    except Exception as hata:
+        st.error(
+            f"Excel okunamadı: {hata}"
+        )
+
+
+# ==================================================
+# PANELLER
+# ==================================================
+tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
+    [
+        "🤖 Algoritmik Bilgiler",
+        "🧮 Bedelli/Bedelsiz",
+        "💬 Sohbet",
+        "📒 Kayıtlar",
+        "🔗 Paylaş"
+    ]
+)
+
+
+# ==================================================
+# ALGORİTMİK BİLGİLER
+# ==================================================
+with tab_algoritmik:
+    st.header("🤖 Algoritmik İşlem Bilgileri")
+
+    if excel_df.empty:
+        st.warning(
+            "BTA alım fiyatı bulunan hisse bulunamadı."
+        )
+    else:
+        secilen_hisse = st.selectbox(
+            "🔍 BTA Algoritma Hissesi Seç:",
+            excel_df["Hisse Kodu"].tolist()
+        )
+
+        sembol = secilen_hisse
+
+        if not sembol.endswith(".IS"):
+            sembol += ".IS"
+
+        try:
+            hisse = yf.Ticker(sembol)
+            bilgi = hisse.info
+
+            fiyat = bilgi.get(
+                "regularMarketPrice"
+            )
+
+            onceki_kapanis = bilgi.get(
+                "regularMarketPreviousClose"
+            )
+
+            en_yuksek = bilgi.get(
+                "dayHigh"
+            )
+
+            en_dusuk = bilgi.get(
+                "dayLow"
+            )
+
+            hacim = bilgi.get(
+                "volume"
+            )
+
+            piyasa_degeri = bilgi.get(
+                "marketCap"
+            )
+
+            kayit = excel_df[
+                excel_df["Hisse Kodu"] == secilen_hisse
+            ].iloc[0]
+
+            bta_alim_fiyati = kayit["BTA Alım Fiyatı"]
+            kar_yuzde = kar_yuzdesi_hesapla(bta_alim_fiyati, fiyat)
+
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric(
+                "BTA Alım Fiyatı",
+                tl_format(bta_alim_fiyati)
+            )
+
+            col2.metric(
+                "BTA Puanı",
+                sayi_format(
+                    kayit["BTA Puanı"]
+                )
+            )
+
+            col3.metric(
+                "Anlık Fiyat",
+                tl_format(fiyat)
+            )
+
+            # Kar Yüzdesi Göster
+            st.markdown(
+                kar_yuzdesi_format(kar_yuzde),
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="bilgi-karti">
+                    <strong>Hisse Kodu:</strong> {secilen_hisse}<br>
+                    <strong>Önceki Kapanış:</strong>
+                    {tl_format(onceki_kapanis)}<br>
+                    <strong>Günlük En Yüksek:</strong>
+                    {tl_format(en_yuksek)}<br>
+                    <strong>Günlük En Düşük:</strong>
+                    {tl_format(en_dusuk)}<br>
+                    <strong>İşlem Hacmi:</strong>
+                    {sayi_format(hacim)}<br>
+                    <strong>Piyasa Değeri:</strong>
+                    {sayi_format(piyasa_degeri)}<br>
+                    <strong>Veri Durumu:</strong>
+                    En az 15 dakika gecikmeli olabilir.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        except Exception as hata:
+            st.warning(
+                f"Algoritmik bilgiler alınamadı: {hata}"
+            )
+
+
+# ==================================================
+# BEDELLİ / BEDELSİZ HESAPLAMA MAKİNESİ
+# ==================================================
+with tab_bedelli:
+    st.header("🧮 Bedelli/Bedelsiz Hesaplama Makinesi")
+
+    st.markdown(
+        """
+        <div class="bilgi-karti">
+            Sermaye artırımı (bedelli/bedelsiz) sonrası portföyünüzde
+            oluşacak <strong>yeni pay sayısını</strong> ve
+            <strong>teorik (düzeltilmiş) fiyatı</strong> hesaplayın.
+            Oranları hisse için açıklanan sermaye artırımı
+            duyurusundaki yüzdelerle girin.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ==================================================
+    # FİYAT KAYNAĞI SEÇİMİ
+    # ==================================================
+    hisse_listesi = (
+        excel_df["Hisse Kodu"].tolist()
+        if not excel_df.empty
+        else []
+    )
+
+    kaynak_secenekleri = ["✍️ Manuel Fiyat Gir"]
+
+    if hisse_listesi:
+        kaynak_secenekleri = [
+            "📈 Listeden Hisse Seç (Anlık Fiyat)"
+        ] + kaynak_secenekleri
+
+    kaynak = st.radio(
+        "Fiyat Kaynağı",
+        kaynak_secenekleri,
+        horizontal=True
+    )
+
+    varsayilan_fiyat = 0.0
+    secilen_hisse_bedelli = None
+
+    if kaynak == "📈 Listeden Hisse Seç (Anlık Fiyat)":
+        secilen_hisse_bedelli = st.selectbox(
+            "🔍 Hisse Seç:",
+            hisse_listesi,
+            key="bedelli_hisse_secim"
+        )
+
+        sembol_bedelli = secilen_hisse_bedelli
+
+        if not sembol_bedelli.endswith(".IS"):
+            sembol_bedelli += ".IS"
+
+        try:
+            hisse_bedelli = yf.Ticker(sembol_bedelli)
+            bilgi_bedelli = hisse_bedelli.info
+
+            varsayilan_fiyat = bilgi_bedelli.get(
+                "regularMarketPrice"
+            ) or 0.0
+
+            st.caption(
+                f"Anlık fiyat otomatik dolduruldu: "
+                f"{tl_format(varsayilan_fiyat)} "
+                f"(en az 15 dakika gecikmeli olabilir)"
+            )
+
+        except Exception as hata:
+            st.warning(
+                f"Anlık fiyat alınamadı, manuel girebilirsiniz: {hata}"
+            )
+
+    st.divider()
+
+    # ==================================================
+    # GİRDİ FORMU
+    # ==================================================
+    col1, col2 = st.columns(2)
+
+    with col1:
+        eski_fiyat_girdi = st.number_input(
+            "Mevcut / Önceki Kapanış Fiyatı (TL)",
+            min_value=0.0,
+            value=float(varsayilan_fiyat or 0.0),
+            step=0.01,
+            format="%.4f"
+        )
+
+        sahip_lot_girdi = st.number_input(
+            "Sahip Olduğunuz Pay (Lot) Adedi",
+            min_value=0.0,
+            value=100.0,
+            step=1.0
+        )
+
+    with col2:
+        bedelli_orani_girdi = st.number_input(
+            "Bedelli Sermaye Artırım Oranı (%)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            help="Örn. %50 bedelli için 50 girin. Bedelli yoksa 0 bırakın."
+        )
+
+        bedelli_fiyat_girdi = st.number_input(
+            "Bedelli Pay Alım Fiyatı (TL)",
+            min_value=0.0,
+            value=1.00,
+            step=0.01,
+            format="%.4f",
+            help="Genellikle nominal değer (1 TL) üzerinden yapılır."
+        )
+
+        bedelsiz_orani_girdi = st.number_input(
+            "Bedelsiz Sermaye Artırım Oranı (%)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            help="Örn. %20 bedelsiz için 20 girin. Bedelsiz yoksa 0 bırakın."
+        )
+
+    st.divider()
+
+    hesapla_buton = st.button(
+        "🧮 Hesapla",
+        use_container_width=True,
+        type="primary"
+    )
+
+    # ==================================================
+    # NOT: Sayfa 5 saniyede bir otomatik yenilendiği için
+    # (st_autorefresh) sonuç "if hesapla_buton:" içinde
+    # tutulursa bir sonraki otomatik yenilemede kaybolur.
+    # Bu yüzden sonuç, session_state'e yazılıp aşağıda
+    # butondan bağımsız olarak her zaman gösterilir.
+    # ==================================================
+    if hesapla_buton:
+        if eski_fiyat_girdi <= 0:
+            st.session_state["bedelli_sonuc"] = None
+            st.session_state["bedelli_hata"] = (
+                "Lütfen geçerli bir mevcut fiyat girin."
+            )
+        elif bedelli_orani_girdi == 0 and bedelsiz_orani_girdi == 0:
+            st.session_state["bedelli_sonuc"] = None
+            st.session_state["bedelli_hata"] = (
+                "Lütfen bedelli veya bedelsiz oranından "
+                "en az birini girin."
+            )
+        else:
+            sonuc = bedelli_bedelsiz_hesapla(
+                eski_fiyat_girdi,
+                sahip_lot_girdi,
+                bedelli_orani_girdi,
+                bedelli_fiyat_girdi,
+                bedelsiz_orani_girdi
+            )
+
+            if sonuc is None:
+                st.session_state["bedelli_sonuc"] = None
+                st.session_state["bedelli_hata"] = (
+                    "Hesaplama yapılamadı, "
+                    "girdiğiniz değerleri kontrol edin."
+                )
+            else:
+                st.session_state["bedelli_sonuc"] = sonuc
+                st.session_state["bedelli_hata"] = None
+
+    if st.session_state.get("bedelli_hata"):
+        st.error(st.session_state["bedelli_hata"])
+
+    sonuc_kalici = st.session_state.get("bedelli_sonuc")
+
+    if sonuc_kalici:
+        st.markdown(
+            bedelli_bedelsiz_kart_format(sonuc_kalici),
+            unsafe_allow_html=True
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Bedelli Yeni Pay",
+            sayi_format(sonuc_kalici["bedelli_yeni_lot"])
+        )
+
+        col2.metric(
+            "Bedelsiz Yeni Pay",
+            sayi_format(sonuc_kalici["bedelsiz_yeni_lot"])
+        )
+
+        col3.metric(
+            "Toplam Yeni Pay",
+            sayi_format(sonuc_kalici["toplam_yeni_lot"])
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Artırım Sonrası Toplam Pay",
+            sayi_format(sonuc_kalici["toplam_lot_sonrasi"])
+        )
+
+        col2.metric(
+            "Bedelli İçin Ödenecek Tutar",
+            tl_format(sonuc_kalici["odenecek_tutar"])
+        )
+
+        col3.metric(
+            "Fiyat Değişimi",
+            f"{sonuc_kalici['fiyat_degisim_yuzde']:+.2f}%"
+        )
+
+        st.markdown(
+            f"""
+            <div class="bilgi-karti">
+                <strong>Sermaye Artırımı Öncesi Portföy Değeri:</strong>
+                {tl_format(sonuc_kalici["eski_portfoy_degeri"])}<br>
+                <strong>Sermaye Artırımı Sonrası Portföy Değeri:</strong>
+                {tl_format(sonuc_kalici["yeni_portfoy_degeri"])}<br>
+                <strong>Not:</strong> Sonrası değer, bedelli tutarının
+                nakit olarak yatırıldığı varsayımıyla hesaplanmıştır.
+                Teorik fiyat, borsanın ilan ettiği kesin referans
+                fiyattan farklılık gösterebilir.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "✖️ Sonucu Temizle",
+            use_container_width=True,
+            key="bedelli_sonuc_temizle"
+        ):
+            st.session_state["bedelli_sonuc"] = None
+            st.session_state["bedelli_hata"] = None
+            st.rerun()
+
+
+# ==================================================
+# CANLI SOHBET
+# ==================================================
+with tab_sohbet:
+    st.header("💬 Canlı Sohbet Odası")
+
+    # ==================================================
+    # TAKİP VE BEĞENİ PANELİ
+    # ==================================================
+    st.subheader("⭐ BTA Oda Takip Paneli")
+
+    takip, begeni = istatistik_oku()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if "takip_edildi" not in st.session_state:
+            st.session_state["takip_edildi"] = False
+
+        if not st.session_state["takip_edildi"]:
+            if st.button(
+                "⭐ Odayı Takip Et",
+                use_container_width=True
+            ):
+                takip += 1
+                istatistik_kaydet(takip, begeni)
+                st.session_state["takip_edildi"] = True
+                st.rerun()
+        else:
+            st.info("⭐ Odayı takip ediyorsunuz.")
+
+    with col2:
+        if "begeni_verildi" not in st.session_state:
+            st.session_state["begeni_verildi"] = False
+
+        if not st.session_state["begeni_verildi"]:
+            if st.button(
+                "👍 Beğen",
+                use_container_width=True
+            ):
+                begeni += 1
+                istatistik_kaydet(takip, begeni)
+                st.session_state["begeni_verildi"] = True
+                st.rerun()
+        else:
+            st.info("👍 Beğeniniz kaydedildi.")
+
+    with col3:
+        st.metric("👥 Takipçi", f"{takip} kişi")
+
+    with col4:
+        st.metric("👍 Beğeni", f"{begeni}")
+
+    st.divider()
+
+    # ==================================================
+    # MESAJ FORMU
+    # ==================================================
+    st.subheader("💬 Mesaj Gönder")
+
+    kullanici = st.text_input(
+        "Kullanıcı adı",
+        value="Hissedar"
+    )
+
+    with st.form(
+        "mesaj_formu",
+        clear_on_submit=True
+    ):
+        mesaj = st.text_area(
+            "Mesajınız",
+            height=90,
+            placeholder="Mesajınızı yazın..."
+        )
+
+        gonder = st.form_submit_button(
+            "Mesaj Gönder 🚀",
+            use_container_width=True
+        )
+
+        if gonder:
+            if not kullanici.strip():
+                st.error(
+                    "Kullanıcı adı boş bırakılamaz."
+                )
+            elif not mesaj.strip():
+                st.error(
+                    "Mesaj boş bırakılamaz."
+                )
+            else:
+                mesaj_ekle(
+                    kullanici.strip(),
+                    mesaj.strip()
+                )
+
+                st.success(
+                    "Mesajınız gönderildi."
+                )
+
+                st.rerun()
+
+    st.divider()
+
+    # ==================================================
+    # MESAJ LİSTESİ
+    # ==================================================
+    st.subheader("📨 Mesajlar")
+
+    mesajlar = mesajlari_oku()
+
+    if not mesajlar.empty:
+        son_mesaj_id = str(
+            mesajlar.iloc[-1]["mesaj_id"]
+        )
+
+        if "son_ses_mesaj_id" not in st.session_state:
+            st.session_state["son_ses_mesaj_id"] = (
+                son_mesaj_id
+            )
+        elif (
+            st.session_state["son_ses_mesaj_id"]
+            != son_mesaj_id
+        ):
+            mesaj_sesi_cal()
+
+            st.session_state["son_ses_mesaj_id"] = (
+                son_mesaj_id
+            )
+
+    if mesajlar.empty:
+        st.info(
+            "Henüz mesaj bulunmuyor."
+        )
+    else:
+        for index, satir in mesajlar.iloc[::-1].iterrows():
+            mesaj_id = str(satir["mesaj_id"])
+
+            col1, col2 = st.columns([10, 1])
+            
+            with col1:
+                st.markdown(
+                    f"""
+                    <div class="mesaj-karti">
+                        <strong>👤 {satir["kullanici"]}</strong>
+                        <small> · {satir["tarih"]}</small>
+                        <br>
+                        {satir["mesaj"]}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            with col2:
+                if is_admin:
+                    if st.button(
+                        "🗑️",
+                        key=f"mesaj_sil_{mesaj_id}_{index}",
+                        help="Mesajı sil"
+                    ):
+                        mesajlar = mesajlar[
+                            mesajlar["mesaj_id"].astype(str)
+                            != mesaj_id
+                        ]
+
+                        mesajlar.to_csv(
+                            MESAJ_DOSYASI,
+                            index=False,
+                            encoding="utf-8-sig"
+                        )
+
+                        st.rerun()
+
+
+# ==================================================
+# TARİHLİ KAYITLAR
+# ==================================================
+with tab_kayit:
+    st.header("📒 Tarihli Kayıt Defteri")
+
+    df_kayitlar = kayitlari_oku()
+
+    if df_kayitlar.empty:
+        st.info(
+            "Henüz kayıt bulunmuyor."
+        )
+    else:
+        df_kayitlar["bta_alim_fiyati"] = pd.to_numeric(
+            df_kayitlar["bta_alim_fiyati"],
+            errors="coerce"
+        )
+
+        df_kayitlar = df_kayitlar[
+            df_kayitlar["bta_alim_fiyati"] > 0
+        ]
+
+        gorunum = df_kayitlar.rename(
+            columns={
+                "kayit_tarihi": "Kayıt Tarihi",
+                "hisse_kodu": "Hisse Kodu",
+                "bta_alim_fiyati": "BTA Alım Fiyatı",
+                "bta_puani": "BTA Puanı"
+            }
+        )
+
+        gorunum["BTA Alım Fiyatı"] = (
+            gorunum["BTA Alım Fiyatı"]
+            .apply(tl_format)
+        )
+
+        gorunum["BTA Puanı"] = (
+            gorunum["BTA Puanı"]
+            .apply(sayi_format)
+        )
+
+        st.dataframe(
+            gorunum[
+                [
+                    "Kayıt Tarihi",
+                    "Hisse Kodu",
+                    "BTA Alım Fiyatı",
+                    "BTA Puanı"
+                ]
+            ],
+            use_container_width=True,
+            hide_index=True
+        )
+
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.download_button(
+                "📥 Kayıtları İndir",
+                data=df_kayitlar.to_csv(
+                    index=False,
+                    encoding="utf-8-sig"
+                ),
+                file_name="bta_tarihli_kayitlar.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        
+        with col2:
+            if is_admin:
+                if st.button(
+                    "🗑️ Tüm Kayıtları Sil",
+                    use_container_width=True
+                ):
+                    if st.confirm("Emin misiniz?"):
+                        pd.DataFrame(
+                            columns=KAYIT_SUTUNLARI
+                        ).to_csv(
+                            KAYIT_DOSYASI,
+                            index=False,
+                            encoding="utf-8-sig"
+                        )
+                        st.success("✅ Tüm kayıtlar silindi")
+                        st.rerun()
+
+
+# ==================================================
+# PAYLAŞ TAB'I
+# ==================================================
+with tab_paylas:
+    st.header("🔗 Sayfayı Sosyal Medyada Paylaş")
+
+    st.divider()
+
+    # ==================================================
+    # PAYLAŞ URL'Sİ
+    # ==================================================
+    st.subheader("📍 Paylaş Linki")
+
+    sayfa_url = st.text_input(
+        "Platform URL:",
+        value="https://btasinyal.streamlit.app",
+        help="Paylaşmak istediğiniz sayfanın tam URL'sini girin"
+    )
+
+    baslik = st.text_input(
+        "Paylaşım Başlığı:",
+        value="BTA Algoritmik İşlem Platformu - Borsa Sinyalleri"
+    )
+
+    st.divider()
+
+    # ==================================================
+    # PAYLAŞ BUTONLARI
+    # ==================================================
+    st.subheader("📱 Sosyal Medya Kanalları")
+
+    # Paylaşım linklerini oluştur
+    twitter_link = paylas_linki_olustur("twitter", sayfa_url, baslik)
+    facebook_link = paylas_linki_olustur("facebook", sayfa_url, baslik)
+    linkedin_link = paylas_linki_olustur("linkedin", sayfa_url, baslik)
+    whatsapp_link = paylas_linki_olustur("whatsapp", sayfa_url, baslik)
+    telegram_link = paylas_linki_olustur("telegram", sayfa_url, baslik)
+    email_link = paylas_linki_olustur("email", sayfa_url, baslik)
+
+    # Butonları göster
+    st.markdown(
+        f"""
+        <div class="paylas-container">
+            <a href="{twitter_link}" target="_blank" class="paylas-buton paylas-twitter">🐦 Twitter</a>
+            <a href="{facebook_link}" target="_blank" class="paylas-buton paylas-facebook">👍 Facebook</a>
+            <a href="{linkedin_link}" target="_blank" class="paylas-buton paylas-linkedin">💼 LinkedIn</a>
+            <a href="{whatsapp_link}" target="_blank" class="paylas-buton paylas-whatsapp">💬 WhatsApp</a>
+            <a href="{telegram_link}" target="_blank" class="paylas-buton paylas-telegram">✈️ Telegram</a>
+            <a href="{email_link}" class="paylas-buton paylas-email">✉️ E-Posta</a>
+            <button class="paylas-buton paylas-kopya" onclick="
+                navigator.clipboard.writeText('{sayfa_url}');
+                alert('Link kopyalandı! 📋');
+            ">📋 Linki Kopyala</button>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.divider()
+
+    # ==================================================
+    # QR KOD
+    # ==================================================
+    st.subheader("📱 QR Kod ile Hızlı Erişim")
+
+    try:
+        import qrcode
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+
+        qr.add_data(sayfa_url)
+        qr.make(fit=True)
+
+        qr_img = qr.make_image(fill_color="00f5c8", back_color="07131f")
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+
+        with col2:
+            st.image(
+                qr_img,
+                caption="QR Kodu tarayarak platforma erişin",
+                use_column_width=True
+            )
+
+    except ImportError:
+        st.info("QR kod göstermek için: pip install qrcode[pil]")
+
+    st.divider()
+
+    # ==================================================
+    # İSTATİSTİKLER
+    # ==================================================
+    st.subheader("📊 Platform İstatistikleri")
+
+    takip, begeni = istatistik_oku()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("👥 Takipçiler", takip)
+
+    with col2:
+        st.metric("👍 Beğeniler", begeni)
+
+    with col3:
+        st.metric("💬 Mesajlar", len(mesajlari_oku()))
+
+
+# ==================================================
+# SPK UYARISI
+# ==================================================
+st.markdown(
+    """
+    <div class="spk-uyari">
+        <strong>⚠️ SPK YASAL UYARI:</strong>
+        Bu platformda yer alan veriler yalnızca genel bilgilendirme
+        amacıyla sunulmaktadır. Borsa verileri en az 15 dakika gecikmeli
+        olabilir ve anlık işlem verisi olarak kabul edilmemelidir.
+        Buradaki hiçbir veri, puan veya fiyat yatırım danışmanlığı,
+        hedef fiyat ya da AL, SAT, TUT tavsiyesi değildir.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
