@@ -1164,7 +1164,7 @@ with tab_paylas:
 
     sayfa_url = st.text_input(
         "Platform URL:",
-        value="https://bta-algoritmi.streamlit.app",
+        value="https://btasinyal.streamlit.app",
         help="Paylaşmak istediğiniz sayfanın tam URL'sini girin"
     )
 
