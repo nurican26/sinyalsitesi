@@ -251,7 +251,7 @@ st.markdown(
     .bilgi-karti {
         background: rgba(9, 31, 48, 0.95);
         border: 1px solid rgba(0, 245, 200, 0.35);
-        border-radius: 9px;
+        border-radius: 99px;
         padding: 14px;
         margin: 10px 0;
         line-height: 1.8;
@@ -282,83 +282,20 @@ st.markdown(
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
-    .paylas-twitter {
-        background-color: #1DA1F2;
-        color: white;
-    }
-
-    .paylas-twitter:hover {
-        background-color: #1a8cd8;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.6);
-    }
-
-    .paylas-facebook {
-        background-color: #1877F2;
-        color: white;
-    }
-
-    .paylas-facebook:hover {
-        background-color: #0a66c2;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(24, 119, 242, 0.6);
-    }
-
-    .paylas-linkedin {
-        background-color: #0A66C2;
-        color: white;
-    }
-
-    .paylas-linkedin:hover {
-        background-color: #084998;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(10, 102, 194, 0.6);
-    }
-
-    .paylas-whatsapp {
-        background-color: #25D366;
-        color: white;
-    }
-
-    .paylas-whatsapp:hover {
-        background-color: #1eaa54;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.6);
-    }
-
-    .paylas-telegram {
-        background-color: #0088cc;
-        color: white;
-    }
-
-    .paylas-telegram:hover {
-        background-color: #006ba3;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 136, 204, 0.6);
-    }
-
-    .paylas-email {
-        background-color: #EA4335;
-        color: white;
-    }
-
-    .paylas-email:hover {
-        background-color: #c5221f;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(234, 67, 53, 0.6);
-    }
-
-    .paylas-kopya {
-        background-color: #00f5c8;
-        color: #07131f;
-        font-weight: bold;
-    }
-
-    .paylas-kopya:hover {
-        background-color: #00d4a8;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 245, 200, 0.6);
-    }
+    .paylas-twitter { background-color: #1DA1F2; color: white; }
+    .paylas-twitter:hover { background-color: #1a8cd8; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(29, 161, 242, 0.6); }
+    .paylas-facebook { background-color: #1877F2; color: white; }
+    .paylas-facebook:hover { background-color: #0a66c2; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(24, 119, 242, 0.6); }
+    .paylas-linkedin { background-color: #0A66C2; color: white; }
+    .paylas-linkedin:hover { background-color: #084998; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(10, 102, 194, 0.6); }
+    .paylas-whatsapp { background-color: #25D366; color: white; }
+    .paylas-whatsapp:hover { background-color: #1eaa54; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(37, 211, 102, 0.6); }
+    .paylas-telegram { background-color: #0088cc; color: white; }
+    .paylas-telegram:hover { background-color: #006ba3; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0, 136, 204, 0.6); }
+    .paylas-email { background-color: #EA4335; color: white; }
+    .paylas-email:hover { background-color: #c5221f; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(234, 67, 53, 0.6); }
+    .paylas-kopya { background-color: #00f5c8; color: #07131f; font-weight: bold; }
+    .paylas-kopya:hover { background-color: #00d4a8; transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0, 245, 200, 0.6); }
 
     .spk-uyari {
         background: rgba(70, 18, 27, 0.96);
@@ -373,33 +310,12 @@ st.markdown(
     }
 
     @media screen and (max-width: 768px) {
-        .main .block-container {
-            padding: 0.8rem 0.6rem 1.5rem 0.6rem !important;
-        }
-
-        .bta-logo {
-            font-size: 38px;
-        }
-
-        [data-testid="stTabs"] button {
-            font-size: 10px !important;
-            padding: 7px 4px !important;
-        }
-
-        .spk-uyari {
-            font-size: 11px;
-            text-align: left;
-        }
-
-        .paylas-buton {
-            min-width: 120px;
-            padding: 12px 16px;
-            font-size: 12px;
-        }
-
-        .paylas-container {
-            gap: 8px;
-        }
+        .main .block-container { padding: 0.8rem 0.6rem 1.5rem 0.6rem !important; }
+        .bta-logo { font-size: 38px; }
+        [data-testid="stTabs"] button { font-size: 10px !important; padding: 7px 4px !important; }
+        .spk-uyari { font-size: 11px; text-align: left; }
+        .paylas-buton { min-width: 120px; padding: 12px 16px; font-size: 12px; }
+        .paylas-container { gap: 8px; }
     }
     </style>
     """,
@@ -408,19 +324,28 @@ st.markdown(
 
 
 # ==================================================
-# KAYIT FONKSİYONLARI
+# TAKİP VE BEĞENİ FONKSİYONLARI
 # ==================================================
+def istatistik_oku():
+    try:
+        df = pd.read_csv(ISTATISTIK_DOSYASI, encoding="utf-8-sig")
+        if df.empty:
+            return 0, 0
+        satir = df.iloc[0]
+        takip = pd.to_numeric(satir.get("takip_sayisi", 0), errors="coerce")
+        begeni = pd.to_numeric(satir.get("begeni_sayisi", 0), errors="coerce")
+        return int(takip) if pd.notna(takip) else 0, int(begeni) if pd.notna(begeni) else 0
+    except Exception:
+        return 0, 0
+
+
+def istatistik_kaydet(takip, begeni):
+    pd.DataFrame([{"takip_sayisi": takip, "begeni_sayisi": begeni}]).to_csv(ISTATISTIK_DOSYASI, index=False, encoding="utf-8-sig")
+
+
 def kayitlari_oku():
     try:
-        df = pd.read_csv(
-            KAYIT_DOSYASI,
-            encoding="utf-8-sig"
-        )
-
+        df = pd.read_csv(KAYIT_DOSYASI, encoding="utf-8-sig")
         for sutun in KAYIT_SUTUNLARI:
             if sutun not in df.columns:
                 df[sutun] = ""
-
-        return df[KAYIT_SUTUNLARI]
-
-    except Exception:
