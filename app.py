@@ -217,26 +217,29 @@ st.markdown(
         line-height: 1.8;
     }
 
-    .paylas-paneli {
-        background: rgba(9, 31, 48, 0.95);
-        border: 2px solid #00f5c8;
-        border-radius: 12px;
-        padding: 20px;
-        margin: 15px 0;
+    .paylas-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        margin: 20px 0;
     }
 
     .paylas-buton {
-        display: inline-block;
-        margin: 8px 4px;
-        padding: 12px 16px;
-        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 20px;
+        border-radius: 10px;
         text-decoration: none;
         font-weight: bold;
         transition: all 0.3s ease;
         border: none;
         cursor: pointer;
         text-align: center;
-        min-width: 120px;
+        min-width: 140px;
+        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     .paylas-twitter {
@@ -246,8 +249,8 @@ st.markdown(
 
     .paylas-twitter:hover {
         background-color: #1a8cd8;
-        transform: scale(1.05);
-        box-shadow: 0 0 15px rgba(29, 161, 242, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(29, 161, 242, 0.6);
     }
 
     .paylas-facebook {
@@ -257,8 +260,8 @@ st.markdown(
 
     .paylas-facebook:hover {
         background-color: #0a66c2;
-        transform: scale(1.05);
-        box-shadow: 0 0 15px rgba(24, 119, 242, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(24, 119, 242, 0.6);
     }
 
     .paylas-linkedin {
@@ -268,8 +271,8 @@ st.markdown(
 
     .paylas-linkedin:hover {
         background-color: #084998;
-        transform: scale(1.05);
-        box-shadow: 0 0 15px rgba(10, 102, 194, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(10, 102, 194, 0.6);
     }
 
     .paylas-whatsapp {
@@ -279,8 +282,8 @@ st.markdown(
 
     .paylas-whatsapp:hover {
         background-color: #1eaa54;
-        transform: scale(1.05);
-        box-shadow: 0 0 15px rgba(37, 211, 102, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.6);
     }
 
     .paylas-telegram {
@@ -290,8 +293,8 @@ st.markdown(
 
     .paylas-telegram:hover {
         background-color: #006ba3;
-        transform: scale(1.05);
-        box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 136, 204, 0.6);
     }
 
     .paylas-email {
@@ -301,8 +304,8 @@ st.markdown(
 
     .paylas-email:hover {
         background-color: #c5221f;
-        transform: scale(1.05);
-        box-shadow: 0 0 15px rgba(234, 67, 53, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(234, 67, 53, 0.6);
     }
 
     .paylas-kopya {
@@ -313,8 +316,8 @@ st.markdown(
 
     .paylas-kopya:hover {
         background-color: #00d4a8;
-        transform: scale(1.05);
-        box-shadow: 0 0 15px rgba(0, 245, 200, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 245, 200, 0.6);
     }
 
     .spk-uyari {
@@ -349,15 +352,13 @@ st.markdown(
         }
 
         .paylas-buton {
-            display: block;
-            width: 100%;
-            margin: 5px 0;
-            padding: 12px;
-            min-width: unset;
+            min-width: 120px;
+            padding: 12px 16px;
+            font-size: 12px;
         }
 
-        .paylas-paneli {
-            padding: 15px;
+        .paylas-container {
+            gap: 8px;
         }
     }
     </style>
@@ -567,21 +568,20 @@ def mesaj_ekle(kullanici, metin):
 # ==================================================
 # PAYLAŞIM FONKSİYONLARI
 # ==================================================
-def paylas_linki_olustur(platform, url, baslik, aciklama):
+def paylas_linki_olustur(platform, url, baslik):
     """
     Farklı platformlar için paylaşım linki oluşturur
     """
     encoded_url = urllib.parse.quote(url)
     encoded_baslik = urllib.parse.quote(baslik)
-    encoded_aciklama = urllib.parse.quote(aciklama)
     
     linkler = {
-        "twitter": f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_baslik}%0A{encoded_aciklama}",
+        "twitter": f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_baslik}",
         "facebook": f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}",
         "linkedin": f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}",
-        "whatsapp": f"https://wa.me/?text={encoded_baslik}%0A{encoded_aciklama}%0A{encoded_url}",
-        "telegram": f"https://t.me/share/url?url={encoded_url}&text={encoded_baslik}%0A{encoded_aciklama}",
-        "email": f"mailto:?subject={encoded_baslik}&body={encoded_aciklama}%0A{encoded_url}"
+        "whatsapp": f"https://wa.me/?text={encoded_baslik}%0A{encoded_url}",
+        "telegram": f"https://t.me/share/url?url={encoded_url}&text={encoded_baslik}",
+        "email": f"mailto:?subject={encoded_baslik}&body={encoded_url}"
     }
     
     return linkler.get(platform, "#")
@@ -1153,31 +1153,24 @@ with tab_kayit:
 # PAYLAŞ TAB'I
 # ==================================================
 with tab_paylas:
-    st.header("🔗 Sayfayı Paylaş")
-
-    st.markdown(
-        """
-        BTA Algoritmik İşlem platformunu sosyal medya ve 
-        diğer kanallar aracılığıyla arkadaşlarınızla paylaşın.
-        """
-    )
+    st.header("🔗 Sayfayı Sosyal Medyada Paylaş")
 
     st.divider()
 
     # ==================================================
-    # PAYLAŞ AYARLARI
+    # PAYLAŞ URL'Sİ
     # ==================================================
-    st.subheader("📝 Paylaşım Ayarları")
+    st.subheader("📍 Paylaş Linki")
 
     sayfa_url = st.text_input(
-        "🌐 Platform URL'sini girin:",
+        "Platform URL:",
         value="https://bta-algoritmi.streamlit.app",
-        help="Lütfen paylaşmak istediğiniz sayfanın tam URL'sini girin"
+        help="Paylaşmak istediğiniz sayfanın tam URL'sini girin"
     )
 
     baslik = st.text_input(
-        "📌 Paylaşım Başlığı:",
-        value="BTA Algoritmik İşlem Platformu"
+        "Paylaşım Başlığı:",
+        value="BTA Algoritmik İşlem Platformu - Borsa Sinyalleri"
     )
 
     st.divider()
@@ -1185,140 +1178,41 @@ with tab_paylas:
     # ==================================================
     # PAYLAŞ BUTONLARI
     # ==================================================
-    st.subheader("🚀 Sosyal Medyada Paylaş")
+    st.subheader("📱 Sosyal Medya Kanalları")
 
-    # Twitter
-    twitter_link = paylas_linki_olustur(
-        "twitter",
-        sayfa_url,
-        baslik,
-        "Borsa verilerini takip et, canlı sohbete katıl ve algoritmik işlem sinyallerini al!"
-    )
-
-    # Facebook
-    facebook_link = paylas_linki_olustur(
-        "facebook",
-        sayfa_url,
-        baslik,
-        "Borsa verilerini takip et, canlı sohbete katıl ve algoritmik işlem sinyallerini al!"
-    )
-
-    # LinkedIn
-    linkedin_link = paylas_linki_olustur(
-        "linkedin",
-        sayfa_url,
-        baslik,
-        "Profesyonel yatırım analizi ve algoritmik işlem sinyalleri"
-    )
-
-    # WhatsApp
-    whatsapp_link = paylas_linki_olustur(
-        "whatsapp",
-        sayfa_url,
-        baslik,
-        "Borsa verilerini takip et, canlı sohbete katıl ve algoritmik işlem sinyallerini al!"
-    )
-
-    # Telegram
-    telegram_link = paylas_linki_olustur(
-        "telegram",
-        sayfa_url,
-        baslik,
-        "Borsa verilerini takip et, canlı sohbete katıl ve algoritmik işlem sinyallerini al!"
-    )
-
-    # Email
-    email_link = paylas_linki_olustur(
-        "email",
-        sayfa_url,
-        baslik,
-        "Borsa verilerini takip et, canlı sohbete katıl ve algoritmik işlem sinyallerini al!"
-    )
+    # Paylaşım linklerini oluştur
+    twitter_link = paylas_linki_olustur("twitter", sayfa_url, baslik)
+    facebook_link = paylas_linki_olustur("facebook", sayfa_url, baslik)
+    linkedin_link = paylas_linki_olustur("linkedin", sayfa_url, baslik)
+    whatsapp_link = paylas_linki_olustur("whatsapp", sayfa_url, baslik)
+    telegram_link = paylas_linki_olustur("telegram", sayfa_url, baslik)
+    email_link = paylas_linki_olustur("email", sayfa_url, baslik)
 
     # Butonları göster
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown(
-            f"""
-            <a href="{twitter_link}" target="_blank" class="paylas-buton paylas-twitter">
-                🐦 Twitter
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col2:
-        st.markdown(
-            f"""
-            <a href="{facebook_link}" target="_blank" class="paylas-buton paylas-facebook">
-                👍 Facebook
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col3:
-        st.markdown(
-            f"""
-            <a href="{linkedin_link}" target="_blank" class="paylas-buton paylas-linkedin">
-                in LinkedIn
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col4:
-        st.markdown(
-            f"""
-            <a href="{whatsapp_link}" target="_blank" class="paylas-buton paylas-whatsapp">
-                💬 WhatsApp
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-    col5, col6, col7 = st.columns(3)
-
-    with col5:
-        st.markdown(
-            f"""
-            <a href="{telegram_link}" target="_blank" class="paylas-buton paylas-telegram">
-                ✈️ Telegram
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col6:
-        st.markdown(
-            f"""
-            <a href="{email_link}" class="paylas-buton paylas-email">
-                ✉️ E-Posta
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with col7:
-        st.markdown(
-            f"""
+    st.markdown(
+        f"""
+        <div class="paylas-container">
+            <a href="{twitter_link}" target="_blank" class="paylas-buton paylas-twitter">🐦 Twitter</a>
+            <a href="{facebook_link}" target="_blank" class="paylas-buton paylas-facebook">👍 Facebook</a>
+            <a href="{linkedin_link}" target="_blank" class="paylas-buton paylas-linkedin">💼 LinkedIn</a>
+            <a href="{whatsapp_link}" target="_blank" class="paylas-buton paylas-whatsapp">💬 WhatsApp</a>
+            <a href="{telegram_link}" target="_blank" class="paylas-buton paylas-telegram">✈️ Telegram</a>
+            <a href="{email_link}" class="paylas-buton paylas-email">✉️ E-Posta</a>
             <button class="paylas-buton paylas-kopya" onclick="
                 navigator.clipboard.writeText('{sayfa_url}');
                 alert('Link kopyalandı! 📋');
-            ">
-                📋 Linki Kopyala
-            </button>
-            """,
-            unsafe_allow_html=True
-        )
+            ">📋 Linki Kopyala</button>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.divider()
 
     # ==================================================
     # QR KOD
     # ==================================================
-    st.subheader("📱 QR Kod")
+    st.subheader("📱 QR Kod ile Hızlı Erişim")
 
     try:
         import qrcode
@@ -1340,60 +1234,32 @@ with tab_paylas:
         with col2:
             st.image(
                 qr_img,
-                caption="Platformu taramak için QR Kodu kullanın",
+                caption="QR Kodu tarayarak platforma erişin",
                 use_column_width=True
             )
 
     except ImportError:
-        st.info("QR kod göstermek için 'qrcode' kütüphanesini yükleyin: pip install qrcode[pil]")
+        st.info("QR kod göstermek için: pip install qrcode[pil]")
 
     st.divider()
 
     # ==================================================
     # İSTATİSTİKLER
     # ==================================================
-    st.subheader("📊 Paylaşım İstatistikleri")
-
-    col1, col2, col3 = st.columns(3)
+    st.subheader("📊 Platform İstatistikleri")
 
     takip, begeni = istatistik_oku()
 
+    col1, col2, col3 = st.columns(3)
+
     with col1:
-        st.metric(
-            "👥 Platform Takipçileri",
-            takip
-        )
+        st.metric("👥 Takipçiler", takip)
 
     with col2:
-        st.metric(
-            "👍 Toplam Beğeni",
-            begeni
-        )
+        st.metric("👍 Beğeniler", begeni)
 
     with col3:
-        st.metric(
-            "💬 Mesaj Sayısı",
-            len(mesajlari_oku())
-        )
-
-    st.divider()
-
-    # ==================================================
-    # PAYLAŞ İPUÇLARI
-    # ==================================================
-    st.subheader("💡 Paylaşım İpuçları")
-
-    st.markdown(
-        """
-        - **Basit ve Kısa:** Paylaşım metninizi basit ve kısa tutun
-        - **Çekici Başlık:** Dikkat çeken başlıklar daha fazla tıklama alır
-        - **Emoji Kullanın:** Emojiler gönderileri daha göze çarpkılır hale getirir
-        - **Zamanlamayı Önemseyin:** En aktif saatlerde paylaşım yapın
-        - **Hashtag Ekleyin:** İlgili hashtag'ler paylaşımınızın ulaşımını artırır
-        - **Arkadaş Davet Edin:** Arkadaşlarınızı doğrudan davet etmek katılımı artırır
-        - **Profesyonel Ton:** Finans platformunda resmi ve profesyonel kalın
-        """
-    )
+        st.metric("💬 Mesajlar", len(mesajlari_oku()))
 
 
 # ==================================================
