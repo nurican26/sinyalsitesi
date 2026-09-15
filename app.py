@@ -3,7 +3,6 @@ import hashlib
 from datetime import datetime
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
 
@@ -36,54 +35,45 @@ dosya_olustur(KAYIT_DOSYASI, KAYIT_SUTUNLARI)
 dosya_olustur(ISTATISTIK_DOSYASI, ISTATISTIK_SUTUNLARI)
 dosya_olustur(MESAJ_DOSYASI, MESAJ_SUTUNLARI)
 
-# BİST TAKİP LİSTESİ
-BIST_TAKIP_LISTESI = [
-    "THYAO.IS", "GARAN.IS", "EREGL.IS", "ASELS.IS", "TUPRS.IS",
-    "AKBNK.IS", "KCHOL.IS", "SISE.IS", "SAHOL.IS", "BIMAS.IS",
-    "YKBNK.IS", "ISCTR.IS", "HEKTS.IS", "SASA.IS", "PETKM.IS",
-    "KONTR.IS", "ENKAI.IS", "PENTAS.IS", "ASTOR.IS", "ALARK.IS"
+# GENİŞ BİST HİSSE LİSTESİ
+BIST_TUM_HISSELER = [
+    "THYAO.IS", "GARAN.IS", "EREGL.IS", "ASELS.IS", "TUPRS.IS", "AKBNK.IS", "KCHOL.IS", "SISE.IS", 
+    "SAHOL.IS", "BIMAS.IS", "YKBNK.IS", "ISCTR.IS", "HEKTS.IS", "SASA.IS", "PETKM.IS", "KONTR.IS", 
+    "ENKAI.IS", "ASTOR.IS", "ALARK.IS", "ODAS.IS", "GUBRF.IS", "KOZAL.IS", "EGEEN.IS", "GESAN.IS", 
+    "SMMAS.IS", "EUPWR.IS", "MIATK.IS", "REEDR.IS", "KBORU.IS", "BOBET.IS", "BRSAN.IS", "CANTE.IS"
 ]
 
 # ==================================================
-# GÜNCEL VE DOĞRU BİST VERİSİ ÇEKME
+# GERÇEK BİST CANLI VERİ ÇEKME ENGINE
 # ==================================================
 @st.cache_data(ttl=30)
-def bist_canli_piyasa_ozeti_getir():
-    """yfinance fast_info kullanarak doğru BIST son fiyat ve değişimini çeker."""
-    veriler = []
-    for sembol in BIST_TAKIP_LISTESI:
-        try:
-            hisse = yf.Ticker(sembol)
-            fast = hisse.fast_info
-            
-            fiyat = fast.last_price or fast.previous_close or 0.0
-            onceki_kapanis = fast.previous_close or 0.0
-            
-            if fiyat > 0 and onceki_kapanis > 0:
-                degisim = ((fiyat - onceki_kapanis) / onceki_kapanis) * 100
-                veriler.append({
-                    "Hisse": sembol.replace(".IS", ""),
-                    "Son Fiyat (TL)": float(fiyat),
-                    "Değişim (%)": float(degisim)
-                })
-        except Exception:
-            continue
-    
-    if not veriler:
-        return pd.DataFrame()
-    
-    return pd.DataFrame(veriler)
-
-@st.cache_data(ttl=15)
-def canli_hisse_verisi_getir(sembol):
+def bist_tum_piyasa_verisi_getir():
+    """Tüm BİST hisselerinin güncel kapanış ve bir önceki kapanış verilerini toplu çeker."""
     try:
-        hisse = yf.Ticker(sembol)
-        fast = hisse.fast_info
-        return {
-            "regularMarketPrice": fast.last_price or fast.previous_close or 0.0
-        }
+        data = yf.download(BIST_TUM_HISSELER, period="5d", interval="1d", progress=False)
+        if data.empty or 'Close' not in data:
+            return pd.DataFrame()
+
+        close_df = data['Close']
+        veriler = []
+
+        for sembol in BIST_TUM_HISSELER:
+            if sembol in close_df.columns:
+                seri = close_df[sembol].dropna()
+                if len(seri) >= 2:
+                    son_fiyat = float(seri.iloc[-1])
+                    onceki_kapanis = float(seri.iloc[-2])
+                    if onceki_kapanis > 0:
+                        degisim = ((son_fiyat - onceki_kapanis) / onceki_kapanis) * 100
+                        veriler.append({
+                            "Hisse": sembol.replace(".IS", ""),
+                            "Son Fiyat (TL)": son_fiyat,
+                            "Değişim (%)": degisim
+                        })
+
+        return pd.DataFrame(veriler)
     except Exception:
-        return {}
+        return pd.DataFrame()
 
 # ==================================================
 # FORMATLAMA BİLEŞENLERİ
@@ -167,7 +157,7 @@ st.markdown(
     }
     [data-testid="stHeader"] { background: transparent !important; }
     [data-testid="stSidebar"] > div:first-child { background: rgba(4, 13, 24, 0.98) !important; }
-    .main .block-container { max-width: 1200px !important; padding-top: 1rem !important; }
+    .main .block-container { max-width: 1000px !important; padding-top: 1rem !important; }
     .bta-logo-alani { width: 100%; overflow: hidden; white-space: nowrap; margin-bottom: 12px; }
     .bta-logo {
         display: inline-block; color: #00f5c8; font-family: "Brush Script MT", cursive; font-size: 58px; font-weight: bold;
@@ -240,7 +230,7 @@ def mesaj_ekle(kullanici, metin):
     pd.concat([mesajlar, yeni], ignore_index=True).to_csv(MESAJ_DOSYASI, index=False, encoding="utf-8-sig")
 
 # CANLI DÖNGÜ & BAŞLIK
-st_autorefresh(interval=10000, key="bta_canli_yenileme")
+st_autorefresh(interval=15000, key="bta_canli_yenileme")
 st.markdown('<div class="bta-logo-alani"><div class="bta-logo">BTA ALGORİTMİK İŞLEM</div></div>', unsafe_allow_html=True)
 
 # YÖNETİCİ PANELİ
@@ -283,6 +273,9 @@ tab_algoritmik, tab_yukselenler, tab_dusenler, tab_bedelli, tab_sohbet, tab_kayi
     "🤖 Algoritmik Bilgiler", "🚀 En Çok Yükselenler", "📉 En Çok Düşenler", "🧮 Bedelli/Bedelsiz", "💬 Sohbet", "📒 Kayıtlar", "🔗 Paylaş"
 ])
 
+# PİYASA CANLI VERİSİ
+df_piyasa = bist_tum_piyasa_verisi_getir()
+
 # --------------------------------------------------
 # TAB 1: ALGORİTMİK BİLGİLER
 # --------------------------------------------------
@@ -292,10 +285,12 @@ with tab_algoritmik:
         st.warning("Excel dosyasından yüklenmiş geçerli hisse bulunamadı.")
     else:
         secilen_hisse = st.selectbox("🔍 BTA Algoritma Hissesi Seç:", excel_df["Hisse Kodu"].tolist())
-        sembol = secilen_hisse if secilen_hisse.endswith(".IS") else f"{secilen_hisse}.IS"
-
-        bilgi = canli_hisse_verisi_getir(sembol)
-        fiyat = bilgi.get("regularMarketPrice", 0.0)
+        
+        fiyat = 0.0
+        if not df_piyasa.empty:
+            match = df_piyasa[df_piyasa["Hisse"] == secilen_hisse]
+            if not match.empty:
+                fiyat = match.iloc[0]["Son Fiyat (TL)"]
 
         kayit = excel_df[excel_df["Hisse Kodu"] == secilen_hisse].iloc[0]
         bta_alim_fiyati = kayit["BTA Alım Fiyatı"]
@@ -308,31 +303,25 @@ with tab_algoritmik:
 
         st.markdown(kar_yuzdesi_format(kar_yuzde), unsafe_allow_html=True)
 
-# PİYASA CANLI VERİSİ
-df_piyasa = bist_canli_piyasa_ozeti_getir()
-
 # --------------------------------------------------
 # TAB 2: BİST EN ÇOK YÜKSELEN HİSSELER
 # --------------------------------------------------
 with tab_yukselenler:
     st.header("🚀 BİST En Çok Yükselen Hisseler (Canlı)")
     if not df_piyasa.empty:
-        df_yukselen = df_piyasa.sort_values(by="Değişim (%)", ascending=False).reset_index(drop=True)
+        df_yukselen = df_piyasa.sort_values(by="Değişim (%)", ascending=False).head(10).reset_index(drop=True)
         
-        # Ekranı kaplamaması için kolon düzeni
-        col_sol, col_orta, col_sag = st.columns([1, 3, 1])
-        with col_orta:
-            st.dataframe(
-                df_yukselen,
-                column_config={
-                    "Hisse": st.column_config.TextColumn("Hisse", width="small"),
-                    "Son Fiyat (TL)": st.column_config.NumberColumn("Son Fiyat (TL)", format="%.2f TL", width="medium"),
-                    "Değişim (%)": st.column_config.NumberColumn("Değişim (%)", format="%+.2f%%", width="medium")
-                },
-                hide_index=True,
-                height=380,
-                use_container_width=True
-            )
+        st.dataframe(
+            df_yukselen,
+            column_config={
+                "Hisse": st.column_config.TextColumn("Hisse", width="small"),
+                "Son Fiyat (TL)": st.column_config.NumberColumn("Son Fiyat (TL)", format="%.2f TL", width="medium"),
+                "Değişim (%)": st.column_config.NumberColumn("Değişim (%)", format="%+.2f%%", width="medium")
+            },
+            hide_index=True,
+            height=380,
+            use_container_width=True
+        )
     else:
         st.info("Canlı borsa verisi çekiliyor, lütfen bekleyin...")
 
@@ -342,22 +331,19 @@ with tab_yukselenler:
 with tab_dusenler:
     st.header("📉 BİST En Çok Düşen Hisseler (Canlı)")
     if not df_piyasa.empty:
-        df_dusen = df_piyasa.sort_values(by="Değişim (%)", ascending=True).reset_index(drop=True)
+        df_dusen = df_piyasa.sort_values(by="Değişim (%)", ascending=True).head(10).reset_index(drop=True)
         
-        # Ekranı kaplamaması için kolon düzeni
-        col_sol, col_orta, col_sag = st.columns([1, 3, 1])
-        with col_orta:
-            st.dataframe(
-                df_dusen,
-                column_config={
-                    "Hisse": st.column_config.TextColumn("Hisse", width="small"),
-                    "Son Fiyat (TL)": st.column_config.NumberColumn("Son Fiyat (TL)", format="%.2f TL", width="medium"),
-                    "Değişim (%)": st.column_config.NumberColumn("Değişim (%)", format="%+.2f%%", width="medium")
-                },
-                hide_index=True,
-                height=380,
-                use_container_width=True
-            )
+        st.dataframe(
+            df_dusen,
+            column_config={
+                "Hisse": st.column_config.TextColumn("Hisse", width="small"),
+                "Son Fiyat (TL)": st.column_config.NumberColumn("Son Fiyat (TL)", format="%.2f TL", width="medium"),
+                "Değişim (%)": st.column_config.NumberColumn("Değişim (%)", format="%+.2f%%", width="medium")
+            },
+            hide_index=True,
+            height=380,
+            use_container_width=True
+        )
     else:
         st.info("Canlı borsa verisi çekiliyor, lütfen bekleyin...")
 
@@ -373,9 +359,10 @@ with tab_bedelli:
     varsayilan_fiyat = 0.0
     if kaynak == "📈 Listeden Hisse Seç":
         sh = st.selectbox("🔍 Hisse Seç:", hisse_listesi)
-        sem = sh if sh.endswith(".IS") else f"{sh}.IS"
-        b_info = canli_hisse_verisi_getir(sem)
-        varsayilan_fiyat = b_info.get("regularMarketPrice", 0.0)
+        if not df_piyasa.empty:
+            match = df_piyasa[df_piyasa["Hisse"] == sh]
+            if not match.empty:
+                varsayilan_fiyat = match.iloc[0]["Son Fiyat (TL)"]
 
     c1, c2 = st.columns(2)
     with c1:
