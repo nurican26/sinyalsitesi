@@ -1055,6 +1055,106 @@ with tab_kayit:
             .apply(sayi_format)
         )
 
+        # YÖNETİCİ SİLME BÖLÜMÜ
+        if is_admin:
+            st.subheader("⚠️ Yönetici - Kayıt Silme")
+            
+            st.warning(
+                "Lütfen silmek istediğiniz kayıtları seçin. Bu işlem geri alınamaz!"
+            )
+            
+            # Kayıtları göster ve seçim yapabilme
+            silme_sutunlari = [
+                "Kayıt Tarihi",
+                "Hisse Kodu",
+                "BTA Alım Fiyatı",
+                "BTA Puanı"
+            ]
+            
+            # İçerik göster
+            st.dataframe(
+                gorunum[silme_sutunlari],
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            # Silme seçenekleri
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                secilen_hisse_sil = st.selectbox(
+                    "Silmek istediğiniz hisseyi seçin:",
+                    [""] + df_kayitlar["hisse_kodu"].unique().tolist(),
+                    key="silme_hisse_secimi"
+                )
+                
+                if secilen_hisse_sil and st.button(
+                    "🗑️ Hisseyi Sil",
+                    use_container_width=True
+                ):
+                    df_kayitlar = df_kayitlar[
+                        df_kayitlar["hisse_kodu"] != secilen_hisse_sil
+                    ]
+                    
+                    df_kayitlar.to_csv(
+                        KAYIT_DOSYASI,
+                        index=False,
+                        encoding="utf-8-sig"
+                    )
+                    
+                    st.success(
+                        f"✅ '{secilen_hisse_sil}' hissesi silindi."
+                    )
+                    st.rerun()
+            
+            with col2:
+                if st.button(
+                    "🗑️ Tüm Kayıtları Sil",
+                    use_container_width=True
+                ):
+                    st.warning(
+                        "Tüm kayıtları silmek üzeresiniz. Lütfen onaylayın."
+                    )
+                    
+                    col_onay1, col_onay2 = st.columns(2)
+                    
+                    with col_onay1:
+                        if st.button(
+                            "❌ İptal Et",
+                            use_container_width=True
+                        ):
+                            st.info("İşlem iptal edildi.")
+                    
+                    with col_onay2:
+                        if st.button(
+                            "✅ Evet, Sil",
+                            use_container_width=True
+                        ):
+                            pd.DataFrame(
+                                columns=KAYIT_SUTUNLARI
+                            ).to_csv(
+                                KAYIT_DOSYASI,
+                                index=False,
+                                encoding="utf-8-sig"
+                            )
+                            
+                            st.success(
+                                "✅ Tüm kayıtlar silindi."
+                            )
+                            st.rerun()
+            
+            with col3:
+                if st.button(
+                    "🔄 Yenile",
+                    use_container_width=True
+                ):
+                    st.rerun()
+            
+            st.divider()
+        
+        # NORMALKULLANİCİ VİEW
+        st.subheader("📊 Kayıt Tablosu")
+        
         st.dataframe(
             gorunum[
                 [
