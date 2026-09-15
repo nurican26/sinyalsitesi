@@ -664,21 +664,45 @@ st.markdown(
 
 
 # ==================================================
-# YÖNETİCİ
+# YÖNETİCİ SİSTEMİ
 # ==================================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
 
 admin_sifre = st.sidebar.text_input(
     "Yönetici Şifresi",
-    type="password"
+    type="password",
+    help="Yönetici paneline erişmek için şifre girin"
 )
 
 is_admin = admin_sifre == "BTA2026"
 
 if is_admin:
-    st.sidebar.success(
-        "Yönetici yetkileri aktif."
-    )
+    st.sidebar.success("✅ Yönetici yetkileri aktif")
+    
+    with st.sidebar.expander("🔧 Yönetici Paneli"):
+        st.subheader("İstatistikleri Yönet")
+        
+        takip, begeni = istatistik_oku()
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            yeni_takip = st.number_input(
+                "Takipçi Sayısı",
+                value=takip,
+                min_value=0
+            )
+        
+        with col2:
+            yeni_begeni = st.number_input(
+                "Beğeni Sayısı",
+                value=begeni,
+                min_value=0
+            )
+        
+        if st.button("İstatistikleri Kaydet", use_container_width=True):
+            istatistik_kaydet(yeni_takip, yeni_begeni)
+            st.success("✅ İstatistikler güncellendi")
 
 
 # ==================================================
@@ -902,7 +926,7 @@ with tab_sohbet:
     st.header("💬 Canlı Sohbet Odası")
 
     # ==================================================
-    # TAKİP VE BEĞENİ PANELİ (Sohbet İçinde)
+    # TAKİP VE BEĞENİ PANELİ
     # ==================================================
     st.subheader("⭐ BTA Oda Takip Paneli")
 
@@ -920,18 +944,11 @@ with tab_sohbet:
                 use_container_width=True
             ):
                 takip += 1
-
-                istatistik_kaydet(
-                    takip,
-                    begeni
-                )
-
+                istatistik_kaydet(takip, begeni)
                 st.session_state["takip_edildi"] = True
                 st.rerun()
         else:
-            st.info(
-                "⭐ Odayı takip ediyorsunuz."
-            )
+            st.info("⭐ Odayı takip ediyorsunuz.")
 
     with col2:
         if "begeni_verildi" not in st.session_state:
@@ -943,30 +960,17 @@ with tab_sohbet:
                 use_container_width=True
             ):
                 begeni += 1
-
-                istatistik_kaydet(
-                    takip,
-                    begeni
-                )
-
+                istatistik_kaydet(takip, begeni)
                 st.session_state["begeni_verildi"] = True
                 st.rerun()
         else:
-            st.info(
-                "👍 Beğeniniz kaydedildi."
-            )
+            st.info("👍 Beğeniniz kaydedildi.")
 
     with col3:
-        st.metric(
-            "👥 Takipçi",
-            f"{takip} kişi"
-        )
+        st.metric("👥 Takipçi", f"{takip} kişi")
 
     with col4:
-        st.metric(
-            "👍 Beğeni",
-            f"{begeni}"
-        )
+        st.metric("👍 Beğeni", f"{begeni}")
 
     st.divider()
 
@@ -1052,35 +1056,40 @@ with tab_sohbet:
         for index, satir in mesajlar.iloc[::-1].iterrows():
             mesaj_id = str(satir["mesaj_id"])
 
-            st.markdown(
-                f"""
-                <div class="mesaj-karti">
-                    <strong>👤 {satir["kullanici"]}</strong>
-                    <small> · {satir["tarih"]}</small>
-                    <br>
-                    {satir["mesaj"]}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            col1, col2 = st.columns([10, 1])
+            
+            with col1:
+                st.markdown(
+                    f"""
+                    <div class="mesaj-karti">
+                        <strong>👤 {satir["kullanici"]}</strong>
+                        <small> · {satir["tarih"]}</small>
+                        <br>
+                        {satir["mesaj"]}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-            if is_admin:
-                if st.button(
-                    "Mesajı Sil",
-                    key=f"mesaj_sil_{mesaj_id}_{index}"
-                ):
-                    mesajlar = mesajlar[
-                        mesajlar["mesaj_id"].astype(str)
-                        != mesaj_id
-                    ]
+            with col2:
+                if is_admin:
+                    if st.button(
+                        "🗑️",
+                        key=f"mesaj_sil_{mesaj_id}_{index}",
+                        help="Mesajı sil"
+                    ):
+                        mesajlar = mesajlar[
+                            mesajlar["mesaj_id"].astype(str)
+                            != mesaj_id
+                        ]
 
-                    mesajlar.to_csv(
-                        MESAJ_DOSYASI,
-                        index=False,
-                        encoding="utf-8-sig"
-                    )
+                        mesajlar.to_csv(
+                            MESAJ_DOSYASI,
+                            index=False,
+                            encoding="utf-8-sig"
+                        )
 
-                    st.rerun()
+                        st.rerun()
 
 
 # ==================================================
@@ -1137,16 +1146,36 @@ with tab_kayit:
             hide_index=True
         )
 
-        st.download_button(
-            "Kayıtları İndir",
-            data=df_kayitlar.to_csv(
-                index=False,
-                encoding="utf-8-sig"
-            ),
-            file_name="bta_tarihli_kayitlar.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.download_button(
+                "📥 Kayıtları İndir",
+                data=df_kayitlar.to_csv(
+                    index=False,
+                    encoding="utf-8-sig"
+                ),
+                file_name="bta_tarihli_kayitlar.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        
+        with col2:
+            if is_admin:
+                if st.button(
+                    "🗑️ Tüm Kayıtları Sil",
+                    use_container_width=True
+                ):
+                    if st.confirm("Emin misiniz?"):
+                        pd.DataFrame(
+                            columns=KAYIT_SUTUNLARI
+                        ).to_csv(
+                            KAYIT_DOSYASI,
+                            index=False,
+                            encoding="utf-8-sig"
+                        )
+                        st.success("✅ Tüm kayıtlar silindi")
+                        st.rerun()
 
 
 # ==================================================
