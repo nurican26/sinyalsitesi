@@ -674,7 +674,7 @@ admin_sifre = st.sidebar.text_input(
     help="Yönetici paneline erişmek için şifre girin"
 )
 
-is_admin = admin_sifre == "BTA2026"
+is_admin = admin_sifre == "3015"
 
 if is_admin:
     st.sidebar.success("✅ Yönetici yetkileri aktif")
@@ -811,8 +811,8 @@ if excel_dosyalari:
 tab_algoritmik, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
-        "💬 Canlı Sohbet",
-        "📒 Tarihli Kayıtlar",
+        "💬 Sohbet",
+        "📒 Kayıtlar",
         "🔗 Paylaş"
     ]
 )
