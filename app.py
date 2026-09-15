@@ -1039,7 +1039,7 @@ if excel_dosyalari:
 tab_algoritmik, tab_bist_canli, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
-        "📈 BİST Canlı Takip",
+        "📈 BİST Hacimli Yükselenler",
         "🧮 Bedelli/Bedelsiz",
         "💬 Sohbet",
         "📒 Kayıtlar",
