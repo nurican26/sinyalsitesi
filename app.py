@@ -1,7 +1,7 @@
 import os
 import hashlib
-from datetime import datetime, timedelta, timezone
-import pytz
+from datetime import datetime
+import urllib.parse
 
 import pandas as pd
 import streamlit as st
@@ -19,18 +19,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-
-
-# ==================================================
-# ZAMAN DİLİMİ AYARLARI
-# ==================================================
-TURKEY_TZ = pytz.timezone("Europe/Istanbul")
-
-def get_turkey_time():
-    """Türkiye saati ile geçerli tarih ve saati döndür"""
-    utc_now = datetime.now(pytz.UTC)
-    turkey_time = utc_now.astimezone(TURKEY_TZ)
-    return turkey_time
 
 
 # ==================================================
@@ -229,14 +217,94 @@ st.markdown(
         line-height: 1.8;
     }
 
-    .kar-metrik {
-        color: #00ff00;
-        font-weight: bold;
+    .paylas-paneli {
+        background: rgba(9, 31, 48, 0.95);
+        border: 2px solid #00f5c8;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
     }
 
-    .zarar-metrik {
-        color: #ff0000;
+    .paylas-buton {
+        display: inline-block;
+        margin: 5px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-decoration: none;
         font-weight: bold;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .paylas-twitter {
+        background-color: #1DA1F2;
+        color: white;
+    }
+
+    .paylas-twitter:hover {
+        background-color: #1a8cd8;
+        transform: scale(1.05);
+    }
+
+    .paylas-facebook {
+        background-color: #1877F2;
+        color: white;
+    }
+
+    .paylas-facebook:hover {
+        background-color: #0a66c2;
+        transform: scale(1.05);
+    }
+
+    .paylas-linkedin {
+        background-color: #0A66C2;
+        color: white;
+    }
+
+    .paylas-linkedin:hover {
+        background-color: #084998;
+        transform: scale(1.05);
+    }
+
+    .paylas-whatsapp {
+        background-color: #25D366;
+        color: white;
+    }
+
+    .paylas-whatsapp:hover {
+        background-color: #1eaa54;
+        transform: scale(1.05);
+    }
+
+    .paylas-telegram {
+        background-color: #0088cc;
+        color: white;
+    }
+
+    .paylas-telegram:hover {
+        background-color: #006ba3;
+        transform: scale(1.05);
+    }
+
+    .paylas-email {
+        background-color: #EA4335;
+        color: white;
+    }
+
+    .paylas-email:hover {
+        background-color: #c5221f;
+        transform: scale(1.05);
+    }
+
+    .paylas-kopya {
+        background-color: #00f5c8;
+        color: #07131f;
+    }
+
+    .paylas-kopya:hover {
+        background-color: #00d4a8;
+        transform: scale(1.05);
     }
 
     .spk-uyari {
@@ -268,6 +336,13 @@ st.markdown(
         .spk-uyari {
             font-size: 11px;
             text-align: left;
+        }
+
+        .paylas-buton {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 12px;
         }
     }
     </style>
@@ -351,7 +426,7 @@ def excel_kayitlarini_ekle(df):
         yeni_kayitlar.append(
             {
                 "kayit_id": kayit_id,
-                "kayit_tarihi": get_turkey_time().strftime(
+                "kayit_tarihi": datetime.now().strftime(
                     "%d.%m.%Y %H:%M:%S"
                 ),
                 "hisse_kodu": hisse,
@@ -451,7 +526,7 @@ def mesaj_ekle(kullanici, metin):
             "mesaj_id": int(
                 datetime.now().timestamp() * 1000
             ),
-            "tarih": get_turkey_time().strftime(
+            "tarih": datetime.now().strftime(
                 "%d.%m.%Y %H:%M:%S"
             ),
             "kullanici": kullanici,
@@ -472,6 +547,29 @@ def mesaj_ekle(kullanici, metin):
         index=False,
         encoding="utf-8-sig"
     )
+
+
+# ==================================================
+# PAYLAŞIM FONKSİYONLARI
+# ==================================================
+def paylas_linki_olustur(platform, url, baslik, aciklama):
+    """
+    Farklı platformlar için paylaşım linki oluşturur
+    """
+    encoded_url = urllib.parse.quote(url)
+    encoded_baslik = urllib.parse.quote(baslik)
+    encoded_aciklama = urllib.parse.quote(aciklama)
+    
+    linkler = {
+        "twitter": f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_baslik}%0A{encoded_aciklama}",
+        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}",
+        "linkedin": f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}",
+        "whatsapp": f"https://wa.me/?text={encoded_baslik}%0A{encoded_aciklama}%0A{encoded_url}",
+        "telegram": f"https://t.me/share/url?url={encoded_url}&text={encoded_baslik}%0A{encoded_aciklama}",
+        "email": f"mailto:?subject={encoded_baslik}&body={encoded_aciklama}%0A{encoded_url}"
+    }
+    
+    return linkler.get(platform, "#")
 
 
 # ==================================================
@@ -671,11 +769,12 @@ if excel_dosyalari:
 # ==================================================
 # PANELLER
 # ==================================================
-tab_algoritmik, tab_sohbet, tab_kayit = st.tabs(
+tab_algoritmik, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
         "💬 Canlı Sohbet",
-        "📒 Tarihli Kayıtlar"
+        "📒 Tarihli Kayıtlar",
+        "🔗 Paylaş"
     ]
 )
 
@@ -733,27 +832,13 @@ with tab_algoritmik:
                 excel_df["Hisse Kodu"] == secilen_hisse
             ].iloc[0]
 
-            bta_fiyati = kayit["BTA Alım Fiyatı"]
-            
-            # KAR/ZARAR HESAPLA
-            kar_zarar = 0
-            kar_zarar_yuzde = 0
-            kar_zarar_renk = "🔄"
-            
-            if fiyat and bta_fiyati:
-                kar_zarar = fiyat - bta_fiyati
-                kar_zarar_yuzde = (kar_zarar / bta_fiyati) * 100
-                
-                if kar_zarar > 0:
-                    kar_zarar_renk = "📈"
-                elif kar_zarar < 0:
-                    kar_zarar_renk = "📉"
-
             col1, col2, col3 = st.columns(3)
 
             col1.metric(
                 "BTA Alım Fiyatı",
-                tl_format(bta_fiyati)
+                tl_format(
+                    kayit["BTA Alım Fiyatı"]
+                )
             )
 
             col2.metric(
@@ -767,37 +852,6 @@ with tab_algoritmik:
                 "Anlık Fiyat",
                 tl_format(fiyat)
             )
-
-            # KAR/ZARAR METRİKLERİ
-            col4, col5 = st.columns(2)
-            
-            with col4:
-                if kar_zarar >= 0:
-                    st.markdown(f"""
-                    <div style="background: rgba(0, 200, 100, 0.2); border-left: 4px solid #00ff00; border-radius: 5px; padding: 10px; margin: 10px 0;">
-                        <span class="kar-metrik">{kar_zarar_renk} KAR: {tl_format(kar_zarar)}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div style="background: rgba(255, 0, 0, 0.2); border-left: 4px solid #ff0000; border-radius: 5px; padding: 10px; margin: 10px 0;">
-                        <span class="zarar-metrik">{kar_zarar_renk} ZARAR: {tl_format(kar_zarar)}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            with col5:
-                if kar_zarar_yuzde >= 0:
-                    st.markdown(f"""
-                    <div style="background: rgba(0, 200, 100, 0.2); border-left: 4px solid #00ff00; border-radius: 5px; padding: 10px; margin: 10px 0;">
-                        <span class="kar-metrik">%{sayi_format(kar_zarar_yuzde)}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div style="background: rgba(255, 0, 0, 0.2); border-left: 4px solid #ff0000; border-radius: 5px; padding: 10px; margin: 10px 0;">
-                        <span class="zarar-metrik">%{sayi_format(kar_zarar_yuzde)}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
 
             st.markdown(
                 f"""
@@ -1055,106 +1109,6 @@ with tab_kayit:
             .apply(sayi_format)
         )
 
-        # YÖNETİCİ SİLME BÖLÜMÜ
-        if is_admin:
-            st.subheader("⚠️ Yönetici - Kayıt Silme")
-            
-            st.warning(
-                "Lütfen silmek istediğiniz kayıtları seçin. Bu işlem geri alınamaz!"
-            )
-            
-            # Kayıtları göster ve seçim yapabilme
-            silme_sutunlari = [
-                "Kayıt Tarihi",
-                "Hisse Kodu",
-                "BTA Alım Fiyatı",
-                "BTA Puanı"
-            ]
-            
-            # İçerik göster
-            st.dataframe(
-                gorunum[silme_sutunlari],
-                use_container_width=True,
-                hide_index=True
-            )
-            
-            # Silme seçenekleri
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                secilen_hisse_sil = st.selectbox(
-                    "Silmek istediğiniz hisseyi seçin:",
-                    [""] + df_kayitlar["hisse_kodu"].unique().tolist(),
-                    key="silme_hisse_secimi"
-                )
-                
-                if secilen_hisse_sil and st.button(
-                    "🗑️ Hisseyi Sil",
-                    use_container_width=True
-                ):
-                    df_kayitlar = df_kayitlar[
-                        df_kayitlar["hisse_kodu"] != secilen_hisse_sil
-                    ]
-                    
-                    df_kayitlar.to_csv(
-                        KAYIT_DOSYASI,
-                        index=False,
-                        encoding="utf-8-sig"
-                    )
-                    
-                    st.success(
-                        f"✅ '{secilen_hisse_sil}' hissesi silindi."
-                    )
-                    st.rerun()
-            
-            with col2:
-                if st.button(
-                    "🗑️ Tüm Kayıtları Sil",
-                    use_container_width=True
-                ):
-                    st.warning(
-                        "Tüm kayıtları silmek üzeresiniz. Lütfen onaylayın."
-                    )
-                    
-                    col_onay1, col_onay2 = st.columns(2)
-                    
-                    with col_onay1:
-                        if st.button(
-                            "❌ İptal Et",
-                            use_container_width=True
-                        ):
-                            st.info("İşlem iptal edildi.")
-                    
-                    with col_onay2:
-                        if st.button(
-                            "✅ Evet, Sil",
-                            use_container_width=True
-                        ):
-                            pd.DataFrame(
-                                columns=KAYIT_SUTUNLARI
-                            ).to_csv(
-                                KAYIT_DOSYASI,
-                                index=False,
-                                encoding="utf-8-sig"
-                            )
-                            
-                            st.success(
-                                "✅ Tüm kayıtlar silindi."
-                            )
-                            st.rerun()
-            
-            with col3:
-                if st.button(
-                    "🔄 Yenile",
-                    use_container_width=True
-                ):
-                    st.rerun()
-            
-            st.divider()
-        
-        # NORMALKULLANİCİ VİEW
-        st.subheader("📊 Kayıt Tablosu")
-        
         st.dataframe(
             gorunum[
                 [
@@ -1178,6 +1132,256 @@ with tab_kayit:
             mime="text/csv",
             use_container_width=True
         )
+
+
+# ==================================================
+# PAYLAŞ TAB'I
+# ==================================================
+with tab_paylas:
+    st.header("🔗 Sayfayı Paylaş")
+
+    st.markdown(
+        """
+        BTA Algoritmik İşlem platformunu sosyal medya ve 
+        diğer kanallar aracılığıyla arkadaşlarınızla paylaşın.
+        """
+    )
+
+    st.divider()
+
+    # ==================================================
+    # PAYLAŞ URL'Sİ
+    # ==================================================
+    st.subheader("📍 Paylaş Linki")
+
+    sayfa_url = "https://yoursite.com/bta-algoritmi"
+    baslik = "BTA Algoritmik İşlem Platformu"
+    aciklama = "Borsa verilerini takip et, canlı sohbete katıl ve algoritmik işlem sinyallerini al. BTA ile profesyonel yatırım platformu deneyimi yaşa!"
+
+    # URL'yi kullanıcı değiştirebilsin
+    sayfa_url = st.text_input(
+        "Platform URL'sini girin:",
+        value=sayfa_url,
+        help="Lütfen paylaşmak istediğiniz sayfanın tam URL'sini girin"
+    )
+
+    baslik = st.text_input(
+        "Paylaşım Başlığı:",
+        value=baslik
+    )
+
+    aciklama = st.text_area(
+        "Paylaşım Açıklaması:",
+        value=aciklama,
+        height=80
+    )
+
+    st.divider()
+
+    # ==================================================
+    # PAYLAŞ BUTONLARI
+    # ==================================================
+    st.subheader("🚀 Sosyal Medyada Paylaş")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        twitter_link = paylas_linki_olustur(
+            "twitter",
+            sayfa_url,
+            baslik,
+            aciklama
+        )
+
+        st.markdown(
+            f"""
+            <a href="{twitter_link}" target="_blank" class="paylas-buton paylas-twitter">
+                🐦 Twitter
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col2:
+        facebook_link = paylas_linki_olustur(
+            "facebook",
+            sayfa_url,
+            baslik,
+            aciklama
+        )
+
+        st.markdown(
+            f"""
+            <a href="{facebook_link}" target="_blank" class="paylas-buton paylas-facebook">
+                f Facebook
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col3:
+        linkedin_link = paylas_linki_olustur(
+            "linkedin",
+            sayfa_url,
+            baslik,
+            aciklama
+        )
+
+        st.markdown(
+            f"""
+            <a href="{linkedin_link}" target="_blank" class="paylas-buton paylas-linkedin">
+                in LinkedIn
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col4:
+        whatsapp_link = paylas_linki_olustur(
+            "whatsapp",
+            sayfa_url,
+            baslik,
+            aciklama
+        )
+
+        st.markdown(
+            f"""
+            <a href="{whatsapp_link}" target="_blank" class="paylas-buton paylas-whatsapp">
+                💬 WhatsApp
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+    col5, col6, col7, col8 = st.columns(4)
+
+    with col5:
+        telegram_link = paylas_linki_olustur(
+            "telegram",
+            sayfa_url,
+            baslik,
+            aciklama
+        )
+
+        st.markdown(
+            f"""
+            <a href="{telegram_link}" target="_blank" class="paylas-buton paylas-telegram">
+                ✈️ Telegram
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col6:
+        email_link = paylas_linki_olustur(
+            "email",
+            sayfa_url,
+            baslik,
+            aciklama
+        )
+
+        st.markdown(
+            f"""
+            <a href="{email_link}" class="paylas-buton paylas-email">
+                ✉️ E-Posta
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col7:
+        st.markdown(
+            """
+            <button class="paylas-buton paylas-kopya" onclick="
+                navigator.clipboard.writeText(document.getElementById('copy-url').value);
+                alert('Link kopyalandı!');
+            ">
+                📋 Linki Kopyala
+            </button>
+            <input type="hidden" id="copy-url" value="{0}">
+            """.format(sayfa_url),
+            unsafe_allow_html=True
+        )
+
+    st.divider()
+
+    # ==================================================
+    # QR KOD
+    # ==================================================
+    st.subheader("📱 QR Kod")
+
+    try:
+        import qrcode
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+
+        qr.add_data(sayfa_url)
+        qr.make(fit=True)
+
+        qr_img = qr.make_image(fill_color="00f5c8", back_color="07131f")
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+
+        with col2:
+            st.image(
+                qr_img,
+                caption="Platformu taramak için QR Kodu kullanın",
+                use_column_width=True
+            )
+
+    except ImportError:
+        st.info("QR kod göstermek için 'qrcode' kütüphanesini yükleyin: pip install qrcode[pil]")
+
+    st.divider()
+
+    # ==================================================
+    # İSTATİSTİKLER
+    # ==================================================
+    st.subheader("📊 Paylaşım İstatistikleri")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            "👥 Platform Takipçileri",
+            takip
+        )
+
+    with col2:
+        st.metric(
+            "👍 Toplam Beğeni",
+            begeni
+        )
+
+    with col3:
+        st.metric(
+            "💬 Mesaj Sayısı",
+            len(mesajlari_oku())
+        )
+
+    st.divider()
+
+    # ==================================================
+    # PAYLAŞ İPUÇLARI
+    # ==================================================
+    st.subheader("💡 Paylaşım İpuçları")
+
+    st.markdown(
+        """
+        - **Basit ve Kısa:** Paylaşım metninizi basit ve kısa tutun
+        - **Çekici Başlık:** Dikkat çeken başlıklar daha fazla tıklama alır
+        - **Emoji Kullanın:** Emojiler gönderileri daha göze çarpkılır hale getirir
+        - **Zamanlamayı Önemseyin:** En aktif saatlerde paylaşım yapın
+        - **Hashtag Ekleyin:** İlgili hashtag'ler paylaşımınızın ulaşımını artırır
+        - **Arkadaş Davet Edin:** Arkadaşlarınızı doğrudan davet etmek katılımı artırır
+        - **Profesyonel Ton:** Finans platformunda resmi ve profesyonel kalın
+        """
+    )
 
 
 # ==================================================
