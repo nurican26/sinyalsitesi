@@ -51,13 +51,13 @@ def canli_hisse_verisi_getir(sembol):
         return {}
 
 def tradingview_canli_grafik(sembol_kod):
-    """TradingView widget'ı ile canlı saniyelik grafik görüntüler."""
+    """TradingView widget'ı ile dikey boyutu büyütülmüş canlı grafik."""
     clean_symbol = sembol_kod.replace(".IS", "").upper()
     tv_symbol = f"BIST:{clean_symbol}"
     
     tv_html = f"""
-    <div class="tradingview-widget-container" style="height:500px;width:100%">
-      <div id="tradingview_widget"></div>
+    <div class="tradingview-widget-container" style="height:750px;width:100%">
+      <div id="tradingview_widget" style="height:100%;width:100%"></div>
       <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
       <script type="text/javascript">
       new TradingView.widget({{
@@ -75,7 +75,7 @@ def tradingview_canli_grafik(sembol_kod):
       </script>
     </div>
     """
-    components.html(tv_html, height=520)
+    components.html(tv_html, height=780)
 
 # ==================================================
 # FORMATLAMA BİLEŞENLERİ
