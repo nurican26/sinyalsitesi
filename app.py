@@ -134,7 +134,7 @@ def turkce_sayi_cevir(deger):
 
 
 # ==================================================
-# KAR YÜZDESI HESAPLA
+# KAR YÜZDESİ HESAPLA
 # ==================================================
 def kar_yuzdesi_hesapla(bta_fiyat, anlık_fiyat):
     if bta_fiyat <= 0 or pd.isna(bta_fiyat) or pd.isna(anlık_fiyat):
@@ -145,7 +145,7 @@ def kar_yuzdesi_hesapla(bta_fiyat, anlık_fiyat):
 
 
 # ==================================================
-# KAR YÜZDESI FORMATLAMA
+# KAR YÜZDESİ FORMATLAMA
 # ==================================================
 def kar_yuzdesi_format(kar_yuzde):
     if kar_yuzde is None:
@@ -174,6 +174,36 @@ def kar_yuzdesi_format(kar_yuzde):
 
 
 # ==================================================
+# BIST YÜKSELENLER / DÜŞENLER ÇEKME
+# ==================================================
+def bist_yukselen_dusen_getir(hisse_listesi):
+    veriler = []
+    for hisse in hisse_listesi:
+        sembol = hisse if hisse.endswith(".IS") else f"{hisse}.IS"
+        try:
+            t = yf.Ticker(sembol)
+            i = t.info
+            fiyat = i.get("regularMarketPrice")
+            onceki = i.get("regularMarketPreviousClose")
+            
+            if fiyat and onceki:
+                degisim = ((fiyat - onceki) / onceki) * 100
+                veriler.append({
+                    "Hisse": hisse,
+                    "Fiyat (TL)": fiyat,
+                    "Önceki Kapanış": onceki,
+                    "Değişim (%)": degisim
+                })
+        except Exception:
+            continue
+            
+    df = pd.DataFrame(veriler)
+    if not df.empty:
+        df = df.sort_values(by="Değişim (%)", ascending=False)
+    return df
+
+
+# ==================================================
 # BEDELLİ / BEDELSİZ HESAPLAMA
 # ==================================================
 def bedelli_bedelsiz_hesapla(
@@ -183,16 +213,6 @@ def bedelli_bedelsiz_hesapla(
     bedelli_fiyat,
     bedelsiz_orani
 ):
-    """
-    BIST sermaye artırımı (bedelli/bedelsiz) hesaplama makinesi.
-    Oranlar yüzde (%) cinsinden girilir (örn. %50 bedelsiz için 50).
-    Teorik (düzeltilmiş) fiyat, BIST'in resmi sermaye artırımı
-    fiyat düzeltme formülüne göre hesaplanır:
-
-        Teorik Fiyat =
-            (Eski Fiyat + (Bedelli Oranı x Bedelli Fiyatı))
-            / (1 + Bedelli Oranı + Bedelsiz Oranı)
-    """
     try:
         eski_fiyat = float(eski_fiyat)
         sahip_lot = float(sahip_lot)
@@ -216,21 +236,17 @@ def bedelli_bedelsiz_hesapla(
     if payda <= 0:
         return None
 
-    # Yeni pay (lot) sayıları - mevcut sahiplik üzerinden
     bedelli_yeni_lot = sahip_lot * bedelli_orani
     bedelsiz_yeni_lot = sahip_lot * bedelsiz_orani
     toplam_yeni_lot = bedelli_yeni_lot + bedelsiz_yeni_lot
     toplam_lot_sonrasi = sahip_lot + toplam_yeni_lot
 
-    # Bedelli hakkının kullanılması için ödenecek tutar
     odenecek_tutar = bedelli_yeni_lot * bedelli_fiyat
 
-    # Teorik (düzeltilmiş) fiyat
     teorik_fiyat = (
         eski_fiyat + (bedelli_orani * bedelli_fiyat)
     ) / payda
 
-    # Portföy değerleri (bedelli tutarı yatırılmış varsayımıyla)
     eski_portfoy_degeri = sahip_lot * eski_fiyat
     yeni_portfoy_degeri = toplam_lot_sonrasi * teorik_fiyat
 
@@ -722,9 +738,6 @@ def mesaj_ekle(kullanici, metin):
 # PAYLAŞIM FONKSİYONLARI
 # ==================================================
 def paylas_linki_olustur(platform, url, baslik):
-    """
-    Farklı platformlar için paylaşım linki oluşturur
-    """
     encoded_url = urllib.parse.quote(url)
     encoded_baslik = urllib.parse.quote(baslik)
     
@@ -959,11 +972,12 @@ if excel_dosyalari:
 
 
 # ==================================================
-# PANELLER
+# PANELLER (SEKMELER)
 # ==================================================
-tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
+tab_algoritmik, tab_yukselen_dusen, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
+        "📊 Yükselen/Düşen",
         "🧮 Bedelli/Bedelsiz",
         "💬 Sohbet",
         "📒 Kayıtlar",
@@ -1047,7 +1061,6 @@ with tab_algoritmik:
                 tl_format(fiyat)
             )
 
-            # Kar Yüzdesi Göster
             st.markdown(
                 kar_yuzdesi_format(kar_yuzde),
                 unsafe_allow_html=True
@@ -1081,6 +1094,47 @@ with tab_algoritmik:
 
 
 # ==================================================
+# YÜKSELENLER VE DÜŞENLER
+# ==================================================
+with tab_yukselen_dusen:
+    st.header("📊 BIST Yükselenler ve Düşenler")
+    
+    if excel_df.empty:
+        st.warning("Veri çekilecek hisse listesi bulunamadı.")
+    else:
+        st.caption("Takip listenizdeki hisselerin gün içi değişim performansları (En az 15 dk gecikmeli).")
+        
+        with st.spinner("Güncel borsa verileri alınıyor..."):
+            hisseler = excel_df["Hisse Kodu"].unique().tolist()
+            piyasa_df = bist_yukselen_dusen_getir(hisseler)
+
+        if piyasa_df.empty:
+            st.error("Hisse verileri şu an çekilemedi.")
+        else:
+            col_yukselen, col_dusen = st.columns(2)
+            
+            with col_yukselen:
+                st.subheader("🚀 En Çok Yükselenler")
+                yukselenler = piyasa_df[piyasa_df["Değişim (%)"] >= 0].head(10).copy()
+                if not yukselenler.empty:
+                    yukselenler["Fiyat (TL)"] = yukselenler["Fiyat (TL)"].apply(tl_format)
+                    yukselenler["Değişim (%)"] = yukselenler["Değişim (%)"].apply(lambda x: f"%+{x:.2f}")
+                    st.dataframe(yukselenler[["Hisse", "Fiyat (TL)", "Değişim (%)"]], use_container_width=True, hide_index=True)
+                else:
+                    st.info("Yükselen hisse bulunamadı.")
+
+            with col_dusen:
+                st.subheader("🔻 En Çok Düşenler")
+                dusenler = piyasa_df[piyasa_df["Değişim (%)"] < 0].sort_values(by="Değişim (%)", ascending=True).head(10).copy()
+                if not dusenler.empty:
+                    dusenler["Fiyat (TL)"] = dusenler["Fiyat (TL)"].apply(tl_format)
+                    dusenler["Değişim (%)"] = dusenler["Değişim (%)"].apply(lambda x: f"%{x:.2f}")
+                    st.dataframe(dusenler[["Hisse", "Fiyat (TL)", "Değişim (%)"]], use_container_width=True, hide_index=True)
+                else:
+                    st.info("Düşen hisse bulunamadı.")
+
+
+# ==================================================
 # BEDELLİ / BEDELSİZ HESAPLAMA MAKİNESİ
 # ==================================================
 with tab_bedelli:
@@ -1099,9 +1153,6 @@ with tab_bedelli:
         unsafe_allow_html=True
     )
 
-    # ==================================================
-    # FİYAT KAYNAĞI SEÇİMİ
-    # ==================================================
     hisse_listesi = (
         excel_df["Hisse Kodu"].tolist()
         if not excel_df.empty
@@ -1157,9 +1208,6 @@ with tab_bedelli:
 
     st.divider()
 
-    # ==================================================
-    # GİRDİ FORMU
-    # ==================================================
     col1, col2 = st.columns(2)
 
     with col1:
@@ -1212,13 +1260,6 @@ with tab_bedelli:
         type="primary"
     )
 
-    # ==================================================
-    # NOT: Sayfa 5 saniyede bir otomatik yenilendiği için
-    # (st_autorefresh) sonuç "if hesapla_buton:" içinde
-    # tutulursa bir sonraki otomatik yenilemede kaybolur.
-    # Bu yüzden sonuç, session_state'e yazılıp aşağıda
-    # butondan bağımsız olarak her zaman gösterilir.
-    # ==================================================
     if hesapla_buton:
         if eski_fiyat_girdi <= 0:
             st.session_state["bedelli_sonuc"] = None
@@ -1327,9 +1368,6 @@ with tab_bedelli:
 with tab_sohbet:
     st.header("💬 Canlı Sohbet Odası")
 
-    # ==================================================
-    # TAKİP VE BEĞENİ PANELİ
-    # ==================================================
     st.subheader("⭐ BTA Oda Takip Paneli")
 
     takip, begeni = istatistik_oku()
@@ -1376,9 +1414,6 @@ with tab_sohbet:
 
     st.divider()
 
-    # ==================================================
-    # MESAJ FORMU
-    # ==================================================
     st.subheader("💬 Mesaj Gönder")
 
     kullanici = st.text_input(
@@ -1424,9 +1459,6 @@ with tab_sohbet:
 
     st.divider()
 
-    # ==================================================
-    # MESAJ LİSTESİ
-    # ==================================================
     st.subheader("📨 Mesajlar")
 
     mesajlar = mesajlari_oku()
@@ -1568,16 +1600,15 @@ with tab_kayit:
                     "🗑️ Tüm Kayıtları Sil",
                     use_container_width=True
                 ):
-                    if st.confirm("Emin misiniz?"):
-                        pd.DataFrame(
-                            columns=KAYIT_SUTUNLARI
-                        ).to_csv(
-                            KAYIT_DOSYASI,
-                            index=False,
-                            encoding="utf-8-sig"
-                        )
-                        st.success("✅ Tüm kayıtlar silindi")
-                        st.rerun()
+                    pd.DataFrame(
+                        columns=KAYIT_SUTUNLARI
+                    ).to_csv(
+                        KAYIT_DOSYASI,
+                        index=False,
+                        encoding="utf-8-sig"
+                    )
+                    st.success("✅ Tüm kayıtlar silindi")
+                    st.rerun()
 
 
 # ==================================================
@@ -1588,9 +1619,6 @@ with tab_paylas:
 
     st.divider()
 
-    # ==================================================
-    # PAYLAŞ URL'Sİ
-    # ==================================================
     st.subheader("📍 Paylaş Linki")
 
     sayfa_url = st.text_input(
@@ -1606,12 +1634,8 @@ with tab_paylas:
 
     st.divider()
 
-    # ==================================================
-    # PAYLAŞ BUTONLARI
-    # ==================================================
     st.subheader("📱 Sosyal Medya Kanalları")
 
-    # Paylaşım linklerini oluştur
     twitter_link = paylas_linki_olustur("twitter", sayfa_url, baslik)
     facebook_link = paylas_linki_olustur("facebook", sayfa_url, baslik)
     linkedin_link = paylas_linki_olustur("linkedin", sayfa_url, baslik)
@@ -1619,7 +1643,6 @@ with tab_paylas:
     telegram_link = paylas_linki_olustur("telegram", sayfa_url, baslik)
     email_link = paylas_linki_olustur("email", sayfa_url, baslik)
 
-    # Butonları göster
     st.markdown(
         f"""
         <div class="paylas-container">
@@ -1640,9 +1663,6 @@ with tab_paylas:
 
     st.divider()
 
-    # ==================================================
-    # QR KOD
-    # ==================================================
     st.subheader("📱 QR Kod ile Hızlı Erişim")
 
     try:
@@ -1674,9 +1694,6 @@ with tab_paylas:
 
     st.divider()
 
-    # ==================================================
-    # İSTATİSTİKLER
-    # ==================================================
     st.subheader("📊 Platform İstatistikleri")
 
     takip, begeni = istatistik_oku()
