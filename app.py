@@ -359,7 +359,7 @@ def yukselen_dusen_hesapla(hisse_listesi):
 
     try:
         with concurrent.futures.ThreadPoolExecutor(
-            max_workers=10
+            max_workers=20
         ) as havuz:
             for hisse, son, degisim, hata in havuz.map(
                 tek_hisse_getir,
@@ -406,6 +406,39 @@ def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
         </span>
     </div>
     """
+
+
+# ==================================================
+# BIST CANLI TARAMA LİSTESİ
+# ==================================================
+# Not: Bu, BIST'te en yaygın işlem gören ~110 hisseden oluşan
+# sabit bir tarama listesidir. Yahoo Finance / yfinance üzerinden
+# resmi ve her an güncel BIST100 endeks bileşenlerini otomatik
+# çekebilen ücretsiz bir "tarayıcı" (screener) API'si bulunmadığı
+# için, günün yükselen/düşenlerini bu listeyi canlı tarayarak
+# buluyoruz. Liste zaman zaman endeks değişiklikleriyle tam
+# örtüşmeyebilir; yeni bir hisse eklemek/çıkarmak için bu listeyi
+# düzenlemeniz yeterlidir.
+BIST_TARAMA_LISTESI = [
+    "THYAO", "GARAN", "AKBNK", "ISCTR", "YKBNK", "SAHOL", "KCHOL",
+    "SASA", "EREGL", "BIMAS", "ASELS", "TUPRS", "PETKM", "PGSUS",
+    "TCELL", "TTKOM", "FROTO", "TOASO", "OTKAR", "ARCLK", "VESTL",
+    "ENKAI", "TAVHL", "MGROS", "SOKM", "CCOLA", "ULKER", "KOZAL",
+    "KOZAA", "KRDMD", "EKGYO", "HALKB", "VAKBN", "ISGYO", "SISE",
+    "TKFEN", "TRGYO", "ALARK", "AEFES", "DOHOL", "DOAS", "ANHYT",
+    "AGHOL", "AKSA", "AKSEN", "ALBRK", "ALGYO", "ALKIM", "ANACM",
+    "ASUZU", "AYGAZ", "BAGFS", "BANVT", "BERA", "BIOEN", "BRISA",
+    "BRSAN", "BRYAT", "BUCIM", "CANTE", "CEMTS", "CIMSA", "CLEBI",
+    "ECILC", "ECZYT", "EGEEN", "ENJSA", "EUPWR", "EUREN", "GESAN",
+    "GLYHO", "GOODY", "GOZDE", "GSDHO", "GUBRF", "HEKTS", "IPEKE",
+    "ISMEN", "IZMDC", "JANTS", "KARSN", "KARTN", "KLNMA", "KMPUR",
+    "KONTR", "KONYA", "KORDS", "KRDMA", "KRONT", "LOGO", "MAVI",
+    "MPARK", "NETAS", "NTHOL", "NUHCM", "ODAS", "OYAKC", "PARSN",
+    "PENTA", "PETUN", "PSGYO", "QUAGR", "RYSAS", "SARKY", "SELEC",
+    "SKBNK", "SMRTG", "SNGYO", "TATGD", "TKNSA", "TMSN", "TSKB",
+    "TTRAK", "TURSG", "ULUUN", "VAKKO", "VESBE", "YATAS", "YUNSA",
+    "ZOREN", "ZRGYO"
+]
 
 
 # ==================================================
@@ -1200,127 +1233,123 @@ st.divider()
 # ==================================================
 # CANLI PİYASA PANELİ - YÜKSELEN / DÜŞEN HİSSELER
 # ==================================================
-st.subheader("📊 Canlı Yükselen / Düşen Hisseler")
+st.subheader("📊 Bugün BIST'te Yükselen / Düşen Hisseler")
 
-if excel_df.empty:
+piyasa_df, piyasa_hatalari = yukselen_dusen_hesapla(
+    tuple(BIST_TARAMA_LISTESI)
+)
+
+if piyasa_df.empty:
     st.info(
-        "Yükselen/düşen hisseleri gösterebilmek için önce "
-        "takip listesi (Excel) yüklenmelidir."
-    )
-else:
-    piyasa_df, piyasa_hatalari = yukselen_dusen_hesapla(
-        tuple(excel_df["Hisse Kodu"].tolist())
+        "Piyasa verisi şu anda alınamıyor, birazdan tekrar denenecek."
     )
 
-    if piyasa_df.empty:
-        st.info(
-            "Piyasa verisi şu anda alınamıyor, birazdan tekrar denenecek."
-        )
-
-        with st.expander("🔧 Teknik detay (neden veri gelmiyor?)"):
-            if piyasa_hatalari:
-                st.write(
-                    f"Toplam {len(piyasa_hatalari)} sembol denendi, "
-                    "hepsi başarısız oldu. İlk birkaç hata:"
-                )
-                for satir in piyasa_hatalari[:10]:
-                    st.code(satir, language=None)
-
-                st.markdown(
-                    "Bu genelde şu sebeplerden olur: "
-                    "**(1)** uygulamanın çalıştığı sunucunun internete "
-                    "(finance.yahoo.com'a) çıkışı kısıtlı/engelli, "
-                    "**(2)** Yahoo Finance kısa süreliğine çok sayıda "
-                    "istekten dolayı geçici olarak engellemiş olabilir "
-                    "(rate limit), **(3)** hisse sembolleri Yahoo "
-                    "formatına uymuyor olabilir (örn. `.IS` uzantısı)."
-                )
-            else:
-                st.write(
-                    "Takip listesi boş görünüyor veya hiçbir "
-                    "sembol denenemedi."
-                )
-    else:
-        # ==================================================
-        # TIKLANABİLİR SEKME: YÜKSELEN / DÜŞEN
-        # ==================================================
-        if "piyasa_gorunum" not in st.session_state:
-            st.session_state["piyasa_gorunum"] = "yukselen"
-
-        col_btn1, col_btn2 = st.columns(2)
-
-        with col_btn1:
-            yukselen_secili = (
-                st.session_state["piyasa_gorunum"] == "yukselen"
-            )
-
-            if st.button(
-                "🚀 Yükselen Hisseler",
-                use_container_width=True,
-                type="primary" if yukselen_secili else "secondary",
-                key="btn_yukselen_goster"
-            ):
-                st.session_state["piyasa_gorunum"] = "yukselen"
-                st.rerun()
-
-        with col_btn2:
-            dusen_secili = (
-                st.session_state["piyasa_gorunum"] == "dusen"
-            )
-
-            if st.button(
-                "🔻 Düşen Hisseler",
-                use_container_width=True,
-                type="primary" if dusen_secili else "secondary",
-                key="btn_dusen_goster"
-            ):
-                st.session_state["piyasa_gorunum"] = "dusen"
-                st.rerun()
-
-        st.write("")
-
-        if st.session_state["piyasa_gorunum"] == "yukselen":
-            gosterilecek_liste = piyasa_df.sort_values(
-                "Değişim %",
-                ascending=False
-            )
-            renk = "#00f5c8"
-            baslik = "🚀 Yükselen Hisseler"
-        else:
-            gosterilecek_liste = piyasa_df.sort_values(
-                "Değişim %",
-                ascending=True
-            )
-            renk = "#ff5264"
-            baslik = "🔻 Düşen Hisseler"
-
-        st.markdown(f"##### {baslik}")
-
-        if gosterilecek_liste.empty:
-            st.caption("Veri yok.")
-        else:
-            for _, satir in gosterilecek_liste.head(15).iterrows():
-                st.markdown(
-                    hisse_karti_format(
-                        satir["Hisse Kodu"],
-                        satir["Fiyat"],
-                        satir["Değişim %"],
-                        renk
-                    ),
-                    unsafe_allow_html=True
-                )
-
+    with st.expander("🔧 Teknik detay (neden veri gelmiyor?)"):
         if piyasa_hatalari:
-            with st.expander(
-                f"⚠️ {len(piyasa_hatalari)} sembol için veri alınamadı"
-            ):
-                for satir in piyasa_hatalari[:15]:
-                    st.code(satir, language=None)
+            st.write(
+                f"Toplam {len(piyasa_hatalari)} sembol denendi, "
+                "hepsi başarısız oldu. İlk birkaç hata:"
+            )
+            for satir in piyasa_hatalari[:10]:
+                st.code(satir, language=None)
 
-        st.caption(
-            "Veriler en az 15 dakika gecikmeli olabilir ve "
-            "yaklaşık her 20 saniyede bir güncellenir."
+            st.markdown(
+                "Bu genelde şu sebeplerden olur: "
+                "**(1)** uygulamanın çalıştığı sunucunun internete "
+                "(finance.yahoo.com'a) çıkışı kısıtlı/engelli, "
+                "**(2)** Yahoo Finance kısa süreliğine çok sayıda "
+                "istekten dolayı geçici olarak engellemiş olabilir "
+                "(rate limit), **(3)** hisse sembolleri Yahoo "
+                "formatına uymuyor olabilir (örn. `.IS` uzantısı)."
+            )
+        else:
+            st.write(
+                "Tarama listesi boş görünüyor veya hiçbir "
+                "sembol denenemedi."
+            )
+else:
+    # ==================================================
+    # TIKLANABİLİR SEKME: YÜKSELEN / DÜŞEN
+    # ==================================================
+    if "piyasa_gorunum" not in st.session_state:
+        st.session_state["piyasa_gorunum"] = "yukselen"
+
+    col_btn1, col_btn2 = st.columns(2)
+
+    with col_btn1:
+        yukselen_secili = (
+            st.session_state["piyasa_gorunum"] == "yukselen"
         )
+
+        if st.button(
+            "🚀 Yükselen Hisseler",
+            use_container_width=True,
+            type="primary" if yukselen_secili else "secondary",
+            key="btn_yukselen_goster"
+        ):
+            st.session_state["piyasa_gorunum"] = "yukselen"
+            st.rerun()
+
+    with col_btn2:
+        dusen_secili = (
+            st.session_state["piyasa_gorunum"] == "dusen"
+        )
+
+        if st.button(
+            "🔻 Düşen Hisseler",
+            use_container_width=True,
+            type="primary" if dusen_secili else "secondary",
+            key="btn_dusen_goster"
+        ):
+            st.session_state["piyasa_gorunum"] = "dusen"
+            st.rerun()
+
+    st.write("")
+
+    if st.session_state["piyasa_gorunum"] == "yukselen":
+        gosterilecek_liste = piyasa_df.sort_values(
+            "Değişim %",
+            ascending=False
+        )
+        renk = "#00f5c8"
+        baslik = "🚀 Yükselen Hisseler"
+    else:
+        gosterilecek_liste = piyasa_df.sort_values(
+            "Değişim %",
+            ascending=True
+        )
+        renk = "#ff5264"
+        baslik = "🔻 Düşen Hisseler"
+
+    st.markdown(f"##### {baslik}")
+
+    if gosterilecek_liste.empty:
+        st.caption("Veri yok.")
+    else:
+        for _, satir in gosterilecek_liste.head(15).iterrows():
+            st.markdown(
+                hisse_karti_format(
+                    satir["Hisse Kodu"],
+                    satir["Fiyat"],
+                    satir["Değişim %"],
+                    renk
+                ),
+                unsafe_allow_html=True
+            )
+
+    if piyasa_hatalari:
+        with st.expander(
+            f"⚠️ {len(piyasa_hatalari)} sembol için veri alınamadı"
+        ):
+            for satir in piyasa_hatalari[:15]:
+                st.code(satir, language=None)
+
+    st.caption(
+        f"BIST genelinde {len(BIST_TARAMA_LISTESI)} hisse taranıyor "
+        "(kişisel takip listenizden bağımsızdır). Veriler en az "
+        "15 dakika gecikmeli olabilir ve yaklaşık her 20 saniyede "
+        "bir güncellenir."
+    )
 
 st.divider()
 
