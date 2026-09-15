@@ -1,224 +1,158 @@
 import streamlit as st
+import yfinance as yf
+import pandas as pd
 
-# Streamlit sayfa konfigürasyonu
-st.set_page_config(
-    page_title="Borsa Canlı Takip",
-    page_icon="📈",
-    layout="centered"
-)
+# Sayfa Yapılandırması
+st.set_page_config(page_title="Canlı Borsa Takibi", page_icon="📈", layout="centered")
 
-# HTML, CSS ve JS kod bloğu
-html_code = """
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
+# 1. Takip Edilecek BIST Hisse Listesi (Sistemin canlı verisini toplayacağı hisseler)
+BIST_SYMBOLS = [
+    "PATEK.IS", "TKFEN.IS", "ZOREN.IS", "DSTKF.IS", "ENERY.IS", 
+    "REEDR.IS", "ASELS.IS", "ANSGR.IS", "THYAO.IS", "GARAN.IS", 
+    "EREGL.IS", "AKBNK.IS", "KCHOL.IS", "TUPRS.IS", "SAHOL.IS",
+    "SASA.IS", "HEKTS.IS", "BIMAS.IS", "SISE.IS", "EKGYO.IS"
+]
 
-    body {
-      background-color: transparent;
-      display: flex;
-      justify-content: center;
-      padding: 5px;
-    }
+@st.cache_data(ttl=60)  # Veriyi 60 saniyede bir otomatik yeniler
+def get_live_bist_data():
+    data_list = []
+    
+    # yfinance ile tüm hisselerin son durumunu çekiyoruz
+    tickers = yf.Tickers(" ".join(BIST_SYMBOLS))
+    
+    for symbol in BIST_SYMBOLS:
+        try:
+            ticker = tickers.tickers[symbol]
+            info = ticker.fast_info
+            
+            last_price = info.last_price
+            prev_close = info.previous_close
+            
+            if last_price and prev_close:
+                # Yüzdelik Değişim Hesabı
+                change_pct = ((last_price - prev_close) / prev_close) * 100
+                # Hacim Hesabı (Tahmini mTL cinsinden)
+                volume = info.last_volume * last_price / 1_000_000 if info.last_volume else 0
+                
+                clean_symbol = symbol.replace(".IS", "")
+                data_list.append({
+                    "symbol": clean_symbol,
+                    "price": f"{last_price:,.2f}",
+                    "change_num": change_pct,
+                    "change": f"{change_pct:+.2f} %",
+                    "volume_num": volume,
+                    "volume": f"{volume:,.2f}"
+                })
+        except Exception:
+            continue
+            
+    return pd.DataFrame(data_list)
 
-    .widget-container {
-      width: 100%;
-      max-width: 420px;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-    }
+# Yan Menü (Sidebar) Veya Sayfa Başına Yenileme Butonu
+st.sidebar.title("Kontrol Paneli")
+if st.sidebar.button("🔄 Verileri Canlı Yenile"):
+    st.cache_data.clear()
 
-    /* Üst Başlık */
-    .header-title {
-      background-color: #2ed599;
-      color: #000000;
-      text-align: center;
-      padding: 12px;
-      font-weight: 700;
-      font-size: 16px;
-      letter-spacing: 0.3px;
-    }
+st.title("📈 Canlı Borsa İstatistikleri")
 
-    /* Tab / Sekme Butonları */
-    .tabs {
-      display: flex;
-      background-color: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-    }
+# Canlı Veriyi Çek
+with st.spinner("Borsa İstanbul canlı verileri çekiliyor..."):
+    df = get_live_bist_data()
 
-    .tab-btn {
-      flex: 1;
-      padding: 12px 5px;
-      text-align: center;
-      background: none;
-      border: none;
-      border-right: 1px solid #e2e8f0;
-      font-size: 14px;
-      font-weight: 700;
-      color: #334155;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+if not df.empty:
+    # Verileri Kriterlere Göre Filtrele
+    yukselenler = df.sort_values(by="change_num", ascending=False).head(8).to_dict('records')
+    dusenler = df.sort_values(by="change_num", ascending=True).head(8).to_dict('records')
+    hacimliler = df.sort_values(by="volume_num", ascending=False).head(8).to_dict('records')
 
-    .tab-btn:last-child {
-      border-right: none;
-    }
+    # HTML & CSS Şablonu
+    html_code = f"""
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        * {{ box-sizing: border-box; font-family: Arial, sans-serif; margin: 0; padding: 0; }}
+        body {{ background-color: transparent; display: flex; justify-content: center; padding: 5px; }}
+        .widget-container {{ width: 100%; max-width: 420px; background: #fff; border: 1px solid #e0e0e0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }}
+        .header-title {{ background-color: #2ed599; color: #000; text-align: center; padding: 12px; font-weight: bold; font-size: 16px; }}
+        .tabs {{ display: flex; background-color: #f9f9f9; border-bottom: 1px solid #ddd; }}
+        .tab-btn {{ flex: 1; padding: 10px 5px; text-align: center; background: none; border: none; border-right: 1px solid #ddd; font-size: 14px; font-weight: bold; color: #333; cursor: pointer; }}
+        .tab-btn:last-child {{ border-right: none; }}
+        .tab-btn.active {{ background-color: #fff; border-top: 3px solid #2ed599; color: #000; }}
+        .stock-table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+        .stock-table th {{ text-align: left; padding: 8px; background-color: #fff; border-bottom: 1px solid #ddd; color: #000; font-weight: bold; }}
+        .stock-table th:nth-child(2), .stock-table th:nth-child(3), .stock-table th:nth-child(4) {{ text-align: right; }}
+        .stock-table td {{ padding: 8px; border-bottom: 1px dashed #e0e0e0; }}
+        .stock-table tr:nth-child(even) {{ background-color: #fdfdfd; }}
+        .stock-table td:nth-child(2), .stock-table td:nth-child(3), .stock-table td:nth-child(4) {{ text-align: right; }}
+        .pos-change {{ color: #2ed599; font-weight: bold; }}
+        .neg-change {{ color: #e74c3c; font-weight: bold; }}
+        .symbol {{ font-weight: bold; }}
+      </style>
+    </head>
+    <body>
 
-    .tab-btn.active {
-      background-color: #ffffff;
-      border-top: 3px solid #2ed599;
-      color: #000000;
-    }
+    <div class="widget-container">
+      <div class="header-title">Endeks/Dönem Seçimi</div>
+      
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('yukselenler', event)">Yükselenler</button>
+        <button class="tab-btn" onclick="showTab('dusenler', event)">Düşenler</button>
+        <button class="tab-btn" onclick="showTab('hacimliler', event)">Hacimliler</button>
+      </div>
 
-    /* Tablo Tasarımı */
-    .stock-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>HİSSE</th>
+            <th>SON</th>
+            <th>DEĞİŞİM</th>
+            <th>HACİM (mTL)</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
 
-    .stock-table th {
-      text-align: left;
-      padding: 10px 8px;
-      background-color: #ffffff;
-      border-bottom: 1px solid #cbd5e1;
-      color: #000000;
-      font-weight: 700;
-    }
+    <script>
+      const data = {{
+        yukselenler: {yukselenler},
+        dusenler: {dusenler},
+        hacimliler: {hacimliler}
+      }};
 
-    .stock-table th:nth-child(2),
-    .stock-table th:nth-child(3),
-    .stock-table th:nth-child(4) {
-      text-align: right;
-    }
+      function showTab(type, evt) {{
+        if (evt) {{
+          document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+          evt.target.classList.add('active');
+        }}
 
-    .stock-table td {
-      padding: 9px 8px;
-      border-bottom: 1px dashed #e2e8f0;
-      color: #0f172a;
-    }
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
 
-    .stock-table tr:nth-child(even) {
-      background-color: #f8fafc;
-    }
+        data[type].forEach(item => {{
+          const isNegative = item.change.includes('-');
+          const changeClass = isNegative ? 'neg-change' : 'pos-change';
 
-    .stock-table td:nth-child(2),
-    .stock-table td:nth-child(3),
-    .stock-table td:nth-child(4) {
-      text-align: right;
-    }
+          const row = `
+            <tr>
+              <td class="symbol">${{item.symbol}}</td>
+              <td>${{item.price}}</td>
+              <td class="${{changeClass}}">${{item.change}}</td>
+              <td>${{item.volume}}</td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        }});
+      }}
 
-    /* Değişim Oranı Renkleri */
-    .pos-change {
-      color: #10b981;
-      font-weight: 700;
-    }
+      showTab('yukselenler');
+    </script>
+    </body>
+    </html>
+    """
 
-    .neg-change {
-      color: #ef4444;
-      font-weight: 700;
-    }
-
-    .symbol {
-      font-weight: 700;
-    }
-  </style>
-</head>
-<body>
-
-<div class="widget-container">
-  <div class="header-title">Endeks/Dönem Seçimi</div>
-  
-  <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('yukselenler', event)">Yükselenler</button>
-    <button class="tab-btn" onclick="showTab('dusenler', event)">Düşenler</button>
-    <button class="tab-btn" onclick="showTab('hacimliler', event)">Hacimliler</button>
-  </div>
-
-  <table class="stock-table">
-    <thead>
-      <tr>
-        <th>HİSSE</th>
-        <th>SON</th>
-        <th>DEĞİŞİM</th>
-        <th>HACİM (mTL)</th>
-      </tr>
-    </thead>
-    <tbody id="table-body">
-      <!-- Veriler JavaScript ile eklenecek -->
-    </tbody>
-  </table>
-</div>
-
-<script>
-  // Borsa Tablosu Verileri
-  const data = {
-    yukselenler: [
-      { symbol: 'PATEK', price: '25.16', change: '9.97 %', volume: '1,904.22' },
-      { symbol: 'TKFEN', price: '230.00', change: '6.33 %', volume: '2,595.34' },
-      { symbol: 'ZOREN', price: '2.52', change: '4.56 %', volume: '825.48' },
-      { symbol: 'DSTKF', price: '2,720.00', change: '4.41 %', volume: '1,458.11' },
-      { symbol: 'ENERY', price: '12.70', change: '2.42 %', volume: '763.78' },
-      { symbol: 'REEDR', price: '5.35', change: '1.33 %', volume: '577.29' },
-      { symbol: 'ASELS', price: '377.00', change: '1.21 %', volume: '9,858.86' },
-      { symbol: 'ANSGR', price: '26.78', change: '0.68 %', volume: '148.66' }
-    ],
-    dusenler: [
-      { symbol: 'THYAO', price: '280.50', change: '-3.20 %', volume: '4,120.00' },
-      { symbol: 'GARAN', price: '112.00', change: '-2.15 %', volume: '3,850.50' },
-      { symbol: 'EREGL', price: '45.10', change: '-1.80 %', volume: '2,100.30' },
-      { symbol: 'AKBNK', price: '54.25', change: '-1.10 %', volume: '1,950.00' }
-    ],
-    hacimliler: [
-      { symbol: 'ASELS', price: '377.00', change: '1.21 %', volume: '9,858.86' },
-      { symbol: 'THYAO', price: '280.50', change: '-3.20 %', volume: '4,120.00' },
-      { symbol: 'GARAN', price: '112.00', change: '-2.15 %', volume: '3,850.50' },
-      { symbol: 'TKFEN', price: '230.00', change: '6.33 %', volume: '2,595.34' }
-    ]
-  };
-
-  function showTab(type, evt) {
-    if (evt) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      evt.target.classList.add('active');
-    }
-
-    const tbody = document.getElementById('table-body');
-    tbody.innerHTML = '';
-
-    data[type].forEach(item => {
-      const isNegative = item.change.includes('-');
-      const changeClass = isNegative ? 'neg-change' : 'pos-change';
-
-      const row = `
-        <tr>
-          <td class="symbol">${item.symbol}</td>
-          <td>${item.price}</td>
-          <td class="${changeClass}">${item.change}</td>
-          <td>${item.volume}</td>
-        </tr>
-      `;
-      tbody.innerHTML += row;
-    });
-  }
-
-  // Varsayılan Yükselenler sekmesini göster
-  showTab('yukselenler');
-</script>
-
-</body>
-</html>
-"""
-
-# Streamlit bileşeni olarak ekrana basma
-st.components.v1.html(html_code, height=520, scrolling=False)
+    st.components.v1.html(html_code, height=450, scrolling=False)
+else:
+    st.error("Veriler çekilirken bir hata oluştu. Lütfen sayfayı yenileyin.")
