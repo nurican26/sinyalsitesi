@@ -366,6 +366,27 @@ st.markdown(
         transform: translateY(-2px);
     }
 
+    .canli-yayin-buton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 15px 30px;
+        background: linear-gradient(135deg, #ff0000, #cc0000);
+        color: white !important;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        text-decoration: none !important;
+        box-shadow: 0 4px 15px rgba(255, 0, 0, 0.4);
+        transition: all 0.3s ease;
+    }
+
+    .canli-yayin-buton:hover {
+        transform: scale(1.03);
+        box-shadow: 0 6px 20px rgba(255, 0, 0, 0.6);
+    }
+
     .bilgi-karti {
         background: rgba(9, 31, 48, 0.95);
         border: 1px solid rgba(0, 245, 200, 0.35);
@@ -724,7 +745,6 @@ def mesaj_ekle(kullanici, metin):
 
 
 def url_tespit_et(metin):
-    """Metin içindeki ilk URL'yi bulur."""
     pattern = r'https?://[^\s]+'
     match = re.search(pattern, str(metin))
     return match.group(0) if match else None
@@ -965,13 +985,14 @@ if excel_dosyalari:
 
 
 # ==================================================
-# PANELLER
+# PANELLER (SEKMELER)
 # ==================================================
-tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
+tab_algoritmik, tab_bedelli, tab_sohbet, tab_canli, tab_kayit, tab_paylas = st.tabs(
     [
         "🤖 Algoritmik Bilgiler",
         "🧮 Bedelli/Bedelsiz",
         "💬 Sohbet",
+        "🔴 Canlı Yayın",
         "📒 Kayıtlar",
         "🔗 Paylaş"
     ]
@@ -1379,7 +1400,7 @@ with tab_sohbet:
         mesaj = st.text_area(
             "Mesajınız",
             height=90,
-            placeholder="Mesajınızı veya canlı yayın linkinizi yazın (http://...)..."
+            placeholder="Mesajınızı yazın..."
         )
 
         gonder = st.form_submit_button(
@@ -1430,7 +1451,7 @@ with tab_sohbet:
             mesaj_sesi_cal()
 
             st.session_state["son_ses_mesaj_id"] = (
-                son_mesaj_id
+                son_ses_mesaj_id
             )
 
     if mesajlar.empty:
@@ -1459,7 +1480,6 @@ with tab_sohbet:
                 )
 
             with col2:
-                # Eğer mesajın içinde web adresi/linki varsa ayrı tıklama ikonu basılır
                 if bulunan_url:
                     st.markdown(
                         f"""
@@ -1491,6 +1511,49 @@ with tab_sohbet:
                         )
 
                         st.rerun()
+
+
+# ==================================================
+# CANLI YAYIN SEKMESİ
+# ==================================================
+with tab_canli:
+    st.header("🔴 Canlı Yayın Odası")
+
+    st.markdown(
+        """
+        <div class="bilgi-karti">
+            Yayın takibi yapmak veya doğrudan yayına katılmak için aşağıdaki butona tıklayabilir ya da yayını doğrudan izleyebilirsiniz.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    yayin_linki = st.text_input(
+        "Canlı Yayın URL (YouTube, Kick vb.):",
+        value="https://www.youtube.com",
+        help="Canlı yayının yapıldığı internet adresini giriniz."
+    )
+
+    st.markdown(
+        f"""
+        <div style="text-align: center; margin: 25px 0;">
+            <a href="{yayin_linki}" target="_blank" class="canli-yayin-buton">
+                🎥 CANLI YAYINA KATIL / İZLE 🚀
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.divider()
+
+    # YouTube Linki girildiyse ekrana otomatik gömme (Embed)
+    if "youtube.com" in yayin_linki or "youtu.be" in yayin_linki:
+        st.subheader("📺 Yayın Ekranı")
+        try:
+            st.video(yayin_linki)
+        except Exception:
+            st.info("Canlı yayın oynatılamadı. Yukarıdaki 'Canlı Yayına Katıl' butonunu kullanarak izleyebilirsiniz.")
 
 
 # ==================================================
