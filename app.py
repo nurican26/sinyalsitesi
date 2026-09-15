@@ -978,7 +978,7 @@ with tab_algoritmik:
             st.divider()
             st.subheader("📊 Kar/Zarar Analizi")
 
-            alim_fiyati = kayit["BTA Alım Fiyatı"]
+            alim_fiyati = kayit["BTA alim Fiyatı"]
             kar_zarar = kar_zarar_hesapla(alim_fiyati, fiyat)
             kar_zarar_yuzde = kar_zarar_yuzde_hesapla(alim_fiyati, fiyat)
             renk = kar_zarar_rengi(kar_zarar)
