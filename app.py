@@ -1212,14 +1212,24 @@ with tab_bedelli:
         type="primary"
     )
 
+    # ==================================================
+    # NOT: Sayfa 5 saniyede bir otomatik yenilendiği için
+    # (st_autorefresh) sonuç "if hesapla_buton:" içinde
+    # tutulursa bir sonraki otomatik yenilemede kaybolur.
+    # Bu yüzden sonuç, session_state'e yazılıp aşağıda
+    # butondan bağımsız olarak her zaman gösterilir.
+    # ==================================================
     if hesapla_buton:
         if eski_fiyat_girdi <= 0:
-            st.error(
+            st.session_state["bedelli_sonuc"] = None
+            st.session_state["bedelli_hata"] = (
                 "Lütfen geçerli bir mevcut fiyat girin."
             )
         elif bedelli_orani_girdi == 0 and bedelsiz_orani_girdi == 0:
-            st.error(
-                "Lütfen bedelli veya bedelsiz oranından en az birini girin."
+            st.session_state["bedelli_sonuc"] = None
+            st.session_state["bedelli_hata"] = (
+                "Lütfen bedelli veya bedelsiz oranından "
+                "en az birini girin."
             )
         else:
             sonuc = bedelli_bedelsiz_hesapla(
@@ -1231,64 +1241,84 @@ with tab_bedelli:
             )
 
             if sonuc is None:
-                st.error(
-                    "Hesaplama yapılamadı, girdiğiniz değerleri kontrol edin."
+                st.session_state["bedelli_sonuc"] = None
+                st.session_state["bedelli_hata"] = (
+                    "Hesaplama yapılamadı, "
+                    "girdiğiniz değerleri kontrol edin."
                 )
             else:
-                st.markdown(
-                    bedelli_bedelsiz_kart_format(sonuc),
-                    unsafe_allow_html=True
-                )
+                st.session_state["bedelli_sonuc"] = sonuc
+                st.session_state["bedelli_hata"] = None
 
-                col1, col2, col3 = st.columns(3)
+    if st.session_state.get("bedelli_hata"):
+        st.error(st.session_state["bedelli_hata"])
 
-                col1.metric(
-                    "Bedelli Yeni Pay",
-                    sayi_format(sonuc["bedelli_yeni_lot"])
-                )
+    sonuc_kalici = st.session_state.get("bedelli_sonuc")
 
-                col2.metric(
-                    "Bedelsiz Yeni Pay",
-                    sayi_format(sonuc["bedelsiz_yeni_lot"])
-                )
+    if sonuc_kalici:
+        st.markdown(
+            bedelli_bedelsiz_kart_format(sonuc_kalici),
+            unsafe_allow_html=True
+        )
 
-                col3.metric(
-                    "Toplam Yeni Pay",
-                    sayi_format(sonuc["toplam_yeni_lot"])
-                )
+        col1, col2, col3 = st.columns(3)
 
-                col1, col2, col3 = st.columns(3)
+        col1.metric(
+            "Bedelli Yeni Pay",
+            sayi_format(sonuc_kalici["bedelli_yeni_lot"])
+        )
 
-                col1.metric(
-                    "Artırım Sonrası Toplam Pay",
-                    sayi_format(sonuc["toplam_lot_sonrasi"])
-                )
+        col2.metric(
+            "Bedelsiz Yeni Pay",
+            sayi_format(sonuc_kalici["bedelsiz_yeni_lot"])
+        )
 
-                col2.metric(
-                    "Bedelli İçin Ödenecek Tutar",
-                    tl_format(sonuc["odenecek_tutar"])
-                )
+        col3.metric(
+            "Toplam Yeni Pay",
+            sayi_format(sonuc_kalici["toplam_yeni_lot"])
+        )
 
-                col3.metric(
-                    "Fiyat Değişimi",
-                    f"{sonuc['fiyat_degisim_yuzde']:+.2f}%"
-                )
+        col1, col2, col3 = st.columns(3)
 
-                st.markdown(
-                    f"""
-                    <div class="bilgi-karti">
-                        <strong>Sermaye Artırımı Öncesi Portföy Değeri:</strong>
-                        {tl_format(sonuc["eski_portfoy_degeri"])}<br>
-                        <strong>Sermaye Artırımı Sonrası Portföy Değeri:</strong>
-                        {tl_format(sonuc["yeni_portfoy_degeri"])}<br>
-                        <strong>Not:</strong> Sonrası değer, bedelli tutarının
-                        nakit olarak yatırıldığı varsayımıyla hesaplanmıştır.
-                        Teorik fiyat, borsanın ilan ettiği kesin referans
-                        fiyattan farklılık gösterebilir.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+        col1.metric(
+            "Artırım Sonrası Toplam Pay",
+            sayi_format(sonuc_kalici["toplam_lot_sonrasi"])
+        )
+
+        col2.metric(
+            "Bedelli İçin Ödenecek Tutar",
+            tl_format(sonuc_kalici["odenecek_tutar"])
+        )
+
+        col3.metric(
+            "Fiyat Değişimi",
+            f"{sonuc_kalici['fiyat_degisim_yuzde']:+.2f}%"
+        )
+
+        st.markdown(
+            f"""
+            <div class="bilgi-karti">
+                <strong>Sermaye Artırımı Öncesi Portföy Değeri:</strong>
+                {tl_format(sonuc_kalici["eski_portfoy_degeri"])}<br>
+                <strong>Sermaye Artırımı Sonrası Portföy Değeri:</strong>
+                {tl_format(sonuc_kalici["yeni_portfoy_degeri"])}<br>
+                <strong>Not:</strong> Sonrası değer, bedelli tutarının
+                nakit olarak yatırıldığı varsayımıyla hesaplanmıştır.
+                Teorik fiyat, borsanın ilan ettiği kesin referans
+                fiyattan farklılık gösterebilir.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "✖️ Sonucu Temizle",
+            use_container_width=True,
+            key="bedelli_sonuc_temizle"
+        ):
+            st.session_state["bedelli_sonuc"] = None
+            st.session_state["bedelli_hata"] = None
+            st.rerun()
 
 
 # ==================================================
