@@ -273,9 +273,9 @@ def bedelli_bedelsiz_kart_format(sonuc):
 
 
 # ==================================================
-# CANLI TÜM BİST HİSSELERİ TARAMA FONKSİYONU (YENİ)
+# CANLI BİST TARAMA FONKSİYONU (HIZLANDIRILMIŞ VE OPTİMİZE EDİLMİŞ)
 # ==================================================
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=120)
 def tum_bist_canli_verileri_getir():
     bist_symbols = [
         "A1CAP.IS", "ACSEL.IS", "ADEL.IS", "ADESE.IS", "AGHOL.IS", "AGROT.IS", "AKBNK.IS", "AKCNS.IS", 
@@ -283,72 +283,87 @@ def tum_bist_canli_verileri_getir():
         "ALCAR.IS", "ALCTL.IS", "ALMAD.IS", "ALTNY.IS", "ALVES.IS", "ANSGR.IS", "ARCLK.IS", "ARDYZ.IS", 
         "ARENA.IS", "ARSAN.IS", "ASELS.IS", "ASTOR.IS", "ATAKP.IS", "ATEKS.IS", "ATSYH.IS", "AVOD.IS", 
         "AYCES.IS", "AYDEM.IS", "AYGAZ.IS", "AZTEK.IS", "BAGFS.IS", "BAKAB.IS", "BALAT.IS", "BANVT.IS", 
-        "BARMA.IS", "BASGZ.IS", "BAYRK.IS", "BEVT.IS", "BERA.IS", "BEYAZ.IS", "BFREN.IS", "BIENP.IS", 
-        "BIGCHEFS.IS", "BIMAS.IS", "BIOEN.IS", "BRKSN.IS", "BRLSM.IS", "BRSAN.IS", "BRYAT.IS", "BSOKE.IS", 
-        "BTCIM.IS", "BUCIM.IS", "BURCE.IS", "BURVA.IS", "CANTE.IS", "CASA.IS", "CATES.IS", "CCOLA.IS", 
-        "CELHA.IS", "CEMAS.IS", "CEMTS.IS", "CMBTN.IS", "CMENT.IS", "CONSE.IS", "CVKMD.IS", "CWENE.IS", 
-        "DAPGM.IS", "DARDL.IS", "DGATE.IS", "DGGYO.IS", "DITAS.IS", "DMSAS.IS", "DNISI.IS", "DOAS.IS", 
-        "DOBUR.IS", "DOCO.IS", "DOHOL.IS", "DOKTA.IS", "DURDO.IS", "DYOBY.IS", "DZGYO.IS", "EBEBK.IS", 
-        "ECILC.IS", "ECZYT.IS", "EDATA.IS", "EDIP.IS", "EGEEN.IS", "EGGUB.IS", "EGPRO.IS", "EGSER.IS", 
-        "EKGYO.IS", "EKOS.IS", "EKSUN.IS", "ELITE.IS", "EMKEL.IS", "ENERY.IS", "ENJSA.IS", "ENKAI.IS", 
-        "EPLAS.IS", "ERBOS.IS", "EREGL.IS", "EUPWR.IS", "EUREK.IS", "EYGYO.IS", "FMIZP.IS", "FONET.IS", 
-        "FORMT.IS", "FORTE.IS", "FRIGO.IS", "FROTO.IS", "GARAN.IS", "GARFA.IS", "GEDIK.IS", "GENTS.IS", 
-        "GEREL.IS", "GESAN.IS", "GOKNR.IS", "GOLTS.IS", "GOODY.IS", "GOZDE.IS", "GRSEL.IS", "GSDHO.IS", 
-        "GUBRF.IS", "GWIND.IS", "HALKB.IS", "HATEK.IS", "HEKTS.IS", "HKTM.IS", "HLGYO.IS", "HTTBT.IS", 
-        "HUBVC.IS", "HUNER.IS", "HURGZ.IS", "ICBCT.IS", "IEYHO.IS", "IHAAS.IS", "IHEVA.IS", "IHGTT.IS", 
-        "IHLGM.IS", "IHYAY.IS", "IMASM.IS", "INDES.IS", "INFO.IS", "INGRM.IS", "INTEM.IS", "INVEO.IS", 
-        "INVES.IS", "IPEKE.IS", "ISCTR.IS", "ISDMR.IS", "ISFIN.IS", "ISGSY.IS", "ISGYO.IS", "ISKPL.IS", 
-        "ISMEN.IS", "ISSEN.IS", "IZINV.IS", "IZMDC.IS", "JANTS.IS", "KAPLM.IS", "KAREL.IS", "KARSN.IS", 
-        "KARTN.IS", "KATMR.IS", "KCAER.IS", "KCHOL.IS", "KENT.IS", "KLGYO.IS", "KLMSN.IS", "KLSER.IS", 
-        "KLRHO.IS", "KMPUR.IS", "KONTR.IS", "KONYA.IS", "KORDS.IS", "KOZAA.IS", "KOZAL.IS", "KRDMD.IS", 
-        "KRONT.IS", "KRPLS.IS", "KRVGD.IS", "KSTUR.IS", "KTLEV.IS", "KUYAŞ.IS", "LIDER.IS", "LKMNH.IS", 
-        "LOGO.IS", "LRVGY.IS", "LUKSK.IS", "MAALT.IS", "MACKO.IS", "MAKIM.IS", "MAKTK.IS", "MANAS.IS", 
-        "MARKA.IS", "MAVI.IS", "MEDTR.IS", "MEGAP.IS", "MEPET.IS", "MERCN.IS", "MERKO.IS", "METRO.IS", 
-        "MHRGY.IS", "MIATK.IS", "MIPAZ.IS", "MPARK.IS", "MRGYO.IS", "MSGYO.IS", "MTRKS.IS", "MTURG.IS", 
-        "NAVTK.IS", "NTGAZ.IS", "NTHOL.IS", "NUGYO.IS", "NUHCM.IS", "OBAMS.IS", "OBASE.IS", "ODAS.IS", 
-        "ONCSM.IS", "ORGE.IS", "ORMA.IS", "OTKAR.IS", "OYYAT.IS", "OZKGY.IS", "OZSUB.IS", "PAGYO.IS", 
-        "PAMEL.IS", "PATEK.IS", "PAPIL.IS", "PARSN.IS", "PASEU.IS", "PENTA.IS", "PETKM.IS", "PKART.IS", 
-        "PLTUR.IS", "POLHO.IS", "POLTK.IS", "PRKAB.IS", "PRKME.IS", "PRDGS.IS", "PSAOL.IS", "PSGYO.IS", 
-        "QUAGR.IS", "RALYH.IS", "RAYSG.IS", "REEDR.IS", "RGYAS.IS", "RNPOL.IS", "RODRG.IS", "RTALB.IS", 
-        "RUBNS.IS", "RYGYO.IS", "RYSAS.IS", "SAHOL.IS", "SAMAT.IS", "SANEL.IS", "SANFM.IS", "SANKO.IS", 
-        "SARKY.IS", "SASA.IS", "SAYAS.IS", "SDTTR.IS", "SEGMN.IS", "SEKFK.IS", "SEKUR.IS", "SELEC.IS", 
-        "SELVA.IS", "SEYKM.IS", "SILVR.IS", "SISE.IS", "SKBNK.IS", "SMART.IS", "SMRTG.IS", "SOKM.IS", 
-        "SRVGY.IS", "SUMAS.IS", "SUNTK.IS", "SUWEN.IS", "TATEN.IS", "TATGD.IS", "TAVHL.IS", "TCELL.IS", 
-        "TDGYO.IS", "TEKTN.IS", "TEZOL.IS", "THYAO.IS", "TKFEN.IS", "TKNSA.IS", "TLMAN.IS", "TMSN.IS", 
-        "TNZTP.IS", "TOASO.IS", "TRCAS.IS", "TRGYO.IS", "TRILC.IS", "TSKB.IS", "TSPOR.IS", "TTKOM.IS", 
-        "TTRAK.IS", "TUCLK.IS", "TUPRS.IS", "TURGG.IS", "TURSG.IS", "UFUK.IS", "ULAS.IS", "ULKER.IS", 
-        "UNLU.IS", "USAK.IS", "VAKBN.IS", "VAKKO.IS", "VANGD.IS", "VBTYZ.IS", "VERTU.IS", "VERUS.IS", 
-        "VESBE.IS", "VESTL.IS", "VKFYO.IS", "VKGYO.IS", "YAPRK.IS", "YATAS.IS", "YAYLA.IS", "YGGYO.IS", 
-        "YGYO.IS", "YEOTK.IS", "YKBNK.IS", "YONGA.IS", "YUNSA.IS", "YYLGD.IS", "ZOREN.IS"
+        "BARMA.IS", "BASGZ.IS", "BAYRK.IS", "BERA.IS", "BEYAZ.IS", "BFREN.IS", "BIENP.IS", "BIGCHEFS.IS", 
+        "BIMAS.IS", "BIOEN.IS", "BRKSN.IS", "BRLSM.IS", "BRSAN.IS", "BRYAT.IS", "BSOKE.IS", "BTCIM.IS", 
+        "BUCIM.IS", "BURCE.IS", "BURVA.IS", "CANTE.IS", "CASA.IS", "CATES.IS", "CCOLA.IS", "CELHA.IS", 
+        "CEMAS.IS", "CEMTS.IS", "CMBTN.IS", "CMENT.IS", "CONSE.IS", "CVKMD.IS", "CWENE.IS", "DAPGM.IS", 
+        "DARDL.IS", "DGATE.IS", "DGGYO.IS", "DITAS.IS", "DMSAS.IS", "DNISI.IS", "DOAS.IS", "DOBUR.IS", 
+        "DOCO.IS", "DOHOL.IS", "DOKTA.IS", "DURDO.IS", "DYOBY.IS", "DZGYO.IS", "EBEBK.IS", "ECILC.IS", 
+        "ECZYT.IS", "EDATA.IS", "EDIP.IS", "EGEEN.IS", "EGGUB.IS", "EGPRO.IS", "EGSER.IS", "EKGYO.IS", 
+        "EKOS.IS", "EKSUN.IS", "ELITE.IS", "EMKEL.IS", "ENERY.IS", "ENJSA.IS", "ENKAI.IS", "EPLAS.IS", 
+        "ERBOS.IS", "EREGL.IS", "EUPWR.IS", "EUREK.IS", "EYGYO.IS", "FMIZP.IS", "FONET.IS", "FORMT.IS", 
+        "FORTE.IS", "FRIGO.IS", "FROTO.IS", "GARAN.IS", "GARFA.IS", "GEDIK.IS", "GENTS.IS", "GEREL.IS", 
+        "GESAN.IS", "GOKNR.IS", "GOLTS.IS", "GOODY.IS", "GOZDE.IS", "GRSEL.IS", "GSDHO.IS", "GUBRF.IS", 
+        "GWIND.IS", "HALKB.IS", "HATEK.IS", "HEKTS.IS", "HKTM.IS", "HLGYO.IS", "HTTBT.IS", "HUBVC.IS", 
+        "HUNER.IS", "HURGZ.IS", "ICBCT.IS", "IEYHO.IS", "IHAAS.IS", "IHEVA.IS", "IHGTT.IS", "IHLGM.IS", 
+        "IHYAY.IS", "IMASM.IS", "INDES.IS", "INFO.IS", "INGRM.IS", "INTEM.IS", "INVEO.IS", "INVES.IS", 
+        "IPEKE.IS", "ISCTR.IS", "ISDMR.IS", "ISFIN.IS", "ISGSY.IS", "ISGYO.IS", "ISKPL.IS", "ISMEN.IS", 
+        "ISSEN.IS", "IZINV.IS", "IZMDC.IS", "JANTS.IS", "KAPLM.IS", "KAREL.IS", "KARSN.IS", "KARTN.IS", 
+        "KATMR.IS", "KCAER.IS", "KCHOL.IS", "KENT.IS", "KLGYO.IS", "KLMSN.IS", "KLSER.IS", "KLRHO.IS", 
+        "KMPUR.IS", "KONTR.IS", "KONYA.IS", "KORDS.IS", "KOZAA.IS", "KOZAL.IS", "KRDMD.IS", "KRONT.IS", 
+        "KRPLS.IS", "KRVGD.IS", "KSTUR.IS", "KTLEV.IS", "KUYAS.IS", "LIDER.IS", "LKMNH.IS", "LOGO.IS", 
+        "LRVGY.IS", "LUKSK.IS", "MAALT.IS", "MACKO.IS", "MAKIM.IS", "MAKTK.IS", "MANAS.IS", "MARKA.IS", 
+        "MAVI.IS", "MEDTR.IS", "MEGAP.IS", "MEPET.IS", "MERCN.IS", "MERKO.IS", "METRO.IS", "MHRGY.IS", 
+        "MIATK.IS", "MIPAZ.IS", "MPARK.IS", "MRGYO.IS", "MSGYO.IS", "MTRKS.IS", "MTURG.IS", "NAVTK.IS", 
+        "NTGAZ.IS", "NTHOL.IS", "NUGYO.IS", "NUHCM.IS", "OBAMS.IS", "OBASE.IS", "ODAS.IS", "ONCSM.IS", 
+        "ORGE.IS", "ORMA.IS", "OTKAR.IS", "OYYAT.IS", "OZKGY.IS", "OZSUB.IS", "PAGYO.IS", "PAMEL.IS", 
+        "PATEK.IS", "PAPIL.IS", "PARSN.IS", "PASEU.IS", "PENTA.IS", "PETKM.IS", "PKART.IS", "PLTUR.IS", 
+        "POLHO.IS", "POLTK.IS", "PRKAB.IS", "PRKME.IS", "PRDGS.IS", "PSAOL.IS", "PSGYO.IS", "QUAGR.IS", 
+        "RALYH.IS", "RAYSG.IS", "REEDR.IS", "RGYAS.IS", "RNPOL.IS", "RODRG.IS", "RTALB.IS", "RUBNS.IS", 
+        "RYGYO.IS", "RYSAS.IS", "SAHOL.IS", "SAMAT.IS", "SANEL.IS", "SANFM.IS", "SANKO.IS", "SARKY.IS", 
+        "SASA.IS", "SAYAS.IS", "SDTTR.IS", "SEGMN.IS", "SEKFK.IS", "SEKUR.IS", "SELEC.IS", "SELVA.IS", 
+        "SEYKM.IS", "SILVR.IS", "SISE.IS", "SKBNK.IS", "SMART.IS", "SMRTG.IS", "SOKM.IS", "SRVGY.IS", 
+        "SUMAS.IS", "SUNTK.IS", "SUWEN.IS", "TATEN.IS", "TATGD.IS", "TAVHL.IS", "TCELL.IS", "TDGYO.IS", 
+        "TEKTN.IS", "TEZOL.IS", "THYAO.IS", "TKFEN.IS", "TKNSA.IS", "TLMAN.IS", "TMSN.IS", "TNZTP.IS", 
+        "TOASO.IS", "TRCAS.IS", "TRGYO.IS", "TRILC.IS", "TSKB.IS", "TSPOR.IS", "TTKOM.IS", "TTRAK.IS", 
+        "TUCLK.IS", "TUPRS.IS", "TURGG.IS", "TURSG.IS", "UFUK.IS", "ULAS.IS", "ULKER.IS", "UNLU.IS", 
+        "USAK.IS", "VAKBN.IS", "VAKKO.IS", "VANGD.IS", "VBTYZ.IS", "VERTU.IS", "VERUS.IS", "VESBE.IS", 
+        "VESTL.IS", "VKFYO.IS", "VKGYO.IS", "YAPRK.IS", "YATAS.IS", "YAYLA.IS", "YGGYO.IS", "YGYO.IS", 
+        "YEOTK.IS", "YKBNK.IS", "YONGA.IS", "YUNSA.IS", "YYLGD.IS", "ZOREN.IS"
     ]
     
     data_list = []
-    tickers = yf.Tickers(" ".join(bist_symbols))
     
-    for symbol in bist_symbols:
-        try:
-            ticker = tickers.tickers[symbol]
-            info = ticker.fast_info
-            
-            last_price = info.last_price
-            prev_close = info.previous_close
-            
-            if last_price and prev_close:
-                change_pct = ((last_price - prev_close) / prev_close) * 100
-                volume = (info.last_volume * last_price / 1_000_000) if info.last_volume else 0
-                
+    try:
+        # Hızlı toplu çekim işlemi
+        download_data = yf.download(
+            tickers=" ".join(bist_symbols),
+            period="2d",
+            interval="1d",
+            group_by="ticker",
+            progress=False,
+            threads=True
+        )
+
+        for symbol in bist_symbols:
+            try:
                 clean_symbol = symbol.replace(".IS", "")
-                data_list.append({
-                    "symbol": clean_symbol,
-                    "price": f"{last_price:,.2f}",
-                    "change_num": change_pct,
-                    "change": f"{change_pct:+.2f} %",
-                    "volume_num": volume,
-                    "volume": f"{volume:,.2f}"
-                })
-        except Exception:
-            continue
-            
+                df_sym = download_data[symbol] if len(bist_symbols) > 1 else download_data
+                df_sym = df_sym.dropna(subset=['Close'])
+
+                if len(df_sym) >= 2:
+                    last_price = float(df_sym['Close'].iloc[-1])
+                    prev_close = float(df_sym['Close'].iloc[-2])
+                elif len(df_sym) == 1:
+                    last_price = float(df_sym['Close'].iloc[-1])
+                    prev_close = float(df_sym['Open'].iloc[-1])
+                else:
+                    continue
+
+                if prev_close > 0:
+                    change_pct = ((last_price - prev_close) / prev_close) * 100
+                    data_list.append({
+                        "symbol": clean_symbol,
+                        "price": f"{last_price:,.2f}",
+                        "change_num": change_pct,
+                        "change": f"{change_pct:+.2f} %"
+                    })
+            except Exception:
+                continue
+
+    except Exception:
+        pass
+
     return pd.DataFrame(data_list)
 
 
@@ -859,7 +874,7 @@ def mesaj_sesi_cal():
 # CANLI YENİLEME
 # ==================================================
 st_autorefresh(
-    interval=5000,
+    interval=10000,
     key="bta_canli_yenileme"
 )
 
@@ -1019,7 +1034,7 @@ if excel_dosyalari:
 
 
 # ==================================================
-# PANELLER (SAYFANIZA YENİ BİST CANLI SEKMESİ EKLENDİ)
+# PANELLER
 # ==================================================
 tab_algoritmik, tab_bist_canli, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
     [
@@ -1141,25 +1156,25 @@ with tab_algoritmik:
 
 
 # ==================================================
-# 📈 YENİ BİST CANLI TAKİP SEKMESİ (BTA TASARIMIYLA UYUMLU)
+# 📈 OPTİMİZE EDİLMİŞ BİST CANLI TAKİP SEKMESİ
 # ==================================================
 with tab_bist_canli:
     st.header("📈 Borsa İstanbul Canlı İstatistikler")
 
     col_a, col_b = st.columns([3, 1])
     with col_a:
-        st.caption("Tüm BIST hisselerinin canlı yükselen, düşen ve en yüksek hacimli verilerini takip edebilirsiniz.")
+        st.caption("Tüm BIST hisselerinin canlı en çok yükselen ve düşen listesini donmadan takip edebilirsiniz.")
     with col_b:
         if st.button("🔄 Verileri Yenile", use_container_width=True):
             st.cache_data.clear()
 
-    with st.spinner("Tüm BIST hisse verileri taranıyor..."):
+    with st.spinner("BIST verileri hızlıca taranıyor..."):
         df_bist_canli = tum_bist_canli_verileri_getir()
 
     if not df_bist_canli.empty:
-        yukselenler = df_bist_canli.sort_values(by="change_num", ascending=False).head(10).to_dict('records')
-        dusenler = df_bist_canli.sort_values(by="change_num", ascending=True).head(10).to_dict('records')
-        hacimliler = df_bist_canli.sort_values(by="volume_num", ascending=False).head(10).to_dict('records')
+        # Donmayı önlemek ve tüm tavanları tam yakalamak için sınır 20 hisseye çıkarıldı
+        yukselenler = df_bist_canli.sort_values(by="change_num", ascending=False).head(20).to_dict('records')
+        dusenler = df_bist_canli.sort_values(by="change_num", ascending=True).head(20).to_dict('records')
 
         bist_widget_html = f"""
         <!DOCTYPE html>
@@ -1169,18 +1184,19 @@ with tab_bist_canli:
           <style>
             * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }}
             body {{ background-color: transparent; display: flex; justify-content: center; padding: 5px; }}
-            .widget-container {{ width: 100%; max-width: 500px; background: rgba(9, 31, 48, 0.95); border: 1px solid rgba(0, 245, 200, 0.35); border-radius: 9px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); overflow: hidden; color: #fff; }}
+            .widget-container {{ width: 100%; max-width: 550px; background: rgba(9, 31, 48, 0.95); border: 1px solid rgba(0, 245, 200, 0.35); border-radius: 9px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); overflow: hidden; color: #fff; }}
             .header-title {{ background-color: #00f5c8; color: #07131f; text-align: center; padding: 12px; font-weight: bold; font-size: 16px; }}
             .tabs {{ display: flex; background-color: rgba(4, 13, 24, 0.98); border-bottom: 1px solid rgba(0, 245, 200, 0.2); }}
             .tab-btn {{ flex: 1; padding: 12px 5px; text-align: center; background: none; border: none; border-right: 1px solid rgba(0, 245, 200, 0.2); font-size: 14px; font-weight: bold; color: #aaa; cursor: pointer; transition: 0.3s; }}
             .tab-btn:last-child {{ border-right: none; }}
             .tab-btn.active {{ background-color: rgba(9, 31, 48, 0.95); border-top: 3px solid #00f5c8; color: #00f5c8; }}
+            .table-wrapper {{ max-height: 480px; overflow-y: auto; }}
             .stock-table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
-            .stock-table th {{ text-align: left; padding: 10px 8px; background-color: rgba(4, 13, 24, 0.8); border-bottom: 1px solid rgba(0, 245, 200, 0.3); color: #00f5c8; font-weight: bold; }}
-            .stock-table th:nth-child(2), .stock-table th:nth-child(3), .stock-table th:nth-child(4) {{ text-align: right; }}
-            .stock-table td {{ padding: 10px 8px; border-bottom: 1px dashed rgba(255, 255, 255, 0.1); color: #e0e0e0; }}
+            .stock-table th {{ text-align: left; padding: 10px 12px; background-color: rgba(4, 13, 24, 0.9); border-bottom: 1px solid rgba(0, 245, 200, 0.3); color: #00f5c8; font-weight: bold; position: sticky; top: 0; }}
+            .stock-table th:nth-child(2), .stock-table th:nth-child(3) {{ text-align: right; }}
+            .stock-table td {{ padding: 10px 12px; border-bottom: 1px dashed rgba(255, 255, 255, 0.1); color: #e0e0e0; }}
             .stock-table tr:nth-child(even) {{ background-color: rgba(255, 255, 255, 0.02); }}
-            .stock-table td:nth-child(2), .stock-table td:nth-child(3), .stock-table td:nth-child(4) {{ text-align: right; }}
+            .stock-table td:nth-child(2), .stock-table td:nth-child(3) {{ text-align: right; }}
             .pos-change {{ color: #00f5c8; font-weight: bold; }}
             .neg-change {{ color: #ff5264; font-weight: bold; }}
             .symbol {{ font-weight: bold; color: #fff; }}
@@ -1189,32 +1205,31 @@ with tab_bist_canli:
         <body>
 
         <div class="widget-container">
-          <div class="header-title">Endeks/Dönem Seçimi</div>
+          <div class="header-title">BİST Canlı Piyasa Hareketleri</div>
           
           <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('yukselenler', event)">Yükselenler</button>
-            <button class="tab-btn" onclick="showTab('dusenler', event)">Düşenler</button>
-            <button class="tab-btn" onclick="showTab('hacimliler', event)">Hacimliler</button>
+            <button class="tab-btn active" onclick="showTab('yukselenler', event)">📈 Yükselenler / Tavanlar</button>
+            <button class="tab-btn" onclick="showTab('dusenler', event)">📉 En Çok Düşenler</button>
           </div>
 
-          <table class="stock-table">
-            <thead>
-              <tr>
-                <th>HİSSE</th>
-                <th>SON</th>
-                <th>DEĞİŞİM</th>
-                <th>HACİM (mTL)</th>
-              </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-          </table>
+          <div class="table-wrapper">
+            <table class="stock-table">
+              <thead>
+                <tr>
+                  <th>HİSSE</th>
+                  <th>SON (TL)</th>
+                  <th>DEĞİŞİM</th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
         </div>
 
         <script>
           const data = {{
             yukselenler: {yukselenler},
-            dusenler: {dusenler},
-            hacimliler: {hacimliler}
+            dusenler: {dusenler}
           }};
 
           function showTab(type, evt) {{
@@ -1235,7 +1250,6 @@ with tab_bist_canli:
                   <td class="symbol">${{item.symbol}}</td>
                   <td>${{item.price}}</td>
                   <td class="${{changeClass}}">${{item.change}}</td>
-                  <td>${{item.volume}}</td>
                 </tr>
               `;
               tbody.innerHTML += row;
@@ -1247,9 +1261,9 @@ with tab_bist_canli:
         </body>
         </html>
         """
-        st.components.v1.html(bist_widget_html, height=520, scrolling=False)
+        st.components.v1.html(bist_widget_html, height=560, scrolling=False)
     else:
-        st.warning("Canlı BIST verisi alınamadı. Sayfayı yenilemeyi deneyiniz.")
+        st.warning("Canlı BIST verisi şu an alınamadı. Lütfen 'Verileri Yenile' butonuna basınız.")
 
 
 # ==================================================
