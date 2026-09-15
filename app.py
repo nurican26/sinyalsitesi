@@ -50,32 +50,39 @@ def canli_hisse_verisi_getir(sembol):
     except Exception:
         return {}
 
-def tradingview_canli_grafik(sembol_kod):
-    """TradingView widget'ı ile dikey boyutu büyütülmüş canlı grafik."""
-    clean_symbol = sembol_kod.replace(".IS", "").upper()
-    tv_symbol = f"BIST:{clean_symbol}"
-    
+def tradingview_piyasa_widget(filitre_tipi="top_gainers"):
+    """TradingView BIST En Çok Yükselenler / Düşenler Canlı Listesi."""
     tv_html = f"""
-    <div class="tradingview-widget-container" style="height:750px;width:100%">
-      <div id="tradingview_widget" style="height:100%;width:100%"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-      <script type="text/javascript">
-      new TradingView.widget({{
-        "autosize": true,
-        "symbol": "{tv_symbol}",
-        "interval": "1",
-        "timezone": "Europe/Istanbul",
-        "theme": "dark",
-        "style": "1",
-        "locale": "tr",
-        "enable_publishing": false,
-        "hide_top_toolbar": false,
-        "container_id": "tradingview_widget"
-      }});
+    <div class="tradingview-widget-container" style="height:600px;width:100%">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-hotlists.js" async>
+      {{
+      "colorTheme": "dark",
+      "dateRange": "1D",
+      "exchange": "BIST",
+      "showChart": true,
+      "locale": "tr",
+      "largeChartUrl": "",
+      "isTransparent": true,
+      "showSymbolLogo": true,
+      "showFloatingTooltip": false,
+      "width": "100%",
+      "height": "100%",
+      "plotLineColorGrowing": "rgba(0, 245, 200, 1)",
+      "plotLineColorFalling": "rgba(255, 82, 100, 1)",
+      "gridLineColor": "rgba(240, 243, 250, 0.1)",
+      "scaleFontColor": "rgba(120, 123, 134, 1)",
+      "belowLineFillColorGrowing": "rgba(41, 98, 255, 0.12)",
+      "belowLineFillColorFalling": "rgba(41, 98, 255, 0.12)",
+      "belowLineFillColorGrowingBottom": "rgba(41, 98, 255, 0)",
+      "belowLineFillColorFallingBottom": "rgba(41, 98, 255, 0)",
+      "symbolActiveColor": "rgba(41, 98, 255, 0.12)",
+      "activeFilter": "{filitre_tipi}"
+    }}
       </script>
     </div>
     """
-    components.html(tv_html, height=780)
+    components.html(tv_html, height=620)
 
 # ==================================================
 # FORMATLAMA BİLEŞENLERİ
@@ -310,8 +317,8 @@ if excel_dosyalari:
 # ==================================================
 # PANELLER (TABS)
 # ==================================================
-tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs([
-    "🤖 Algoritmik Bilgiler", "🧮 Bedelli/Bedelsiz", "💬 Sohbet", "📒 Kayıtlar", "🔗 Paylaş"
+tab_algoritmik, tab_yukselenler, tab_dusenler, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs([
+    "🤖 Algoritmik Bilgiler", "🚀 En Çok Yükselenler", "📉 En Çok Düşenler", "🧮 Bedelli/Bedelsiz", "💬 Sohbet", "📒 Kayıtlar", "🔗 Paylaş"
 ])
 
 # --------------------------------------------------
@@ -339,11 +346,22 @@ with tab_algoritmik:
 
         st.markdown(kar_yuzdesi_format(kar_yuzde), unsafe_allow_html=True)
 
-        st.subheader("📺 Saniyelik Canlı Grafik (TradingView)")
-        tradingview_canli_grafik(secilen_hisse)
+# --------------------------------------------------
+# TAB 2: BİST EN ÇOK YÜKSELEN HİSSELER
+# --------------------------------------------------
+with tab_yukselenler:
+    st.header("🚀 BİST En Çok Yükselen Hisseler (Canlı)")
+    tradingview_piyasa_widget("top_gainers")
 
 # --------------------------------------------------
-# TAB 2: BEDELLİ / BEDELSİZ HESAPLAMA
+# TAB 3: BİST EN ÇOK DÜŞEN HİSSELER
+# --------------------------------------------------
+with tab_dusenler:
+    st.header("📉 BİST En Çok Düşen Hisseler (Canlı)")
+    tradingview_piyasa_widget("top_losers")
+
+# --------------------------------------------------
+# TAB 4: BEDELLİ / BEDELSİZ HESAPLAMA
 # --------------------------------------------------
 with tab_bedelli:
     st.header("🧮 Bedelli/Bedelsiz Hesaplama Makinesi")
@@ -379,7 +397,7 @@ with tab_bedelli:
         st.success(f"Teorik Fiyat: {tl_format(r['teorik_fiyat'])} | Toplam Lot: {sayi_format(r['toplam_lot_sonrasi'])}")
 
 # --------------------------------------------------
-# TAB 3: CANLI SOHBET
+# TAB 5: CANLI SOHBET
 # --------------------------------------------------
 with tab_sohbet:
     st.header("💬 Canlı Sohbet Odası")
@@ -405,7 +423,7 @@ with tab_sohbet:
         st.markdown(f'<div class="mesaj-karti"><strong>👤 {row["kullanici"]}</strong> <small>({row["tarih"]})</small><br>{row["mesaj"]}</div>', unsafe_allow_html=True)
 
 # --------------------------------------------------
-# TAB 4: TARİHLİ KAYITLAR
+# TAB 6: TARİHLİ KAYITLAR
 # --------------------------------------------------
 with tab_kayit:
     st.header("📒 Tarihli Kayıt Defteri")
@@ -416,7 +434,7 @@ with tab_kayit:
         st.info("Kayıt bulunamadı.")
 
 # --------------------------------------------------
-# TAB 5: PAYLAŞ
+# TAB 7: PAYLAŞ
 # --------------------------------------------------
 with tab_paylas:
     st.header("🔗 Platformu Paylaş")
