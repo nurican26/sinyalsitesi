@@ -287,6 +287,98 @@ def bedelli_bedelsiz_kart_format(sonuc):
 
 
 # ==================================================
+# YÜKSELEN / DÜŞEN HİSSELER (CANLI)
+# ==================================================
+@st.cache_data(ttl=20, show_spinner=False)
+def yukselen_dusen_hesapla(hisse_listesi):
+    """
+    Takip listesindeki hisseler arasından son fiyat / önceki
+    kapanış karşılaştırmasıyla değişim yüzdesini hesaplar.
+    Yahoo Finance verisi en az 15 dakika gecikmeli olabilir;
+    sonuçlar 20 saniye önbelleklenir (aşırı istek atılmasın diye).
+    """
+    if not hisse_listesi:
+        return pd.DataFrame(
+            columns=["Hisse Kodu", "Fiyat", "Değişim %"]
+        )
+
+    semboller = [
+        (h if h.endswith(".IS") else f"{h}.IS")
+        for h in hisse_listesi
+    ]
+
+    try:
+        veri = yf.download(
+            tickers=semboller,
+            period="2d",
+            interval="1d",
+            group_by="ticker",
+            progress=False,
+            threads=True
+        )
+    except Exception:
+        return pd.DataFrame(
+            columns=["Hisse Kodu", "Fiyat", "Değişim %"]
+        )
+
+    sonuclar = []
+
+    for hisse, sembol in zip(hisse_listesi, semboller):
+        try:
+            if len(semboller) == 1:
+                kapanislar = veri["Close"].dropna()
+            else:
+                kapanislar = veri[sembol]["Close"].dropna()
+
+            if len(kapanislar) < 2:
+                continue
+
+            onceki = float(kapanislar.iloc[-2])
+            son = float(kapanislar.iloc[-1])
+
+            if onceki <= 0 or pd.isna(onceki) or pd.isna(son):
+                continue
+
+            degisim = ((son - onceki) / onceki) * 100
+
+            sonuclar.append(
+                {
+                    "Hisse Kodu": hisse,
+                    "Fiyat": son,
+                    "Değişim %": degisim
+                }
+            )
+
+        except Exception:
+            continue
+
+    return pd.DataFrame(sonuclar)
+
+
+def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
+    durum = "📈" if degisim >= 0 else "📉"
+
+    return f"""
+    <div style="
+        background: rgba(0, 0, 0, 0.3);
+        border-left: 4px solid {renk};
+        border-radius: 5px;
+        padding: 9px 14px;
+        margin: 6px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    ">
+        <span style="font-weight: bold;">{hisse_kodu}</span>
+        <span style="color: #ccc;">{tl_format(fiyat)}</span>
+        <span style="color: {renk}; font-weight: bold;">
+            {durum} {degisim:+.2f}%
+        </span>
+    </div>
+    """
+
+
+# ==================================================
 # TASARIM
 # ==================================================
 st.markdown(
@@ -956,6 +1048,80 @@ if excel_dosyalari:
         st.error(
             f"Excel okunamadı: {hata}"
         )
+
+
+# ==================================================
+# CANLI PİYASA PANELİ - YÜKSELEN / DÜŞEN HİSSELER
+# ==================================================
+st.subheader("📊 Canlı Yükselen / Düşen Hisseler")
+
+if excel_df.empty:
+    st.info(
+        "Yükselen/düşen hisseleri gösterebilmek için önce "
+        "takip listesi (Excel) yüklenmelidir."
+    )
+else:
+    piyasa_df = yukselen_dusen_hesapla(
+        tuple(excel_df["Hisse Kodu"].tolist())
+    )
+
+    if piyasa_df.empty:
+        st.info(
+            "Piyasa verisi şu anda alınamıyor, birazdan tekrar denenecek."
+        )
+    else:
+        yukselenler = piyasa_df.sort_values(
+            "Değişim %",
+            ascending=False
+        ).head(5)
+
+        dusenler = piyasa_df.sort_values(
+            "Değişim %",
+            ascending=True
+        ).head(5)
+
+        col_yukselen, col_dusen = st.columns(2)
+
+        with col_yukselen:
+            st.markdown("##### 🚀 Yükselen Hisseler")
+
+            if yukselenler.empty:
+                st.caption("Veri yok.")
+            else:
+                for _, satir in yukselenler.iterrows():
+                    st.markdown(
+                        hisse_karti_format(
+                            satir["Hisse Kodu"],
+                            satir["Fiyat"],
+                            satir["Değişim %"],
+                            "#00f5c8"
+                        ),
+                        unsafe_allow_html=True
+                    )
+
+        with col_dusen:
+            st.markdown("##### 🔻 Düşen Hisseler")
+
+            if dusenler.empty:
+                st.caption("Veri yok.")
+            else:
+                for _, satir in dusenler.iterrows():
+                    st.markdown(
+                        hisse_karti_format(
+                            satir["Hisse Kodu"],
+                            satir["Fiyat"],
+                            satir["Değişim %"],
+                            "#ff5264"
+                        ),
+                        unsafe_allow_html=True
+                    )
+
+        st.caption(
+            "Veriler en az 15 dakika gecikmeli olabilir ve "
+            "yaklaşık her 20 saniyede bir güncellenir."
+        )
+
+st.divider()
 
 
 # ==================================================
