@@ -705,15 +705,14 @@ st.markdown(
 
     .bta-logo {
         display: inline-block;
-        color: #3ea6ff;
-        font-family: "Segoe UI", "Arial", sans-serif;
+        color: #00f5c8;
+        font-family: "Brush Script MT", "Segoe Script", cursive;
         font-size: 58px;
-        font-weight: 800;
-        font-style: italic;
-        letter-spacing: 5px;
+        font-weight: bold;
         text-shadow:
-            0 2px 4px rgba(0, 45, 110, 0.65),
-            0 0 20px rgba(62, 166, 255, 0.38);
+            0 0 8px #00f5c8,
+            0 0 18px #00f5c8,
+            0 0 28px #168cff;
     }
 
     /* ============================================
@@ -1035,28 +1034,84 @@ st.markdown(
     }
 
     /* ============================================
-       HABER İKONU BUTONU (ana sayfa)
+       SON HABER BÜLTENİ (büyük ve okunaklı)
        ============================================ */
-    .haber-ikon-buton {
-        display: inline-flex;
+    .haber-bulteni-baslik {
+        display: flex;
         align-items: center;
-        gap: 7px;
-        background: rgba(255, 82, 100, 0.12);
-        border: 1px solid rgba(255, 82, 100, 0.5);
-        border-radius: 20px;
-        padding: 6px 16px;
-        font-size: 13.5px;
-        font-weight: 700;
-        color: #ff8d99;
-        text-decoration: none;
-        transition: all 0.3s ease;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 82, 100, 0.22),
+            rgba(255, 82, 100, 0.06)
+        );
+        border: 1px solid rgba(255, 82, 100, 0.6);
+        border-radius: 9px;
+        padding: 12px 18px;
+        margin: 4px 0 12px 0;
+        font-size: 17px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: 1px;
+        text-shadow: 0 0 12px rgba(255, 82, 100, 0.8);
     }
 
-    .haber-ikon-buton:hover {
-        background: rgba(255, 82, 100, 0.28);
-        border-color: #ff5264;
+    .haber-bulteni-baslik span {
+        font-size: 13px;
+        font-weight: 600;
+        color: #ff9da8;
+    }
+
+    .haber-bulteni-kart {
+        background: rgba(9, 27, 42, 0.96);
+        border-left: 4px solid #ff5264;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 16px 18px;
+        margin: 8px 0;
+        transition: background 0.3s ease;
+    }
+
+    .haber-bulteni-kart:hover {
+        background: rgba(20, 42, 60, 0.98);
+    }
+
+    .haber-bulteni-saat {
+        font-size: 14px;
+        font-weight: 700;
+        color: #ff9da8;
+        margin-bottom: 6px;
+    }
+
+    .haber-bulteni-link {
+        display: block;
         color: #ffffff;
-        box-shadow: 0 0 14px rgba(255, 82, 100, 0.45);
+        text-decoration: none;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .haber-bulteni-link:hover {
+        color: #00f5c8;
+    }
+
+    @media screen and (max-width: 768px) {
+        .haber-bulteni-baslik {
+            font-size: 15px;
+            padding: 10px 14px;
+        }
+
+        .haber-bulteni-link {
+            font-size: 16px;
+        }
+
+        .haber-bulteni-kart {
+            padding: 13px 14px;
+        }
     }
 
     @media screen and (max-width: 768px) {
@@ -1077,11 +1132,6 @@ st.markdown(
 
         .sohbet-begeni-sayi {
             font-size: 17px;
-        }
-
-        .haber-ikon-buton {
-            font-size: 12px;
-            padding: 5px 12px;
         }
     }
 
@@ -1559,7 +1609,7 @@ st.markdown(
     """
     <div class="bta-logo-alani">
         <div class="bta-logo">
-            ALGORİTMİK HİSSE
+            BTA ALGORİTMİK İŞLEM
         </div>
     </div>
     """,
@@ -1666,30 +1716,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-# ==================================================
-# SON DAKİKA HABERLERİ İKONU (tıklayınca haber sayfası açılır)
-# ==================================================
-st.markdown(
-    """
-    <div style="
-        display: flex;
-        justify-content: flex-end;
-        margin: 4px 0 2px 0;
-    ">
-        <a href="https://news.google.com/topics/CAAqIggKIhdwQkl3Z2dNU0I1VXdCaApSUlFOb3lNQUFQAQ"
-           target="_blank"
-           class="haber-ikon-buton"
-           title="Son Dakika Haberleri">
-            📰 <span>Haberler</span>
-        </a>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-st.divider()
 
 
 # ==================================================
@@ -1939,13 +1965,14 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_kayit, \
-    tab_paylas = st.tabs(
+tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
+    tab_kayit, tab_paylas = st.tabs(
         [
             "🤖 Algoritmik Bilgiler",
             "📅 BTA Günlük Algoritma",
             "🧮 Bedelli/Bedelsiz- HESAPLAMA",
             "💬 Sohbet",
+            "📰 Haber Bülteni",
             "📒 Kayıtlar",
             "🔗 Paylaş"
         ]
@@ -2600,6 +2627,51 @@ with tab_sohbet:
 
                 st.query_params.clear()
                 st.rerun()
+
+
+# ==================================================
+# SON HABER BÜLTENİ (bugünün gündemi, büyük ve okunaklı)
+# ==================================================
+with tab_haber:
+    _haberler = son_dakika_haberleri_getir()
+
+    st.markdown(
+        f"""
+        <div class="haber-bulteni-baslik">
+            🔴 SON HABER BÜLTENİ
+            <span>{turkiye_saati().strftime("%d.%m.%Y")} · Bugün</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if not _haberler:
+        st.info(
+            "Şu anda habere ulaşılamadı, birazdan "
+            "tekrar deneniyor."
+        )
+    else:
+        for _baslik, _link, _zaman in _haberler:
+            st.markdown(
+                f"""
+                <div class="haber-bulteni-kart">
+                    <div class="haber-bulteni-saat">
+                        🕒 {_zaman}
+                    </div>
+                    <a href="{_link}" target="_blank"
+                       class="haber-bulteni-link">
+                        {_baslik}
+                    </a>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.caption(
+        "Haberler Google News gündem akışından alınır; "
+        "yalnızca bugün yayınlananlar listelenir. "
+        "Başlığa dokunarak haber kaynağına gidebilirsiniz."
+    )
 
 
 # ==================================================
