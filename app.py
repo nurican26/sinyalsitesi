@@ -612,9 +612,9 @@ def piyasa_ozeti_getir():
 @st.cache_data(ttl=600, show_spinner=False)
 def son_dakika_haberleri_getir():
     """
-    Google News ana (gündem) akışından bugünün haberlerini getirir.
+    Google News ana (gündem) akışından son haberleri getirir.
     SADECE ekonomi değil: TV haberleri ve gündem başlıkları da gelir.
-    Yalnızca BUGÜN yayınlananlar listelenir, eski haberler atlanır.
+    Yalnızca son 48 saatte yayınlananlar listelenir; eski haberler atlanır.
     """
     try:
         # Google News Türkiye ana gündem akışı (ekonomi + TV + genel)
@@ -634,7 +634,8 @@ def son_dakika_haberleri_getir():
         kok = ET.fromstring(yanit.content)
         ogeler = kok.findall(".//item")
 
-        bugun = turkiye_saati().date()
+        simdi = turkiye_saati()
+        sinir_zaman = simdi - timedelta(hours=48)
 
         haberler = []
 
@@ -653,8 +654,8 @@ def son_dakika_haberleri_getir():
             except Exception:
                 continue
 
-            # Sadece bugün yayınlanan haberler
-            if yayin_zamani.date() != bugun:
+            # Sadece son 48 saatte yayınlanan haberler
+            if yayin_zamani < sinir_zaman:
                 continue
 
             zaman = yayin_zamani.strftime("%H:%M")
@@ -682,8 +683,8 @@ def son_dakika_haberleri_getir():
 @st.cache_data(ttl=600, show_spinner=False)
 def arz_haberleri_getir():
     """
-    Google News'te 'halka arz' konulu bugünün haberlerini getirir.
-    Yalnızca BUGÜN yayınlananlar listelenir, eski haberler atlanır.
+    Google News'te 'halka arz' konulu son haberleri getirir.
+    Yalnızca son 48 saatte yayınlananlar listelenir; eski haberler atlanır.
     """
     try:
         # Google News Türkiye "halka arz" arama akışı
@@ -710,7 +711,8 @@ def arz_haberleri_getir():
         kok = ET.fromstring(yanit.content)
         ogeler = kok.findall(".//item")
 
-        bugun = turkiye_saati().date()
+        simdi = turkiye_saati()
+        sinir_zaman = simdi - timedelta(hours=48)
 
         haberler = []
 
@@ -730,8 +732,8 @@ def arz_haberleri_getir():
             except Exception:
                 continue
 
-            # Sadece bugün yayınlanan haberler
-            if yayin_zamani.date() != bugun:
+            # Sadece son 48 saatte yayınlanan haberler
+            if yayin_zamani < sinir_zaman:
                 continue
 
             zaman = yayin_zamani.strftime("%H:%M")
@@ -1607,8 +1609,17 @@ st.markdown(
         background: rgba(0, 0, 0, 0.35);
     }
 
-    .sekme-baslik .sb-logo {
-        font-size: 26px;
+.sekme-baslik .sb-logo {
+        font-size: 30px;
+    }
+
+    .sekme-baslik .sekme-baslik-tarih {
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.75);
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 12px;
+        padding: 3px 10px;
     }
 
     /* QR paylaşım kartı - beyaz QR'ın çevresine platform
@@ -2136,6 +2147,16 @@ excel_dosyalari = [
     )
 ]
 
+# BTA klasöründe bazen ESKİ yedek dosyalar da durabilir
+# (ör. nurican.xls.xlsm). os.listdir sırası garanti olmadığından
+# "bta" ile başlayan dosya ÖNCELİKLİ seçilir; yoksa ilk bulunan alınır.
+excel_dosyalari.sort(
+    key=lambda _ad: (
+        not _ad.lower().startswith("bta"),
+        _ad.lower()
+    )
+)
+
 excel_df = pd.DataFrame(
     columns=[
         "Hisse Kodu",
@@ -2341,182 +2362,17 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
         ]
     )
 
-components.html(
-    """
-    <script>
-    (function () {
-        // Streamlit sürümden sürüme sekmelerin iç HTML/attribute yapısını
-        // değiştirebiliyor (ör. "data-baseweb" özniteliğinin kaldırılması).
-        // Bu yüzden burada KESİNLİKLE sabit kalan iki şeye dayanıyoruz:
-        //   1) [data-testid="stTabs"]  -> Streamlit'in kendi testid'i
-        //   2) role="tab" / role="tablist" -> ARIA erişilebilirlik standardı
-        // Renkler ve çerçeveler CSS yerine doğrudan satır-içi (inline)
-        // stille uygulanıyor; böylece hangi Streamlit sürümü kurulu olursa
-        // olsun (baseweb'li ya da baseweb'siz) çalışmaya devam eder.
-
-        const PALET = [
-            { r: 0,   g: 245, b: 200 }, // 1 - turkuaz
-            { r: 77,  g: 166, b: 255 }, // 2 - mavi
-            { r: 180, g: 139, b: 255 }, // 3 - mor
-            { r: 255, g: 110, b: 199 }, // 4 - pembe
-            { r: 255, g: 82,  b: 100 }, // 5 - kırmızı
-            { r: 255, g: 209, b: 102 }, // 6 - altın
-            { r: 125, g: 219, b: 110 }, // 7 - yeşil
-            { r: 255, g: 159, b: 67  }, // 8 - turuncu
-            { r: 102, g: 217, b: 255 }  // 9 - camgöbeği
-        ];
-
-        function rgba(renk, alfa) {
-            return "rgba(" + renk.r + "," + renk.g + "," + renk.b + "," + alfa + ")";
-        }
-
-        function sekmeKonteynerleriniBul(doc) {
-            let tablistler = Array.from(
-                doc.querySelectorAll('[data-testid="stTabs"] [role="tablist"]')
-            );
-            if (!tablistler.length) {
-                tablistler = Array.from(doc.querySelectorAll('[role="tablist"]'));
-            }
-            return tablistler;
-        }
-
-        function sekmeleriGuncelle() {
-            try {
-                const doc = window.parent.document;
-                const tablistler = sekmeKonteynerleriniBul(doc);
-                if (!tablistler.length) return;
-
-                const mobil = window.parent.innerWidth < 768;
-                const kutuBoyu = mobil ? "22px" : "28px";
-                const ikonPuntosu = mobil ? "13px" : "16px";
-
-                tablistler.forEach((tablist) => {
-                    // Sekme çubuğunun (tab-list) genel çerçevesi
-                    tablist.style.background = "rgba(0, 245, 200, 0.06)";
-                    tablist.style.border = "1px solid rgba(0, 245, 200, 0.30)";
-                    tablist.style.borderRadius = "10px";
-                    tablist.style.padding = "6px 6px 6px 6px";
-                    tablist.style.gap = "5px";
-                    tablist.style.overflowX = "auto";
-                    tablist.style.flexWrap = mobil ? "nowrap" : "wrap";
-
-                    const sekmeler = Array.from(
-                        tablist.querySelectorAll('[role="tab"]')
-                    );
-
-                    sekmeler.forEach((btn, i) => {
-                        const renk = PALET[i % PALET.length];
-                        const secili = btn.getAttribute("aria-selected") === "true";
-
-                        // --- Sekme kutusunun rengi / çerçevesi ---
-                        btn.style.borderRadius = "9px";
-                        btn.style.margin = "2px";
-                        btn.style.fontWeight = "800";
-                        btn.style.transition = "all 0.2s ease";
-                        btn.style.whiteSpace = "nowrap";
-
-                        if (secili) {
-                            btn.style.background = rgba(renk, 0.55);
-                            btn.style.border = "1.5px solid " + rgba(renk, 1);
-                            btn.style.boxShadow = "0 0 16px " + rgba(renk, 0.55);
-                            btn.style.transform = "scale(1.03)";
-                        } else {
-                            btn.style.background =
-                                "linear-gradient(145deg," +
-                                rgba(renk, 0.16) + "," + rgba(renk, 0.05) + ")";
-                            btn.style.border = "1px solid " + rgba(renk, 0.5);
-                            btn.style.boxShadow = "none";
-                            btn.style.transform = "none";
-                        }
-
-                        // --- Sekme metnini/ikonunu bul ---
-                        const p = btn.querySelector("p") || btn;
-
-                        // --- Seçili/pasif metin rengi ---
-                        const metinSpan = p.querySelector('span[data-bta-metin="1"]');
-                        if (metinSpan) {
-                            metinSpan.style.color = secili ? "#ffffff" : rgba(renk, 1);
-                            metinSpan.style.textShadow = secili
-                                ? "0 0 10px " + rgba(renk, 0.9)
-                                : "none";
-                        }
-
-                        // --- İkonu çerçeveli rozete dönüştür (sadece bir kez) ---
-                        if (btn.getAttribute("data-ikon-hazir") === "1") return;
-
-                        const metin = Array.from(p.textContent || "");
-                        if (metin.length < 2) return;
-
-                        const ikonKarakter = metin[0];
-                        const kalanMetin = metin.slice(1).join("").trim();
-
-                        p.innerHTML = "";
-                        p.style.display = "flex";
-                        p.style.alignItems = "center";
-                        p.style.gap = "0";
-                        p.style.margin = "0";
-
-                        const cerceve = doc.createElement("span");
-                        cerceve.textContent = ikonKarakter;
-                        cerceve.setAttribute(
-                            "style",
-                            "display:inline-flex;" +
-                            "align-items:center;" +
-                            "justify-content:center;" +
-                            "width:" + kutuBoyu + ";" +
-                            "height:" + kutuBoyu + ";" +
-                            "min-width:" + kutuBoyu + ";" +
-                            "margin-right:7px;" +
-                            "border-radius:8px;" +
-                            "font-size:" + ikonPuntosu + ";" +
-                            "line-height:1;" +
-                            "background:" + rgba(renk, 0.22) + ";" +
-                            "border:1.5px solid " + rgba(renk, 0.9) + ";" +
-                            "box-shadow:0 0 8px " + rgba(renk, 0.55) +
-                                ", inset 0 0 6px " + rgba(renk, 0.30) + ";" +
-                            "flex-shrink:0;"
-                        );
-
-                        const yeniMetinSpan = doc.createElement("span");
-                        yeniMetinSpan.textContent = kalanMetin;
-                        yeniMetinSpan.setAttribute("data-bta-metin", "1");
-                        yeniMetinSpan.style.color = secili ? "#ffffff" : rgba(renk, 1);
-
-                        p.appendChild(cerceve);
-                        p.appendChild(yeniMetinSpan);
-                        btn.setAttribute("data-ikon-hazir", "1");
-                    });
-                });
-            } catch (hata) {
-                console.log("Sekme güncelleme hatası:", hata);
-            }
-        }
-
-        sekmeleriGuncelle();
-        try {
-            const gozlemci = new MutationObserver(sekmeleriGuncelle);
-            gozlemci.observe(window.parent.document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ["aria-selected", "class"]
-            });
-        } catch (hata) {
-            console.log("Gözlemci başlatılamadı:", hata);
-        }
-        setInterval(sekmeleriGuncelle, 800);
-    })();
-    </script>
-    """,
-    height=0,
-    width=0
-)
-
 
 # ==================================================
 # ALGORİTMİK BİLGİLER
 # ==================================================
 with tab_algoritmik:
+    st.markdown(
+        sekme_baslik_format(
+            "🤖", "Algoritmik Bilgiler", "#00f5c8"
+        ),
+        unsafe_allow_html=True
+    )
 
     if excel_df.empty:
         st.warning(
@@ -3013,6 +2869,13 @@ with tab_bedelli:
 # CANLI SOHBET
 # ==================================================
 with tab_sohbet:
+    st.markdown(
+        sekme_baslik_format(
+            "💬", "Sohbet", "#ff6ec7"
+        ),
+        unsafe_allow_html=True
+    )
+
     @st.fragment(run_every=5)
     def _sohbet_fragment():
         """Beğeni butonu, mesaj formu ve mesaj listesi. Tıklama veya
@@ -3213,9 +3076,22 @@ with tab_haber:
 
     st.markdown(
         f"""
-        <div class="haber-bulteni-baslik">
-            🔴 SON HABER BÜLTENİ
-            <span>{turkiye_saati().strftime("%d.%m.%Y")} · Bugün</span>
+        <div class="sekme-baslik" style="
+            border-left-color: #ff5264;
+            border-color: #ff5264;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 82, 100, 0.22),
+                rgba(255, 82, 100, 0.06)
+            );
+            box-shadow: 0 0 18px rgba(255, 82, 100, 0.3);
+        ">
+            <span class="sb-logo">🔴</span>
+            <span style="color: #ff5264;
+                         text-shadow: 0 0 14px rgba(255, 82, 100, 0.8);">
+                SON HABER BÜLTENİ
+            </span>
+            <span class="sekme-baslik-tarih">Son 48 Saat</span>
         </div>
         """,
         unsafe_allow_html=True
@@ -3516,12 +3392,22 @@ with tab_arz:
 
     st.markdown(
         f"""
-        <div class="haber-bulteni-baslik" style="
+        <div class="sekme-baslik" style="
             border-left-color: #7ddb6e;
-            color: #7ddb6e;
+            border-color: #7ddb6e;
+            background: linear-gradient(
+                90deg,
+                rgba(125, 219, 110, 0.22),
+                rgba(125, 219, 110, 0.06)
+            );
+            box-shadow: 0 0 18px rgba(125, 219, 110, 0.3);
         ">
-            🚀 GÜNCEL ARZ HABERLERİ
-            <span>{turkiye_saati().strftime("%d.%m.%Y")} · Bugün</span>
+            <span class="sb-logo">🚀</span>
+            <span style="color: #7ddb6e;
+                         text-shadow: 0 0 14px rgba(125, 219, 110, 0.8);">
+                GÜNCEL ARZ HABERLERİ
+            </span>
+            <span class="sekme-baslik-tarih">Son 48 Saat</span>
         </div>
         """,
         unsafe_allow_html=True
