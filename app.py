@@ -705,14 +705,15 @@ st.markdown(
 
     .bta-logo {
         display: inline-block;
-        color: #00f5c8;
-        font-family: "Brush Script MT", "Segoe Script", cursive;
+        color: #3ea6ff;
+        font-family: "Segoe UI", "Arial", sans-serif;
         font-size: 58px;
-        font-weight: bold;
+        font-weight: 800;
+        font-style: italic;
+        letter-spacing: 5px;
         text-shadow:
-            0 0 8px #00f5c8,
-            0 0 18px #00f5c8,
-            0 0 28px #168cff;
+            0 2px 4px rgba(0, 45, 110, 0.65),
+            0 0 20px rgba(62, 166, 255, 0.38);
     }
 
     /* ============================================
@@ -1033,6 +1034,31 @@ st.markdown(
         border-left-color: #ff9f43;
     }
 
+    /* ============================================
+       HABER İKONU BUTONU (ana sayfa)
+       ============================================ */
+    .haber-ikon-buton {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(255, 82, 100, 0.12);
+        border: 1px solid rgba(255, 82, 100, 0.5);
+        border-radius: 20px;
+        padding: 6px 16px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #ff8d99;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .haber-ikon-buton:hover {
+        background: rgba(255, 82, 100, 0.28);
+        border-color: #ff5264;
+        color: #ffffff;
+        box-shadow: 0 0 14px rgba(255, 82, 100, 0.45);
+    }
+
     @media screen and (max-width: 768px) {
         .sohbet-cerceve {
             max-height: 420px;
@@ -1051,6 +1077,11 @@ st.markdown(
 
         .sohbet-begeni-sayi {
             font-size: 17px;
+        }
+
+        .haber-ikon-buton {
+            font-size: 12px;
+            padding: 5px 12px;
         }
     }
 
@@ -1528,7 +1559,7 @@ st.markdown(
     """
     <div class="bta-logo-alani">
         <div class="bta-logo">
-            BTA ALGORİTMİK İŞLEM
+            ALGORİTMİK HİSSE
         </div>
     </div>
     """,
@@ -1638,51 +1669,25 @@ st.markdown(
 
 
 # ==================================================
-# SON DAKİKA HABERLERİ PANELİ (BUGÜNÜN GÜNDEMİ)
+# SON DAKİKA HABERLERİ İKONU (tıklayınca haber sayfası açılır)
 # ==================================================
-_bugun_tarih = turkiye_saati().strftime("%d.%m.%Y")
-_haberler = son_dakika_haberleri_getir()
-
 st.markdown(
-    f"""
-    <div class="son-dakika-baslik">
-        <span class="son-dakika-nokta"></span>
-        SON DAKİKA HABERLERİ
-        <span class="son-dakika-tarih">{_bugun_tarih}</span>
+    """
+    <div style="
+        display: flex;
+        justify-content: flex-end;
+        margin: 4px 0 2px 0;
+    ">
+        <a href="https://news.google.com/topics/CAAqIggKIhdwQkl3Z2dNU0I1VXdCaApSUlFOb3lNQUFQAQ"
+           target="_blank"
+           class="haber-ikon-buton"
+           title="Son Dakika Haberleri">
+            📰 <span>Haberler</span>
+        </a>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-if not _haberler:
-    st.info(
-        "Şu anda haber alınamadı, birazdan tekrar "
-        "denenecek."
-    )
-else:
-    _haber_icerik = ""
-
-    for _baslik, _link, _zaman in _haberler:
-        _haber_icerik += f"""
-        <div class="son-dakika-haber-kart">
-            <div class="son-dakika-haber-saat">
-                🕒 {_zaman}
-            </div>
-            <a href="{_link}" target="_blank"
-               class="son-dakika-haber-link">
-                {_baslik}
-            </a>
-        </div>
-        """
-
-    st.markdown(
-        f"""
-        <div class="son-dakika-cerceve">
-            {_haber_icerik}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
 st.divider()
 
@@ -1951,7 +1956,6 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_kayit, \
 # ALGORİTMİK BİLGİLER
 # ==================================================
 with tab_algoritmik:
-    st.header("🤖 Algoritmik İşlem Bilgileri")
 
     if excel_df.empty:
         st.warning(
