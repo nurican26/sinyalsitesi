@@ -364,4 +364,9 @@ def fiyat_degisim_getir(sembol, marj_kontrolu=True):
         except Exception:
             son = None
             onceki = None
+try:
+    # 367. satırdan önceki mevcut kodlarınız buradadır
+    pass 
+except Exception as e:
+    st.error(f"Bir hata oluştu: {e}")
 
