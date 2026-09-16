@@ -971,8 +971,8 @@ st.markdown(
         display: flex;
         align-items: flex-start;
         gap: 10px;
-        background: rgba(10, 26, 40, 0.95);
-        border-left: 3px solid #ff5264;
+        background: #000000;
+        border-left: 3px solid #3a3a3a;
         border-radius: 6px;
         padding: 8px 12px;
         margin: 6px 0;
@@ -983,21 +983,23 @@ st.markdown(
 
     .son-dakika-haber-saat {
         flex-shrink: 0;
-        color: #ff9da8;
+        color: #b0b0b0;
         font-size: 11.5px;
-        font-weight: 700;
+        font-weight: 600;
         padding-top: 2px;
         min-width: 46px;
     }
 
     .son-dakika-haber-link {
-        color: #f0f0f0;
+        color: #f2f2f2 !important;
         text-decoration: none;
         font-weight: 600;
+        text-shadow: none !important;
     }
 
     .son-dakika-haber-link:hover {
-        color: #00f5c8;
+        color: #ffffff !important;
+        text-decoration: underline;
     }
 
     @media screen and (max-width: 768px) {
@@ -1174,9 +1176,9 @@ st.markdown(
     }
 
     .haber-bulteni-kart {
-        background: rgba(9, 27, 42, 0.96);
-        border-left: 4px solid #00f5c8;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: #000000;
+        border-left: 4px solid #3a3a3a;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 8px;
         padding: 16px 18px;
         margin: 8px 0;
@@ -1184,38 +1186,41 @@ st.markdown(
     }
 
     .haber-bulteni-kart:hover {
-        background: rgba(20, 42, 60, 0.98);
+        background: #141414;
     }
 
     .haber-bulteni-saat {
         font-size: 14px;
-        font-weight: 700;
-        color: #9fd8d0;
+        font-weight: 600;
+        color: #b0b0b0;
         margin-bottom: 6px;
     }
 
-    /* GÜNCEL ARZ HABERLERİ - yeşil vurgu */
+    /* GÜNCEL ARZ HABERLERİ - sade */
     .arz-kart {
-        border-left-color: #7ddb6e;
+        border-left-color: #3a3a3a;
     }
 
     .arz-kaynak {
-        color: #7ddb6e;
+        color: #b0b0b0;
         font-weight: 600;
     }
 
-    .haber-bulteni-link {
+    .haber-bulteni-link,
+    .haber-bulteni-cerceve .haber-bulteni-link {
         display: block;
-        color: #ffffff;
+        color: #f2f2f2 !important;
         text-decoration: none;
         font-size: 18px;
-        font-weight: 700;
+        font-weight: 600;
         line-height: 1.45;
         word-break: break-word;
+        text-shadow: none !important;
     }
 
     .haber-bulteni-link:hover {
-        color: #00f5c8;
+        color: #ffffff !important;
+        text-decoration: underline;
     }
 
     @media screen and (max-width: 768px) {
