@@ -1082,6 +1082,11 @@ st.markdown(
 # ==================================================
 # PİYASA ÖZETİ KARTLARI (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
 # ==================================================
+st.caption(
+    "🕒 Son güncelleme: "
+    f"{datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+)
+
 _ozet_veriler = piyasa_ozeti_getir()
 
 # Kartlar yan yana değil, 3'erli sıralar halinde (alt alta)
@@ -1301,13 +1306,22 @@ if not excel_df.empty:
     _tavan_listesi = []
 
     def _tek_hisse_tavan_kontrol(_hisse_kodu):
-        _sembol = _hisse_kodu
+        try:
+            _kod = str(_hisse_kodu).strip().upper()
 
-        if not _sembol.endswith(".IS"):
-            _sembol += ".IS"
+            if not _kod:
+                return _hisse_kodu, None, None, "boş hisse kodu"
 
-        _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
-        return _hisse_kodu, _son, _degisim, _hata
+            _sembol = _kod
+
+            if not _sembol.endswith(".IS"):
+                _sembol += ".IS"
+
+            _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
+            return _kod, _son, _degisim, _hata
+
+        except Exception as _ic_hata:
+            return _hisse_kodu, None, None, str(_ic_hata)
 
     try:
         with concurrent.futures.ThreadPoolExecutor(
@@ -1469,24 +1483,45 @@ with tab_algoritmik:
 with tab_gunluk:
     st.header("📅 BTA Günlük Algoritma")
 
+    st.caption(
+        "🕒 Son güncelleme: "
+        f"{datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    )
+
     if gunluk_algoritma_df.empty:
         st.info(
             "BTA Günlük Algoritma listesi bulunamadı. "
             "Excel dosyasının B sütununa hisse kodlarını girin."
         )
     else:
-        _gunluk_hisseler = (
-            gunluk_algoritma_df["Hisse Kodu"].tolist()
-        )
+        _gunluk_hisseler = [
+            str(_h).strip().upper()
+            for _h in gunluk_algoritma_df["Hisse Kodu"].tolist()
+            if str(_h).strip()
+        ]
 
         def _gunluk_tek_hisse(_hisse_kodu):
-            _sembol = _hisse_kodu
+            # Ne gelirse gelsin (float, None, NaN vb.) önce
+            # güvenli biçimde metne çevrilir; tek bir bozuk
+            # satır yüzünden tüm tarama durmasın diye fonksiyon
+            # hiçbir zaman hata fırlatmaz, hatayı veri olarak
+            # döndürür.
+            try:
+                _kod = str(_hisse_kodu).strip().upper()
 
-            if not _sembol.endswith(".IS"):
-                _sembol += ".IS"
+                if not _kod:
+                    return _hisse_kodu, None, None, "boş hisse kodu"
 
-            _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
-            return _hisse_kodu, _son, _degisim, _hata
+                _sembol = _kod
+
+                if not _sembol.endswith(".IS"):
+                    _sembol += ".IS"
+
+                _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
+                return _kod, _son, _degisim, _hata
+
+            except Exception as _ic_hata:
+                return _hisse_kodu, None, None, str(_ic_hata)
 
         _gunluk_sonuclar = []
         _gunluk_hatalar = []
