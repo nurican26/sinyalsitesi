@@ -2345,90 +2345,166 @@ components.html(
     """
     <script>
     (function () {
-        const IKON_RENK = [
-            { ana: "#00f5c8", zemin: "rgba(0, 245, 200, 0.20)"  },
-            { ana: "#4da6ff", zemin: "rgba(77, 166, 255, 0.20)" },
-            { ana: "#b48bff", zemin: "rgba(180, 139, 255, 0.20)"},
-            { ana: "#ff6ec7", zemin: "rgba(255, 110, 199, 0.20)"},
-            { ana: "#ff5264", zemin: "rgba(255, 82, 100, 0.20)" },
-            { ana: "#ffd166", zemin: "rgba(255, 209, 102, 0.20)"},
-            { ana: "#7ddb6e", zemin: "rgba(125, 219, 110, 0.20)"},
-            { ana: "#ff9f43", zemin: "rgba(255, 159, 67, 0.20)" },
-            { ana: "#66d9ff", zemin: "rgba(102, 217, 255, 0.20)"}
+        // Streamlit sürümden sürüme sekmelerin iç HTML/attribute yapısını
+        // değiştirebiliyor (ör. "data-baseweb" özniteliğinin kaldırılması).
+        // Bu yüzden burada KESİNLİKLE sabit kalan iki şeye dayanıyoruz:
+        //   1) [data-testid="stTabs"]  -> Streamlit'in kendi testid'i
+        //   2) role="tab" / role="tablist" -> ARIA erişilebilirlik standardı
+        // Renkler ve çerçeveler CSS yerine doğrudan satır-içi (inline)
+        // stille uygulanıyor; böylece hangi Streamlit sürümü kurulu olursa
+        // olsun (baseweb'li ya da baseweb'siz) çalışmaya devam eder.
+
+        const PALET = [
+            { r: 0,   g: 245, b: 200 }, // 1 - turkuaz
+            { r: 77,  g: 166, b: 255 }, // 2 - mavi
+            { r: 180, g: 139, b: 255 }, // 3 - mor
+            { r: 255, g: 110, b: 199 }, // 4 - pembe
+            { r: 255, g: 82,  b: 100 }, // 5 - kırmızı
+            { r: 255, g: 209, b: 102 }, // 6 - altın
+            { r: 125, g: 219, b: 110 }, // 7 - yeşil
+            { r: 255, g: 159, b: 67  }, // 8 - turuncu
+            { r: 102, g: 217, b: 255 }  // 9 - camgöbeği
         ];
 
-        function sekmeIkonlariniCercevele() {
+        function rgba(renk, alfa) {
+            return "rgba(" + renk.r + "," + renk.g + "," + renk.b + "," + alfa + ")";
+        }
+
+        function sekmeKonteynerleriniBul(doc) {
+            let tablistler = Array.from(
+                doc.querySelectorAll('[data-testid="stTabs"] [role="tablist"]')
+            );
+            if (!tablistler.length) {
+                tablistler = Array.from(doc.querySelectorAll('[role="tablist"]'));
+            }
+            return tablistler;
+        }
+
+        function sekmeleriGuncelle() {
             try {
                 const doc = window.parent.document;
-                const sekmeler = doc.querySelectorAll(
-                    '.stTabs [data-baseweb="tab-list"] button[role="tab"]'
-                );
-                if (!sekmeler.length) return;
+                const tablistler = sekmeKonteynerleriniBul(doc);
+                if (!tablistler.length) return;
 
                 const mobil = window.parent.innerWidth < 768;
-                const kutuBoyu = mobil ? "22px" : "30px";
-                const ikonPuntosu = mobil ? "13px" : "17px";
+                const kutuBoyu = mobil ? "22px" : "28px";
+                const ikonPuntosu = mobil ? "13px" : "16px";
 
-                sekmeler.forEach((btn, i) => {
-                    const p = btn.querySelector("p");
-                    if (!p) return;
-                    if (btn.getAttribute("data-ikon-hazir") === "1") return;
+                tablistler.forEach((tablist) => {
+                    // Sekme çubuğunun (tab-list) genel çerçevesi
+                    tablist.style.background = "rgba(0, 245, 200, 0.06)";
+                    tablist.style.border = "1px solid rgba(0, 245, 200, 0.30)";
+                    tablist.style.borderRadius = "10px";
+                    tablist.style.padding = "6px 6px 6px 6px";
+                    tablist.style.gap = "5px";
+                    tablist.style.overflowX = "auto";
+                    tablist.style.flexWrap = mobil ? "nowrap" : "wrap";
 
-                    const metin = Array.from(p.textContent || "");
-                    if (metin.length < 2) return;
-
-                    const ikonKarakter = metin[0];
-                    const kalanMetin = metin.slice(1).join("").trim();
-                    const renk = IKON_RENK[i % IKON_RENK.length];
-
-                    p.innerHTML = "";
-                    p.style.display = "flex";
-                    p.style.alignItems = "center";
-                    p.style.gap = "0";
-
-                    const cerceve = doc.createElement("span");
-                    cerceve.textContent = ikonKarakter;
-                    cerceve.setAttribute(
-                        "style",
-                        "display:inline-flex;" +
-                        "align-items:center;" +
-                        "justify-content:center;" +
-                        "width:" + kutuBoyu + ";" +
-                        "height:" + kutuBoyu + ";" +
-                        "min-width:" + kutuBoyu + ";" +
-                        "margin-right:7px;" +
-                        "border-radius:9px;" +
-                        "font-size:" + ikonPuntosu + ";" +
-                        "line-height:1;" +
-                        "background:linear-gradient(145deg," + renk.zemin + ",rgba(255,255,255,0.03));" +
-                        "border:1.5px solid " + renk.ana + ";" +
-                        "box-shadow:0 0 9px " + renk.ana + "80, inset 0 0 6px " + renk.ana + "40;" +
-                        "flex-shrink:0;"
+                    const sekmeler = Array.from(
+                        tablist.querySelectorAll('[role="tab"]')
                     );
 
-                    const metinSpan = doc.createElement("span");
-                    metinSpan.textContent = kalanMetin;
+                    sekmeler.forEach((btn, i) => {
+                        const renk = PALET[i % PALET.length];
+                        const secili = btn.getAttribute("aria-selected") === "true";
 
-                    p.appendChild(cerceve);
-                    p.appendChild(metinSpan);
-                    btn.setAttribute("data-ikon-hazir", "1");
+                        // --- Sekme kutusunun rengi / çerçevesi ---
+                        btn.style.borderRadius = "9px";
+                        btn.style.margin = "2px";
+                        btn.style.fontWeight = "800";
+                        btn.style.transition = "all 0.2s ease";
+                        btn.style.whiteSpace = "nowrap";
+
+                        if (secili) {
+                            btn.style.background = rgba(renk, 0.55);
+                            btn.style.border = "1.5px solid " + rgba(renk, 1);
+                            btn.style.boxShadow = "0 0 16px " + rgba(renk, 0.55);
+                            btn.style.transform = "scale(1.03)";
+                        } else {
+                            btn.style.background =
+                                "linear-gradient(145deg," +
+                                rgba(renk, 0.16) + "," + rgba(renk, 0.05) + ")";
+                            btn.style.border = "1px solid " + rgba(renk, 0.5);
+                            btn.style.boxShadow = "none";
+                            btn.style.transform = "none";
+                        }
+
+                        // --- Sekme metnini/ikonunu bul ---
+                        const p = btn.querySelector("p") || btn;
+
+                        // --- Seçili/pasif metin rengi ---
+                        const metinSpan = p.querySelector('span[data-bta-metin="1"]');
+                        if (metinSpan) {
+                            metinSpan.style.color = secili ? "#ffffff" : rgba(renk, 1);
+                            metinSpan.style.textShadow = secili
+                                ? "0 0 10px " + rgba(renk, 0.9)
+                                : "none";
+                        }
+
+                        // --- İkonu çerçeveli rozete dönüştür (sadece bir kez) ---
+                        if (btn.getAttribute("data-ikon-hazir") === "1") return;
+
+                        const metin = Array.from(p.textContent || "");
+                        if (metin.length < 2) return;
+
+                        const ikonKarakter = metin[0];
+                        const kalanMetin = metin.slice(1).join("").trim();
+
+                        p.innerHTML = "";
+                        p.style.display = "flex";
+                        p.style.alignItems = "center";
+                        p.style.gap = "0";
+                        p.style.margin = "0";
+
+                        const cerceve = doc.createElement("span");
+                        cerceve.textContent = ikonKarakter;
+                        cerceve.setAttribute(
+                            "style",
+                            "display:inline-flex;" +
+                            "align-items:center;" +
+                            "justify-content:center;" +
+                            "width:" + kutuBoyu + ";" +
+                            "height:" + kutuBoyu + ";" +
+                            "min-width:" + kutuBoyu + ";" +
+                            "margin-right:7px;" +
+                            "border-radius:8px;" +
+                            "font-size:" + ikonPuntosu + ";" +
+                            "line-height:1;" +
+                            "background:" + rgba(renk, 0.22) + ";" +
+                            "border:1.5px solid " + rgba(renk, 0.9) + ";" +
+                            "box-shadow:0 0 8px " + rgba(renk, 0.55) +
+                                ", inset 0 0 6px " + rgba(renk, 0.30) + ";" +
+                            "flex-shrink:0;"
+                        );
+
+                        const yeniMetinSpan = doc.createElement("span");
+                        yeniMetinSpan.textContent = kalanMetin;
+                        yeniMetinSpan.setAttribute("data-bta-metin", "1");
+                        yeniMetinSpan.style.color = secili ? "#ffffff" : rgba(renk, 1);
+
+                        p.appendChild(cerceve);
+                        p.appendChild(yeniMetinSpan);
+                        btn.setAttribute("data-ikon-hazir", "1");
+                    });
                 });
             } catch (hata) {
-                console.log("Sekme ikonu çerçeveleme hatası:", hata);
+                console.log("Sekme güncelleme hatası:", hata);
             }
         }
 
-        sekmeIkonlariniCercevele();
+        sekmeleriGuncelle();
         try {
-            const gozlemci = new MutationObserver(sekmeIkonlariniCercevele);
+            const gozlemci = new MutationObserver(sekmeleriGuncelle);
             gozlemci.observe(window.parent.document.body, {
                 childList: true,
-                subtree: true
+                subtree: true,
+                attributes: true,
+                attributeFilter: ["aria-selected", "class"]
             });
         } catch (hata) {
             console.log("Gözlemci başlatılamadı:", hata);
         }
-        setInterval(sekmeIkonlariniCercevele, 1000);
+        setInterval(sekmeleriGuncelle, 800);
     })();
     </script>
     """,
