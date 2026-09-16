@@ -2016,14 +2016,27 @@ def paylas_linki_olustur(platform, url, baslik):
 # MESAJ SESİ
 # ==================================================
 def mesaj_sesi_cal():
+    # Her çağrıda benzersiz bir damga üretilir. Streamlit, birebir
+    # aynı içerikli bir components.html'i yeniden ÇALIŞTIRMADIĞI için
+    # (özellikle st.fragment içinde tekrar tekrar render edilirken),
+    # içerik değişmezse iframe yeniden yüklenmez ve bildirim sesi bir
+    # daha çalmaz. Damga sayesinde içerik her seferinde değişir,
+    # iframe yenilenir ve ses her yeni mesajda çalar.
+    _damga = int(turkiye_saati().timestamp() * 1000)
+
     components.html(
-        """
+        f"""
         <script>
-        try {
+        // ses-damga: {_damga}
+        try {{
             const audioContext = new (
                 window.AudioContext ||
                 window.webkitAudioContext
             )();
+
+            if (audioContext.state === "suspended") {{
+                audioContext.resume();
+            }}
 
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -2054,9 +2067,9 @@ def mesaj_sesi_cal():
 
             oscillator.start();
             oscillator.stop(audioContext.currentTime + 0.35);
-        } catch (error) {
+        }} catch (error) {{
             console.log("Bildirim sesi oynatılamadı:", error);
-        }
+        }}
         </script>
         """,
         height=0,
@@ -2459,7 +2472,7 @@ st.markdown(
 )
 
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
-    tab_teknik, tab_arz, tab_kayit, tab_paylas, tab_sermaye = st.tabs(
+    tab_arz, tab_teknik, tab_kayit, tab_paylas, tab_sermaye = st.tabs(
         [
             "🤖 BTA Algoritmik HİSSELER",
             "📅 BTA Günlük Algoritma HİSSELER",
