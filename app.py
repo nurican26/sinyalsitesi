@@ -1128,7 +1128,6 @@ st.markdown(
         font-weight: 600;
         color: #00f5c8;
     ">
-        🕒 Algoritmik İŞLEM  saati: {_ozet_zamani}
     </div>
     """,
     unsafe_allow_html=True
@@ -1618,7 +1617,7 @@ with tab_gunluk:
                 font-weight: 600;
                 color: #00f5c8;
             ">
-                🕒 Veri çekim saati: {_gunluk_zamani}
+                🕒 Algoritmik İşlem  saati: {_gunluk_zamani}
             </div>
             """,
             unsafe_allow_html=True
