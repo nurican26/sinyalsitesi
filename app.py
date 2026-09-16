@@ -1134,25 +1134,6 @@ st.markdown(
 # ==================================================
 _ozet_veriler, _ozet_zamani = piyasa_ozeti_getir()
 
-st.markdown(
-    f"""
-    <div style="
-        display: inline-block;
-        background: rgba(0, 245, 200, 0.12);
-        border: 1px solid rgba(0, 245, 200, 0.4);
-        border-radius: 20px;
-        padding: 5px 14px;
-        margin-bottom: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #00f5c8;
-    ">
-        🕒 Veri çekim saati: {_ozet_zamani}
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 # Kartlar yan yana değil, 3'erli sıralar halinde (alt alta)
 # gösterilir; böylece telefon ekranında yana taşıp
 # kaybolmazlar.
