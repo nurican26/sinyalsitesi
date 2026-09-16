@@ -6,3 +6,4 @@ yfinance
 qrcode[pil]
 tzdata
 plotly
+openpyxl
