@@ -1371,6 +1371,11 @@ st.markdown(
         color: #ff9f43 !important;
     }
 
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(8),
+    .stTabs [data-baseweb="tab"]:nth-of-type(8) {
+        color: #7ddb6e !important;
+    }
+
     .stTabs button[role="tab"][aria-selected="true"] {
         background: rgba(0, 245, 200, 0.16) !important;
         color: #ffffff !important;
@@ -2114,13 +2119,14 @@ st.markdown(
 )
 
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
-    tab_kayit, tab_paylas = st.tabs(
+    tab_teknik, tab_kayit, tab_paylas = st.tabs(
         [
             "🤖 Algoritmik Bilgiler",
             "📅 BTA Günlük Algoritma",
             "🧮 Bedelli/Bedelsiz- HESAPLAMA",
             "💬 Sohbet",
             "📰 Haber Bülteni",
+            "📊 Teknik Analiz",
             "📒 Kayıtlar",
             "🔗 Paylaş"
         ]
@@ -2741,14 +2747,18 @@ with tab_sohbet:
                 "Henüz mesaj bulunmuyor."
             )
         else:
-            _mesaj_icerik = ""
+            # Aynı kullanıcı hep aynı rengi alır; farklı
+            # kullanıcılar birbirinden ayrılır. (Sonlu ve sabit
+            # karma için std hash değil, karakter toplamı kullanılır.)
             _kullanici_palet = [
                 "#00f5c8", "#4da6ff", "#b48bff",
                 "#ff6ec7", "#ffd166", "#ff9f43", "#7ddb6e"
             ]
 
-            # En yeni mesaj en üstte olacak şekilde sıralanır
-            # (kaydırma çerçevesi içinde aşağı doğru akar).
+            # En yeni mesaj en üstte olacak şekilde sıralanır.
+            # Silme, tarayıcı "kopyala" menüsü açan ?bta_sil linki
+            # yerine gerçek bir Streamlit butonu ile yapılır; böylece
+            # mobilde dokununca sayfa kaybolmaz, mesaj doğrudan silinir.
             for index, satir in mesajlar.iloc[::-1].iterrows():
                 _mesaj_id = str(satir["mesaj_id"])
                 _kullanici = html.escape(str(satir["kullanici"]))
@@ -2756,16 +2766,13 @@ with tab_sohbet:
                     str(satir["mesaj"])
                 ).replace("\n", "<br>")
 
-                # Aynı kullanıcı hep aynı rengi alır; farklı
-                # kullanıcılar birbirinden ayrılır. (Sonlu ve sabit
-                # karma için std hash değil, karakter toplamı kullanılır.)
                 _kc = (
                     sum(_kullanici.encode("utf-8"))
                     % len(_kullanici_palet)
                 )
                 _kenar_renk = _kullanici_palet[_kc]
 
-                _mesaj_icerik += f"""
+                _kart_html = f"""
                 <div class="sohbet-kart"
                      style="border-left-color: {_kenar_renk};">
                     <div class="sohbet-kart-baslik"
@@ -2778,45 +2785,42 @@ with tab_sohbet:
                     <div class="sohbet-mesaj-metni">
                         {_mesaj_metni}
                     </div>
-                    {f"""
-                    <div class="sohbet-silme">
-                        <a class="sohbet-sil-buton"
-                           href="?bta_sil={_mesaj_id}">
-                            🗑️ Sil
-                        </a>
-                    </div>
-                    """ if is_admin else ""}
                 </div>
                 """
 
-            # Mesajlar tek bir çerçeve içinde gösterilir; liste
-            # uzadıkça aşağı doğru kayar, içerik taşmaz.
-            st.markdown(
-                f"""
-                <div class="sohbet-cerceve">
-                    {_mesaj_icerik}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                if is_admin:
+                    _kart_kol, _sil_kol = st.columns([5, 1])
 
-            if is_admin:
-                _silinecek_id = st.query_params.get("bta_sil")
+                    with _kart_kol:
+                        st.markdown(
+                            _kart_html,
+                            unsafe_allow_html=True
+                        )
 
-                if _silinecek_id:
-                    mesajlar = mesajlar[
-                        mesajlar["mesaj_id"].astype(str)
-                        != str(_silinecek_id)
-                    ]
-
-                    mesajlar.to_csv(
-                        MESAJ_DOSYASI,
-                        index=False,
-                        encoding="utf-8-sig"
+                    with _sil_kol:
+                        st.write("")
+                        if st.button(
+                            "🗑️",
+                            key=f"bta_mesaj_sil_{_mesaj_id}",
+                            help="Bu mesajı sil",
+                            use_container_width=True
+                        ):
+                            _kalan = mesajlari_oku()
+                            _kalan = _kalan[
+                                _kalan["mesaj_id"].astype(str)
+                                != _mesaj_id
+                            ]
+                            _kalan.to_csv(
+                                MESAJ_DOSYASI,
+                                index=False,
+                                encoding="utf-8-sig"
+                            )
+                            st.rerun(scope="fragment")
+                else:
+                    st.markdown(
+                        _kart_html,
+                        unsafe_allow_html=True
                     )
-
-                    st.query_params.clear()
-                    st.rerun()
 
     _sohbet_fragment()
 
@@ -2868,6 +2872,259 @@ with tab_haber:
         "Haberler Google News gündem akışından alınır; "
         "yalnızca bugün yayınlananlar listelenir. "
         "Başlığa dokunarak haber kaynağına gidebilirsiniz."
+    )
+
+
+# ==================================================
+# TEKNİK ANALİZ - GRAFİK VE İNDİKATÖRLER
+# ==================================================
+with tab_teknik:
+    st.markdown(
+        sekme_baslik_format(
+            "📊", "Teknik Analiz Grafikleri", "#ffd166"
+        ),
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "BIST hisseleri için sembolün sonuna .IS ekleyin "
+        "(ör. THYAO.IS). Yabancı borsalar için ör. AAPL, "
+        "EURUSD=X, BTC-USD kullanabilirsiniz."
+    )
+
+    col_sembol, col_periyot = st.columns([3, 1])
+
+    with col_sembol:
+        sembol = st.text_input(
+            "Sembol",
+            value="THYAO.IS",
+            key="teknik_sembol"
+        ).strip().upper()
+
+    with col_periyot:
+        periyot = st.selectbox(
+            "Periyot",
+            ["1mo", "3mo", "6mo", "1y", "2y", "5y"],
+            index=2,
+            key="teknik_periyot"
+        )
+
+    analiz_buton = st.button(
+        "📈 Grafiği Çiz",
+        use_container_width=True,
+        key="teknik_analiz_buton"
+    )
+
+    if analiz_buton and not sembol:
+        st.error("Lütfen bir sembol girin.")
+
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    import numpy as np
+
+    def teknik_veri_cek(sembol, periyot):
+        """yfinance ile OHLCV verisini çeker."""
+        import yfinance as yf
+
+        veri = yf.Ticker(sembol).history(
+            period=periyot,
+            interval="1d",
+            auto_adjust=True
+        )
+
+        if veri.empty:
+            raise ValueError("Veri bulunamadı.")
+
+        return veri
+
+    def teknik_indikatorler(veri):
+        """SMA/EMA/RSI/MACD indikatörlerini hesaplar."""
+        if "Close" not in veri:
+            return veri
+
+        kapanis = veri["Close"]
+
+        # Basit ve üstel hareketli ortalamalar
+        veri["SMA20"] = kapanis.rolling(20).mean()
+        veri["SMA50"] = kapanis.rolling(50).mean()
+        veri["EMA12"] = kapanis.ewm(span=12).mean()
+        veri["EMA26"] = kapanis.ewm(span=26).mean()
+
+        # MACD ve sinyal çizgisi
+        veri["MACD"] = veri["EMA12"] - veri["EMA26"]
+        veri["MACD_SINYAL"] = veri["MACD"].ewm(span=9).mean()
+
+        # RSI (14)
+        delta = kapanis.diff()
+        kazanc = delta.clip(lower=0)
+        kayip = -delta.clip(upper=0)
+        ort_kazanc = kazanc.ewm(alpha=1 / 14).mean()
+        ort_kayip = kayip.ewm(alpha=1 / 14).mean()
+        rs = ort_kazanc / ort_kayip.replace(0, np.nan)
+        veri["RSI"] = 100 - (100 / (1 + rs))
+
+        return veri
+
+    if analiz_buton and sembol:
+        try:
+            with st.spinner("Veri çekiliyor, grafik hazırlanıyor..."):
+                ham_veri = teknik_veri_cek(sembol, periyot)
+                grafik_veri = teknik_indikatorler(ham_veri)
+
+            # Alt grafikler: fiyat + MACD + RSI
+            fig = make_subplots(
+                rows=3,
+                cols=1,
+                shared_xaxes=True,
+                vertical_spacing=0.06,
+                row_heights=[0.55, 0.2, 0.25],
+                subplot_titles=(
+                    f"{sembol} · {periyot}",
+                    "MACD (12,26,9)",
+                    "RSI (14)"
+                )
+            )
+
+            fig.add_trace(
+                go.Candlestick(
+                    x=grafik_veri.index,
+                    open=grafik_veri["Open"],
+                    high=grafik_veri["High"],
+                    low=grafik_veri["Low"],
+                    close=grafik_veri["Close"],
+                    name="Fiyat",
+                    increasing_line_color="#00f5c8",
+                    decreasing_line_color="#ff5264"
+                ),
+                row=1, col=1
+            )
+
+            for _cizgi, _renk, _ad in [
+                ("SMA20", "#4da6ff", "SMA20"),
+                ("SMA50", "#b48bff", "SMA50")
+            ]:
+                fig.add_trace(
+                    go.Scatter(
+                        x=grafik_veri.index,
+                        y=grafik_veri[_cizgi],
+                        mode="lines",
+                        line=dict(width=1.2, color=_renk),
+                        name=_ad
+                    ),
+                    row=1, col=1
+                )
+
+            fig.add_trace(
+                go.Bar(
+                    x=grafik_veri.index,
+                    y=grafik_veri["Volume"],
+                    name="Hacim",
+                    marker_color="rgba(0,245,200,0.35)"
+                ),
+                row=1, col=1
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=grafik_veri.index,
+                    y=grafik_veri["MACD"],
+                    mode="lines",
+                    line=dict(width=1.4, color="#00f5c8"),
+                    name="MACD"
+                ),
+                row=2, col=1
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=grafik_veri.index,
+                    y=grafik_veri["MACD_SINYAL"],
+                    mode="lines",
+                    line=dict(width=1.2, color="#ff9f43"),
+                    name="Sinyal"
+                ),
+                row=2, col=1
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=grafik_veri.index,
+                    y=grafik_veri["RSI"],
+                    mode="lines",
+                    line=dict(width=1.4, color="#b48bff"),
+                    name="RSI"
+                ),
+                row=3, col=1
+            )
+
+            fig.add_hline(y=70, line_dash="dash",
+                          line_color="#ff5264", row=3, col=1)
+            fig.add_hline(y=30, line_dash="dash",
+                          line_color="#00f5c8", row=3, col=1)
+
+            fig.update_layout(
+                height=780,
+                xaxis_rangeslider_visible=False,
+                template="plotly_dark",
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#eaf4fa"),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                ),
+                margin=dict(l=10, r=10, t=45, b=10)
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+            # Son değer özeti
+            son = grafik_veri.dropna().iloc[-1]
+
+            _son_fiyat = f"{son['Close']:.2f}"
+
+            _degisim = (
+                (son["Close"] / grafik_veri["Close"].iloc[-2] - 1)
+                * 100
+            )
+
+            _ok = "🟢" if _degisim >= 0 else "🔴"
+
+            col_o1, col_o2, col_o3 = st.columns(3)
+
+            col_o1.metric("Son Fiyat", _son_fiyat,
+                          f"{_ok} {_degisim:+.2f}%")
+
+            _rsi_deger = (
+                f"{son['RSI']:.1f}"
+                if pd.notna(son.get("RSI"))
+                else "-"
+            )
+            col_o2.metric("RSI (14)", _rsi_deger)
+
+            _macd_deger = (
+                f"{son['MACD']:.3f}"
+                if pd.notna(son.get("MACD"))
+                else "-"
+            )
+            col_o3.metric("MACD", _macd_deger)
+
+        except Exception as _hata:
+            st.error(
+                f"Veri alınamadı: {_hata}. Sembolü kontrol edin "
+                "(ör. THYAO.IS, GARAN.IS, AAPL)."
+            )
+
+    st.caption(
+        "Veriler yFinance'ten alınır; yatırım tavsiyesi değildir. "
+        "SMA20/SMA50, MACD ve RSI göstergeleri bilgilendirme amaçlıdır."
     )
 
 
