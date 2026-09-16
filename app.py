@@ -757,12 +757,12 @@ st.markdown(
     }
 
     .piyasa-ozet-satir {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1fr 105px 72px;
         align-items: center;
-        justify-content: space-between;
-        gap: 10px;
+        column-gap: 8px;
         padding: 7px 2px;
-        border-bottom: 1px solid rgba(0, 245, 200, 0.28);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
         font-size: 15px;
         font-weight: 600;
         white-space: nowrap;
@@ -775,8 +775,9 @@ st.markdown(
     .piyasa-ozet-isim {
         color: #eaf4fa;
         font-weight: 700;
-        min-width: 68px;
         text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .piyasa-ozet-fiyat {
@@ -793,7 +794,6 @@ st.markdown(
         font-size: 15px;
         font-variant-numeric: tabular-nums;
         text-align: right;
-        min-width: 68px;
     }
 
     @media screen and (max-width: 768px) {
@@ -803,16 +803,13 @@ st.markdown(
         }
 
         .piyasa-ozet-satir {
+            grid-template-columns: 1fr 92px 66px;
             font-size: 13px;
             padding: 6px 2px;
         }
 
         .piyasa-ozet-fiyat {
             font-size: 14px;
-        }
-
-        .piyasa-ozet-isim {
-            min-width: 58px;
         }
     }
 
@@ -1339,31 +1336,38 @@ st.markdown(
         white-space: nowrap;
     }
 
-    .stTabs button[role="tab"]:nth-of-type(1) {
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(1),
+    .stTabs [data-baseweb="tab"]:first-of-type {
         color: #00f5c8 !important;
     }
 
-    .stTabs button[role="tab"]:nth-of-type(2) {
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(2),
+    .stTabs [data-baseweb="tab"]:nth-of-type(2) {
         color: #4da6ff !important;
     }
 
-    .stTabs button[role="tab"]:nth-of-type(3) {
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(3),
+    .stTabs [data-baseweb="tab"]:nth-of-type(3) {
         color: #b48bff !important;
     }
 
-    .stTabs button[role="tab"]:nth-of-type(4) {
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(4),
+    .stTabs [data-baseweb="tab"]:nth-of-type(4) {
         color: #ff6ec7 !important;
     }
 
-    .stTabs button[role="tab"]:nth-of-type(5) {
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(5),
+    .stTabs [data-baseweb="tab"]:nth-of-type(5) {
         color: #ff5264 !important;
     }
 
-    .stTabs button[role="tab"]:nth-of-type(6) {
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(6),
+    .stTabs [data-baseweb="tab"]:nth-of-type(6) {
         color: #ffd166 !important;
     }
 
-    .stTabs button[role="tab"]:nth-of-type(7) {
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(7),
+    .stTabs [data-baseweb="tab"]:nth-of-type(7) {
         color: #ff9f43 !important;
     }
 
@@ -1757,22 +1761,14 @@ def piyasa_ozeti_fragment():
     """
     _ozet_veriler, _ozet_zamani = piyasa_ozeti_getir()
 
-    _isim_palet = [
-        "#00f5c8",
-        "#4da6ff",
-        "#b48bff",
-        "#ffd166",
-    ]
-
     _ozet_satirlar = ""
 
     for _i, _veri in enumerate(_ozet_veriler):
         _fiyat_metni, _degisim_metni, _renk = _piyasa_ozet_hazirla(_veri)
-        _isim_renk = _isim_palet[_i % len(_isim_palet)]
 
         _ozet_satirlar += f"""
         <div class="piyasa-ozet-satir">
-            <span class="piyasa-ozet-isim" style="color:{_isim_renk};">
+            <span class="piyasa-ozet-isim">
                 {_veri["isim"]}
             </span>
             <span class="piyasa-ozet-fiyat">{_fiyat_metni}</span>
@@ -3021,17 +3017,14 @@ with tab_paylas:
     # ==================================================
     st.subheader("📊 Platform İstatistikleri")
 
-    takip, begeni = istatistik_oku()
+    begeni = istatistik_oku()[1]
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     with col1:
-        st.metric("👥 Takipçiler", takip)
-
-    with col2:
         st.metric("👍 Beğeniler", begeni)
 
-    with col3:
+    with col2:
         st.metric("💬 Mesajlar", len(mesajlari_oku()))
 
 
