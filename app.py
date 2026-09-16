@@ -419,17 +419,24 @@ def fiyat_degisim_getir(sembol, marj_kontrolu=True):
 # ==================================================
 # HİSSE FİYAT KARTI (GENEL AMAÇLI)
 # ==================================================
-def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
+def hisse_karti_format(hisse_kodu, fiyat, degisim, renk, sira=0):
     durum = "▲" if degisim >= 0 else "▼"
+
+    # Her satırın altına belirgin çizgi (çizgili defter görünümü)
+    # ve gözü yormaması için hafif zebra (alternatif) zemin.
+    _zemin = (
+        "rgba(0, 0, 0, 0.38)"
+        if sira % 2 == 0
+        else "rgba(255, 255, 255, 0.05)"
+    )
 
     return f"""
     <div style="
-        background: rgba(0, 0, 0, 0.42);
+        background: {_zemin};
         border-left: 5px solid {renk};
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 6px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.32);
         padding: 11px 16px;
-        margin: 3px 0;
+        margin: 0;
         display: grid;
         grid-template-columns: 1fr auto auto;
         align-items: center;
@@ -453,6 +460,15 @@ def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
             text-align: right;
             min-width: 95px;
         ">{durum} {degisim:+.2f}%</span>
+    </div>
+    """
+
+
+def sekme_baslik_format(logo, baslik, renk):
+    return f"""
+    <div class="sekme-baslik" style="border-left-color: {renk};">
+        <span class="sb-logo">{logo}</span>
+        <span style="color: {renk};">{baslik}</span>
     </div>
     """
 
@@ -743,9 +759,10 @@ st.markdown(
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        padding: 3px 0;
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.09);
-        font-size: 13px;
+        padding: 7px 2px;
+        border-bottom: 1px solid rgba(0, 245, 200, 0.28);
+        font-size: 15px;
+        font-weight: 600;
         white-space: nowrap;
     }
 
@@ -754,21 +771,27 @@ st.markdown(
     }
 
     .piyasa-ozet-isim {
-        color: #9fc4d8;
-        font-weight: 600;
-        min-width: 62px;
+        color: #eaf4fa;
+        font-weight: 700;
+        min-width: 68px;
         text-align: left;
     }
 
     .piyasa-ozet-fiyat {
-        color: #f2f2f2;
-        font-weight: 700;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
         text-align: right;
+        letter-spacing: 0.3px;
     }
 
     .piyasa-ozet-degisim {
         font-weight: 800;
+        font-size: 15px;
+        font-variant-numeric: tabular-nums;
         text-align: right;
+        min-width: 68px;
     }
 
     @media screen and (max-width: 768px) {
@@ -778,11 +801,16 @@ st.markdown(
         }
 
         .piyasa-ozet-satir {
-            font-size: 12px;
+            font-size: 13px;
+            padding: 6px 2px;
+        }
+
+        .piyasa-ozet-fiyat {
+            font-size: 14px;
         }
 
         .piyasa-ozet-isim {
-            min-width: 56px;
+            min-width: 58px;
         }
     }
 
@@ -1308,9 +1336,59 @@ st.markdown(
         white-space: nowrap;
     }
 
-    .stTabs [aria-selected="true"] {
+    .stTabs button[role="tab"]:nth-of-type(1) {
+        color: #00f5c8 !important;
+    }
+
+    .stTabs button[role="tab"]:nth-of-type(2) {
+        color: #4da6ff !important;
+    }
+
+    .stTabs button[role="tab"]:nth-of-type(3) {
+        color: #b48bff !important;
+    }
+
+    .stTabs button[role="tab"]:nth-of-type(4) {
+        color: #ff6ec7 !important;
+    }
+
+    .stTabs button[role="tab"]:nth-of-type(5) {
+        color: #ff5264 !important;
+    }
+
+    .stTabs button[role="tab"]:nth-of-type(6) {
+        color: #ffd166 !important;
+    }
+
+    .stTabs button[role="tab"]:nth-of-type(7) {
+        color: #ff9f43 !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"] {
         background: rgba(0, 245, 200, 0.16) !important;
+        color: #ffffff !important;
         border-radius: 8px 8px 0 0 !important;
+    }
+
+    /* SEKMELERİN İÇİNDEKİ BAŞLIK PANKARTLARI - her biri
+       kendi logosu ve rengiyle ayırt edilir */
+    .sekme-baslik {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 21px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin: 6px 0 14px 0;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-left-width: 6px;
+        background: rgba(0, 0, 0, 0.35);
+    }
+
+    .sekme-baslik .sb-logo {
+        font-size: 26px;
     }
     </style>
     """,
@@ -2090,7 +2168,12 @@ with tab_algoritmik:
 # BTA GÜNLÜK ALGORİTMA (CANLI FİYATLAR)
 # ==================================================
 with tab_gunluk:
-    st.header("📅 BTA Günlük Algoritma")
+    st.markdown(
+        sekme_baslik_format(
+            "📅", "BTA Günlük Algoritma", "#4da6ff"
+        ),
+        unsafe_allow_html=True
+    )
 
     if gunluk_algoritma_df.empty:
         st.info(
@@ -2190,11 +2273,15 @@ with tab_gunluk:
             _, _gunluk_orta, _ = st.columns([1, 3, 1])
 
             with _gunluk_orta:
-                for _h, _s, _d in _gunluk_sonuclar:
+                for _sira, (_h, _s, _d) in enumerate(
+                    _gunluk_sonuclar
+                ):
                     _renk = "#00f5c8" if _d >= 0 else "#ff5264"
 
                     st.markdown(
-                        hisse_karti_format(_h, _s, _d, _renk),
+                        hisse_karti_format(
+                            _h, _s, _d, _renk, sira=_sira
+                        ),
                         unsafe_allow_html=True
                     )
 
@@ -2217,7 +2304,14 @@ with tab_gunluk:
 # BEDELLİ / BEDELSİZ HESAPLAMA MAKİNESİ
 # ==================================================
 with tab_bedelli:
-    st.header("🧮 Bedelli/Bedelsiz Hesaplama Makinesi")
+    st.markdown(
+        sekme_baslik_format(
+            "🧮",
+            "Bedelli / Bedelsiz Hesaplama Makinesi",
+            "#b48bff"
+        ),
+        unsafe_allow_html=True
+    )
 
     st.markdown(
         """
@@ -2678,7 +2772,12 @@ with tab_haber:
 # TARİHLİ KAYITLAR
 # ==================================================
 with tab_kayit:
-    st.header("📒 Tarihli Kayıt Defteri")
+    st.markdown(
+        sekme_baslik_format(
+            "📒", "Tarihli Kayıt Defteri", "#ffd166"
+        ),
+        unsafe_allow_html=True
+    )
 
     df_kayitlar = kayitlari_oku()
 
@@ -2764,7 +2863,12 @@ with tab_kayit:
 # PAYLAŞ TAB'I
 # ==================================================
 with tab_paylas:
-    st.header("🔗 Sayfayı Sosyal Medyada Paylaş")
+    st.markdown(
+        sekme_baslik_format(
+            "🔗", "Sayfayı Sosyal Medyada Paylaş", "#ff9f43"
+        ),
+        unsafe_allow_html=True
+    )
 
     st.divider()
 
