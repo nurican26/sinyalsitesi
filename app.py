@@ -1,5 +1,6 @@
 import os
 import hashlib
+import html
 import concurrent.futures
 from datetime import datetime, timedelta, timezone
 import urllib.parse
@@ -642,12 +643,172 @@ st.markdown(
             0 0 28px #168cff;
     }
 
+    /* ============================================
+       PİYASA ÖZETİ - EKRAN KÖŞESİNDE KOMPAKT KART
+       ============================================ */
+    .piyasa-ozet-badge {
+        background: rgba(5, 18, 32, 0.94);
+        border: 1px solid rgba(0, 245, 200, 0.45);
+        border-left: 4px solid #00f5c8;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 0 0 14px auto;
+        max-width: 460px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+    }
+
+    .piyasa-ozet-badge-header {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        color: #00f5c8;
+        margin-bottom: 6px;
+        text-align: right;
+    }
+
+    .piyasa-ozet-satir {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 3px 0;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.09);
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .piyasa-ozet-satir:last-child {
+        border-bottom: none;
+    }
+
+    .piyasa-ozet-isim {
+        color: #9fc4d8;
+        font-weight: 600;
+        min-width: 62px;
+        text-align: left;
+    }
+
+    .piyasa-ozet-fiyat {
+        color: #f2f2f2;
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .piyasa-ozet-degisim {
+        font-weight: 800;
+        text-align: right;
+    }
+
+    @media screen and (max-width: 768px) {
+        .piyasa-ozet-badge {
+            max-width: 100%;
+            padding: 6px 10px;
+        }
+
+        .piyasa-ozet-satir {
+            font-size: 12px;
+        }
+
+        .piyasa-ozet-isim {
+            min-width: 56px;
+        }
+    }
+
     .mesaj-karti {
         background: rgba(8, 29, 45, 0.95);
         border-left: 3px solid #00f5c8;
         border-radius: 7px;
         padding: 10px;
         margin: 7px 0;
+    }
+
+    /* ============================================
+       SOHBET - ÇERÇEVE İÇİNDE KAYAN MESAJLAR
+       ============================================ */
+    .sohbet-cerceve {
+        background: rgba(6, 20, 33, 0.6);
+        border: 1px solid rgba(0, 245, 200, 0.35);
+        border-radius: 10px;
+        padding: 10px 12px;
+        max-height: 460px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        margin-bottom: 10px;
+    }
+
+    .sohbet-cerceve::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sohbet-cerceve::-webkit-scrollbar-thumb {
+        background: rgba(0, 245, 200, 0.35);
+        border-radius: 4px;
+    }
+
+    .sohbet-cerceve::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .sohbet-kart {
+        background: rgba(8, 29, 45, 0.97);
+        border-left: 3px solid #00f5c8;
+        border-radius: 7px;
+        padding: 8px 12px;
+        margin: 6px 0;
+        font-size: 14px;
+        word-break: break-word;
+    }
+
+    .sohbet-kart-baslik {
+        font-size: 13px;
+        color: #ffd166;
+        margin-bottom: 2px;
+    }
+
+    .sohbet-kart-saat {
+        font-size: 11px;
+        color: #8aa7bb;
+    }
+
+    .sohbet-mesaj-metni {
+        color: #f0f0f0;
+        line-height: 1.5;
+    }
+
+    .sohbet-silme {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .sohbet-sil-buton {
+        background: rgba(255, 82, 100, 0.18);
+        border: 1px solid rgba(255, 82, 100, 0.5);
+        color: #ff8d99;
+        border-radius: 6px;
+        padding: 2px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .sohbet-sil-buton:hover {
+        background: rgba(255, 82, 100, 0.35);
+        color: white;
+    }
+
+    @media screen and (max-width: 768px) {
+        .sohbet-cerceve {
+            max-height: 420px;
+            padding: 8px 8px;
+        }
+
+        .sohbet-kart {
+            padding: 7px 10px;
+            font-size: 13px;
+        }
     }
 
     .bilgi-karti {
@@ -780,7 +941,7 @@ st.markdown(
         }
 
         .bta-logo {
-            font-size: 38px;
+            font-size: clamp(15px, 6.2vw, 33px);
         }
 
         [data-testid="stTabs"] button {
@@ -1108,6 +1269,9 @@ def mesaj_sesi_cal():
 # ==================================================
 # CANLI YENİLEME
 # ==================================================
+# Sayfa 5 saniyede bir yenilenir. Tüm veri çekimleri
+# 20-30 sn önbellekli olduğu için sayfa anında çizilir
+# ve yenileme kullanıcıya hissettirilmez.
 st_autorefresh(
     interval=5000,
     key="bta_canli_yenileme"
@@ -1130,43 +1294,104 @@ st.markdown(
 
 
 # ==================================================
+# BTA GÜNLÜK ALGORİTMA - SABİT GÜNCELLEME SAATİ
+# ==================================================
+BTA_DURUM_DOSYASI = "bta_gunluk_durum.csv"
+
+
+def bta_gunluk_zaman_yukle():
+    """
+    "BTA Günlük Algoritma" bölümünün güncelleme saati ve tarihi,
+    Excel dosyasının yüklendiği İLK anda bir kez üretilir ve
+    'bta_gunluk_durum.csv' dosyasına yazılır. Sayfa her yenilenmede
+    bu kaydedilmiş saat yeniden okunur, yani saat/tarih ekranda
+    hiçbir yenilemede DEĞİŞMEZ (sabit kalır).
+    """
+    try:
+        if os.path.exists(BTA_DURUM_DOSYASI):
+            durum = pd.read_csv(
+                BTA_DURUM_DOSYASI,
+                encoding="utf-8-sig"
+            )
+
+            if not durum.empty and "guncel_zaman" in durum.columns:
+                deger = str(durum.iloc[0]["guncel_zaman"]).strip()
+                if deger:
+                    return deger
+    except Exception:
+        pass
+
+    zaman = turkiye_saati().strftime("%d.%m.%Y %H:%M:%S")
+
+    try:
+        pd.DataFrame(
+            [{"guncel_zaman": zaman}]
+        ).to_csv(
+            BTA_DURUM_DOSYASI,
+            index=False,
+            encoding="utf-8-sig"
+        )
+    except Exception:
+        pass
+
+    return zaman
+
+
+# Güncelleme saati sayfanın ilk açılışında oluşturulup sabitlenir.
+_bta_gunluk_sabit_zaman = bta_gunluk_zaman_yukle()
+
+
+# ==================================================
 # PİYASA ÖZETİ KARTLARI (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
+# EKRANIN SAĞ KÖŞESİNDE KOMPAKT KART
 # ==================================================
 _ozet_veriler, _ozet_zamani = piyasa_ozeti_getir()
 
-# Kartlar yan yana değil, 3'erli sıralar halinde (alt alta)
-# gösterilir; böylece telefon ekranında yana taşıp
-# kaybolmazlar.
-_ozet_satir_boyu = 3
 
-for _i in range(0, len(_ozet_veriler), _ozet_satir_boyu):
-    _ozet_grup = _ozet_veriler[_i:_i + _ozet_satir_boyu]
-    _ozet_kolonlar = st.columns(len(_ozet_grup))
+def _piyasa_ozet_hazirla(_veri):
+    if _veri["fiyat"] is None:
+        return "-", "--%", "#8aa7bb"
 
-    for _kolon, _veri in zip(_ozet_kolonlar, _ozet_grup):
-        if _veri["fiyat"] is None:
-            _kolon.metric(_veri["isim"], "-")
-        else:
-            if _veri["tur"] == "tl":
-                _deger_metni = tl_format(_veri["fiyat"])
-            else:
-                _deger_metni = sayi_format(_veri["fiyat"])
+    if _veri["tur"] == "tl":
+        _deger = tl_format(_veri["fiyat"])
+    else:
+        _deger = sayi_format(_veri["fiyat"])
 
-            _kolon.metric(
-                _veri["isim"],
-                _deger_metni,
-                f"{_veri['degisim']:+.2f}%"
-                if _veri["degisim"] is not None
-                else None
-            )
+    if _veri["degisim"] is None:
+        return _deger, "--%", "#f2f2f2"
 
-st.caption(
-    "BIST100, USDTRY ve EURTRY canlı piyasa verisidir (en az 15 dk. "
-    "gecikmeli olabilir). Gram Altın, ons altın x USDTRY üzerinden "
-    "yaklaşık hesaplanır."
+    _degisim = f"{_veri['degisim']:+.2f}%"
+    _renk = "#00f5c8" if _veri["degisim"] >= 0 else "#ff5264"
+
+    return _deger, _degisim, _renk
+
+
+_ozet_satirlar = ""
+
+for _veri in _ozet_veriler:
+    _fiyat_metni, _degisim_metni, _renk = _piyasa_ozet_hazirla(_veri)
+
+    _ozet_satirlar += f"""
+    <div class="piyasa-ozet-satir">
+        <span class="piyasa-ozet-isim">{_veri["isim"]}</span>
+        <span class="piyasa-ozet-fiyat">{_fiyat_metni}</span>
+        <span class="piyasa-ozet-degisim" style="color:{_renk};">
+            {_degisim_metni}
+        </span>
+    </div>
+    """
+
+st.markdown(
+    f"""
+    <div class="piyasa-ozet-badge">
+        <div class="piyasa-ozet-badge-header">
+            📈 CANLI PİYASA · {_ozet_zamani}
+        </div>
+        {_ozet_satirlar}
+    </div>
+    """,
+    unsafe_allow_html=True
 )
-
-st.divider()
 
 
 # ==================================================
@@ -1598,12 +1823,11 @@ with tab_gunluk:
         except Exception as _hata:
             st.error(f"Veri çekilirken hata oluştu: {_hata}")
 
-        # Saat, veri çekimi TAMAMLANDIKTAN hemen sonra üretilir;
-        # böylece gösterilen zaman her zaman gerçek veri anını
-        # yansıtır (sayfa açılış anını değil).
-        _gunluk_zamani = turkiye_saati().strftime(
-            "%d.%m.%Y %H:%M:%S"
-        )
+        # Güncelleme saati, Excel dosyasının yüklendiği anda bir kez
+        # oluşturulur ve bta_gunluk_durum.csv içinde SAKLANIR. Sayfa
+        # her 5 saniyede bir yenilense bile ekrandaki saat ve tarih
+        # AYNI KALIR (yükleme anındaki değer hiç değişmez).
+        _gunluk_zamani = _bta_gunluk_sabit_zaman
 
         st.markdown(
             f"""
@@ -1963,7 +2187,7 @@ with tab_sohbet:
     st.divider()
 
     # ==================================================
-    # MESAJ FORMU
+    # MESAJ FORMU (MESAJ GÖNDERME ALANI ÜSTTE DURUR)
     # ==================================================
     st.subheader("💬 Mesaj Gönder")
 
@@ -2041,43 +2265,67 @@ with tab_sohbet:
             "Henüz mesaj bulunmuyor."
         )
     else:
-        for index, satir in mesajlar.iloc[::-1].iterrows():
-            mesaj_id = str(satir["mesaj_id"])
+        _mesaj_icerik = ""
 
-            col1, col2 = st.columns([10, 1])
-            
-            with col1:
-                st.markdown(
-                    f"""
-                    <div class="mesaj-karti">
-                        <strong>👤 {satir["kullanici"]}</strong>
-                        <small> · {satir["tarih"]}</small>
-                        <br>
-                        {satir["mesaj"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+        # En yeni mesaj en üstte olacak şekilde sıralanır
+        # (kaydırma çerçevesi içinde aşağı doğru akar).
+        for index, satir in mesajlar.iloc[::-1].iterrows():
+            _mesaj_id = str(satir["mesaj_id"])
+            _kullanici = html.escape(str(satir["kullanici"]))
+            _mesaj_metni = html.escape(
+                str(satir["mesaj"])
+            ).replace("\n", "<br>")
+
+            _mesaj_icerik += f"""
+            <div class="sohbet-kart">
+                <div class="sohbet-kart-baslik">
+                    👤 {_kullanici}
+                    <span class="sohbet-kart-saat">
+                        · {html.escape(str(satir["tarih"]))}
+                    </span>
+                </div>
+                <div class="sohbet-mesaj-metni">
+                    {_mesaj_metni}
+                </div>
+                {f"""
+                <div class="sohbet-silme">
+                    <a class="sohbet-sil-buton"
+                       href="?bta_sil={_mesaj_id}">
+                        🗑️ Sil
+                    </a>
+                </div>
+                """ if is_admin else ""}
+            </div>
+            """
+
+        # Mesajlar tek bir çerçeve içinde gösterilir; liste
+        # uzadıkça aşağı doğru kayar, içerik taşmaz.
+        st.markdown(
+            f"""
+            <div class="sohbet-cerceve">
+                {_mesaj_icerik}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if is_admin:
+            _silinecek_id = st.query_params.get("bta_sil")
+
+            if _silinecek_id:
+                mesajlar = mesajlar[
+                    mesajlar["mesaj_id"].astype(str)
+                    != str(_silinecek_id)
+                ]
+
+                mesajlar.to_csv(
+                    MESAJ_DOSYASI,
+                    index=False,
+                    encoding="utf-8-sig"
                 )
 
-            with col2:
-                if is_admin:
-                    if st.button(
-                        "🗑️",
-                        key=f"mesaj_sil_{mesaj_id}_{index}",
-                        help="Mesajı sil"
-                    ):
-                        mesajlar = mesajlar[
-                            mesajlar["mesaj_id"].astype(str)
-                            != mesaj_id
-                        ]
-
-                        mesajlar.to_csv(
-                            MESAJ_DOSYASI,
-                            index=False,
-                            encoding="utf-8-sig"
-                        )
-
-                        st.rerun()
+                st.query_params.clear()
+                st.rerun()
 
 
 # ==================================================
