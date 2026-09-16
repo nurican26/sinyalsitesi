@@ -760,6 +760,89 @@ def arz_haberleri_getir():
 
     except Exception:
         return []
+
+
+# ==================================================
+# BEDELLİ / BEDELSİZ SERMAYE ARTIRIMI HABERLERİ
+# ==================================================
+@st.cache_data(ttl=600, show_spinner=False)
+def bedelli_bedelsiz_haberleri_getir():
+    """
+    Google News'te 'bedelli/bedelsiz sermaye artırımı' konulu son
+    haberleri getirir. Sermaye artırımı yapan şirketlerin (hisse
+    bazlı) duyurularını/ haberlerini listeler. Yalnızca son 48
+    saatte yayınlananlar gösterilir.
+    """
+    try:
+        sorgu = urllib.parse.quote_plus(
+            '"bedelli sermaye artırımı" OR "bedelsiz sermaye '
+            'artırımı" OR "bedelsiz hisse" OR "bedelli artırım" '
+            'OR "sermaye artırımı"'
+        )
+
+        url = (
+            "https://news.google.com/rss/search?q="
+            f"{sorgu}&hl=tr&gl=TR&ceid=TR:tr"
+        )
+
+        yanit = requests.get(
+            url,
+            timeout=12,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36"
+                )
+            }
+        )
+
+        kok = ET.fromstring(yanit.content)
+        ogeler = kok.findall(".//item")
+
+        simdi = turkiye_saati()
+        sinir_zaman = simdi - timedelta(hours=48)
+
+        haberler = []
+
+        for oge in ogeler:
+            baslik = (oge.findtext("title") or "").strip()
+            link = (oge.findtext("link") or "").strip()
+            yayin = (oge.findtext("pubDate") or "").strip()
+            kaynak = (oge.findtext("source") or "").strip()
+
+            if not baslik:
+                continue
+
+            try:
+                yayin_zamani = parsedate_to_datetime(
+                    yayin
+                ).astimezone(TURKIYE_TZ)
+            except Exception:
+                continue
+
+            if yayin_zamani < sinir_zaman:
+                continue
+
+            zaman = yayin_zamani.strftime("%H:%M")
+
+            haberler.append(
+                (
+                    html.escape(baslik),
+                    html.escape(link),
+                    html.escape(zaman),
+                    html.escape(kaynak)
+                )
+            )
+
+            if len(haberler) >= 20:
+                break
+
+        return haberler
+
+    except Exception:
+        return []
+
+
 st.markdown(
     """
     <style>
@@ -1544,6 +1627,18 @@ st.markdown(
         text-shadow: 0 0 10px rgba(102, 217, 255, 0.7);
     }
 
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(10),
+    .stTabs [data-baseweb="tab"]:nth-of-type(10) {
+        color: #c77dff !important;
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(199, 125, 255, 0.22),
+            rgba(199, 125, 255, 0.07)
+        ) !important;
+        border-color: rgba(199, 125, 255, 0.55) !important;
+        text-shadow: 0 0 10px rgba(199, 125, 255, 0.7);
+    }
+
     .stTabs button[role="tab"][aria-selected="true"] {
         color: #ffffff !important;
         font-weight: 800 !important;
@@ -1595,6 +1690,11 @@ st.markdown(
     .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(9) {
         background: rgba(102, 217, 255, 0.45) !important;
         border-color: #66d9ff !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(10) {
+        background: rgba(199, 125, 255, 0.45) !important;
+        border-color: #c77dff !important;
     }
 
     .stTabs [role="tablist"] [aria-selected="true"] + *::before,
@@ -2359,7 +2459,7 @@ st.markdown(
 )
 
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
-    tab_teknik, tab_arz, tab_kayit, tab_paylas = st.tabs(
+    tab_teknik, tab_arz, tab_kayit, tab_paylas, tab_sermaye = st.tabs(
         [
             "🤖 BTA Algoritmik HİSSELER",
             "📅 BTA Günlük Algoritma HİSSELER",
@@ -2369,7 +2469,8 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
             "🚀 Güncel Arz Haberleri",
             "📊 Teknik Analiz",
             "📒 Kayıtlar",
-            "🔗 Paylaş"
+            "🔗 Paylaş",
+            "📢 Bedelli/Bedelsiz Haberleri"
         ]
     )
 
@@ -2878,6 +2979,74 @@ with tab_bedelli:
             st.session_state["bedelli_sonuc"] = None
             st.session_state["bedelli_hata"] = None
             st.rerun()
+
+
+# ==================================================
+# BEDELLİ / BEDELSİZ SERMAYE ARTIRIMI HABERLERİ
+# ==================================================
+with tab_sermaye:
+    _sermaye_haberler = bedelli_bedelsiz_haberleri_getir()
+
+    st.markdown(
+        f"""
+        <div class="sekme-baslik" style="
+            border-left-color: #c77dff;
+            border-color: #c77dff;
+            background: linear-gradient(
+                90deg,
+                rgba(199, 125, 255, 0.22),
+                rgba(199, 125, 255, 0.06)
+            );
+            box-shadow: 0 0 18px rgba(199, 125, 255, 0.3);
+        ">
+            <span class="sb-logo">📢</span>
+            <span style="color: #c77dff;
+                         text-shadow: 0 0 14px rgba(199, 125, 255, 0.8);">
+                BEDELLİ / BEDELSİZ SERMAYE ARTIRIMI HABERLERİ
+            </span>
+            <span class="sekme-baslik-tarih">Son 48 Saat</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "Sermaye artırımı yapan şirketlerin güncel haberleri "
+        "otomatik olarak listelenir; her 10 dakikada bir tazelenir."
+    )
+
+    if not _sermaye_haberler:
+        st.info(
+            "Şu anda bedelli/bedelsiz sermaye artırımı haberi "
+            "bulunamadı, birazdan tekrar deneniyor."
+        )
+    else:
+        for (
+            _baslik, _link, _zaman, _kaynak
+        ) in _sermaye_haberler:
+            st.markdown(
+                f"""
+                <div class="haber-bulteni-kart arz-kart">
+                    <div class="haber-bulteni-saat">
+                        🕒 {_zaman}
+                        <span class="arz-kaynak">
+                            · {_kaynak or "Haber"}
+                        </span>
+                    </div>
+                    <a href="{_link}" target="_blank"
+                       class="haber-bulteni-link">
+                        {_baslik}
+                    </a>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.caption(
+        "Kaynak: Google News. Yatırım tavsiyesi değildir; "
+        "kesin oran ve tarihler için şirket KAP duyurularını "
+        "kontrol edin."
+    )
 
 
 # ==================================================
