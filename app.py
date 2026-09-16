@@ -1418,68 +1418,176 @@ st.markdown(
         letter-spacing: 0.3px;
         padding: 10px 14px !important;
         white-space: nowrap;
+        border-radius: 8px !important;
+        margin: 2px 1px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(1),
     .stTabs [data-baseweb="tab"]:first-of-type {
         color: #00f5c8 !important;
-        text-shadow: 0 0 8px rgba(0, 245, 200, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(0, 245, 200, 0.22),
+            rgba(0, 245, 200, 0.07)
+        ) !important;
+        border-color: rgba(0, 245, 200, 0.55) !important;
+        text-shadow: 0 0 10px rgba(0, 245, 200, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(2),
     .stTabs [data-baseweb="tab"]:nth-of-type(2) {
         color: #4da6ff !important;
-        text-shadow: 0 0 8px rgba(77, 166, 255, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(77, 166, 255, 0.22),
+            rgba(77, 166, 255, 0.07)
+        ) !important;
+        border-color: rgba(77, 166, 255, 0.55) !important;
+        text-shadow: 0 0 10px rgba(77, 166, 255, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(3),
     .stTabs [data-baseweb="tab"]:nth-of-type(3) {
         color: #b48bff !important;
-        text-shadow: 0 0 8px rgba(180, 139, 255, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(180, 139, 255, 0.22),
+            rgba(180, 139, 255, 0.07)
+        ) !important;
+        border-color: rgba(180, 139, 255, 0.55) !important;
+        text-shadow: 0 0 10px rgba(180, 139, 255, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(4),
     .stTabs [data-baseweb="tab"]:nth-of-type(4) {
         color: #ff6ec7 !important;
-        text-shadow: 0 0 8px rgba(255, 110, 199, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(255, 110, 199, 0.22),
+            rgba(255, 110, 199, 0.07)
+        ) !important;
+        border-color: rgba(255, 110, 199, 0.55) !important;
+        text-shadow: 0 0 10px rgba(255, 110, 199, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(5),
     .stTabs [data-baseweb="tab"]:nth-of-type(5) {
         color: #ff5264 !important;
-        text-shadow: 0 0 8px rgba(255, 82, 100, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(255, 82, 100, 0.22),
+            rgba(255, 82, 100, 0.07)
+        ) !important;
+        border-color: rgba(255, 82, 100, 0.55) !important;
+        text-shadow: 0 0 10px rgba(255, 82, 100, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(6),
     .stTabs [data-baseweb="tab"]:nth-of-type(6) {
         color: #ffd166 !important;
-        text-shadow: 0 0 8px rgba(255, 209, 102, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(255, 209, 102, 0.22),
+            rgba(255, 209, 102, 0.07)
+        ) !important;
+        border-color: rgba(255, 209, 102, 0.55) !important;
+        text-shadow: 0 0 10px rgba(255, 209, 102, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(7),
     .stTabs [data-baseweb="tab"]:nth-of-type(7) {
         color: #7ddb6e !important;
-        text-shadow: 0 0 8px rgba(125, 219, 110, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(125, 219, 110, 0.22),
+            rgba(125, 219, 110, 0.07)
+        ) !important;
+        border-color: rgba(125, 219, 110, 0.55) !important;
+        text-shadow: 0 0 10px rgba(125, 219, 110, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(8),
     .stTabs [data-baseweb="tab"]:nth-of-type(8) {
         color: #ff9f43 !important;
-        text-shadow: 0 0 8px rgba(255, 159, 67, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(255, 159, 67, 0.22),
+            rgba(255, 159, 67, 0.07)
+        ) !important;
+        border-color: rgba(255, 159, 67, 0.55) !important;
+        text-shadow: 0 0 10px rgba(255, 159, 67, 0.7);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(9),
     .stTabs [data-baseweb="tab"]:nth-of-type(9) {
         color: #66d9ff !important;
-        text-shadow: 0 0 8px rgba(102, 217, 255, 0.55);
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(102, 217, 255, 0.22),
+            rgba(102, 217, 255, 0.07)
+        ) !important;
+        border-color: rgba(102, 217, 255, 0.55) !important;
+        text-shadow: 0 0 10px rgba(102, 217, 255, 0.7);
     }
 
     .stTabs button[role="tab"][aria-selected="true"] {
-        background: rgba(0, 245, 200, 0.22) !important;
         color: #ffffff !important;
         font-weight: 800 !important;
-        border-radius: 8px 8px 0 0 !important;
-        box-shadow: inset 0 0 14px rgba(0, 245, 200, 0.25);
+        border-radius: 8px !important;
+        box-shadow: 0 0 18px rgba(0, 245, 200, 0.35);
+        transform: scale(1.03);
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(1) {
+        background: rgba(0, 245, 200, 0.45) !important;
+        border-color: #00f5c8 !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(2) {
+        background: rgba(77, 166, 255, 0.45) !important;
+        border-color: #4da6ff !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(3) {
+        background: rgba(180, 139, 255, 0.45) !important;
+        border-color: #b48bff !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(4) {
+        background: rgba(255, 110, 199, 0.45) !important;
+        border-color: #ff6ec7 !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(5) {
+        background: rgba(255, 82, 100, 0.45) !important;
+        border-color: #ff5264 !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(6) {
+        background: rgba(255, 209, 102, 0.45) !important;
+        border-color: #ffd166 !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(7) {
+        background: rgba(125, 219, 110, 0.45) !important;
+        border-color: #7ddb6e !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(8) {
+        background: rgba(255, 159, 67, 0.45) !important;
+        border-color: #ff9f43 !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(9) {
+        background: rgba(102, 217, 255, 0.45) !important;
+        border-color: #66d9ff !important;
+    }
+
+    .stTabs [role="tablist"] [aria-selected="true"] + *::before,
+    .stTabs [data-baseweb="tab-highlight"],
+    .stTabs [data-baseweb="tab-border"] {
+        display: none !important;
     }
 
     /* SEKMELERİN İÇİNDEKİ BAŞLIK PANKARTLARI - her biri
