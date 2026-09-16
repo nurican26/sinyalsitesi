@@ -1,7 +1,7 @@
 streamlit
+streamlit-autorefresh
 pandas
 requests
-beautifulsoup4
-lxml
-streamlit-autorefresh
-openpyxl
+yfinance
+qrcode[pil]
+tzdata
