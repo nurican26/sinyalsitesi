@@ -322,35 +322,98 @@ BIST_TARAMA_LISTESI = [
 # TEK SEMBOL İÇİN FİYAT + DEĞİŞİM
 # ==================================================
 @st.cache_data(ttl=30, show_spinner=False)
-def fiyat_degisim_getir(sembol):
+def fiyat_degisim_getir(sembol, marj_kontrolu=True):
     """
-    Tek bir sembol (hisse, endeks, döviz, emtia) için son fiyatı ve
-    önceki kapanışa göre değişim yüzdesini döndürür.
+    Tek bir sembol için son fiyatı ve önceki kapanışa göre değişim
+    yüzdesini döndürür.
+
+    Öncelik sırası:
+      1) fast_info -> last_price / previous_close
+         (borsanın resmi "önceki kapanış" değeri; sermaye artırımı ve
+          temettü düzeltmelerini doğru yansıtır)
+      2) history() -> son iki kapanış (yedek yöntem)
+
+    marj_kontrolu=True iken BIST'in günlük ±%10 fiyat marjı gözetilir;
+    bunun dışında kalan değerler (ör. bedelsiz/temettü kaynaklı veri
+    kopukluğu) hatalı kabul edilip elenir. Endeks, döviz ve emtia için
+    bu kontrol kapatılmalıdır.
+
     Hata durumunda (None, None, hata_metni) döner.
     """
+    # BIST günlük fiyat marjı %10'dur; veri gürültüsüne
+    # küçük bir tolerans bırakılır.
+    MARJ_SINIRI = 11.0
+
+    son = None
+    onceki = None
+
     try:
         hisse = yf.Ticker(sembol)
-        gecmis = hisse.history(period="5d", interval="1d")
+
+        # ----- 1. YÖNTEM: fast_info -----
+        try:
+            hizli = hisse.fast_info
+
+            aday_son = (
+                hizli.get("last_price")
+                if hasattr(hizli, "get")
+                else getattr(hizli, "last_price", None)
+            )
+            aday_onceki = (
+                hizli.get("previous_close")
+                if hasattr(hizli, "get")
+                else getattr(hizli, "previous_close", None)
+            )
+
+            if aday_son and aday_onceki:
+                son = float(aday_son)
+                onceki = float(aday_onceki)
+
+        except Exception:
+            son = None
+            onceki = None
+
+        # ----- 2. YÖNTEM (YEDEK): history -----
+        if son is None or onceki is None or onceki <= 0:
+            gecmis = hisse.history(
+                period="5d",
+                interval="1d",
+                auto_adjust=False
+            )
+
+            if (
+                gecmis is None
+                or gecmis.empty
+                or "Close" not in gecmis.columns
+            ):
+                return None, None, "veri boş döndü"
+
+            kapanislar = gecmis["Close"].dropna()
+
+            if len(kapanislar) < 2:
+                return None, None, "yetersiz geçmiş veri"
+
+            onceki = float(kapanislar.iloc[-2])
+            son = float(kapanislar.iloc[-1])
 
         if (
-            gecmis is None
-            or gecmis.empty
-            or "Close" not in gecmis.columns
+            onceki is None
+            or son is None
+            or onceki <= 0
+            or pd.isna(onceki)
+            or pd.isna(son)
         ):
-            return None, None, "veri boş döndü"
-
-        kapanislar = gecmis["Close"].dropna()
-
-        if len(kapanislar) < 2:
-            return None, None, "yetersiz geçmiş veri"
-
-        onceki = float(kapanislar.iloc[-2])
-        son = float(kapanislar.iloc[-1])
-
-        if onceki <= 0 or pd.isna(onceki) or pd.isna(son):
             return None, None, "geçersiz fiyat"
 
         degisim = ((son - onceki) / onceki) * 100
+
+        if marj_kontrolu and abs(degisim) > MARJ_SINIRI:
+            return (
+                None,
+                None,
+                f"marj dışı değişim (%{degisim:.2f}) - "
+                "muhtemelen bedelsiz/temettü kaynaklı veri kopukluğu"
+            )
 
         return son, degisim, None
 
@@ -452,7 +515,8 @@ def piyasa_ozeti_getir():
     sonuclar = []
 
     bist_son, bist_degisim, bist_hata = fiyat_degisim_getir(
-        "XU100.IS"
+        "XU100.IS",
+        marj_kontrolu=False
     )
     sonuclar.append(
         {
@@ -464,7 +528,10 @@ def piyasa_ozeti_getir():
         }
     )
 
-    usd_son, usd_degisim, usd_hata = fiyat_degisim_getir("USDTRY=X")
+    usd_son, usd_degisim, usd_hata = fiyat_degisim_getir(
+        "USDTRY=X",
+        marj_kontrolu=False
+    )
     sonuclar.append(
         {
             "isim": "USDTRY",
@@ -475,7 +542,10 @@ def piyasa_ozeti_getir():
         }
     )
 
-    eur_son, eur_degisim, eur_hata = fiyat_degisim_getir("EURTRY=X")
+    eur_son, eur_degisim, eur_hata = fiyat_degisim_getir(
+        "EURTRY=X",
+        marj_kontrolu=False
+    )
     sonuclar.append(
         {
             "isim": "EURTRY",
@@ -486,7 +556,10 @@ def piyasa_ozeti_getir():
         }
     )
 
-    ons_son, ons_degisim, ons_hata = fiyat_degisim_getir("GC=F")
+    ons_son, ons_degisim, ons_hata = fiyat_degisim_getir(
+        "GC=F",
+        marj_kontrolu=False
+    )
 
     if ons_son is not None and usd_son is not None:
         gram_fiyat = (ons_son / 31.1035) * usd_son
@@ -1370,35 +1443,40 @@ with tab_piyasa:
         if "piyasa_gorunum" not in st.session_state:
             st.session_state["piyasa_gorunum"] = "yukselen"
 
-        col_btn1, col_btn2 = st.columns(2)
+        # Butonlar da liste ile aynı genişlikte,
+        # ortalanmış şekilde durur.
+        _, btn_orta, _ = st.columns([1, 2, 1])
 
-        with col_btn1:
-            yukselen_secili = (
-                st.session_state["piyasa_gorunum"] == "yukselen"
-            )
+        with btn_orta:
+            col_btn1, col_btn2 = st.columns(2)
 
-            if st.button(
-                "🚀 En Çok Yükselenler",
-                use_container_width=True,
-                type="primary" if yukselen_secili else "secondary",
-                key="btn_yukselen_goster"
-            ):
-                st.session_state["piyasa_gorunum"] = "yukselen"
-                st.rerun()
+            with col_btn1:
+                yukselen_secili = (
+                    st.session_state["piyasa_gorunum"] == "yukselen"
+                )
 
-        with col_btn2:
-            dusen_secili = (
-                st.session_state["piyasa_gorunum"] == "dusen"
-            )
+                if st.button(
+                    "🚀 En Çok Yükselenler",
+                    use_container_width=True,
+                    type="primary" if yukselen_secili else "secondary",
+                    key="btn_yukselen_goster"
+                ):
+                    st.session_state["piyasa_gorunum"] = "yukselen"
+                    st.rerun()
 
-            if st.button(
-                "🔻 En Çok Düşenler",
-                use_container_width=True,
-                type="primary" if dusen_secili else "secondary",
-                key="btn_dusen_goster"
-            ):
-                st.session_state["piyasa_gorunum"] = "dusen"
-                st.rerun()
+            with col_btn2:
+                dusen_secili = (
+                    st.session_state["piyasa_gorunum"] == "dusen"
+                )
+
+                if st.button(
+                    "🔻 En Çok Düşenler",
+                    use_container_width=True,
+                    type="primary" if dusen_secili else "secondary",
+                    key="btn_dusen_goster"
+                ):
+                    st.session_state["piyasa_gorunum"] = "dusen"
+                    st.rerun()
 
         st.write("")
 
@@ -1419,19 +1497,24 @@ with tab_piyasa:
 
         st.markdown(f"##### {baslik}")
 
-        if gosterilecek_liste.empty:
-            st.caption("Veri yok.")
-        else:
-            for _, satir in gosterilecek_liste.head(20).iterrows():
-                st.markdown(
-                    hisse_karti_format(
-                        satir["Hisse Kodu"],
-                        satir["Fiyat"],
-                        satir["Değişim %"],
-                        renk
-                    ),
-                    unsafe_allow_html=True
-                )
+        # Panel çok geniş görünmesin diye liste ortada,
+        # sınırlı genişlikte bir kolonda gösterilir.
+        _, orta_kolon, _ = st.columns([1, 2, 1])
+
+        with orta_kolon:
+            if gosterilecek_liste.empty:
+                st.caption("Veri yok.")
+            else:
+                for _, satir in gosterilecek_liste.head(20).iterrows():
+                    st.markdown(
+                        hisse_karti_format(
+                            satir["Hisse Kodu"],
+                            satir["Fiyat"],
+                            satir["Değişim %"],
+                            renk
+                        ),
+                        unsafe_allow_html=True
+                    )
 
         if piyasa_hatalari:
             with st.expander(
@@ -1443,6 +1526,9 @@ with tab_piyasa:
         st.caption(
             f"BIST genelinde {len(BIST_TARAMA_LISTESI)} hisse "
             "taranmaktadır (kişisel takip listenizden bağımsızdır). "
+            "BIST'te günlük fiyat marjı ±%10 olduğundan, bu aralığın "
+            "dışında görünen değerler (bedelsiz/temettü kaynaklı veri "
+            "kopuklukları) hatalı kabul edilip listeden çıkarılır. "
             "Veriler en az 15 dakika gecikmeli olabilir ve yaklaşık "
             "30 saniyede bir yenilenir."
         )
