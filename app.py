@@ -1,8 +1,10 @@
 import os
 import hashlib
 import html
+import xml.etree.ElementTree as ET
 import concurrent.futures
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 import urllib.parse
 
 import pandas as pd
@@ -587,6 +589,72 @@ def piyasa_ozeti_getir():
 
 
 # ==================================================
+# SON DAKİKA HABERLERİ (GOOGLE NEWS RSS)
+# ==================================================
+@st.cache_data(ttl=600, show_spinner=False)
+def son_dakika_haberleri_getir():
+    """
+    Borsa / döviz / altın ile ilgili güncel Türkçe haberleri,
+    Google News RSS akışından çeker. Her 10 dakikada bir
+    yenilenir; mesaj paneli gibi okunabilir formatta döner.
+    """
+    try:
+        arama = "borsa istanbul bist 100 dolar altın"
+
+        url = (
+            "https://news.google.com/rss/search?q="
+            + urllib.parse.quote(arama)
+            + "&hl=tr&gl=TR&ceid=TR:tr"
+        )
+
+        yanit = requests.get(
+            url,
+            timeout=12,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36"
+                )
+            }
+        )
+
+        kok = ET.fromstring(yanit.content)
+        ogeler = kok.findall(".//item")
+
+        haberler = []
+
+        for oge in ogeler[:15]:
+            baslik = (oge.findtext("title") or "").strip()
+            link = (oge.findtext("link") or "").strip()
+            yayin = (oge.findtext("pubDate") or "").strip()
+
+            if not baslik:
+                continue
+
+            try:
+                zaman = parsedate_to_datetime(
+                    yayin
+                ).astimezone(TURKIYE_TZ).strftime(
+                    "%d.%m.%Y %H:%M"
+                )
+            except Exception:
+                zaman = yayin
+
+            haberler.append(
+                (
+                    html.escape(baslik),
+                    html.escape(link),
+                    html.escape(zaman)
+                )
+            )
+
+        return haberler
+
+    except Exception:
+        return []
+
+
+# ==================================================
 # TASARIM
 # ==================================================
 st.markdown(
@@ -799,6 +867,38 @@ st.markdown(
         color: white;
     }
 
+    /* ============================================
+       BEĞENİ - ŞEFFAF PARMAK İŞARETİ + (SAYI)
+       ============================================ */
+    .st-key-bta_begeni_buton {
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        box-shadow: none !important;
+        font-size: 26px !important;
+        padding: 4px 10px !important;
+        color: #00f5c8 !important;
+    }
+
+    .st-key-bta_begeni_buton:hover {
+        background: rgba(0, 245, 200, 0.12) !important;
+        border: 1px solid rgba(0, 245, 200, 0.4) !important;
+    }
+
+    .sohbet-begeni-sayi {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        font-size: 20px;
+        font-weight: 800;
+        color: #00f5c8;
+        text-shadow: 0 0 8px rgba(0, 245, 200, 0.6);
+        padding: 0 4px;
+    }
+
+    .sohbet-haber-cerceve .sohbet-kart {
+        border-left-color: #ff9f43;
+    }
+
     @media screen and (max-width: 768px) {
         .sohbet-cerceve {
             max-height: 420px;
@@ -808,6 +908,15 @@ st.markdown(
         .sohbet-kart {
             padding: 7px 10px;
             font-size: 13px;
+        }
+
+        .st-key-bta_begeni_buton {
+            font-size: 22px !important;
+            padding: 4px 8px !important;
+        }
+
+        .sohbet-begeni-sayi {
+            font-size: 17px;
         }
     }
 
@@ -1630,13 +1739,12 @@ st.markdown(
     """
     <div style="
         text-align: center;
-        font-size: 15px;
+        font-size: 26px;
         font-weight: 700;
         color: #00f5c8;
         margin-bottom: 6px;
     ">
-        👇 Tüm bölümler aşağıdaki sekmelerde — sığmıyorsa
-        yana kaydırın 👉
+        👇 👉
     </div>
     """,
     unsafe_allow_html=True
@@ -2135,54 +2243,94 @@ with tab_bedelli:
 # CANLI SOHBET
 # ==================================================
 with tab_sohbet:
-    st.header("💬 Canlı Sohbet Odası")
-
-    # ==================================================
-    # TAKİP VE BEĞENİ PANELİ
-    # ==================================================
-    st.subheader("⭐ BTA Oda Takip Paneli")
-
     takip, begeni = istatistik_oku()
 
-    col1, col2, col3, col4 = st.columns(4)
+    # ================================================
+    # BEĞENİ + SON DAKİKA BUTONLARI (tek satır panel)
+    # ================================================
+    kol_begeni, kol_sayi, kol_haber = st.columns([1, 1, 5])
 
-    with col1:
-        if "takip_edildi" not in st.session_state:
-            st.session_state["takip_edildi"] = False
+    with kol_begeni:
+        if st.button(
+            "👍",
+            key="bta_begeni_buton",
+            help="Beğen",
+            use_container_width=False
+        ):
+            begeni += 1
+            istatistik_kaydet(takip, begeni)
 
-        if not st.session_state["takip_edildi"]:
-            if st.button(
-                "⭐ Odayı Takip Et",
-                use_container_width=True
-            ):
-                takip += 1
-                istatistik_kaydet(takip, begeni)
-                st.session_state["takip_edildi"] = True
-                st.rerun()
+    with kol_sayi:
+        st.markdown(
+            f"""
+            <div class="sohbet-begeni-sayi">
+                ({begeni})
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with kol_haber:
+        if st.button(
+            "🔔 Son Dakika Haberleri",
+            key="bta_son_dakika_buton",
+            use_container_width=True
+        ):
+            st.session_state["son_dakika_acik"] = (
+                not st.session_state.get(
+                    "son_dakika_acik",
+                    False
+                )
+            )
+
+    # ================================================
+    # SON DAKİKA HABERLERİ PANELİ
+    # ================================================
+    if st.session_state.get("son_dakika_acik", False):
+        _haberler = son_dakika_haberleri_getir()
+
+        if not _haberler:
+            st.info(
+                "Şu anda haber alınamadı, birazdan "
+                "tekrar denenecek."
+            )
         else:
-            st.info("⭐ Odayı takip ediyorsunuz.")
+            _haber_icerik = ""
 
-    with col2:
-        if "begeni_verildi" not in st.session_state:
-            st.session_state["begeni_verildi"] = False
+            for _baslik, _link, _zaman in _haberler:
+                _haber_icerik += f"""
+                <div class="sohbet-kart" style="
+                    border-left-color: #ff9f43;
+                ">
+                    <div class="sohbet-kart-baslik" style="
+                        color: #ff9f43;
+                    ">
+                        🔔 Son Dakika
+                        <span class="sohbet-kart-saat">
+                            · {_zaman}
+                        </span>
+                    </div>
+                    <div class="sohbet-mesaj-metni">
+                        <a href="{_link}" target="_blank"
+                           style="
+                               color: #00f5c8;
+                               text-decoration: none;
+                               font-weight: 600;
+                           ">
+                            📰 {_baslik}
+                        </a>
+                    </div>
+                </div>
+                """
 
-        if not st.session_state["begeni_verildi"]:
-            if st.button(
-                "👍 Beğen",
-                use_container_width=True
-            ):
-                begeni += 1
-                istatistik_kaydet(takip, begeni)
-                st.session_state["begeni_verildi"] = True
-                st.rerun()
-        else:
-            st.info("👍 Beğeniniz kaydedildi.")
-
-    with col3:
-        st.metric("👥 Takipçi", f"{takip} kişi")
-
-    with col4:
-        st.metric("👍 Beğeni", f"{begeni}")
+            st.markdown(
+                f"""
+                <div class="sohbet-cerceve sohbet-haber-cerceve">
+                    {_haber_icerik}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
     st.divider()
 
