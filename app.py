@@ -5,6 +5,7 @@ from datetime import datetime
 import urllib.parse
 
 import pandas as pd
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
 import yfinance as yf
@@ -422,14 +423,131 @@ def fiyat_degisim_getir(sembol, marj_kontrolu=True):
 
 
 # ==================================================
-# YÜKSELEN / DÜŞEN HİSSELER (CANLI TARAMA)
+# VERİ KAYNAĞI 1: İŞ YATIRIM (TÜRKİYE KAYNAKLI, TEK İSTEK)
 # ==================================================
 @st.cache_data(ttl=30, show_spinner=False)
-def yukselen_dusen_hesapla(hisse_listesi):
+def isyatirim_tum_hisseler():
     """
-    Verilen hisse listesini paralel olarak tarar, her hisse için
-    günlük değişim yüzdesini hesaplar. Sonuçlar 30 saniye
-    önbelleklenir (Yahoo Finance'e aşırı istek gitmesin diye).
+    İş Yatırım'ın herkese açık veri servisinden TÜM BIST hisselerinin
+    son fiyatını ve günlük değişim yüzdesini TEK istekte çeker.
+
+    Yahoo Finance'e göre avantajları:
+      - Veriler doğrudan Türkiye kaynaklı, BIST seans verisiyle uyumlu
+      - Değişim yüzdesi kaynağın kendisi tarafından hesaplanır, bu
+        sayede bedelsiz/temettü düzeltmesi kaynaklı sapma oluşmaz
+      - 120 ayrı istek yerine tek istek: çok daha hızlı, engellenme
+        (rate limit) riski yok
+
+    Dönüş: (DataFrame[Hisse Kodu, Fiyat, Değişim %], hata_metni)
+    """
+    adres = (
+        "https://www.isyatirim.com.tr/_layouts/15/Isyatirim.Website/"
+        "Common/Data.aspx/IMKBInfo"
+    )
+
+    basliklar = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0 Safari/537.36"
+        ),
+        "Referer": "https://www.isyatirim.com.tr/",
+        "Accept": "application/json, text/plain, */*"
+    }
+
+    try:
+        cevap = requests.get(adres, headers=basliklar, timeout=12)
+        cevap.raise_for_status()
+        veri = cevap.json()
+    except Exception as hata:
+        return None, f"İş Yatırım servisine ulaşılamadı: {hata}"
+
+    # Servis, sürüme göre "value" veya "d" anahtarı döndürebilir.
+    kayitlar = None
+
+    for anahtar in ("value", "d", "Value", "data"):
+        if isinstance(veri, dict) and anahtar in veri:
+            aday = veri[anahtar]
+
+            if isinstance(aday, dict):
+                for ic_anahtar in ("value", "d", "data"):
+                    if ic_anahtar in aday:
+                        aday = aday[ic_anahtar]
+                        break
+
+            if isinstance(aday, list) and aday:
+                kayitlar = aday
+                break
+
+    if not kayitlar:
+        return None, "İş Yatırım yanıtı beklenen biçimde değil"
+
+    # Alan adları sürüme göre değişebildiği için esnek eşleştirme.
+    kod_adaylari = ("SEMBOL", "HISSE", "HGDG_HS_KODU", "Kod", "code")
+    fiyat_adaylari = (
+        "SONFIYAT", "SON", "KAPANIS", "HGDG_KAPANIS", "last", "Son"
+    )
+    degisim_adaylari = (
+        "YUZDEDEGISIM", "YUZDE_DEGISIM", "DEGISIM", "FARK_YUZDE",
+        "pctChange", "Fark"
+    )
+
+    def alan_bul(kayit, adaylar):
+        for ad in adaylar:
+            if ad in kayit and kayit[ad] not in (None, ""):
+                return kayit[ad]
+        return None
+
+    sonuclar = []
+
+    for kayit in kayitlar:
+        if not isinstance(kayit, dict):
+            continue
+
+        kod = alan_bul(kayit, kod_adaylari)
+        fiyat = alan_bul(kayit, fiyat_adaylari)
+        degisim = alan_bul(kayit, degisim_adaylari)
+
+        if kod is None or fiyat is None or degisim is None:
+            continue
+
+        try:
+            kod = str(kod).strip().upper()
+            fiyat = float(str(fiyat).replace(",", "."))
+            degisim = float(str(degisim).replace(",", "."))
+        except Exception:
+            continue
+
+        if fiyat <= 0:
+            continue
+
+        # Yalnızca normal pay senetleri (5 harfli kodlar) alınır;
+        # varant, endeks vb. kayıtlar elenir.
+        if not kod.isalpha() or len(kod) < 4 or len(kod) > 6:
+            continue
+
+        sonuclar.append(
+            {
+                "Hisse Kodu": kod,
+                "Fiyat": fiyat,
+                "Değişim %": degisim
+            }
+        )
+
+    if not sonuclar:
+        return None, "İş Yatırım yanıtından hisse ayrıştırılamadı"
+
+    return pd.DataFrame(sonuclar), None
+
+
+# ==================================================
+# VERİ KAYNAĞI 2 (YEDEK): YAHOO FINANCE
+# ==================================================
+@st.cache_data(ttl=30, show_spinner=False)
+def yahoo_tarama(hisse_listesi):
+    """
+    İş Yatırım servisine ulaşılamazsa devreye giren yedek kaynak.
+    Sabit listeyi paralel olarak Yahoo Finance üzerinden tarar.
     """
     bos_sonuc = pd.DataFrame(
         columns=["Hisse Kodu", "Fiyat", "Değişim %"]
@@ -479,25 +597,66 @@ def yukselen_dusen_hesapla(hisse_listesi):
     return pd.DataFrame(sonuclar), hatalar
 
 
+# ==================================================
+# YÜKSELEN / DÜŞEN HİSSELER (CANLI TARAMA)
+# ==================================================
+def yukselen_dusen_hesapla(hisse_listesi):
+    """
+    Önce İş Yatırım (tüm BIST, tek istek), olmazsa Yahoo Finance
+    (sabit liste) üzerinden yükselen/düşen verisini hazırlar.
+
+    Dönüş: (DataFrame, hatalar, kaynak_adi)
+    """
+    veri, hata = isyatirim_tum_hisseler()
+
+    if veri is not None and not veri.empty:
+        return veri, [], "İş Yatırım (tüm BIST)"
+
+    yedek_veri, yedek_hatalar = yahoo_tarama(hisse_listesi)
+
+    hatalar = []
+
+    if hata:
+        hatalar.append(f"İş Yatırım: {hata}")
+
+    hatalar.extend(yedek_hatalar)
+
+    return yedek_veri, hatalar, "Yahoo Finance (yedek kaynak)"
+
+
 def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
-    durum = "📈" if degisim >= 0 else "📉"
+    durum = "\u25b2" if degisim >= 0 else "\u25bc"
 
     return f"""
     <div style="
-        background: rgba(0, 0, 0, 0.3);
-        border-left: 4px solid {renk};
-        border-radius: 5px;
-        padding: 9px 14px;
-        margin: 6px 0;
-        display: flex;
-        justify-content: space-between;
+        background: rgba(0, 0, 0, 0.42);
+        border-left: 5px solid {renk};
+        border-radius: 6px;
+        padding: 11px 16px;
+        margin: 7px 0;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
         align-items: center;
+        column-gap: 18px;
     ">
-        <span style="font-weight: bold;">{hisse_kodu}</span>
-        <span style="color: #ccc;">{tl_format(fiyat)}</span>
-        <span style="color: {renk}; font-weight: bold;">
-            {durum} {degisim:+.2f}%
-        </span>
+        <span style="
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        ">{hisse_kodu}</span>
+        <span style="
+            font-size: 18px;
+            color: #e6e6e6;
+            text-align: right;
+            min-width: 105px;
+        ">{tl_format(fiyat)}</span>
+        <span style="
+            font-size: 19px;
+            font-weight: 700;
+            color: {renk};
+            text-align: right;
+            min-width: 95px;
+        ">{durum} {degisim:+.2f}%</span>
     </div>
     """
 
@@ -1410,7 +1569,7 @@ with tab_piyasa:
     # ==================================================
     # TIKLANABİLİR GÖRÜNÜM: YÜKSELEN / DÜŞEN
     # ==================================================
-    piyasa_df, piyasa_hatalari = yukselen_dusen_hesapla(
+    piyasa_df, piyasa_hatalari, veri_kaynagi = yukselen_dusen_hesapla(
         tuple(BIST_TARAMA_LISTESI)
     )
 
@@ -1432,10 +1591,10 @@ with tab_piyasa:
 
                 st.markdown(
                     "Olası sebepler: **(1)** uygulamanın çalıştığı "
-                    "sunucunun finance.yahoo.com'a çıkışı engelli, "
-                    "**(2)** Yahoo Finance çok sayıda istek nedeniyle "
-                    "geçici sınırlama (rate limit) uygulamış olabilir, "
-                    "**(3)** semboller Yahoo formatına uymuyor olabilir."
+                    "sunucunun internete (isyatirim.com.tr ve "
+                    "finance.yahoo.com) çıkışı engelli, **(2)** veri "
+                    "sağlayıcı geçici sınırlama uygulamış olabilir, "
+                    "**(3)** servisin yanıt biçimi değişmiş olabilir."
                 )
             else:
                 st.write("Tarama listesi boş görünüyor.")
@@ -1445,7 +1604,7 @@ with tab_piyasa:
 
         # Butonlar da liste ile aynı genişlikte,
         # ortalanmış şekilde durur.
-        _, btn_orta, _ = st.columns([1, 2, 1])
+        _, btn_orta, _ = st.columns([1, 3, 1])
 
         with btn_orta:
             col_btn1, col_btn2 = st.columns(2)
@@ -1499,7 +1658,7 @@ with tab_piyasa:
 
         # Panel çok geniş görünmesin diye liste ortada,
         # sınırlı genişlikte bir kolonda gösterilir.
-        _, orta_kolon, _ = st.columns([1, 2, 1])
+        _, orta_kolon, _ = st.columns([1, 3, 1])
 
         with orta_kolon:
             if gosterilecek_liste.empty:
@@ -1524,13 +1683,10 @@ with tab_piyasa:
                     st.code(satir, language=None)
 
         st.caption(
-            f"BIST genelinde {len(BIST_TARAMA_LISTESI)} hisse "
-            "taranmaktadır (kişisel takip listenizden bağımsızdır). "
-            "BIST'te günlük fiyat marjı ±%10 olduğundan, bu aralığın "
-            "dışında görünen değerler (bedelsiz/temettü kaynaklı veri "
-            "kopuklukları) hatalı kabul edilip listeden çıkarılır. "
-            "Veriler en az 15 dakika gecikmeli olabilir ve yaklaşık "
-            "30 saniyede bir yenilenir."
+            f"Veri kaynağı: **{veri_kaynagi}** — toplam "
+            f"{len(piyasa_df)} hisse listeleniyor (kişisel takip "
+            "listenizden bağımsızdır). Veriler yaklaşık 30 saniyede "
+            "bir yenilenir ve gecikmeli olabilir."
         )
 
 
