@@ -1,4 +1,5 @@
 import os
+import re
 import hashlib
 import html
 import xml.etree.ElementTree as ET
@@ -1195,6 +1196,18 @@ st.markdown(
         color: white;
     }
 
+    .sohbet-uyari {
+        background: rgba(60, 45, 8, 0.85);
+        border: 1px solid rgba(255, 209, 102, 0.7);
+        border-left: 4px solid #ffd166;
+        border-radius: 8px;
+        padding: 11px 14px;
+        margin: 6px 0 12px 0;
+        color: #ffe9b0;
+        font-size: 12.5px;
+        line-height: 1.6;
+    }
+
     /* ============================================
        BEĞENİ - ŞEFFAF PARMAK İŞARETİ + (SAYI)
        ============================================ */
@@ -2010,6 +2023,94 @@ def paylas_linki_olustur(platform, url, baslik):
     }
     
     return linkler.get(platform, "#")
+
+
+# ==================================================
+# MESAJ DENETİMİ (KÜFÜR / HAKARET / YATIRIM TELKİNİ)
+# ==================================================
+# Küfür, hakaret ve argo kelimeler ile yatırım yönlendirmesi
+# (AL / SAT / TUT) içeren kelimeler engellenir.
+KUFUR_KOKLERI = [
+    "amk", "aq", "oç", "orospu", "siktir", "sikeyim", "sikik",
+    "pezevenk", "piç", "yavşak", "şerefsiz", "göt", "bok",
+    "salak", "aptal", "gerizekalı", "hain", "kahpe", "sürtük",
+    "amına", "ananı", "avradı"
+]
+
+# İçinde küfür kökü geçen ama masum olan kelimeler (ör. "götür"
+# kelimesi "göt" köküyle başlar). Bunlar engellenmez.
+KUFUR_ISTISNALARI = [
+    "götür", "götüre", "götürü", "boks", "bokser", "boksu"
+]
+
+YATIRIM_TELKIN_KELIMELERI = [
+    "al", "sat", "tut",
+    "alın", "satın", "tutun",
+    "alınız", "satınız", "tutunuz"
+]
+
+
+def _tam_kelime_geciyor(metin_kucuk, kelime):
+    """
+    Kelimeyi yalnızca bağımsız bir sözcük olarak arar. Böylece 'al'
+    kelimesi 'aldım', 'sat' kelimesi 'satış' gibi kelimelerin içinde
+    yanlışlıkla yakalanmaz (Türkçe harfler de sözcük parçası sayılır).
+    """
+    desen = (
+        r"(?<![a-zçğıöşü0-9])"
+        + re.escape(kelime)
+        + r"(?![a-zçğıöşü0-9])"
+    )
+    return re.search(desen, metin_kucuk) is not None
+
+
+def _kufur_var_mi(metin_kucuk):
+    """
+    Metni kelimelere ayırıp her kelimede küfür kökü arar; böylece
+    'boktan' gibi ek almış küfürler de yakalanır. Masum kelimeler
+    (ör. 'götür') istisna listesiyle korunur.
+    """
+    kelimeler = re.findall(r"[a-zçğıöşü0-9]+", metin_kucuk)
+
+    for kelime in kelimeler:
+        if any(
+            kelime.startswith(istisna)
+            for istisna in KUFUR_ISTISNALARI
+        ):
+            continue
+
+        for kok in KUFUR_KOKLERI:
+            if kok in kelime:
+                return True
+
+    return False
+
+
+def mesaj_yasakli_mi(metin):
+    """
+    Mesajda küfür/hakaret veya yatırım telkini (AL/SAT/TUT) varsa
+    (True, kullanıcıya_gösterilecek_uyari) döndürür; yoksa
+    (False, None) döndürür.
+    """
+    metin_kucuk = str(metin).lower()
+
+    if _kufur_var_mi(metin_kucuk):
+        return (
+            True,
+            "Mesajınız gönderilemedi: Küfür, hakaret veya argo "
+            "içeren ifadeler kullanılamaz."
+        )
+
+    for kelime in YATIRIM_TELKIN_KELIMELERI:
+        if _tam_kelime_geciyor(metin_kucuk, kelime):
+            return (
+                True,
+                "Mesajınız gönderilemedi: AL / SAT / TUT gibi "
+                "yatırım yönlendirmesi (al-sat tavsiyesi) içeren "
+                "ifadeler kullanılamaz."
+            )
+
+    return False, None
 
 
 # ==================================================
@@ -3073,6 +3174,22 @@ with tab_sohbet:
         unsafe_allow_html=True
     )
 
+    st.markdown(
+        """
+        <div class="sohbet-uyari">
+            ⚠️ <strong>Uyarı:</strong> Bu bölümde paylaşılan yorum ve
+            mesajlar tamamen kullanıcıların
+            <strong>kişisel görüşleridir</strong>; platformun veya
+            yöneticilerin görüşünü yansıtmaz. Yatırım danışmanlığı,
+            yatırım tavsiyesi ya da <strong>AL – SAT – TUT önerisi
+            değildir</strong>. Küfür, hakaret ve yatırım yönlendirmesi
+            içeren mesajlar otomatik olarak engellenir. Yatırım
+            kararlarınızı kendi araştırmanıza dayanarak veriniz.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     @st.fragment(run_every=5)
     def _sohbet_fragment():
         """Beğeni butonu, mesaj formu ve mesaj listesi. Tıklama veya
@@ -3143,16 +3260,21 @@ with tab_sohbet:
                         "Mesaj boş bırakılamaz."
                     )
                 else:
-                    mesaj_ekle(
-                        kullanici.strip(),
-                        mesaj.strip()
-                    )
+                    _yasakli, _uyari = mesaj_yasakli_mi(mesaj)
 
-                    st.success(
-                        "Mesajınız gönderildi."
-                    )
+                    if _yasakli:
+                        st.error(_uyari)
+                    else:
+                        mesaj_ekle(
+                            kullanici.strip(),
+                            mesaj.strip()
+                        )
 
-                    st.rerun(scope="fragment")
+                        st.success(
+                            "Mesajınız gönderildi."
+                        )
+
+                        st.rerun(scope="fragment")
 
         st.divider()
 
