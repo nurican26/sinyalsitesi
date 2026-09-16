@@ -346,16 +346,13 @@ def fiyat_degisim_getir(sembol, marj_kontrolu=True):
         try:
             hizli = hisse.fast_info
 
-            aday_son = (
-                hizli.get("last_price")
-                if hasattr(hizli, "get")
-                else getattr(hizli, "last_price", None)
-            )
-            aday_onceki = (
-                hizli.get("previous_close")
-                if hasattr(hizli, "get")
-                else getattr(hizli, "previous_close", None)
-            )
+            aday_son = getattr(hizli, "last_price", None)
+            aday_onceki = getattr(hizli, "previous_close", None)
+
+            if aday_son is None and hasattr(hizli, "get"):
+                aday_son = hizli.get("last_price")
+            if aday_onceki is None and hasattr(hizli, "get"):
+                aday_onceki = hizli.get("previous_close")
 
             if aday_son and aday_onceki:
                 son = float(aday_son)
@@ -380,7 +377,16 @@ def fiyat_degisim_getir(sembol, marj_kontrolu=True):
             ):
                 return None, None, "veri boş döndü"
 
-            kapanislar = gecmis["Close"].dropna()
+            kapanislar = gecmis["Close"]
+
+            if pd.isna(kapanislar.iloc[-1]):
+                return (
+                    None,
+                    None,
+                    "bugünkü kapanış kaydı henüz yok (anlık veri için fast_info gerekli)"
+                )
+
+            kapanislar = kapanislar.dropna()
 
             if len(kapanislar) < 2:
                 return None, None, "yetersiz geçmiş veri"
@@ -2393,13 +2399,17 @@ with tab_algoritmik:
             hisse = yf.Ticker(sembol)
             bilgi = hisse.info
 
-            fiyat = bilgi.get(
-                "regularMarketPrice"
+            fiyat, degisim_yuzde, hata = fiyat_degisim_getir(
+                sembol, marj_kontrolu=False
             )
 
             onceki_kapanis = bilgi.get(
                 "regularMarketPreviousClose"
             )
+            if onceki_kapanis is None:
+                onceki_kapanis = getattr(
+                    hisse.fast_info, "previous_close", None
+                )
 
             en_yuksek = bilgi.get(
                 "dayHigh"
