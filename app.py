@@ -289,37 +289,6 @@ def bedelli_bedelsiz_kart_format(sonuc):
 
 
 # ==================================================
-# BIST CANLI TARAMA LİSTESİ
-# ==================================================
-# Not: BIST'te en yaygın işlem gören ~120 hisseden oluşan sabit
-# bir tarama listesidir. Yahoo Finance / yfinance üzerinden BIST'in
-# tüm hisselerini veya anlık endeks bileşenlerini otomatik çeken
-# ücretsiz bir "screener" API'si bulunmadığı için, günün en çok
-# yükselen/düşen hisselerini bu listeyi canlı tarayarak buluyoruz.
-# Yeni hisse eklemek/çıkarmak için bu listeyi düzenlemeniz yeterli.
-BIST_TARAMA_LISTESI = [
-    "THYAO", "GARAN", "AKBNK", "ISCTR", "YKBNK", "SAHOL", "KCHOL",
-    "SASA", "EREGL", "BIMAS", "ASELS", "TUPRS", "PETKM", "PGSUS",
-    "TCELL", "TTKOM", "FROTO", "TOASO", "OTKAR", "ARCLK", "VESTL",
-    "ENKAI", "TAVHL", "MGROS", "SOKM", "CCOLA", "ULKER", "KOZAL",
-    "KOZAA", "KRDMD", "EKGYO", "HALKB", "VAKBN", "ISGYO", "SISE",
-    "TKFEN", "TRGYO", "ALARK", "AEFES", "DOHOL", "DOAS", "ANHYT",
-    "AGHOL", "AKSA", "AKSEN", "ALBRK", "ALGYO", "ALKIM", "ASUZU",
-    "AYGAZ", "BAGFS", "BANVT", "BERA", "BIOEN", "BRISA", "BRSAN",
-    "BRYAT", "BUCIM", "CANTE", "CEMTS", "CIMSA", "CLEBI", "ECILC",
-    "ECZYT", "EGEEN", "ENJSA", "EUPWR", "EUREN", "GESAN", "GLYHO",
-    "GOODY", "GOZDE", "GSDHO", "GUBRF", "HEKTS", "IPEKE", "ISMEN",
-    "IZMDC", "JANTS", "KARSN", "KARTN", "KLNMA", "KMPUR", "KONTR",
-    "KONYA", "KORDS", "KRDMA", "KRONT", "LOGO", "MAVI", "MPARK",
-    "NETAS", "NTHOL", "NUHCM", "ODAS", "OYAKC", "PARSN", "PENTA",
-    "PETUN", "PSGYO", "QUAGR", "RYSAS", "SARKY", "SELEC", "SKBNK",
-    "SMRTG", "SNGYO", "TATGD", "TKNSA", "TMSN", "TSKB", "TTRAK",
-    "TURSG", "ULUUN", "VAKKO", "VESBE", "YATAS", "YUNSA", "ZOREN",
-    "ZRGYO"
-]
-
-
-# ==================================================
 # TEK SEMBOL İÇİN FİYAT + DEĞİŞİM
 # ==================================================
 @st.cache_data(ttl=30, show_spinner=False)
@@ -423,241 +392,49 @@ def fiyat_degisim_getir(sembol, marj_kontrolu=True):
 
 
 # ==================================================
-# VERİ KAYNAĞI 1: İŞ YATIRIM (TÜRKİYE KAYNAKLI, TEK İSTEK)
+# TAVAN KUTLAMA KARTI
 # ==================================================
-@st.cache_data(ttl=30, show_spinner=False)
-def isyatirim_tum_hisseler():
-    """
-    İş Yatırım'ın herkese açık veri servisinden TÜM BIST hisselerinin
-    son fiyatını ve günlük değişim yüzdesini TEK istekte çeker.
-
-    Yahoo Finance'e göre avantajları:
-      - Veriler doğrudan Türkiye kaynaklı, BIST seans verisiyle uyumlu
-      - Değişim yüzdesi kaynağın kendisi tarafından hesaplanır, bu
-        sayede bedelsiz/temettü düzeltmesi kaynaklı sapma oluşmaz
-      - 120 ayrı istek yerine tek istek: çok daha hızlı, engellenme
-        (rate limit) riski yok
-
-    Dönüş: (DataFrame[Hisse Kodu, Fiyat, Değişim %], hata_metni)
-    """
-    adres = (
-        "https://www.isyatirim.com.tr/_layouts/15/Isyatirim.Website/"
-        "Common/Data.aspx/IMKBInfo"
-    )
-
-    basliklar = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0 Safari/537.36"
-        ),
-        "Referer": "https://www.isyatirim.com.tr/",
-        "Accept": "application/json, text/plain, */*"
-    }
-
-    try:
-        cevap = requests.get(adres, headers=basliklar, timeout=12)
-        cevap.raise_for_status()
-        veri = cevap.json()
-    except Exception as hata:
-        return None, f"İş Yatırım servisine ulaşılamadı: {hata}"
-
-    # Servis, sürüme göre "value" veya "d" anahtarı döndürebilir.
-    kayitlar = None
-
-    for anahtar in ("value", "d", "Value", "data"):
-        if isinstance(veri, dict) and anahtar in veri:
-            aday = veri[anahtar]
-
-            if isinstance(aday, dict):
-                for ic_anahtar in ("value", "d", "data"):
-                    if ic_anahtar in aday:
-                        aday = aday[ic_anahtar]
-                        break
-
-            if isinstance(aday, list) and aday:
-                kayitlar = aday
-                break
-
-    if not kayitlar:
-        return None, "İş Yatırım yanıtı beklenen biçimde değil"
-
-    # Alan adları sürüme göre değişebildiği için esnek eşleştirme.
-    kod_adaylari = ("SEMBOL", "HISSE", "HGDG_HS_KODU", "Kod", "code")
-    fiyat_adaylari = (
-        "SONFIYAT", "SON", "KAPANIS", "HGDG_KAPANIS", "last", "Son"
-    )
-    degisim_adaylari = (
-        "YUZDEDEGISIM", "YUZDE_DEGISIM", "DEGISIM", "FARK_YUZDE",
-        "pctChange", "Fark"
-    )
-
-    def alan_bul(kayit, adaylar):
-        for ad in adaylar:
-            if ad in kayit and kayit[ad] not in (None, ""):
-                return kayit[ad]
-        return None
-
-    sonuclar = []
-
-    for kayit in kayitlar:
-        if not isinstance(kayit, dict):
-            continue
-
-        kod = alan_bul(kayit, kod_adaylari)
-        fiyat = alan_bul(kayit, fiyat_adaylari)
-        degisim = alan_bul(kayit, degisim_adaylari)
-
-        if kod is None or fiyat is None or degisim is None:
-            continue
-
-        try:
-            kod = str(kod).strip().upper()
-            fiyat = float(str(fiyat).replace(",", "."))
-            degisim = float(str(degisim).replace(",", "."))
-        except Exception:
-            continue
-
-        if fiyat <= 0:
-            continue
-
-        # Yalnızca normal pay senetleri (5 harfli kodlar) alınır;
-        # varant, endeks vb. kayıtlar elenir.
-        if not kod.isalpha() or len(kod) < 4 or len(kod) > 6:
-            continue
-
-        sonuclar.append(
-            {
-                "Hisse Kodu": kod,
-                "Fiyat": fiyat,
-                "Değişim %": degisim
-            }
-        )
-
-    if not sonuclar:
-        return None, "İş Yatırım yanıtından hisse ayrıştırılamadı"
-
-    return pd.DataFrame(sonuclar), None
-
-
-# ==================================================
-# VERİ KAYNAĞI 2 (YEDEK): YAHOO FINANCE
-# ==================================================
-@st.cache_data(ttl=30, show_spinner=False)
-def yahoo_tarama(hisse_listesi):
-    """
-    İş Yatırım servisine ulaşılamazsa devreye giren yedek kaynak.
-    Sabit listeyi paralel olarak Yahoo Finance üzerinden tarar.
-    """
-    bos_sonuc = pd.DataFrame(
-        columns=["Hisse Kodu", "Fiyat", "Değişim %"]
-    )
-
-    if not hisse_listesi:
-        return bos_sonuc, []
-
-    semboller = {
-        h: (h if h.endswith(".IS") else f"{h}.IS")
-        for h in hisse_listesi
-    }
-
-    sonuclar = []
-    hatalar = []
-
-    def tek_hisse_getir(oge):
-        hisse, sembol = oge
-        son, degisim, hata = fiyat_degisim_getir(sembol)
-        return hisse, son, degisim, hata
-
-    try:
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=20
-        ) as havuz:
-            for hisse, son, degisim, hata in havuz.map(
-                tek_hisse_getir,
-                semboller.items()
-            ):
-                if hata is not None or son is None:
-                    hatalar.append(f"{hisse}: {hata}")
-                    continue
-
-                sonuclar.append(
-                    {
-                        "Hisse Kodu": hisse,
-                        "Fiyat": son,
-                        "Değişim %": degisim
-                    }
-                )
-    except Exception as hata:
-        hatalar.append(f"Genel hata: {hata}")
-
-    if not sonuclar:
-        return bos_sonuc, hatalar
-
-    return pd.DataFrame(sonuclar), hatalar
-
-
-# ==================================================
-# YÜKSELEN / DÜŞEN HİSSELER (CANLI TARAMA)
-# ==================================================
-def yukselen_dusen_hesapla(hisse_listesi):
-    """
-    Önce İş Yatırım (tüm BIST, tek istek), olmazsa Yahoo Finance
-    (sabit liste) üzerinden yükselen/düşen verisini hazırlar.
-
-    Dönüş: (DataFrame, hatalar, kaynak_adi)
-    """
-    veri, hata = isyatirim_tum_hisseler()
-
-    if veri is not None and not veri.empty:
-        return veri, [], "İş Yatırım (tüm BIST)"
-
-    yedek_veri, yedek_hatalar = yahoo_tarama(hisse_listesi)
-
-    hatalar = []
-
-    if hata:
-        hatalar.append(f"İş Yatırım: {hata}")
-
-    hatalar.extend(yedek_hatalar)
-
-    return yedek_veri, hatalar, "Yahoo Finance (yedek kaynak)"
-
-
-def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
-    durum = "\u25b2" if degisim >= 0 else "\u25bc"
-
+def tavan_kutlama_format(hisse_kodu, fiyat, degisim):
     return f"""
     <div style="
-        background: rgba(0, 0, 0, 0.42);
-        border-left: 5px solid {renk};
-        border-radius: 6px;
-        padding: 11px 16px;
-        margin: 7px 0;
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        align-items: center;
-        column-gap: 18px;
+        background: linear-gradient(
+            120deg,
+            rgba(0, 245, 200, 0.22),
+            rgba(22, 140, 255, 0.22)
+        );
+        border: 2px solid #00f5c8;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin: 10px 0;
+        text-align: center;
+        box-shadow: 0 0 22px rgba(0, 245, 200, 0.45);
+        animation: tavan_parlama 1.6s ease-in-out infinite alternate;
     ">
-        <span style="
-            font-size: 19px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        ">{hisse_kodu}</span>
-        <span style="
-            font-size: 18px;
-            color: #e6e6e6;
-            text-align: right;
-            min-width: 105px;
-        ">{tl_format(fiyat)}</span>
-        <span style="
-            font-size: 19px;
-            font-weight: 700;
-            color: {renk};
-            text-align: right;
-            min-width: 95px;
-        ">{durum} {degisim:+.2f}%</span>
+        <div style="font-size: 26px;">
+            🎉 🚀 🥳
+        </div>
+        <div style="
+            font-size: 21px;
+            font-weight: 800;
+            color: #00f5c8;
+            margin-top: 4px;
+        ">
+            Tebrikler! {hisse_kodu} bugün TAVAN yaptı!
+        </div>
+        <div style="font-size: 15px; color: #d8fff5; margin-top: 4px;">
+            {tl_format(fiyat)} &nbsp;•&nbsp; {degisim:+.2f}%
+        </div>
     </div>
+    <style>
+        @keyframes tavan_parlama {{
+            from {{
+                box-shadow: 0 0 14px rgba(0, 245, 200, 0.35);
+            }}
+            to {{
+                box-shadow: 0 0 30px rgba(0, 245, 200, 0.75);
+            }}
+        }}
+    </style>
     """
 
 
@@ -1263,6 +1040,39 @@ st.markdown(
 
 
 # ==================================================
+# PİYASA ÖZETİ KARTLARI (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
+# ==================================================
+_ozet_veriler = piyasa_ozeti_getir()
+
+_ozet_kolonlar = st.columns(len(_ozet_veriler))
+
+for _kolon, _veri in zip(_ozet_kolonlar, _ozet_veriler):
+    if _veri["fiyat"] is None:
+        _kolon.metric(_veri["isim"], "-")
+    else:
+        if _veri["tur"] == "tl":
+            _deger_metni = tl_format(_veri["fiyat"])
+        else:
+            _deger_metni = sayi_format(_veri["fiyat"])
+
+        _kolon.metric(
+            _veri["isim"],
+            _deger_metni,
+            f"{_veri['degisim']:+.2f}%"
+            if _veri["degisim"] is not None
+            else None
+        )
+
+st.caption(
+    "BIST100, USDTRY ve EURTRY canlı piyasa verisidir (en az 15 dk. "
+    "gecikmeli olabilir). Gram Altın, ons altın x USDTRY üzerinden "
+    "yaklaşık hesaplanır."
+)
+
+st.divider()
+
+
+# ==================================================
 # YÖNETİCİ SİSTEMİ
 # ==================================================
 st.sidebar.header("⚙️ Sistem Kontrolleri")
@@ -1405,13 +1215,57 @@ if excel_dosyalari:
 
 
 # ==================================================
+# TAVAN KUTLAMA (BTA TAKİP LİSTESİ)
+# ==================================================
+if not excel_df.empty:
+    _tavan_listesi = []
+
+    def _tek_hisse_tavan_kontrol(_hisse_kodu):
+        _sembol = _hisse_kodu
+
+        if not _sembol.endswith(".IS"):
+            _sembol += ".IS"
+
+        _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
+        return _hisse_kodu, _son, _degisim, _hata
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=10
+        ) as _havuz:
+            for _hisse_kodu, _son, _degisim, _hata in _havuz.map(
+                _tek_hisse_tavan_kontrol,
+                excel_df["Hisse Kodu"].tolist()
+            ):
+                if (
+                    _hata is None
+                    and _son is not None
+                    and _degisim is not None
+                    and _degisim >= 9.0
+                ):
+                    _tavan_listesi.append(
+                        (_hisse_kodu, _son, _degisim)
+                    )
+    except Exception:
+        _tavan_listesi = []
+
+    for _hisse_kodu, _son, _degisim in _tavan_listesi:
+        st.markdown(
+            tavan_kutlama_format(_hisse_kodu, _son, _degisim),
+            unsafe_allow_html=True
+        )
+
+    if _tavan_listesi:
+        st.divider()
+
+
+# ==================================================
 # PANELLER
 # ==================================================
-tab_algoritmik, tab_piyasa, tab_bedelli, tab_sohbet, tab_kayit, \
-    tab_paylas = st.tabs(
+tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = \
+    st.tabs(
         [
             "🤖 Algoritmik Bilgiler",
-            "📊 En Çok Yükselen / Düşen",
             "🧮 Bedelli/Bedelsiz- HESAPLAMA",
             "💬 Sohbet",
             "📒 Kayıtlar",
@@ -1526,168 +1380,6 @@ with tab_algoritmik:
             st.warning(
                 f"Algoritmik bilgiler alınamadı: {hata}"
             )
-
-
-# ==================================================
-# EN ÇOK YÜKSELEN / DÜŞEN HİSSELER (CANLI)
-# ==================================================
-with tab_piyasa:
-    st.header("📊 Borsada En Çok Yükselenler ve Düşenler")
-
-    # ==================================================
-    # PİYASA ÖZETİ KARTLARI
-    # ==================================================
-    ozet_veriler = piyasa_ozeti_getir()
-
-    ozet_kolonlar = st.columns(len(ozet_veriler))
-
-    for kolon, veri in zip(ozet_kolonlar, ozet_veriler):
-        if veri["fiyat"] is None:
-            kolon.metric(veri["isim"], "-")
-        else:
-            if veri["tur"] == "tl":
-                deger_metni = tl_format(veri["fiyat"])
-            else:
-                deger_metni = sayi_format(veri["fiyat"])
-
-            kolon.metric(
-                veri["isim"],
-                deger_metni,
-                f"{veri['degisim']:+.2f}%"
-                if veri["degisim"] is not None
-                else None
-            )
-
-    st.caption(
-        "BIST100, USDTRY ve EURTRY canlı piyasa verisidir "
-        "(en az 15 dk. gecikmeli olabilir). Gram Altın, "
-        "ons altın x USDTRY üzerinden yaklaşık hesaplanır."
-    )
-
-    st.divider()
-
-    # ==================================================
-    # TIKLANABİLİR GÖRÜNÜM: YÜKSELEN / DÜŞEN
-    # ==================================================
-    piyasa_df, piyasa_hatalari, veri_kaynagi = yukselen_dusen_hesapla(
-        tuple(BIST_TARAMA_LISTESI)
-    )
-
-    if piyasa_df.empty:
-        st.info(
-            "Piyasa verisi şu anda alınamıyor, "
-            "birazdan tekrar denenecek."
-        )
-
-        with st.expander("🔧 Teknik detay (neden veri gelmiyor?)"):
-            if piyasa_hatalari:
-                st.write(
-                    f"Toplam {len(piyasa_hatalari)} sembol denendi, "
-                    "hiçbirinden veri alınamadı. İlk hatalar:"
-                )
-
-                for satir in piyasa_hatalari[:10]:
-                    st.code(satir, language=None)
-
-                st.markdown(
-                    "Olası sebepler: **(1)** uygulamanın çalıştığı "
-                    "sunucunun internete (isyatirim.com.tr ve "
-                    "finance.yahoo.com) çıkışı engelli, **(2)** veri "
-                    "sağlayıcı geçici sınırlama uygulamış olabilir, "
-                    "**(3)** servisin yanıt biçimi değişmiş olabilir."
-                )
-            else:
-                st.write("Tarama listesi boş görünüyor.")
-    else:
-        if "piyasa_gorunum" not in st.session_state:
-            st.session_state["piyasa_gorunum"] = "yukselen"
-
-        # Butonlar da liste ile aynı genişlikte,
-        # ortalanmış şekilde durur.
-        _, btn_orta, _ = st.columns([1, 3, 1])
-
-        with btn_orta:
-            col_btn1, col_btn2 = st.columns(2)
-
-            with col_btn1:
-                yukselen_secili = (
-                    st.session_state["piyasa_gorunum"] == "yukselen"
-                )
-
-                if st.button(
-                    "🚀 En Çok Yükselenler",
-                    use_container_width=True,
-                    type="primary" if yukselen_secili else "secondary",
-                    key="btn_yukselen_goster"
-                ):
-                    st.session_state["piyasa_gorunum"] = "yukselen"
-                    st.rerun()
-
-            with col_btn2:
-                dusen_secili = (
-                    st.session_state["piyasa_gorunum"] == "dusen"
-                )
-
-                if st.button(
-                    "🔻 En Çok Düşenler",
-                    use_container_width=True,
-                    type="primary" if dusen_secili else "secondary",
-                    key="btn_dusen_goster"
-                ):
-                    st.session_state["piyasa_gorunum"] = "dusen"
-                    st.rerun()
-
-        st.write("")
-
-        if st.session_state["piyasa_gorunum"] == "yukselen":
-            gosterilecek_liste = piyasa_df.sort_values(
-                "Değişim %",
-                ascending=False
-            )
-            renk = "#00f5c8"
-            baslik = "🚀 En Çok Yükselen Hisseler"
-        else:
-            gosterilecek_liste = piyasa_df.sort_values(
-                "Değişim %",
-                ascending=True
-            )
-            renk = "#ff5264"
-            baslik = "🔻 En Çok Düşen Hisseler"
-
-        st.markdown(f"##### {baslik}")
-
-        # Panel çok geniş görünmesin diye liste ortada,
-        # sınırlı genişlikte bir kolonda gösterilir.
-        _, orta_kolon, _ = st.columns([1, 3, 1])
-
-        with orta_kolon:
-            if gosterilecek_liste.empty:
-                st.caption("Veri yok.")
-            else:
-                for _, satir in gosterilecek_liste.head(20).iterrows():
-                    st.markdown(
-                        hisse_karti_format(
-                            satir["Hisse Kodu"],
-                            satir["Fiyat"],
-                            satir["Değişim %"],
-                            renk
-                        ),
-                        unsafe_allow_html=True
-                    )
-
-        if piyasa_hatalari:
-            with st.expander(
-                f"⚠️ {len(piyasa_hatalari)} sembol için veri alınamadı"
-            ):
-                for satir in piyasa_hatalari[:20]:
-                    st.code(satir, language=None)
-
-        st.caption(
-            f"Veri kaynağı: **{veri_kaynagi}** — toplam "
-            f"{len(piyasa_df)} hisse listeleniyor (kişisel takip "
-            "listenizden bağımsızdır). Veriler yaklaşık 30 saniyede "
-            "bir yenilenir ve gecikmeli olabilir."
-        )
 
 
 # ==================================================
