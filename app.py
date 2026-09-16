@@ -394,6 +394,46 @@ def fiyat_degisim_getir(sembol, marj_kontrolu=True):
 # ==================================================
 # TAVAN KUTLAMA KARTI
 # ==================================================
+# ==================================================
+# HİSSE FİYAT KARTI (GENEL AMAÇLI)
+# ==================================================
+def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
+    durum = "▲" if degisim >= 0 else "▼"
+
+    return f"""
+    <div style="
+        background: rgba(0, 0, 0, 0.42);
+        border-left: 5px solid {renk};
+        border-radius: 6px;
+        padding: 11px 16px;
+        margin: 7px 0;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: center;
+        column-gap: 18px;
+    ">
+        <span style="
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        ">{hisse_kodu}</span>
+        <span style="
+            font-size: 18px;
+            color: #e6e6e6;
+            text-align: right;
+            min-width: 105px;
+        ">{tl_format(fiyat)}</span>
+        <span style="
+            font-size: 19px;
+            font-weight: 700;
+            color: {renk};
+            text-align: right;
+            min-width: 95px;
+        ">{durum} {degisim:+.2f}%</span>
+    </div>
+    """
+
+
 def tavan_kutlama_format(hisse_kodu, fiyat, degisim):
     return f"""
     <div style="
@@ -1044,24 +1084,31 @@ st.markdown(
 # ==================================================
 _ozet_veriler = piyasa_ozeti_getir()
 
-_ozet_kolonlar = st.columns(len(_ozet_veriler))
+# Kartlar yan yana değil, 3'erli sıralar halinde (alt alta)
+# gösterilir; böylece telefon ekranında yana taşıp
+# kaybolmazlar.
+_ozet_satir_boyu = 3
 
-for _kolon, _veri in zip(_ozet_kolonlar, _ozet_veriler):
-    if _veri["fiyat"] is None:
-        _kolon.metric(_veri["isim"], "-")
-    else:
-        if _veri["tur"] == "tl":
-            _deger_metni = tl_format(_veri["fiyat"])
+for _i in range(0, len(_ozet_veriler), _ozet_satir_boyu):
+    _ozet_grup = _ozet_veriler[_i:_i + _ozet_satir_boyu]
+    _ozet_kolonlar = st.columns(len(_ozet_grup))
+
+    for _kolon, _veri in zip(_ozet_kolonlar, _ozet_grup):
+        if _veri["fiyat"] is None:
+            _kolon.metric(_veri["isim"], "-")
         else:
-            _deger_metni = sayi_format(_veri["fiyat"])
+            if _veri["tur"] == "tl":
+                _deger_metni = tl_format(_veri["fiyat"])
+            else:
+                _deger_metni = sayi_format(_veri["fiyat"])
 
-        _kolon.metric(
-            _veri["isim"],
-            _deger_metni,
-            f"{_veri['degisim']:+.2f}%"
-            if _veri["degisim"] is not None
-            else None
-        )
+            _kolon.metric(
+                _veri["isim"],
+                _deger_metni,
+                f"{_veri['degisim']:+.2f}%"
+                if _veri["degisim"] is not None
+                else None
+            )
 
 st.caption(
     "BIST100, USDTRY ve EURTRY canlı piyasa verisidir (en az 15 dk. "
@@ -1117,6 +1164,7 @@ if is_admin:
 # ==================================================
 # EXCEL'İ OTOMATİK OKU
 # A = Hisse Kodu
+# B = BTA Günlük Algoritma Hisseleri
 # C = BTA Alım Fiyatı
 # D = BTA Puanı
 # ==================================================
@@ -1135,6 +1183,8 @@ excel_df = pd.DataFrame(
         "BTA Puanı"
     ]
 )
+
+gunluk_algoritma_df = pd.DataFrame(columns=["Hisse Kodu"])
 
 if excel_dosyalari:
     secilen_excel = excel_dosyalari[0]
@@ -1208,6 +1258,36 @@ if excel_dosyalari:
 
             excel_kayitlarini_ekle(excel_df)
 
+            # ----- B SÜTUNU: BTA Günlük Algoritma hisseleri -----
+            if ham_df.shape[1] >= 2:
+                gunluk_algoritma_df = ham_df.iloc[:, [1]].copy()
+
+                gunluk_algoritma_df.columns = ["Hisse Kodu"]
+
+                gunluk_algoritma_df["Hisse Kodu"] = (
+                    gunluk_algoritma_df["Hisse Kodu"]
+                    .astype(str)
+                    .str.strip()
+                    .str.upper()
+                )
+
+                gunluk_algoritma_df = gunluk_algoritma_df[
+                    ~gunluk_algoritma_df["Hisse Kodu"].isin(
+                        [
+                            "", "NONE", "NAN", "NULL", "NA",
+                            "BTA AL SAT", "AL SAT",
+                            "HİSSE", "HISSE"
+                        ]
+                    )
+                ]
+
+                gunluk_algoritma_df = (
+                    gunluk_algoritma_df.drop_duplicates(
+                        subset=["Hisse Kodu"],
+                        keep="last"
+                    )
+                )
+
     except Exception as hata:
         st.error(
             f"Excel okunamadı: {hata}"
@@ -1262,10 +1342,11 @@ if not excel_df.empty:
 # ==================================================
 # PANELLER
 # ==================================================
-tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = \
-    st.tabs(
+tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_kayit, \
+    tab_paylas = st.tabs(
         [
             "🤖 Algoritmik Bilgiler",
+            "📅 BTA Günlük Algoritma",
             "🧮 Bedelli/Bedelsiz- HESAPLAMA",
             "💬 Sohbet",
             "📒 Kayıtlar",
@@ -1333,7 +1414,7 @@ with tab_algoritmik:
             col1, col2, col3 = st.columns(3)
 
             col1.metric(
-                "BTA Alım Fiyatı",
+                "BTA Algoritma Fiyatı",
                 tl_format(bta_alim_fiyati)
             )
 
@@ -1380,6 +1461,84 @@ with tab_algoritmik:
             st.warning(
                 f"Algoritmik bilgiler alınamadı: {hata}"
             )
+
+
+# ==================================================
+# BTA GÜNLÜK ALGORİTMA (CANLI FİYATLAR)
+# ==================================================
+with tab_gunluk:
+    st.header("📅 BTA Günlük Algoritma")
+
+    if gunluk_algoritma_df.empty:
+        st.info(
+            "BTA Günlük Algoritma listesi bulunamadı. "
+            "Excel dosyasının B sütununa hisse kodlarını girin."
+        )
+    else:
+        _gunluk_hisseler = (
+            gunluk_algoritma_df["Hisse Kodu"].tolist()
+        )
+
+        def _gunluk_tek_hisse(_hisse_kodu):
+            _sembol = _hisse_kodu
+
+            if not _sembol.endswith(".IS"):
+                _sembol += ".IS"
+
+            _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
+            return _hisse_kodu, _son, _degisim, _hata
+
+        _gunluk_sonuclar = []
+        _gunluk_hatalar = []
+
+        try:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=15
+            ) as _gunluk_havuz:
+                for _h, _s, _d, _e in _gunluk_havuz.map(
+                    _gunluk_tek_hisse,
+                    _gunluk_hisseler
+                ):
+                    if _e is not None or _s is None:
+                        _gunluk_hatalar.append(f"{_h}: {_e}")
+                        continue
+
+                    _gunluk_sonuclar.append((_h, _s, _d))
+        except Exception as _hata:
+            st.error(f"Veri çekilirken hata oluştu: {_hata}")
+
+        if not _gunluk_sonuclar:
+            st.info(
+                "Şu anda canlı fiyat alınamadı, birazdan "
+                "tekrar denenecek."
+            )
+        else:
+            # Ekranda sınırlı genişlikte, ortalanmış tek kolon
+            # olarak gösterilir (telefon ekranına da sığar).
+            _, _gunluk_orta, _ = st.columns([1, 3, 1])
+
+            with _gunluk_orta:
+                for _h, _s, _d in _gunluk_sonuclar:
+                    _renk = "#00f5c8" if _d >= 0 else "#ff5264"
+
+                    st.markdown(
+                        hisse_karti_format(_h, _s, _d, _renk),
+                        unsafe_allow_html=True
+                    )
+
+        if _gunluk_hatalar:
+            with st.expander(
+                f"⚠️ {len(_gunluk_hatalar)} hisse için "
+                "veri alınamadı"
+            ):
+                for _satir in _gunluk_hatalar[:20]:
+                    st.code(_satir, language=None)
+
+        st.caption(
+            f"Toplam {len(gunluk_algoritma_df)} hisse "
+            "izleniyor. Veriler en az 15 dakika gecikmeli "
+            "olabilir ve yaklaşık 30 saniyede bir yenilenir."
+        )
 
 
 # ==================================================
