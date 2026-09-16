@@ -677,8 +677,81 @@ def son_dakika_haberleri_getir():
 
 
 # ==================================================
-# TASARIM
+# GÜNCEL ARZ (HALKA ARZ) HABERLERİ - GOOGLE NEWS ARAMA
 # ==================================================
+@st.cache_data(ttl=600, show_spinner=False)
+def arz_haberleri_getir():
+    """
+    Google News'te 'halka arz' konulu bugünün haberlerini getirir.
+    Yalnızca BUGÜN yayınlananlar listelenir, eski haberler atlanır.
+    """
+    try:
+        # Google News Türkiye "halka arz" arama akışı
+        sorgu = urllib.parse.quote_plus(
+            '"halka arz" OR "halka arzda" OR "halka arza"'
+        )
+
+        url = (
+            "https://news.google.com/rss/search?q="
+            f"{sorgu}&hl=tr&gl=TR&ceid=TR:tr"
+        )
+
+        yanit = requests.get(
+            url,
+            timeout=12,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36"
+                )
+            }
+        )
+
+        kok = ET.fromstring(yanit.content)
+        ogeler = kok.findall(".//item")
+
+        bugun = turkiye_saati().date()
+
+        haberler = []
+
+        for oge in ogeler:
+            baslik = (oge.findtext("title") or "").strip()
+            link = (oge.findtext("link") or "").strip()
+            yayin = (oge.findtext("pubDate") or "").strip()
+            kaynak = (oge.findtext("source") or "").strip()
+
+            if not baslik:
+                continue
+
+            try:
+                yayin_zamani = parsedate_to_datetime(
+                    yayin
+                ).astimezone(TURKIYE_TZ)
+            except Exception:
+                continue
+
+            # Sadece bugün yayınlanan haberler
+            if yayin_zamani.date() != bugun:
+                continue
+
+            zaman = yayin_zamani.strftime("%H:%M")
+
+            haberler.append(
+                (
+                    html.escape(baslik),
+                    html.escape(link),
+                    html.escape(zaman),
+                    html.escape(kaynak)
+                )
+            )
+
+            if len(haberler) >= 20:
+                break
+
+        return haberler
+
+    except Exception:
+        return []
 st.markdown(
     """
     <style>
@@ -1113,6 +1186,16 @@ st.markdown(
         margin-bottom: 6px;
     }
 
+    /* GÜNCEL ARZ HABERLERİ - yeşil vurgu */
+    .arz-kart {
+        border-left-color: #7ddb6e;
+    }
+
+    .arz-kaynak {
+        color: #7ddb6e;
+        font-weight: 600;
+    }
+
     .haber-bulteni-link {
         display: block;
         color: #ffffff;
@@ -1331,7 +1414,8 @@ st.markdown(
 
     .stTabs [data-baseweb="tab"] {
         font-size: 16px !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.3px;
         padding: 10px 14px !important;
         white-space: nowrap;
     }
@@ -1339,47 +1423,63 @@ st.markdown(
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(1),
     .stTabs [data-baseweb="tab"]:first-of-type {
         color: #00f5c8 !important;
+        text-shadow: 0 0 8px rgba(0, 245, 200, 0.55);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(2),
     .stTabs [data-baseweb="tab"]:nth-of-type(2) {
         color: #4da6ff !important;
+        text-shadow: 0 0 8px rgba(77, 166, 255, 0.55);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(3),
     .stTabs [data-baseweb="tab"]:nth-of-type(3) {
         color: #b48bff !important;
+        text-shadow: 0 0 8px rgba(180, 139, 255, 0.55);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(4),
     .stTabs [data-baseweb="tab"]:nth-of-type(4) {
         color: #ff6ec7 !important;
+        text-shadow: 0 0 8px rgba(255, 110, 199, 0.55);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(5),
     .stTabs [data-baseweb="tab"]:nth-of-type(5) {
         color: #ff5264 !important;
+        text-shadow: 0 0 8px rgba(255, 82, 100, 0.55);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(6),
     .stTabs [data-baseweb="tab"]:nth-of-type(6) {
         color: #ffd166 !important;
+        text-shadow: 0 0 8px rgba(255, 209, 102, 0.55);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(7),
     .stTabs [data-baseweb="tab"]:nth-of-type(7) {
-        color: #ff9f43 !important;
+        color: #7ddb6e !important;
+        text-shadow: 0 0 8px rgba(125, 219, 110, 0.55);
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(8),
     .stTabs [data-baseweb="tab"]:nth-of-type(8) {
-        color: #7ddb6e !important;
+        color: #ff9f43 !important;
+        text-shadow: 0 0 8px rgba(255, 159, 67, 0.55);
+    }
+
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(9),
+    .stTabs [data-baseweb="tab"]:nth-of-type(9) {
+        color: #66d9ff !important;
+        text-shadow: 0 0 8px rgba(102, 217, 255, 0.55);
     }
 
     .stTabs button[role="tab"][aria-selected="true"] {
-        background: rgba(0, 245, 200, 0.16) !important;
+        background: rgba(0, 245, 200, 0.22) !important;
         color: #ffffff !important;
+        font-weight: 800 !important;
         border-radius: 8px 8px 0 0 !important;
+        box-shadow: inset 0 0 14px rgba(0, 245, 200, 0.25);
     }
 
     /* SEKMELERİN İÇİNDEKİ BAŞLIK PANKARTLARI - her biri
@@ -2119,7 +2219,7 @@ st.markdown(
 )
 
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
-    tab_teknik, tab_kayit, tab_paylas = st.tabs(
+    tab_teknik, tab_arz, tab_kayit, tab_paylas = st.tabs(
         [
             "🤖 Algoritmik Bilgiler",
             "📅 BTA Günlük Algoritma",
@@ -2127,6 +2227,7 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
             "💬 Sohbet",
             "📰 Haber Bülteni",
             "📊 Teknik Analiz",
+            "🚀 Güncel Arz Haberleri",
             "📒 Kayıtlar",
             "🔗 Paylaş"
         ]
@@ -3125,6 +3226,58 @@ with tab_teknik:
     st.caption(
         "Veriler yFinance'ten alınır; yatırım tavsiyesi değildir. "
         "SMA20/SMA50, MACD ve RSI göstergeleri bilgilendirme amaçlıdır."
+    )
+
+
+# ==================================================
+# GÜNCEL ARZ (HALKA ARZ) HABERLERİ
+# ==================================================
+with tab_arz:
+    _arz_haberler = arz_haberleri_getir()
+
+    st.markdown(
+        f"""
+        <div class="haber-bulteni-baslik" style="
+            border-left-color: #7ddb6e;
+            color: #7ddb6e;
+        ">
+            🚀 GÜNCEL ARZ HABERLERİ
+            <span>{turkiye_saati().strftime("%d.%m.%Y")} · Bugün</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if not _arz_haberler:
+        st.info(
+            "Şu anda halka arz haberi bulunamadı, birazdan "
+            "tekrar deneniyor."
+        )
+    else:
+        for (
+            _baslik, _link, _zaman, _kaynak
+        ) in _arz_haberler:
+            st.markdown(
+                f"""
+                <div class="haber-bulteni-kart arz-kart">
+                    <div class="haber-bulteni-saat">
+                        🕒 {_zaman}
+                        <span class="arz-kaynak">
+                            · {_kaynak or "Haber"}
+                        </span>
+                    </div>
+                    <a href="{_link}" target="_blank"
+                       class="haber-bulteni-link">
+                        {_baslik}
+                    </a>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.caption(
+        "Halka arz haberleri Google News arama akışından alınır; "
+        "yatırım tavsiyesi değildir. Başlığa dokunarak kaynağa gidebilirsiniz."
     )
 
 
