@@ -446,6 +446,8 @@ def hisse_karti_format(hisse_kodu, fiyat, degisim, renk, sira=0):
             font-size: 19px;
             font-weight: 700;
             letter-spacing: 0.5px;
+            color: {renk};
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
         ">{hisse_kodu}</span>
         <span style="
             font-size: 18px;
@@ -991,6 +993,7 @@ st.markdown(
 
     .sohbet-kart-baslik {
         font-size: 13px;
+        font-weight: 700;
         color: #ffd166;
         margin-bottom: 2px;
     }
@@ -1671,13 +1674,11 @@ def mesaj_sesi_cal():
 # ==================================================
 # CANLI YENİLEME
 # ==================================================
-# Sayfa 5 saniyede bir yenilenir. Tüm veri çekimleri
-# 20-30 sn önbellekli olduğu için sayfa anında çizilir
-# ve yenileme kullanıcıya hissettirilmez.
-st_autorefresh(
-    interval=5000,
-    key="bta_canli_yenileme"
-)
+# Not: Sayfa geneli otomatik yenileme (eski st_autorefresh) KALDIRILDI.
+# Artık yalnızca canlı bölümler (piyasa kartı, günlük liste, sohbet)
+# st.fragment(run_every=...) ile ARKA PLANDA tazelenir; böylece
+# sayfanın baştan çizilmesinden (ekranın sönüp yenilenmesinden)
+# kaçınılır. Statik içerik (logo, sekmeler, formlar) yerinde kalır.
 
 
 # ==================================================
@@ -1747,7 +1748,51 @@ _bta_gunluk_sabit_zaman = bta_gunluk_zaman_yukle()
 # PİYASA ÖZETİ KARTLARI (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
 # EKRANIN SAĞ KÖŞESİNDE KOMPAKT KART
 # ==================================================
-_ozet_veriler, _ozet_zamani = piyasa_ozeti_getir()
+
+@st.fragment(run_every=5)
+def piyasa_ozeti_fragment():
+    """
+    Canlı piyasa kartı. Sayfa baştan çizilmeden yalnızca bu kart
+    arka planda 5 saniyede bir yenilenir (st.fragment).
+    """
+    _ozet_veriler, _ozet_zamani = piyasa_ozeti_getir()
+
+    _isim_palet = [
+        "#00f5c8",
+        "#4da6ff",
+        "#b48bff",
+        "#ffd166",
+    ]
+
+    _ozet_satirlar = ""
+
+    for _i, _veri in enumerate(_ozet_veriler):
+        _fiyat_metni, _degisim_metni, _renk = _piyasa_ozet_hazirla(_veri)
+        _isim_renk = _isim_palet[_i % len(_isim_palet)]
+
+        _ozet_satirlar += f"""
+        <div class="piyasa-ozet-satir">
+            <span class="piyasa-ozet-isim" style="color:{_isim_renk};">
+                {_veri["isim"]}
+            </span>
+            <span class="piyasa-ozet-fiyat">{_fiyat_metni}</span>
+            <span class="piyasa-ozet-degisim" style="color:{_renk};">
+                {_degisim_metni}
+            </span>
+        </div>
+        """
+
+    st.markdown(
+        f"""
+        <div class="piyasa-ozet-badge">
+            <div class="piyasa-ozet-badge-header">
+                📈 CANLI PİYASA · {_ozet_zamani}
+            </div>
+            {_ozet_satirlar}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def _piyasa_ozet_hazirla(_veri):
@@ -1768,32 +1813,7 @@ def _piyasa_ozet_hazirla(_veri):
     return _deger, _degisim, _renk
 
 
-_ozet_satirlar = ""
-
-for _veri in _ozet_veriler:
-    _fiyat_metni, _degisim_metni, _renk = _piyasa_ozet_hazirla(_veri)
-
-    _ozet_satirlar += f"""
-    <div class="piyasa-ozet-satir">
-        <span class="piyasa-ozet-isim">{_veri["isim"]}</span>
-        <span class="piyasa-ozet-fiyat">{_fiyat_metni}</span>
-        <span class="piyasa-ozet-degisim" style="color:{_renk};">
-            {_degisim_metni}
-        </span>
-    </div>
-    """
-
-st.markdown(
-    f"""
-    <div class="piyasa-ozet-badge">
-        <div class="piyasa-ozet-badge-header">
-            📈 CANLI PİYASA · {_ozet_zamani}
-        </div>
-        {_ozet_satirlar}
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+piyasa_ozeti_fragment()
 
 
 # ==================================================
@@ -2175,129 +2195,134 @@ with tab_gunluk:
         unsafe_allow_html=True
     )
 
-    if gunluk_algoritma_df.empty:
-        st.info(
-            "BTA Günlük Algoritma listesi bulunamadı. "
-            "Excel dosyasının B sütununa hisse kodlarını girin."
-        )
-    else:
-        _gunluk_hisseler = [
-            str(_h).strip().upper()
-            for _h in gunluk_algoritma_df["Hisse Kodu"].tolist()
-            if str(_h).strip()
-        ]
-
-        def _gunluk_tek_hisse(_hisse_kodu):
-            # Ne gelirse gelsin (float, None, NaN vb.) önce
-            # güvenli biçimde metne çevrilir; tek bir bozuk
-            # satır yüzünden tüm tarama durmasın diye fonksiyon
-            # hiçbir zaman hata fırlatmaz, hatayı veri olarak
-            # döndürür.
-            try:
-                _kod = str(_hisse_kodu).strip().upper()
-
-                if not _kod:
-                    return _hisse_kodu, None, None, "boş hisse kodu"
-
-                _sembol = _kod
-
-                if not _sembol.endswith(".IS"):
-                    _sembol += ".IS"
-
-                _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
-                return _kod, _son, _degisim, _hata
-
-            except Exception as _ic_hata:
-                return _hisse_kodu, None, None, str(_ic_hata)
-
-        _gunluk_sonuclar = []
-        _gunluk_hatalar = []
-
-        try:
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=15
-            ) as _gunluk_havuz:
-                for _h, _s, _d, _e in _gunluk_havuz.map(
-                    _gunluk_tek_hisse,
-                    _gunluk_hisseler
-                ):
-                    if _e is not None or _s is None:
-                        _gunluk_hatalar.append(f"{_h}: {_e}")
-                        continue
-
-                    _gunluk_sonuclar.append((_h, _s, _d))
-        except Exception as _hata:
-            st.error(f"Veri çekilirken hata oluştu: {_hata}")
-
-        # Güncelleme saati, Excel dosyasının yüklendiği anda bir kez
-        # oluşturulur ve bta_gunluk_durum.csv içinde SAKLANIR. Sayfa
-        # her 5 saniyede bir yenilense bile ekrandaki saat ve tarih
-        # AYNI KALIR (yükleme anındaki değer hiç değişmez).
-        _gunluk_zamani = _bta_gunluk_sabit_zaman
-
-        st.markdown(
-            f"""
-            <div style="
-                display: inline-block;
-                background: rgba(0, 245, 200, 0.12);
-                border: 1px solid rgba(0, 245, 200, 0.4);
-                border-radius: 20px;
-                padding: 5px 14px;
-                margin-bottom: 8px;
-                font-size: 14px;
-                font-weight: 600;
-                color: #00f5c8;
-            ">
-                🕒 Algoritmik İşlem  saati: {_gunluk_zamani}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if not _gunluk_sonuclar:
+    @st.fragment(run_every=5)
+    def _gunluk_liste_fragment():
+        """Günlük hisse listesi; sayfa titretilmeden 5 sn'de bir
+        arka planda güncellenir (st.fragment)."""
+        if gunluk_algoritma_df.empty:
             st.info(
-                "Şu anda canlı fiyat alınamadı, birazdan "
-                "tekrar denenecek."
+                "BTA Günlük Algoritma listesi bulunamadı. "
+                "Excel dosyasının B sütununa hisse kodlarını girin."
             )
         else:
-            # Değişim yüzdesine göre büyükten küçüğe sıralanır
-            # (her yenilemede tutarlı şekilde aynı sıralama).
-            _gunluk_sonuclar = sorted(
-                _gunluk_sonuclar,
-                key=lambda _oge: _oge[2],
-                reverse=True
+            _gunluk_hisseler = [
+                str(_h).strip().upper()
+                for _h in gunluk_algoritma_df["Hisse Kodu"].tolist()
+                if str(_h).strip()
+            ]
+
+            def _gunluk_tek_hisse(_hisse_kodu):
+                # Ne gelirse gelsin (float, None, NaN vb.) önce
+                # güvenli biçimde metne çevrilir; tek bir bozuk
+                # satır yüzünden tüm tarama durmasın diye fonksiyon
+                # hiçbir zaman hata fırlatmaz, hatayı veri olarak
+                # döndürür.
+                try:
+                    _kod = str(_hisse_kodu).strip().upper()
+
+                    if not _kod:
+                        return _hisse_kodu, None, None, "boş hisse kodu"
+
+                    _sembol = _kod
+
+                    if not _sembol.endswith(".IS"):
+                        _sembol += ".IS"
+
+                    _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
+                    return _kod, _son, _degisim, _hata
+
+                except Exception as _ic_hata:
+                    return _hisse_kodu, None, None, str(_ic_hata)
+
+            _gunluk_sonuclar = []
+            _gunluk_hatalar = []
+
+            try:
+                with concurrent.futures.ThreadPoolExecutor(
+                    max_workers=15
+                ) as _gunluk_havuz:
+                    for _h, _s, _d, _e in _gunluk_havuz.map(
+                        _gunluk_tek_hisse,
+                        _gunluk_hisseler
+                    ):
+                        if _e is not None or _s is None:
+                            _gunluk_hatalar.append(f"{_h}: {_e}")
+                            continue
+
+                        _gunluk_sonuclar.append((_h, _s, _d))
+            except Exception as _hata:
+                st.error(f"Veri çekilirken hata oluştu: {_hata}")
+
+            # Güncelleme saati, Excel dosyasının yüklendiği anda bir kez
+            # oluşturulur ve bta_gunluk_durum.csv içinde SAKLANIR. Sayfa
+            # her yenilenmede ekrandaki saat ve tarih AYNI KALIR.
+            _gunluk_zamani = _bta_gunluk_sabit_zaman
+
+            st.markdown(
+                f"""
+                <div style="
+                    display: inline-block;
+                    background: rgba(0, 245, 200, 0.12);
+                    border: 1px solid rgba(0, 245, 200, 0.4);
+                    border-radius: 20px;
+                    padding: 5px 14px;
+                    margin-bottom: 8px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #00f5c8;
+                ">
+                    🕒 Algoritmik İşlem  saati: {_gunluk_zamani}
+                </div>
+                """,
+                unsafe_allow_html=True
             )
 
-            # Ekranda sınırlı genişlikte, ortalanmış tek kolon
-            # olarak gösterilir (telefon ekranına da sığar).
-            _, _gunluk_orta, _ = st.columns([1, 3, 1])
+            if not _gunluk_sonuclar:
+                st.info(
+                    "Şu anda canlı fiyat alınamadı, birazdan "
+                    "tekrar denenecek."
+                )
+            else:
+                # Değişim yüzdesine göre büyükten küçüğe sıralanır
+                # (her yenilemede tutarlı şekilde aynı sıralama).
+                _gunluk_sonuclar = sorted(
+                    _gunluk_sonuclar,
+                    key=lambda _oge: _oge[2],
+                    reverse=True
+                )
 
-            with _gunluk_orta:
-                for _sira, (_h, _s, _d) in enumerate(
-                    _gunluk_sonuclar
+                # Ekranda sınırlı genişlikte, ortalanmış tek kolon
+                # olarak gösterilir (telefon ekranına da sığar).
+                _, _gunluk_orta, _ = st.columns([1, 3, 1])
+
+                with _gunluk_orta:
+                    for _sira, (_h, _s, _d) in enumerate(
+                        _gunluk_sonuclar
+                    ):
+                        _renk = "#00f5c8" if _d >= 0 else "#ff5264"
+
+                        st.markdown(
+                            hisse_karti_format(
+                                _h, _s, _d, _renk, sira=_sira
+                            ),
+                            unsafe_allow_html=True
+                        )
+
+            if _gunluk_hatalar:
+                with st.expander(
+                    f"⚠️ {len(_gunluk_hatalar)} hisse için "
+                    "veri alınamadı"
                 ):
-                    _renk = "#00f5c8" if _d >= 0 else "#ff5264"
+                    for _satir in _gunluk_hatalar[:20]:
+                        st.code(_satir, language=None)
 
-                    st.markdown(
-                        hisse_karti_format(
-                            _h, _s, _d, _renk, sira=_sira
-                        ),
-                        unsafe_allow_html=True
-                    )
+            st.caption(
+                f"Toplam {len(gunluk_algoritma_df)} hisse "
+                "izleniyor. Veriler en az 15 dakika gecikmeli "
+                "olabilir ve yaklaşık 30 saniyede bir yenilenir."
+            )
 
-        if _gunluk_hatalar:
-            with st.expander(
-                f"⚠️ {len(_gunluk_hatalar)} hisse için "
-                "veri alınamadı"
-            ):
-                for _satir in _gunluk_hatalar[:20]:
-                    st.code(_satir, language=None)
-
-        st.caption(
-            f"Toplam {len(gunluk_algoritma_df)} hisse "
-            "izleniyor. Veriler en az 15 dakika gecikmeli "
-            "olabilir ve yaklaşık 30 saniyede bir yenilenir."
-        )
+    _gunluk_liste_fragment()
 
 
 # ==================================================
@@ -2552,175 +2577,198 @@ with tab_bedelli:
 # CANLI SOHBET
 # ==================================================
 with tab_sohbet:
-    takip, begeni = istatistik_oku()
+    @st.fragment(run_every=5)
+    def _sohbet_fragment():
+        """Beğeni butonu, mesaj formu ve mesaj listesi. Tıklama veya
+        yeni mesaj geldiğinde yalnızca bu bölüm arka planda yenilenir;
+        sayfa baştan çizilip ekran sönmez."""
+        takip, begeni = istatistik_oku()
 
-    # ================================================
-    # BEĞENİ BUTONU (şeffaf 👍 + sayı)
-    # ================================================
-    kol_begeni, kol_sayi = st.columns([1, 6])
+        # ============================================
+        # BEĞENİ BUTONU (şeffaf 👍 + sayı)
+        # ============================================
+        kol_begeni, kol_sayi = st.columns([1, 6])
 
-    with kol_begeni:
-        if st.button(
-            "👍",
-            key="bta_begeni_buton",
-            help="Beğen",
-            use_container_width=False
-        ):
-            begeni += 1
-            istatistik_kaydet(takip, begeni)
+        with kol_begeni:
+            if st.button(
+                "👍",
+                key="bta_begeni_buton",
+                help="Beğen",
+                use_container_width=False
+            ):
+                begeni += 1
+                istatistik_kaydet(takip, begeni)
+                st.rerun(scope="fragment")
 
-    with kol_sayi:
-        st.markdown(
-            f"""
-            <div class="sohbet-begeni-sayi">
-                ({begeni})
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    st.divider()
-
-    # ==================================================
-    # MESAJ FORMU (MESAJ GÖNDERME ALANI ÜSTTE DURUR)
-    # ==================================================
-    st.subheader("💬 Mesaj Gönder")
-
-    kullanici = st.text_input(
-        "Kullanıcı adı",
-        value="Hissedar"
-    )
-
-    with st.form(
-        "mesaj_formu",
-        clear_on_submit=True
-    ):
-        mesaj = st.text_area(
-            "Mesajınız",
-            height=90,
-            placeholder="Mesajınızı yazın..."
-        )
-
-        gonder = st.form_submit_button(
-            "Mesaj Gönder 🚀",
-            use_container_width=True
-        )
-
-        if gonder:
-            if not kullanici.strip():
-                st.error(
-                    "Kullanıcı adı boş bırakılamaz."
-                )
-            elif not mesaj.strip():
-                st.error(
-                    "Mesaj boş bırakılamaz."
-                )
-            else:
-                mesaj_ekle(
-                    kullanici.strip(),
-                    mesaj.strip()
-                )
-
-                st.success(
-                    "Mesajınız gönderildi."
-                )
-
-                st.rerun()
-
-    st.divider()
-
-    # ==================================================
-    # MESAJ LİSTESİ
-    # ==================================================
-    st.subheader("📨 Mesajlar")
-
-    mesajlar = mesajlari_oku()
-
-    if not mesajlar.empty:
-        son_mesaj_id = str(
-            mesajlar.iloc[-1]["mesaj_id"]
-        )
-
-        if "son_ses_mesaj_id" not in st.session_state:
-            st.session_state["son_ses_mesaj_id"] = (
-                son_mesaj_id
-            )
-        elif (
-            st.session_state["son_ses_mesaj_id"]
-            != son_mesaj_id
-        ):
-            mesaj_sesi_cal()
-
-            st.session_state["son_ses_mesaj_id"] = (
-                son_mesaj_id
+        with kol_sayi:
+            st.markdown(
+                f"""
+                <div class="sohbet-begeni-sayi">
+                    ({begeni})
+                </div>
+                """,
+                unsafe_allow_html=True
             )
 
-    if mesajlar.empty:
-        st.info(
-            "Henüz mesaj bulunmuyor."
-        )
-    else:
-        _mesaj_icerik = ""
+        st.divider()
 
-        # En yeni mesaj en üstte olacak şekilde sıralanır
-        # (kaydırma çerçevesi içinde aşağı doğru akar).
-        for index, satir in mesajlar.iloc[::-1].iterrows():
-            _mesaj_id = str(satir["mesaj_id"])
-            _kullanici = html.escape(str(satir["kullanici"]))
-            _mesaj_metni = html.escape(
-                str(satir["mesaj"])
-            ).replace("\n", "<br>")
+        # ============================================
+        # MESAJ FORMU (MESAJ GÖNDERME ALANI ÜSTTE DURUR)
+        # ============================================
+        st.subheader("💬 Mesaj Gönder")
 
-            _mesaj_icerik += f"""
-            <div class="sohbet-kart">
-                <div class="sohbet-kart-baslik">
-                    👤 {_kullanici}
-                    <span class="sohbet-kart-saat">
-                        · {html.escape(str(satir["tarih"]))}
-                    </span>
-                </div>
-                <div class="sohbet-mesaj-metni">
-                    {_mesaj_metni}
-                </div>
-                {f"""
-                <div class="sohbet-silme">
-                    <a class="sohbet-sil-buton"
-                       href="?bta_sil={_mesaj_id}">
-                        🗑️ Sil
-                    </a>
-                </div>
-                """ if is_admin else ""}
-            </div>
-            """
-
-        # Mesajlar tek bir çerçeve içinde gösterilir; liste
-        # uzadıkça aşağı doğru kayar, içerik taşmaz.
-        st.markdown(
-            f"""
-            <div class="sohbet-cerceve">
-                {_mesaj_icerik}
-            </div>
-            """,
-            unsafe_allow_html=True
+        kullanici = st.text_input(
+            "Kullanıcı adı",
+            value="Hissedar"
         )
 
-        if is_admin:
-            _silinecek_id = st.query_params.get("bta_sil")
+        with st.form(
+            "mesaj_formu",
+            clear_on_submit=True
+        ):
+            mesaj = st.text_area(
+                "Mesajınız",
+                height=90,
+                placeholder="Mesajınızı yazın..."
+            )
 
-            if _silinecek_id:
-                mesajlar = mesajlar[
-                    mesajlar["mesaj_id"].astype(str)
-                    != str(_silinecek_id)
-                ]
+            gonder = st.form_submit_button(
+                "Mesaj Gönder 🚀",
+                use_container_width=True
+            )
 
-                mesajlar.to_csv(
-                    MESAJ_DOSYASI,
-                    index=False,
-                    encoding="utf-8-sig"
+            if gonder:
+                if not kullanici.strip():
+                    st.error(
+                        "Kullanıcı adı boş bırakılamaz."
+                    )
+                elif not mesaj.strip():
+                    st.error(
+                        "Mesaj boş bırakılamaz."
+                    )
+                else:
+                    mesaj_ekle(
+                        kullanici.strip(),
+                        mesaj.strip()
+                    )
+
+                    st.success(
+                        "Mesajınız gönderildi."
+                    )
+
+                    st.rerun(scope="fragment")
+
+        st.divider()
+
+        # ============================================
+        # MESAJ LİSTESİ
+        # ============================================
+        st.subheader("📨 Mesajlar")
+
+        mesajlar = mesajlari_oku()
+
+        if not mesajlar.empty:
+            son_mesaj_id = str(
+                mesajlar.iloc[-1]["mesaj_id"]
+            )
+
+            if "son_ses_mesaj_id" not in st.session_state:
+                st.session_state["son_ses_mesaj_id"] = (
+                    son_mesaj_id
+                )
+            elif (
+                st.session_state["son_ses_mesaj_id"]
+                != son_mesaj_id
+            ):
+                mesaj_sesi_cal()
+
+                st.session_state["son_ses_mesaj_id"] = (
+                    son_mesaj_id
                 )
 
-                st.query_params.clear()
-                st.rerun()
+        if mesajlar.empty:
+            st.info(
+                "Henüz mesaj bulunmuyor."
+            )
+        else:
+            _mesaj_icerik = ""
+            _kullanici_palet = [
+                "#00f5c8", "#4da6ff", "#b48bff",
+                "#ff6ec7", "#ffd166", "#ff9f43", "#7ddb6e"
+            ]
+
+            # En yeni mesaj en üstte olacak şekilde sıralanır
+            # (kaydırma çerçevesi içinde aşağı doğru akar).
+            for index, satir in mesajlar.iloc[::-1].iterrows():
+                _mesaj_id = str(satir["mesaj_id"])
+                _kullanici = html.escape(str(satir["kullanici"]))
+                _mesaj_metni = html.escape(
+                    str(satir["mesaj"])
+                ).replace("\n", "<br>")
+
+                # Aynı kullanıcı hep aynı rengi alır; farklı
+                # kullanıcılar birbirinden ayrılır. (Sonlu ve sabit
+                # karma için std hash değil, karakter toplamı kullanılır.)
+                _kc = (
+                    sum(_kullanici.encode("utf-8"))
+                    % len(_kullanici_palet)
+                )
+                _kenar_renk = _kullanici_palet[_kc]
+
+                _mesaj_icerik += f"""
+                <div class="sohbet-kart"
+                     style="border-left-color: {_kenar_renk};">
+                    <div class="sohbet-kart-baslik"
+                         style="color: {_kenar_renk};">
+                        👤 {_kullanici}
+                        <span class="sohbet-kart-saat">
+                            · {html.escape(str(satir["tarih"]))}
+                        </span>
+                    </div>
+                    <div class="sohbet-mesaj-metni">
+                        {_mesaj_metni}
+                    </div>
+                    {f"""
+                    <div class="sohbet-silme">
+                        <a class="sohbet-sil-buton"
+                           href="?bta_sil={_mesaj_id}">
+                            🗑️ Sil
+                        </a>
+                    </div>
+                    """ if is_admin else ""}
+                </div>
+                """
+
+            # Mesajlar tek bir çerçeve içinde gösterilir; liste
+            # uzadıkça aşağı doğru kayar, içerik taşmaz.
+            st.markdown(
+                f"""
+                <div class="sohbet-cerceve">
+                    {_mesaj_icerik}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            if is_admin:
+                _silinecek_id = st.query_params.get("bta_sil")
+
+                if _silinecek_id:
+                    mesajlar = mesajlar[
+                        mesajlar["mesaj_id"].astype(str)
+                        != str(_silinecek_id)
+                    ]
+
+                    mesajlar.to_csv(
+                        MESAJ_DOSYASI,
+                        index=False,
+                        encoding="utf-8-sig"
+                    )
+
+                    st.query_params.clear()
+                    st.rerun()
+
+    _sohbet_fragment()
 
 
 # ==================================================
@@ -2745,15 +2793,25 @@ with tab_haber:
             "tekrar deneniyor."
         )
     else:
-        for _baslik, _link, _zaman in _haberler:
+        _haber_renkleri = [
+            "#00f5c8", "#4da6ff", "#b48bff",
+            "#ff6ec7", "#ffd166", "#ff9f43", "#7ddb6e"
+        ]
+
+        for _sira, (_baslik, _link, _zaman) in enumerate(_haberler):
+            _renk = _haber_renkleri[_sira % len(_haber_renkleri)]
+
             st.markdown(
                 f"""
-                <div class="haber-bulteni-kart">
-                    <div class="haber-bulteni-saat">
+                <div class="haber-bulteni-kart"
+                     style="border-left-color: {_renk};">
+                    <div class="haber-bulteni-saat"
+                         style="color: {_renk};">
                         🕒 {_zaman}
                     </div>
                     <a href="{_link}" target="_blank"
-                       class="haber-bulteni-link">
+                       class="haber-bulteni-link"
+                       style="color: {_renk};">
                         {_baslik}
                     </a>
                 </div>
