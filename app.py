@@ -1094,7 +1094,7 @@ st.markdown(
 
     .haber-bulteni-kart {
         background: rgba(9, 27, 42, 0.96);
-        border-left: 4px solid #ff5264;
+        border-left: 4px solid #00f5c8;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
         padding: 16px 18px;
@@ -1109,7 +1109,7 @@ st.markdown(
     .haber-bulteni-saat {
         font-size: 14px;
         font-weight: 700;
-        color: #ff9da8;
+        color: #9fd8d0;
         margin-bottom: 6px;
     }
 
@@ -2848,20 +2848,15 @@ with tab_haber:
             "#ff6ec7", "#ffd166", "#ff9f43", "#7ddb6e"
         ]
 
-        for _sira, (_baslik, _link, _zaman) in enumerate(_haberler):
-            _renk = _haber_renkleri[_sira % len(_haber_renkleri)]
-
+        for _baslik, _link, _zaman in _haberler:
             st.markdown(
                 f"""
-                <div class="haber-bulteni-kart"
-                     style="border-left-color: {_renk};">
-                    <div class="haber-bulteni-saat"
-                         style="color: {_renk};">
+                <div class="haber-bulteni-kart">
+                    <div class="haber-bulteni-saat">
                         🕒 {_zaman}
                     </div>
                     <a href="{_link}" target="_blank"
-                       class="haber-bulteni-link"
-                       style="color: {_renk};">
+                       class="haber-bulteni-link">
                         {_baslik}
                     </a>
                 </div>
