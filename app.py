@@ -2361,13 +2361,13 @@ st.markdown(
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
     tab_teknik, tab_arz, tab_kayit, tab_paylas = st.tabs(
         [
-            "🤖 Algoritmik Bilgiler",
-            "📅 BTA Günlük Algoritma",
+            "🤖 BTA Algoritmik HİSSELER",
+            "📅 BTA Günlük Algoritma HİSSELER",
             "🧮 Bedelli/Bedelsiz- HESAPLAMA",
             "💬 Sohbet",
             "📰 Haber Bülteni",
-            "📊 Teknik Analiz",
             "🚀 Güncel Arz Haberleri",
+            "📊 Teknik Analiz",
             "📒 Kayıtlar",
             "🔗 Paylaş"
         ]
