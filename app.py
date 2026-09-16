@@ -594,18 +594,13 @@ def piyasa_ozeti_getir():
 @st.cache_data(ttl=600, show_spinner=False)
 def son_dakika_haberleri_getir():
     """
-    Borsa / döviz / altın ile ilgili güncel Türkçe haberleri,
-    Google News RSS akışından çeker. Her 10 dakikada bir
-    yenilenir; mesaj paneli gibi okunabilir formatta döner.
+    Google News ana (gündem) akışından bugünün haberlerini getirir.
+    SADECE ekonomi değil: TV haberleri ve gündem başlıkları da gelir.
+    Yalnızca BUGÜN yayınlananlar listelenir, eski haberler atlanır.
     """
     try:
-        arama = "borsa istanbul bist 100 dolar altın"
-
-        url = (
-            "https://news.google.com/rss/search?q="
-            + urllib.parse.quote(arama)
-            + "&hl=tr&gl=TR&ceid=TR:tr"
-        )
+        # Google News Türkiye ana gündem akışı (ekonomi + TV + genel)
+        url = "https://news.google.com/rss?hl=tr&gl=TR&ceid=TR:tr"
 
         yanit = requests.get(
             url,
@@ -621,9 +616,11 @@ def son_dakika_haberleri_getir():
         kok = ET.fromstring(yanit.content)
         ogeler = kok.findall(".//item")
 
+        bugun = turkiye_saati().date()
+
         haberler = []
 
-        for oge in ogeler[:15]:
+        for oge in ogeler:
             baslik = (oge.findtext("title") or "").strip()
             link = (oge.findtext("link") or "").strip()
             yayin = (oge.findtext("pubDate") or "").strip()
@@ -632,13 +629,17 @@ def son_dakika_haberleri_getir():
                 continue
 
             try:
-                zaman = parsedate_to_datetime(
+                yayin_zamani = parsedate_to_datetime(
                     yayin
-                ).astimezone(TURKIYE_TZ).strftime(
-                    "%d.%m.%Y %H:%M"
-                )
+                ).astimezone(TURKIYE_TZ)
             except Exception:
-                zaman = yayin
+                continue
+
+            # Sadece bugün yayınlanan haberler
+            if yayin_zamani.date() != bugun:
+                continue
+
+            zaman = yayin_zamani.strftime("%H:%M")
 
             haberler.append(
                 (
@@ -647,6 +648,9 @@ def son_dakika_haberleri_getir():
                     html.escape(zaman)
                 )
             )
+
+            if len(haberler) >= 20:
+                break
 
         return haberler
 
@@ -779,6 +783,136 @@ st.markdown(
 
         .piyasa-ozet-isim {
             min-width: 56px;
+        }
+    }
+
+    /* ============================================
+       SON DAKİKA HABERLERİ PANELİ
+       ============================================ */
+    .son-dakika-baslik {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 82, 100, 0.18),
+            rgba(255, 82, 100, 0.04)
+        );
+        border: 1px solid rgba(255, 82, 100, 0.55);
+        border-radius: 8px;
+        padding: 8px 14px;
+        margin: 6px 0 0 0;
+        font-size: 17px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px rgba(255, 82, 100, 0.8);
+    }
+
+    .son-dakika-nokta {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #ff3b4e;
+        box-shadow: 0 0 12px #ff3b4e;
+        animation: son_dakika_yanip_son 1s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes son_dakika_yanip_son {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.25;
+        }
+    }
+
+    .son-dakika-tarih {
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 600;
+        color: #ff9da8;
+    }
+
+    .son-dakika-cerceve {
+        background: rgba(6, 20, 33, 0.6);
+        border: 1px solid rgba(255, 82, 100, 0.35);
+        border-radius: 10px;
+        padding: 10px 12px;
+        max-height: 380px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        margin: 0 0 6px 0;
+    }
+
+    .son-dakika-cerceve::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .son-dakika-cerceve::-webkit-scrollbar-thumb {
+        background: rgba(255, 82, 100, 0.4);
+        border-radius: 4px;
+    }
+
+    .son-dakika-cerceve::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .son-dakika-haber-kart {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: rgba(10, 26, 40, 0.95);
+        border-left: 3px solid #ff5264;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin: 6px 0;
+        font-size: 13.5px;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .son-dakika-haber-saat {
+        flex-shrink: 0;
+        color: #ff9da8;
+        font-size: 11.5px;
+        font-weight: 700;
+        padding-top: 2px;
+        min-width: 46px;
+    }
+
+    .son-dakika-haber-link {
+        color: #f0f0f0;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .son-dakika-haber-link:hover {
+        color: #00f5c8;
+    }
+
+    @media screen and (max-width: 768px) {
+        .son-dakika-baslik {
+            font-size: 14px;
+            padding: 7px 10px;
+            gap: 8px;
+        }
+
+        .son-dakika-cerceve {
+            max-height: 320px;
+            padding: 8px 8px;
+        }
+
+        .son-dakika-haber-kart {
+            font-size: 12.5px;
+            padding: 7px 9px;
+            gap: 8px;
+        }
+
+        .son-dakika-haber-saat {
+            font-size: 11px;
+            min-width: 42px;
         }
     }
 
@@ -1501,6 +1635,56 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+
+# ==================================================
+# SON DAKİKA HABERLERİ PANELİ (BUGÜNÜN GÜNDEMİ)
+# ==================================================
+_bugun_tarih = turkiye_saati().strftime("%d.%m.%Y")
+_haberler = son_dakika_haberleri_getir()
+
+st.markdown(
+    f"""
+    <div class="son-dakika-baslik">
+        <span class="son-dakika-nokta"></span>
+        SON DAKİKA HABERLERİ
+        <span class="son-dakika-tarih">{_bugun_tarih}</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+if not _haberler:
+    st.info(
+        "Şu anda haber alınamadı, birazdan tekrar "
+        "denenecek."
+    )
+else:
+    _haber_icerik = ""
+
+    for _baslik, _link, _zaman in _haberler:
+        _haber_icerik += f"""
+        <div class="son-dakika-haber-kart">
+            <div class="son-dakika-haber-saat">
+                🕒 {_zaman}
+            </div>
+            <a href="{_link}" target="_blank"
+               class="son-dakika-haber-link">
+                {_baslik}
+            </a>
+        </div>
+        """
+
+    st.markdown(
+        f"""
+        <div class="son-dakika-cerceve">
+            {_haber_icerik}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+st.divider()
 
 
 # ==================================================
@@ -2246,9 +2430,9 @@ with tab_sohbet:
     takip, begeni = istatistik_oku()
 
     # ================================================
-    # BEĞENİ + SON DAKİKA BUTONLARI (tek satır panel)
+    # BEĞENİ BUTONU (şeffaf 👍 + sayı)
     # ================================================
-    kol_begeni, kol_sayi, kol_haber = st.columns([1, 1, 5])
+    kol_begeni, kol_sayi = st.columns([1, 6])
 
     with kol_begeni:
         if st.button(
@@ -2269,68 +2453,6 @@ with tab_sohbet:
             """,
             unsafe_allow_html=True
         )
-
-    with kol_haber:
-        if st.button(
-            "🔔 Son Dakika Haberleri",
-            key="bta_son_dakika_buton",
-            use_container_width=True
-        ):
-            st.session_state["son_dakika_acik"] = (
-                not st.session_state.get(
-                    "son_dakika_acik",
-                    False
-                )
-            )
-
-    # ================================================
-    # SON DAKİKA HABERLERİ PANELİ
-    # ================================================
-    if st.session_state.get("son_dakika_acik", False):
-        _haberler = son_dakika_haberleri_getir()
-
-        if not _haberler:
-            st.info(
-                "Şu anda haber alınamadı, birazdan "
-                "tekrar denenecek."
-            )
-        else:
-            _haber_icerik = ""
-
-            for _baslik, _link, _zaman in _haberler:
-                _haber_icerik += f"""
-                <div class="sohbet-kart" style="
-                    border-left-color: #ff9f43;
-                ">
-                    <div class="sohbet-kart-baslik" style="
-                        color: #ff9f43;
-                    ">
-                        🔔 Son Dakika
-                        <span class="sohbet-kart-saat">
-                            · {_zaman}
-                        </span>
-                    </div>
-                    <div class="sohbet-mesaj-metni">
-                        <a href="{_link}" target="_blank"
-                           style="
-                               color: #00f5c8;
-                               text-decoration: none;
-                               font-weight: 600;
-                           ">
-                            📰 {_baslik}
-                        </a>
-                    </div>
-                </div>
-                """
-
-            st.markdown(
-                f"""
-                <div class="sohbet-cerceve sohbet-haber-cerceve">
-                    {_haber_icerik}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
 
     st.divider()
 
