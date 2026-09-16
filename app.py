@@ -2135,25 +2135,54 @@ with tab_bedelli:
 # CANLI SOHBET
 # ==================================================
 with tab_sohbet:
-    st.header("💬 Sohbet")
+    st.header("💬 Canlı Sohbet Odası")
 
     # ==================================================
-    # BEĞENİ PANELİ
+    # TAKİP VE BEĞENİ PANELİ
     # ==================================================
+    st.subheader("⭐ BTA Oda Takip Paneli")
+
     takip, begeni = istatistik_oku()
 
-    col1, col2 = st.columns([2, 3])
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        if st.button(
-            "👍 Beğen",
-            use_container_width=True
-        ):
-            begeni += 1
-            istatistik_kaydet(takip, begeni)
+        if "takip_edildi" not in st.session_state:
+            st.session_state["takip_edildi"] = False
+
+        if not st.session_state["takip_edildi"]:
+            if st.button(
+                "⭐ Odayı Takip Et",
+                use_container_width=True
+            ):
+                takip += 1
+                istatistik_kaydet(takip, begeni)
+                st.session_state["takip_edildi"] = True
+                st.rerun()
+        else:
+            st.info("⭐ Odayı takip ediyorsunuz.")
 
     with col2:
-        st.metric("Beğeni", f"{begeni}")
+        if "begeni_verildi" not in st.session_state:
+            st.session_state["begeni_verildi"] = False
+
+        if not st.session_state["begeni_verildi"]:
+            if st.button(
+                "👍 Beğen",
+                use_container_width=True
+            ):
+                begeni += 1
+                istatistik_kaydet(takip, begeni)
+                st.session_state["begeni_verildi"] = True
+                st.rerun()
+        else:
+            st.info("👍 Beğeniniz kaydedildi.")
+
+    with col3:
+        st.metric("👥 Takipçi", f"{takip} kişi")
+
+    with col4:
+        st.metric("👍 Beğeni", f"{begeni}")
 
     st.divider()
 
