@@ -1,7 +1,7 @@
 import os
 import hashlib
 import concurrent.futures
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import urllib.parse
 
 import pandas as pd
@@ -10,6 +10,25 @@ import streamlit as st
 import streamlit.components.v1 as components
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
+
+try:
+    from zoneinfo import ZoneInfo
+    TURKIYE_TZ = ZoneInfo("Europe/Istanbul")
+except Exception:
+    # Sunucuda tzdata veritabanı yoksa (bazı minimal Linux
+    # kurulumlarında olabilir), sabit UTC+3 ofsetine düşülür.
+    # Türkiye 2016'dan beri yaz saati uygulamadığı için bu
+    # sabit ofset her zaman doğrudur.
+    TURKIYE_TZ = timezone(timedelta(hours=3))
+
+
+def turkiye_saati():
+    """
+    Sunucunun çalıştığı saat dilimi ne olursa olsun
+    (çoğu bulut sunucusu UTC kullanır), her zaman doğru
+    Türkiye saatini (UTC+3) döndürür.
+    """
+    return datetime.now(TURKIYE_TZ)
 
 
 # ==================================================
@@ -561,7 +580,7 @@ def piyasa_ozeti_getir():
     # burada, önbelleklenen sonucun içinde üretilir. Böylece
     # ekranda gösterilen saat, sayfanın yenilenme anını değil,
     # verinin GERÇEKTEN çekildiği anı yansıtır.
-    cekim_zamani = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+    cekim_zamani = turkiye_saati().strftime("%d.%m.%Y %H:%M:%S")
 
     return sonuclar, cekim_zamani
 
@@ -889,7 +908,7 @@ def excel_kayitlarini_ekle(df):
         yeni_kayitlar.append(
             {
                 "kayit_id": kayit_id,
-                "kayit_tarihi": datetime.now().strftime(
+                "kayit_tarihi": turkiye_saati().strftime(
                     "%d.%m.%Y %H:%M:%S"
                 ),
                 "hisse_kodu": hisse,
@@ -987,9 +1006,9 @@ def mesaj_ekle(kullanici, metin):
     yeni_mesaj = pd.DataFrame(
         [{
             "mesaj_id": int(
-                datetime.now().timestamp() * 1000
+                turkiye_saati().timestamp() * 1000
             ),
-            "tarih": datetime.now().strftime(
+            "tarih": turkiye_saati().strftime(
                 "%d.%m.%Y %H:%M:%S"
             ),
             "kullanici": kullanici,
@@ -1128,6 +1147,7 @@ st.markdown(
         font-weight: 600;
         color: #00f5c8;
     ">
+        🕒 Veri çekim saati: {_ozet_zamani}
     </div>
     """,
     unsafe_allow_html=True
@@ -1600,7 +1620,7 @@ with tab_gunluk:
         # Saat, veri çekimi TAMAMLANDIKTAN hemen sonra üretilir;
         # böylece gösterilen zaman her zaman gerçek veri anını
         # yansıtır (sayfa açılış anını değil).
-        _gunluk_zamani = datetime.now().strftime(
+        _gunluk_zamani = turkiye_saati().strftime(
             "%d.%m.%Y %H:%M:%S"
         )
 
@@ -1629,6 +1649,14 @@ with tab_gunluk:
                 "tekrar denenecek."
             )
         else:
+            # Değişim yüzdesine göre büyükten küçüğe sıralanır
+            # (her yenilemede tutarlı şekilde aynı sıralama).
+            _gunluk_sonuclar = sorted(
+                _gunluk_sonuclar,
+                key=lambda _oge: _oge[2],
+                reverse=True
+            )
+
             # Ekranda sınırlı genişlikte, ortalanmış tek kolon
             # olarak gösterilir (telefon ekranına da sığar).
             _, _gunluk_orta, _ = st.columns([1, 3, 1])
