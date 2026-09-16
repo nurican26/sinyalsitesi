@@ -1128,7 +1128,7 @@ st.markdown(
         font-weight: 600;
         color: #00f5c8;
     ">
-        🕒 Veri çekim saati: {_ozet_zamani}
+        🕒 Algoritmik İŞLEM  saati: {_ozet_zamani}
     </div>
     """,
     unsafe_allow_html=True
