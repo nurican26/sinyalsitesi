@@ -2341,6 +2341,101 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
         ]
     )
 
+components.html(
+    """
+    <script>
+    (function () {
+        const IKON_RENK = [
+            { ana: "#00f5c8", zemin: "rgba(0, 245, 200, 0.20)"  },
+            { ana: "#4da6ff", zemin: "rgba(77, 166, 255, 0.20)" },
+            { ana: "#b48bff", zemin: "rgba(180, 139, 255, 0.20)"},
+            { ana: "#ff6ec7", zemin: "rgba(255, 110, 199, 0.20)"},
+            { ana: "#ff5264", zemin: "rgba(255, 82, 100, 0.20)" },
+            { ana: "#ffd166", zemin: "rgba(255, 209, 102, 0.20)"},
+            { ana: "#7ddb6e", zemin: "rgba(125, 219, 110, 0.20)"},
+            { ana: "#ff9f43", zemin: "rgba(255, 159, 67, 0.20)" },
+            { ana: "#66d9ff", zemin: "rgba(102, 217, 255, 0.20)"}
+        ];
+
+        function sekmeIkonlariniCercevele() {
+            try {
+                const doc = window.parent.document;
+                const sekmeler = doc.querySelectorAll(
+                    '.stTabs [data-baseweb="tab-list"] button[role="tab"]'
+                );
+                if (!sekmeler.length) return;
+
+                const mobil = window.parent.innerWidth < 768;
+                const kutuBoyu = mobil ? "22px" : "30px";
+                const ikonPuntosu = mobil ? "13px" : "17px";
+
+                sekmeler.forEach((btn, i) => {
+                    const p = btn.querySelector("p");
+                    if (!p) return;
+                    if (btn.getAttribute("data-ikon-hazir") === "1") return;
+
+                    const metin = Array.from(p.textContent || "");
+                    if (metin.length < 2) return;
+
+                    const ikonKarakter = metin[0];
+                    const kalanMetin = metin.slice(1).join("").trim();
+                    const renk = IKON_RENK[i % IKON_RENK.length];
+
+                    p.innerHTML = "";
+                    p.style.display = "flex";
+                    p.style.alignItems = "center";
+                    p.style.gap = "0";
+
+                    const cerceve = doc.createElement("span");
+                    cerceve.textContent = ikonKarakter;
+                    cerceve.setAttribute(
+                        "style",
+                        "display:inline-flex;" +
+                        "align-items:center;" +
+                        "justify-content:center;" +
+                        "width:" + kutuBoyu + ";" +
+                        "height:" + kutuBoyu + ";" +
+                        "min-width:" + kutuBoyu + ";" +
+                        "margin-right:7px;" +
+                        "border-radius:9px;" +
+                        "font-size:" + ikonPuntosu + ";" +
+                        "line-height:1;" +
+                        "background:linear-gradient(145deg," + renk.zemin + ",rgba(255,255,255,0.03));" +
+                        "border:1.5px solid " + renk.ana + ";" +
+                        "box-shadow:0 0 9px " + renk.ana + "80, inset 0 0 6px " + renk.ana + "40;" +
+                        "flex-shrink:0;"
+                    );
+
+                    const metinSpan = doc.createElement("span");
+                    metinSpan.textContent = kalanMetin;
+
+                    p.appendChild(cerceve);
+                    p.appendChild(metinSpan);
+                    btn.setAttribute("data-ikon-hazir", "1");
+                });
+            } catch (hata) {
+                console.log("Sekme ikonu çerçeveleme hatası:", hata);
+            }
+        }
+
+        sekmeIkonlariniCercevele();
+        try {
+            const gozlemci = new MutationObserver(sekmeIkonlariniCercevele);
+            gozlemci.observe(window.parent.document.body, {
+                childList: true,
+                subtree: true
+            });
+        } catch (hata) {
+            console.log("Gözlemci başlatılamadı:", hata);
+        }
+        setInterval(sekmeIkonlariniCercevele, 1000);
+    })();
+    </script>
+    """,
+    height=0,
+    width=0
+)
+
 
 # ==================================================
 # ALGORİTMİK BİLGİLER
