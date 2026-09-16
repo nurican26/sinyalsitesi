@@ -404,9 +404,10 @@ def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
     <div style="
         background: rgba(0, 0, 0, 0.42);
         border-left: 5px solid {renk};
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 6px;
         padding: 11px 16px;
-        margin: 7px 0;
+        margin: 3px 0;
         display: grid;
         grid-template-columns: 1fr auto auto;
         align-items: center;
@@ -556,7 +557,13 @@ def piyasa_ozeti_getir():
         }
     )
 
-    return sonuclar
+    # Veri gerçekten bu an çekildiği için zaman damgası da
+    # burada, önbelleklenen sonucun içinde üretilir. Böylece
+    # ekranda gösterilen saat, sayfanın yenilenme anını değil,
+    # verinin GERÇEKTEN çekildiği anı yansıtır.
+    cekim_zamani = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+
+    return sonuclar, cekim_zamani
 
 
 # ==================================================
@@ -776,6 +783,30 @@ st.markdown(
         .paylas-container {
             gap: 8px;
         }
+    }
+
+    /* ================================================
+       SEKME (TAB) ÇUBUĞU - DAHA BELİRGİN
+       ================================================ */
+    .stTabs [data-baseweb="tab-list"] {
+        background: rgba(0, 245, 200, 0.07);
+        border: 1px solid rgba(0, 245, 200, 0.35);
+        border-radius: 10px;
+        padding: 6px 6px 0 6px;
+        gap: 4px;
+        overflow-x: auto;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: rgba(0, 245, 200, 0.16) !important;
+        border-radius: 8px 8px 0 0 !important;
     }
     </style>
     """,
@@ -1082,12 +1113,26 @@ st.markdown(
 # ==================================================
 # PİYASA ÖZETİ KARTLARI (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
 # ==================================================
-st.caption(
-    "🕒 Son güncelleme: "
-    f"{datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-)
+_ozet_veriler, _ozet_zamani = piyasa_ozeti_getir()
 
-_ozet_veriler = piyasa_ozeti_getir()
+st.markdown(
+    f"""
+    <div style="
+        display: inline-block;
+        background: rgba(0, 245, 200, 0.12);
+        border: 1px solid rgba(0, 245, 200, 0.4);
+        border-radius: 20px;
+        padding: 5px 14px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #00f5c8;
+    ">
+        🕒 Veri çekim saati: {_ozet_zamani}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # Kartlar yan yana değil, 3'erli sıralar halinde (alt alta)
 # gösterilir; böylece telefon ekranında yana taşıp
@@ -1356,6 +1401,22 @@ if not excel_df.empty:
 # ==================================================
 # PANELLER
 # ==================================================
+st.markdown(
+    """
+    <div style="
+        text-align: center;
+        font-size: 15px;
+        font-weight: 700;
+        color: #00f5c8;
+        margin-bottom: 6px;
+    ">
+        👇 Tüm bölümler aşağıdaki sekmelerde — sığmıyorsa
+        yana kaydırın 👉
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_kayit, \
     tab_paylas = st.tabs(
         [
@@ -1483,11 +1544,6 @@ with tab_algoritmik:
 with tab_gunluk:
     st.header("📅 BTA Günlük Algoritma")
 
-    st.caption(
-        "🕒 Son güncelleme: "
-        f"{datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
-
     if gunluk_algoritma_df.empty:
         st.info(
             "BTA Günlük Algoritma listesi bulunamadı. "
@@ -1541,6 +1597,32 @@ with tab_gunluk:
                     _gunluk_sonuclar.append((_h, _s, _d))
         except Exception as _hata:
             st.error(f"Veri çekilirken hata oluştu: {_hata}")
+
+        # Saat, veri çekimi TAMAMLANDIKTAN hemen sonra üretilir;
+        # böylece gösterilen zaman her zaman gerçek veri anını
+        # yansıtır (sayfa açılış anını değil).
+        _gunluk_zamani = datetime.now().strftime(
+            "%d.%m.%Y %H:%M:%S"
+        )
+
+        st.markdown(
+            f"""
+            <div style="
+                display: inline-block;
+                background: rgba(0, 245, 200, 0.12);
+                border: 1px solid rgba(0, 245, 200, 0.4);
+                border-radius: 20px;
+                padding: 5px 14px;
+                margin-bottom: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #00f5c8;
+            ">
+                🕒 Veri çekim saati: {_gunluk_zamani}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
         if not _gunluk_sonuclar:
             st.info(
