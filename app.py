@@ -1,13 +1,35 @@
 import os
 import hashlib
-from datetime import datetime
+import html
+import concurrent.futures
+from datetime import datetime, timedelta, timezone
 import urllib.parse
 
 import pandas as pd
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
 import yfinance as yf
 from streamlit_autorefresh import st_autorefresh
+
+try:
+    from zoneinfo import ZoneInfo
+    TURKIYE_TZ = ZoneInfo("Europe/Istanbul")
+except Exception:
+    # Sunucuda tzdata veritabanı yoksa (bazı minimal Linux
+    # kurulumlarında olabilir), sabit UTC+3 ofsetine düşülür.
+    # Türkiye 2016'dan beri yaz saati uygulamadığı için bu
+    # sabit ofset her zaman doğrudur.
+    TURKIYE_TZ = timezone(timedelta(hours=3))
+
+
+def turkiye_saati():
+    """
+    Sunucunun çalıştığı saat dilimi ne olursa olsun
+    (çoğu bulut sunucusu UTC kullanır), her zaman doğru
+    Türkiye saatini (UTC+3) döndürür.
+    """
+    return datetime.now(TURKIYE_TZ)
 
 
 # ==================================================
@@ -287,6 +309,284 @@ def bedelli_bedelsiz_kart_format(sonuc):
 
 
 # ==================================================
+# TEK SEMBOL İÇİN FİYAT + DEĞİŞİM
+# ==================================================
+@st.cache_data(ttl=30, show_spinner=False)
+def fiyat_degisim_getir(sembol, marj_kontrolu=True):
+    """
+    Tek bir sembol için son fiyatı ve önceki kapanışa göre değişim
+    yüzdesini döndürür.
+
+    Öncelik sırası:
+      1) fast_info -> last_price / previous_close
+         (borsanın resmi "önceki kapanış" değeri; sermaye artırımı ve
+          temettü düzeltmelerini doğru yansıtır)
+      2) history() -> son iki kapanış (yedek yöntem)
+
+    marj_kontrolu=True iken BIST'in günlük ±%10 fiyat marjı gözetilir;
+    bunun dışında kalan değerler (ör. bedelsiz/temettü kaynaklı veri
+    kopukluğu) hatalı kabul edilip elenir. Endeks, döviz ve emtia için
+    bu kontrol kapatılmalıdır.
+
+    Hata durumunda (None, None, hata_metni) döner.
+    """
+    # BIST günlük fiyat marjı %10'dur; veri gürültüsüne
+    # küçük bir tolerans bırakılır.
+    MARJ_SINIRI = 11.0
+
+    son = None
+    onceki = None
+
+    try:
+        hisse = yf.Ticker(sembol)
+
+        # ----- 1. YÖNTEM: fast_info -----
+        try:
+            hizli = hisse.fast_info
+
+            aday_son = (
+                hizli.get("last_price")
+                if hasattr(hizli, "get")
+                else getattr(hizli, "last_price", None)
+            )
+            aday_onceki = (
+                hizli.get("previous_close")
+                if hasattr(hizli, "get")
+                else getattr(hizli, "previous_close", None)
+            )
+
+            if aday_son and aday_onceki:
+                son = float(aday_son)
+                onceki = float(aday_onceki)
+
+        except Exception:
+            son = None
+            onceki = None
+
+        # ----- 2. YÖNTEM (YEDEK): history -----
+        if son is None or onceki is None or onceki <= 0:
+            gecmis = hisse.history(
+                period="5d",
+                interval="1d",
+                auto_adjust=False
+            )
+
+            if (
+                gecmis is None
+                or gecmis.empty
+                or "Close" not in gecmis.columns
+            ):
+                return None, None, "veri boş döndü"
+
+            kapanislar = gecmis["Close"].dropna()
+
+            if len(kapanislar) < 2:
+                return None, None, "yetersiz geçmiş veri"
+
+            onceki = float(kapanislar.iloc[-2])
+            son = float(kapanislar.iloc[-1])
+
+        if (
+            onceki is None
+            or son is None
+            or onceki <= 0
+            or pd.isna(onceki)
+            or pd.isna(son)
+        ):
+            return None, None, "geçersiz fiyat"
+
+        degisim = ((son - onceki) / onceki) * 100
+
+        if marj_kontrolu and abs(degisim) > MARJ_SINIRI:
+            return (
+                None,
+                None,
+                f"marj dışı değişim (%{degisim:.2f}) - "
+                "muhtemelen bedelsiz/temettü kaynaklı veri kopukluğu"
+            )
+
+        return son, degisim, None
+
+    except Exception as hata:
+        return None, None, str(hata)
+
+
+# ==================================================
+# TAVAN KUTLAMA KARTI
+# ==================================================
+# ==================================================
+# HİSSE FİYAT KARTI (GENEL AMAÇLI)
+# ==================================================
+def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
+    durum = "▲" if degisim >= 0 else "▼"
+
+    return f"""
+    <div style="
+        background: rgba(0, 0, 0, 0.42);
+        border-left: 5px solid {renk};
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 11px 16px;
+        margin: 3px 0;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: center;
+        column-gap: 18px;
+    ">
+        <span style="
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        ">{hisse_kodu}</span>
+        <span style="
+            font-size: 18px;
+            color: #e6e6e6;
+            text-align: right;
+            min-width: 105px;
+        ">{tl_format(fiyat)}</span>
+        <span style="
+            font-size: 19px;
+            font-weight: 700;
+            color: {renk};
+            text-align: right;
+            min-width: 95px;
+        ">{durum} {degisim:+.2f}%</span>
+    </div>
+    """
+
+
+def tavan_kutlama_format(hisse_kodu, fiyat, degisim):
+    return f"""
+    <div style="
+        background: linear-gradient(
+            120deg,
+            rgba(0, 245, 200, 0.22),
+            rgba(22, 140, 255, 0.22)
+        );
+        border: 2px solid #00f5c8;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin: 10px 0;
+        text-align: center;
+        box-shadow: 0 0 22px rgba(0, 245, 200, 0.45);
+        animation: tavan_parlama 1.6s ease-in-out infinite alternate;
+    ">
+        <div style="font-size: 26px;">
+            🎉 🚀 🥳
+        </div>
+        <div style="
+            font-size: 21px;
+            font-weight: 800;
+            color: #00f5c8;
+            margin-top: 4px;
+        ">
+            Tebrikler! {hisse_kodu} bugün TAVAN yaptı!
+        </div>
+        <div style="font-size: 15px; color: #d8fff5; margin-top: 4px;">
+            {tl_format(fiyat)} &nbsp;•&nbsp; {degisim:+.2f}%
+        </div>
+    </div>
+    <style>
+        @keyframes tavan_parlama {{
+            from {{
+                box-shadow: 0 0 14px rgba(0, 245, 200, 0.35);
+            }}
+            to {{
+                box-shadow: 0 0 30px rgba(0, 245, 200, 0.75);
+            }}
+        }}
+    </style>
+    """
+
+
+# ==================================================
+# PİYASA ÖZETİ (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
+# ==================================================
+@st.cache_data(ttl=30, show_spinner=False)
+def piyasa_ozeti_getir():
+    """
+    Ana endeks, döviz ve altın kartları için veri toplar.
+    Gram Altın (TL), ons altın (USD) fiyatının USDTRY ile çarpılıp
+    31.1035 gramlık ons ağırlığına bölünmesiyle yaklaşık hesaplanır.
+    """
+    sonuclar = []
+
+    bist_son, bist_degisim, bist_hata = fiyat_degisim_getir(
+        "XU100.IS",
+        marj_kontrolu=False
+    )
+    sonuclar.append(
+        {
+            "isim": "BIST100",
+            "fiyat": bist_son,
+            "degisim": bist_degisim,
+            "tur": "sayi",
+            "hata": bist_hata
+        }
+    )
+
+    usd_son, usd_degisim, usd_hata = fiyat_degisim_getir(
+        "USDTRY=X",
+        marj_kontrolu=False
+    )
+    sonuclar.append(
+        {
+            "isim": "USDTRY",
+            "fiyat": usd_son,
+            "degisim": usd_degisim,
+            "tur": "sayi",
+            "hata": usd_hata
+        }
+    )
+
+    eur_son, eur_degisim, eur_hata = fiyat_degisim_getir(
+        "EURTRY=X",
+        marj_kontrolu=False
+    )
+    sonuclar.append(
+        {
+            "isim": "EURTRY",
+            "fiyat": eur_son,
+            "degisim": eur_degisim,
+            "tur": "sayi",
+            "hata": eur_hata
+        }
+    )
+
+    ons_son, ons_degisim, ons_hata = fiyat_degisim_getir(
+        "GC=F",
+        marj_kontrolu=False
+    )
+
+    if ons_son is not None and usd_son is not None:
+        gram_fiyat = (ons_son / 31.1035) * usd_son
+        gram_degisim = ons_degisim
+        gram_hata = None
+    else:
+        gram_fiyat = None
+        gram_degisim = None
+        gram_hata = ons_hata or usd_hata or "veri alınamadı"
+
+    sonuclar.append(
+        {
+            "isim": "GRAM ALTIN (yakl.)",
+            "fiyat": gram_fiyat,
+            "degisim": gram_degisim,
+            "tur": "tl",
+            "hata": gram_hata
+        }
+    )
+
+    # Veri gerçekten bu an çekildiği için zaman damgası da
+    # burada, önbelleklenen sonucun içinde üretilir. Böylece
+    # ekranda gösterilen saat, sayfanın yenilenme anını değil,
+    # verinin GERÇEKTEN çekildiği anı yansıtır.
+    cekim_zamani = turkiye_saati().strftime("%d.%m.%Y %H:%M:%S")
+
+    return sonuclar, cekim_zamani
+
+
+# ==================================================
 # TASARIM
 # ==================================================
 st.markdown(
@@ -328,6 +628,7 @@ st.markdown(
         overflow: hidden;
         white-space: nowrap;
         margin-bottom: 12px;
+        text-align: center;
     }
 
     .bta-logo {
@@ -340,16 +641,76 @@ st.markdown(
             0 0 8px #00f5c8,
             0 0 18px #00f5c8,
             0 0 28px #168cff;
-        animation: kayan_logo 14s linear infinite;
     }
 
-    @keyframes kayan_logo {
-        0% {
-            transform: translateX(100vw);
+    /* ============================================
+       PİYASA ÖZETİ - EKRAN KÖŞESİNDE KOMPAKT KART
+       ============================================ */
+    .piyasa-ozet-badge {
+        background: rgba(5, 18, 32, 0.94);
+        border: 1px solid rgba(0, 245, 200, 0.45);
+        border-left: 4px solid #00f5c8;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 0 0 14px auto;
+        max-width: 460px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+    }
+
+    .piyasa-ozet-badge-header {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        color: #00f5c8;
+        margin-bottom: 6px;
+        text-align: right;
+    }
+
+    .piyasa-ozet-satir {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 3px 0;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.09);
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .piyasa-ozet-satir:last-child {
+        border-bottom: none;
+    }
+
+    .piyasa-ozet-isim {
+        color: #9fc4d8;
+        font-weight: 600;
+        min-width: 62px;
+        text-align: left;
+    }
+
+    .piyasa-ozet-fiyat {
+        color: #f2f2f2;
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .piyasa-ozet-degisim {
+        font-weight: 800;
+        text-align: right;
+    }
+
+    @media screen and (max-width: 768px) {
+        .piyasa-ozet-badge {
+            max-width: 100%;
+            padding: 6px 10px;
         }
 
-        100% {
-            transform: translateX(-100%);
+        .piyasa-ozet-satir {
+            font-size: 12px;
+        }
+
+        .piyasa-ozet-isim {
+            min-width: 56px;
         }
     }
 
@@ -359,6 +720,95 @@ st.markdown(
         border-radius: 7px;
         padding: 10px;
         margin: 7px 0;
+    }
+
+    /* ============================================
+       SOHBET - ÇERÇEVE İÇİNDE KAYAN MESAJLAR
+       ============================================ */
+    .sohbet-cerceve {
+        background: rgba(6, 20, 33, 0.6);
+        border: 1px solid rgba(0, 245, 200, 0.35);
+        border-radius: 10px;
+        padding: 10px 12px;
+        max-height: 460px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        margin-bottom: 10px;
+    }
+
+    .sohbet-cerceve::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sohbet-cerceve::-webkit-scrollbar-thumb {
+        background: rgba(0, 245, 200, 0.35);
+        border-radius: 4px;
+    }
+
+    .sohbet-cerceve::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .sohbet-kart {
+        background: rgba(8, 29, 45, 0.97);
+        border-left: 3px solid #00f5c8;
+        border-radius: 7px;
+        padding: 8px 12px;
+        margin: 6px 0;
+        font-size: 14px;
+        word-break: break-word;
+    }
+
+    .sohbet-kart-baslik {
+        font-size: 13px;
+        color: #ffd166;
+        margin-bottom: 2px;
+    }
+
+    .sohbet-kart-saat {
+        font-size: 11px;
+        color: #8aa7bb;
+    }
+
+    .sohbet-mesaj-metni {
+        color: #f0f0f0;
+        line-height: 1.5;
+    }
+
+    .sohbet-silme {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .sohbet-sil-buton {
+        background: rgba(255, 82, 100, 0.18);
+        border: 1px solid rgba(255, 82, 100, 0.5);
+        color: #ff8d99;
+        border-radius: 6px;
+        padding: 2px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .sohbet-sil-buton:hover {
+        background: rgba(255, 82, 100, 0.35);
+        color: white;
+    }
+
+    @media screen and (max-width: 768px) {
+        .sohbet-cerceve {
+            max-height: 420px;
+            padding: 8px 8px;
+        }
+
+        .sohbet-kart {
+            padding: 7px 10px;
+            font-size: 13px;
+        }
     }
 
     .bilgi-karti {
@@ -491,7 +941,7 @@ st.markdown(
         }
 
         .bta-logo {
-            font-size: 38px;
+            font-size: clamp(15px, 6.2vw, 33px);
         }
 
         [data-testid="stTabs"] button {
@@ -513,6 +963,30 @@ st.markdown(
         .paylas-container {
             gap: 8px;
         }
+    }
+
+    /* ================================================
+       SEKME (TAB) ÇUBUĞU - DAHA BELİRGİN
+       ================================================ */
+    .stTabs [data-baseweb="tab-list"] {
+        background: rgba(0, 245, 200, 0.07);
+        border: 1px solid rgba(0, 245, 200, 0.35);
+        border-radius: 10px;
+        padding: 6px 6px 0 6px;
+        gap: 4px;
+        overflow-x: auto;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: rgba(0, 245, 200, 0.16) !important;
+        border-radius: 8px 8px 0 0 !important;
     }
     </style>
     """,
@@ -595,7 +1069,7 @@ def excel_kayitlarini_ekle(df):
         yeni_kayitlar.append(
             {
                 "kayit_id": kayit_id,
-                "kayit_tarihi": datetime.now().strftime(
+                "kayit_tarihi": turkiye_saati().strftime(
                     "%d.%m.%Y %H:%M:%S"
                 ),
                 "hisse_kodu": hisse,
@@ -693,9 +1167,9 @@ def mesaj_ekle(kullanici, metin):
     yeni_mesaj = pd.DataFrame(
         [{
             "mesaj_id": int(
-                datetime.now().timestamp() * 1000
+                turkiye_saati().timestamp() * 1000
             ),
-            "tarih": datetime.now().strftime(
+            "tarih": turkiye_saati().strftime(
                 "%d.%m.%Y %H:%M:%S"
             ),
             "kullanici": kullanici,
@@ -795,6 +1269,9 @@ def mesaj_sesi_cal():
 # ==================================================
 # CANLI YENİLEME
 # ==================================================
+# Sayfa 5 saniyede bir yenilenir. Tüm veri çekimleri
+# 20-30 sn önbellekli olduğu için sayfa anında çizilir
+# ve yenileme kullanıcıya hissettirilmez.
 st_autorefresh(
     interval=5000,
     key="bta_canli_yenileme"
@@ -810,6 +1287,107 @@ st.markdown(
         <div class="bta-logo">
             BTA ALGORİTMİK İŞLEM
         </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ==================================================
+# BTA GÜNLÜK ALGORİTMA - SABİT GÜNCELLEME SAATİ
+# ==================================================
+BTA_DURUM_DOSYASI = "bta_gunluk_durum.csv"
+
+
+def bta_gunluk_zaman_yukle():
+    """
+    "BTA Günlük Algoritma" bölümünün güncelleme saati ve tarihi,
+    Excel dosyasının yüklendiği İLK anda bir kez üretilir ve
+    'bta_gunluk_durum.csv' dosyasına yazılır. Sayfa her yenilenmede
+    bu kaydedilmiş saat yeniden okunur, yani saat/tarih ekranda
+    hiçbir yenilemede DEĞİŞMEZ (sabit kalır).
+    """
+    try:
+        if os.path.exists(BTA_DURUM_DOSYASI):
+            durum = pd.read_csv(
+                BTA_DURUM_DOSYASI,
+                encoding="utf-8-sig"
+            )
+
+            if not durum.empty and "guncel_zaman" in durum.columns:
+                deger = str(durum.iloc[0]["guncel_zaman"]).strip()
+                if deger:
+                    return deger
+    except Exception:
+        pass
+
+    zaman = turkiye_saati().strftime("%d.%m.%Y %H:%M:%S")
+
+    try:
+        pd.DataFrame(
+            [{"guncel_zaman": zaman}]
+        ).to_csv(
+            BTA_DURUM_DOSYASI,
+            index=False,
+            encoding="utf-8-sig"
+        )
+    except Exception:
+        pass
+
+    return zaman
+
+
+# Güncelleme saati sayfanın ilk açılışında oluşturulup sabitlenir.
+_bta_gunluk_sabit_zaman = bta_gunluk_zaman_yukle()
+
+
+# ==================================================
+# PİYASA ÖZETİ KARTLARI (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
+# EKRANIN SAĞ KÖŞESİNDE KOMPAKT KART
+# ==================================================
+_ozet_veriler, _ozet_zamani = piyasa_ozeti_getir()
+
+
+def _piyasa_ozet_hazirla(_veri):
+    if _veri["fiyat"] is None:
+        return "-", "--%", "#8aa7bb"
+
+    if _veri["tur"] == "tl":
+        _deger = tl_format(_veri["fiyat"])
+    else:
+        _deger = sayi_format(_veri["fiyat"])
+
+    if _veri["degisim"] is None:
+        return _deger, "--%", "#f2f2f2"
+
+    _degisim = f"{_veri['degisim']:+.2f}%"
+    _renk = "#00f5c8" if _veri["degisim"] >= 0 else "#ff5264"
+
+    return _deger, _degisim, _renk
+
+
+_ozet_satirlar = ""
+
+for _veri in _ozet_veriler:
+    _fiyat_metni, _degisim_metni, _renk = _piyasa_ozet_hazirla(_veri)
+
+    _ozet_satirlar += f"""
+    <div class="piyasa-ozet-satir">
+        <span class="piyasa-ozet-isim">{_veri["isim"]}</span>
+        <span class="piyasa-ozet-fiyat">{_fiyat_metni}</span>
+        <span class="piyasa-ozet-degisim" style="color:{_renk};">
+            {_degisim_metni}
+        </span>
+    </div>
+    """
+
+st.markdown(
+    f"""
+    <div class="piyasa-ozet-badge">
+        <div class="piyasa-ozet-badge-header">
+            📈 CANLI PİYASA · {_ozet_zamani}
+        </div>
+        {_ozet_satirlar}
     </div>
     """,
     unsafe_allow_html=True
@@ -861,6 +1439,7 @@ if is_admin:
 # ==================================================
 # EXCEL'İ OTOMATİK OKU
 # A = Hisse Kodu
+# B = BTA Günlük Algoritma Hisseleri
 # C = BTA Alım Fiyatı
 # D = BTA Puanı
 # ==================================================
@@ -879,6 +1458,8 @@ excel_df = pd.DataFrame(
         "BTA Puanı"
     ]
 )
+
+gunluk_algoritma_df = pd.DataFrame(columns=["Hisse Kodu"])
 
 if excel_dosyalari:
     secilen_excel = excel_dosyalari[0]
@@ -952,6 +1533,36 @@ if excel_dosyalari:
 
             excel_kayitlarini_ekle(excel_df)
 
+            # ----- B SÜTUNU: BTA Günlük Algoritma hisseleri -----
+            if ham_df.shape[1] >= 2:
+                gunluk_algoritma_df = ham_df.iloc[:, [1]].copy()
+
+                gunluk_algoritma_df.columns = ["Hisse Kodu"]
+
+                gunluk_algoritma_df["Hisse Kodu"] = (
+                    gunluk_algoritma_df["Hisse Kodu"]
+                    .astype(str)
+                    .str.strip()
+                    .str.upper()
+                )
+
+                gunluk_algoritma_df = gunluk_algoritma_df[
+                    ~gunluk_algoritma_df["Hisse Kodu"].isin(
+                        [
+                            "", "NONE", "NAN", "NULL", "NA",
+                            "BTA AL SAT", "AL SAT",
+                            "HİSSE", "HISSE"
+                        ]
+                    )
+                ]
+
+                gunluk_algoritma_df = (
+                    gunluk_algoritma_df.drop_duplicates(
+                        subset=["Hisse Kodu"],
+                        keep="last"
+                    )
+                )
+
     except Exception as hata:
         st.error(
             f"Excel okunamadı: {hata}"
@@ -959,17 +1570,89 @@ if excel_dosyalari:
 
 
 # ==================================================
+# TAVAN KUTLAMA (BTA TAKİP LİSTESİ)
+# ==================================================
+if not excel_df.empty:
+    _tavan_listesi = []
+
+    def _tek_hisse_tavan_kontrol(_hisse_kodu):
+        try:
+            _kod = str(_hisse_kodu).strip().upper()
+
+            if not _kod:
+                return _hisse_kodu, None, None, "boş hisse kodu"
+
+            _sembol = _kod
+
+            if not _sembol.endswith(".IS"):
+                _sembol += ".IS"
+
+            _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
+            return _kod, _son, _degisim, _hata
+
+        except Exception as _ic_hata:
+            return _hisse_kodu, None, None, str(_ic_hata)
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=10
+        ) as _havuz:
+            for _hisse_kodu, _son, _degisim, _hata in _havuz.map(
+                _tek_hisse_tavan_kontrol,
+                excel_df["Hisse Kodu"].tolist()
+            ):
+                if (
+                    _hata is None
+                    and _son is not None
+                    and _degisim is not None
+                    and _degisim >= 9.0
+                ):
+                    _tavan_listesi.append(
+                        (_hisse_kodu, _son, _degisim)
+                    )
+    except Exception:
+        _tavan_listesi = []
+
+    for _hisse_kodu, _son, _degisim in _tavan_listesi:
+        st.markdown(
+            tavan_kutlama_format(_hisse_kodu, _son, _degisim),
+            unsafe_allow_html=True
+        )
+
+    if _tavan_listesi:
+        st.divider()
+
+
+# ==================================================
 # PANELLER
 # ==================================================
-tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
-    [
-        "🤖 Algoritmik Bilgiler",
-        "🧮 Bedelli/Bedelsiz- HESAPLAMA",
-        "💬 Sohbet",
-        "📒 Kayıtlar",
-        "🔗 Paylaş"
-    ]
+st.markdown(
+    """
+    <div style="
+        text-align: center;
+        font-size: 15px;
+        font-weight: 700;
+        color: #00f5c8;
+        margin-bottom: 6px;
+    ">
+        👇 Tüm bölümler aşağıdaki sekmelerde — sığmıyorsa
+        yana kaydırın 👉
+    </div>
+    """,
+    unsafe_allow_html=True
 )
+
+tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_kayit, \
+    tab_paylas = st.tabs(
+        [
+            "🤖 Algoritmik Bilgiler",
+            "📅 BTA Günlük Algoritma",
+            "🧮 Bedelli/Bedelsiz- HESAPLAMA",
+            "💬 Sohbet",
+            "📒 Kayıtlar",
+            "🔗 Paylaş"
+        ]
+    )
 
 
 # ==================================================
@@ -1031,7 +1714,7 @@ with tab_algoritmik:
             col1, col2, col3 = st.columns(3)
 
             col1.metric(
-                "BTA Alım Fiyatı",
+                "BTA Algoritma Fiyatı",
                 tl_format(bta_alim_fiyati)
             )
 
@@ -1078,6 +1761,133 @@ with tab_algoritmik:
             st.warning(
                 f"Algoritmik bilgiler alınamadı: {hata}"
             )
+
+
+# ==================================================
+# BTA GÜNLÜK ALGORİTMA (CANLI FİYATLAR)
+# ==================================================
+with tab_gunluk:
+    st.header("📅 BTA Günlük Algoritma")
+
+    if gunluk_algoritma_df.empty:
+        st.info(
+            "BTA Günlük Algoritma listesi bulunamadı. "
+            "Excel dosyasının B sütununa hisse kodlarını girin."
+        )
+    else:
+        _gunluk_hisseler = [
+            str(_h).strip().upper()
+            for _h in gunluk_algoritma_df["Hisse Kodu"].tolist()
+            if str(_h).strip()
+        ]
+
+        def _gunluk_tek_hisse(_hisse_kodu):
+            # Ne gelirse gelsin (float, None, NaN vb.) önce
+            # güvenli biçimde metne çevrilir; tek bir bozuk
+            # satır yüzünden tüm tarama durmasın diye fonksiyon
+            # hiçbir zaman hata fırlatmaz, hatayı veri olarak
+            # döndürür.
+            try:
+                _kod = str(_hisse_kodu).strip().upper()
+
+                if not _kod:
+                    return _hisse_kodu, None, None, "boş hisse kodu"
+
+                _sembol = _kod
+
+                if not _sembol.endswith(".IS"):
+                    _sembol += ".IS"
+
+                _son, _degisim, _hata = fiyat_degisim_getir(_sembol)
+                return _kod, _son, _degisim, _hata
+
+            except Exception as _ic_hata:
+                return _hisse_kodu, None, None, str(_ic_hata)
+
+        _gunluk_sonuclar = []
+        _gunluk_hatalar = []
+
+        try:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=15
+            ) as _gunluk_havuz:
+                for _h, _s, _d, _e in _gunluk_havuz.map(
+                    _gunluk_tek_hisse,
+                    _gunluk_hisseler
+                ):
+                    if _e is not None or _s is None:
+                        _gunluk_hatalar.append(f"{_h}: {_e}")
+                        continue
+
+                    _gunluk_sonuclar.append((_h, _s, _d))
+        except Exception as _hata:
+            st.error(f"Veri çekilirken hata oluştu: {_hata}")
+
+        # Güncelleme saati, Excel dosyasının yüklendiği anda bir kez
+        # oluşturulur ve bta_gunluk_durum.csv içinde SAKLANIR. Sayfa
+        # her 5 saniyede bir yenilense bile ekrandaki saat ve tarih
+        # AYNI KALIR (yükleme anındaki değer hiç değişmez).
+        _gunluk_zamani = _bta_gunluk_sabit_zaman
+
+        st.markdown(
+            f"""
+            <div style="
+                display: inline-block;
+                background: rgba(0, 245, 200, 0.12);
+                border: 1px solid rgba(0, 245, 200, 0.4);
+                border-radius: 20px;
+                padding: 5px 14px;
+                margin-bottom: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #00f5c8;
+            ">
+                🕒 Algoritmik İşlem  saati: {_gunluk_zamani}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if not _gunluk_sonuclar:
+            st.info(
+                "Şu anda canlı fiyat alınamadı, birazdan "
+                "tekrar denenecek."
+            )
+        else:
+            # Değişim yüzdesine göre büyükten küçüğe sıralanır
+            # (her yenilemede tutarlı şekilde aynı sıralama).
+            _gunluk_sonuclar = sorted(
+                _gunluk_sonuclar,
+                key=lambda _oge: _oge[2],
+                reverse=True
+            )
+
+            # Ekranda sınırlı genişlikte, ortalanmış tek kolon
+            # olarak gösterilir (telefon ekranına da sığar).
+            _, _gunluk_orta, _ = st.columns([1, 3, 1])
+
+            with _gunluk_orta:
+                for _h, _s, _d in _gunluk_sonuclar:
+                    _renk = "#00f5c8" if _d >= 0 else "#ff5264"
+
+                    st.markdown(
+                        hisse_karti_format(_h, _s, _d, _renk),
+                        unsafe_allow_html=True
+                    )
+
+        if _gunluk_hatalar:
+            with st.expander(
+                f"⚠️ {len(_gunluk_hatalar)} hisse için "
+                "veri alınamadı"
+            ):
+                for _satir in _gunluk_hatalar[:20]:
+                    st.code(_satir, language=None)
+
+        st.caption(
+            f"Toplam {len(gunluk_algoritma_df)} hisse "
+            "izleniyor. Veriler en az 15 dakika gecikmeli "
+            "olabilir ve yaklaşık 30 saniyede bir yenilenir."
+        )
 
 
 # ==================================================
@@ -1325,59 +2135,30 @@ with tab_bedelli:
 # CANLI SOHBET
 # ==================================================
 with tab_sohbet:
-    st.header("💬 Canlı Sohbet Odası")
+    st.header("💬 Sohbet")
 
     # ==================================================
-    # TAKİP VE BEĞENİ PANELİ
+    # BEĞENİ PANELİ
     # ==================================================
-    st.subheader("⭐ BTA Oda Takip Paneli")
-
     takip, begeni = istatistik_oku()
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns([2, 3])
 
     with col1:
-        if "takip_edildi" not in st.session_state:
-            st.session_state["takip_edildi"] = False
-
-        if not st.session_state["takip_edildi"]:
-            if st.button(
-                "⭐ Odayı Takip Et",
-                use_container_width=True
-            ):
-                takip += 1
-                istatistik_kaydet(takip, begeni)
-                st.session_state["takip_edildi"] = True
-                st.rerun()
-        else:
-            st.info("⭐ Odayı takip ediyorsunuz.")
+        if st.button(
+            "👍 Beğen",
+            use_container_width=True
+        ):
+            begeni += 1
+            istatistik_kaydet(takip, begeni)
 
     with col2:
-        if "begeni_verildi" not in st.session_state:
-            st.session_state["begeni_verildi"] = False
-
-        if not st.session_state["begeni_verildi"]:
-            if st.button(
-                "👍 Beğen",
-                use_container_width=True
-            ):
-                begeni += 1
-                istatistik_kaydet(takip, begeni)
-                st.session_state["begeni_verildi"] = True
-                st.rerun()
-        else:
-            st.info("👍 Beğeniniz kaydedildi.")
-
-    with col3:
-        st.metric("👥 Takipçi", f"{takip} kişi")
-
-    with col4:
-        st.metric("👍 Beğeni", f"{begeni}")
+        st.metric("Beğeni", f"{begeni}")
 
     st.divider()
 
     # ==================================================
-    # MESAJ FORMU
+    # MESAJ FORMU (MESAJ GÖNDERME ALANI ÜSTTE DURUR)
     # ==================================================
     st.subheader("💬 Mesaj Gönder")
 
@@ -1455,43 +2236,67 @@ with tab_sohbet:
             "Henüz mesaj bulunmuyor."
         )
     else:
-        for index, satir in mesajlar.iloc[::-1].iterrows():
-            mesaj_id = str(satir["mesaj_id"])
+        _mesaj_icerik = ""
 
-            col1, col2 = st.columns([10, 1])
-            
-            with col1:
-                st.markdown(
-                    f"""
-                    <div class="mesaj-karti">
-                        <strong>👤 {satir["kullanici"]}</strong>
-                        <small> · {satir["tarih"]}</small>
-                        <br>
-                        {satir["mesaj"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+        # En yeni mesaj en üstte olacak şekilde sıralanır
+        # (kaydırma çerçevesi içinde aşağı doğru akar).
+        for index, satir in mesajlar.iloc[::-1].iterrows():
+            _mesaj_id = str(satir["mesaj_id"])
+            _kullanici = html.escape(str(satir["kullanici"]))
+            _mesaj_metni = html.escape(
+                str(satir["mesaj"])
+            ).replace("\n", "<br>")
+
+            _mesaj_icerik += f"""
+            <div class="sohbet-kart">
+                <div class="sohbet-kart-baslik">
+                    👤 {_kullanici}
+                    <span class="sohbet-kart-saat">
+                        · {html.escape(str(satir["tarih"]))}
+                    </span>
+                </div>
+                <div class="sohbet-mesaj-metni">
+                    {_mesaj_metni}
+                </div>
+                {f"""
+                <div class="sohbet-silme">
+                    <a class="sohbet-sil-buton"
+                       href="?bta_sil={_mesaj_id}">
+                        🗑️ Sil
+                    </a>
+                </div>
+                """ if is_admin else ""}
+            </div>
+            """
+
+        # Mesajlar tek bir çerçeve içinde gösterilir; liste
+        # uzadıkça aşağı doğru kayar, içerik taşmaz.
+        st.markdown(
+            f"""
+            <div class="sohbet-cerceve">
+                {_mesaj_icerik}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if is_admin:
+            _silinecek_id = st.query_params.get("bta_sil")
+
+            if _silinecek_id:
+                mesajlar = mesajlar[
+                    mesajlar["mesaj_id"].astype(str)
+                    != str(_silinecek_id)
+                ]
+
+                mesajlar.to_csv(
+                    MESAJ_DOSYASI,
+                    index=False,
+                    encoding="utf-8-sig"
                 )
 
-            with col2:
-                if is_admin:
-                    if st.button(
-                        "🗑️",
-                        key=f"mesaj_sil_{mesaj_id}_{index}",
-                        help="Mesajı sil"
-                    ):
-                        mesajlar = mesajlar[
-                            mesajlar["mesaj_id"].astype(str)
-                            != mesaj_id
-                        ]
-
-                        mesajlar.to_csv(
-                            MESAJ_DOSYASI,
-                            index=False,
-                            encoding="utf-8-sig"
-                        )
-
-                        st.rerun()
+                st.query_params.clear()
+                st.rerun()
 
 
 # ==================================================
