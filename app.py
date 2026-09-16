@@ -1,5 +1,6 @@
 import os
 import hashlib
+import concurrent.futures
 from datetime import datetime
 import urllib.parse
 
@@ -287,6 +288,229 @@ def bedelli_bedelsiz_kart_format(sonuc):
 
 
 # ==================================================
+# BIST CANLI TARAMA LİSTESİ
+# ==================================================
+# Not: BIST'te en yaygın işlem gören ~120 hisseden oluşan sabit
+# bir tarama listesidir. Yahoo Finance / yfinance üzerinden BIST'in
+# tüm hisselerini veya anlık endeks bileşenlerini otomatik çeken
+# ücretsiz bir "screener" API'si bulunmadığı için, günün en çok
+# yükselen/düşen hisselerini bu listeyi canlı tarayarak buluyoruz.
+# Yeni hisse eklemek/çıkarmak için bu listeyi düzenlemeniz yeterli.
+BIST_TARAMA_LISTESI = [
+    "THYAO", "GARAN", "AKBNK", "ISCTR", "YKBNK", "SAHOL", "KCHOL",
+    "SASA", "EREGL", "BIMAS", "ASELS", "TUPRS", "PETKM", "PGSUS",
+    "TCELL", "TTKOM", "FROTO", "TOASO", "OTKAR", "ARCLK", "VESTL",
+    "ENKAI", "TAVHL", "MGROS", "SOKM", "CCOLA", "ULKER", "KOZAL",
+    "KOZAA", "KRDMD", "EKGYO", "HALKB", "VAKBN", "ISGYO", "SISE",
+    "TKFEN", "TRGYO", "ALARK", "AEFES", "DOHOL", "DOAS", "ANHYT",
+    "AGHOL", "AKSA", "AKSEN", "ALBRK", "ALGYO", "ALKIM", "ASUZU",
+    "AYGAZ", "BAGFS", "BANVT", "BERA", "BIOEN", "BRISA", "BRSAN",
+    "BRYAT", "BUCIM", "CANTE", "CEMTS", "CIMSA", "CLEBI", "ECILC",
+    "ECZYT", "EGEEN", "ENJSA", "EUPWR", "EUREN", "GESAN", "GLYHO",
+    "GOODY", "GOZDE", "GSDHO", "GUBRF", "HEKTS", "IPEKE", "ISMEN",
+    "IZMDC", "JANTS", "KARSN", "KARTN", "KLNMA", "KMPUR", "KONTR",
+    "KONYA", "KORDS", "KRDMA", "KRONT", "LOGO", "MAVI", "MPARK",
+    "NETAS", "NTHOL", "NUHCM", "ODAS", "OYAKC", "PARSN", "PENTA",
+    "PETUN", "PSGYO", "QUAGR", "RYSAS", "SARKY", "SELEC", "SKBNK",
+    "SMRTG", "SNGYO", "TATGD", "TKNSA", "TMSN", "TSKB", "TTRAK",
+    "TURSG", "ULUUN", "VAKKO", "VESBE", "YATAS", "YUNSA", "ZOREN",
+    "ZRGYO"
+]
+
+
+# ==================================================
+# TEK SEMBOL İÇİN FİYAT + DEĞİŞİM
+# ==================================================
+@st.cache_data(ttl=30, show_spinner=False)
+def fiyat_degisim_getir(sembol):
+    """
+    Tek bir sembol (hisse, endeks, döviz, emtia) için son fiyatı ve
+    önceki kapanışa göre değişim yüzdesini döndürür.
+    Hata durumunda (None, None, hata_metni) döner.
+    """
+    try:
+        hisse = yf.Ticker(sembol)
+        gecmis = hisse.history(period="5d", interval="1d")
+
+        if (
+            gecmis is None
+            or gecmis.empty
+            or "Close" not in gecmis.columns
+        ):
+            return None, None, "veri boş döndü"
+
+        kapanislar = gecmis["Close"].dropna()
+
+        if len(kapanislar) < 2:
+            return None, None, "yetersiz geçmiş veri"
+
+        onceki = float(kapanislar.iloc[-2])
+        son = float(kapanislar.iloc[-1])
+
+        if onceki <= 0 or pd.isna(onceki) or pd.isna(son):
+            return None, None, "geçersiz fiyat"
+
+        degisim = ((son - onceki) / onceki) * 100
+
+        return son, degisim, None
+
+    except Exception as hata:
+        return None, None, str(hata)
+
+
+# ==================================================
+# YÜKSELEN / DÜŞEN HİSSELER (CANLI TARAMA)
+# ==================================================
+@st.cache_data(ttl=30, show_spinner=False)
+def yukselen_dusen_hesapla(hisse_listesi):
+    """
+    Verilen hisse listesini paralel olarak tarar, her hisse için
+    günlük değişim yüzdesini hesaplar. Sonuçlar 30 saniye
+    önbelleklenir (Yahoo Finance'e aşırı istek gitmesin diye).
+    """
+    bos_sonuc = pd.DataFrame(
+        columns=["Hisse Kodu", "Fiyat", "Değişim %"]
+    )
+
+    if not hisse_listesi:
+        return bos_sonuc, []
+
+    semboller = {
+        h: (h if h.endswith(".IS") else f"{h}.IS")
+        for h in hisse_listesi
+    }
+
+    sonuclar = []
+    hatalar = []
+
+    def tek_hisse_getir(oge):
+        hisse, sembol = oge
+        son, degisim, hata = fiyat_degisim_getir(sembol)
+        return hisse, son, degisim, hata
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=20
+        ) as havuz:
+            for hisse, son, degisim, hata in havuz.map(
+                tek_hisse_getir,
+                semboller.items()
+            ):
+                if hata is not None or son is None:
+                    hatalar.append(f"{hisse}: {hata}")
+                    continue
+
+                sonuclar.append(
+                    {
+                        "Hisse Kodu": hisse,
+                        "Fiyat": son,
+                        "Değişim %": degisim
+                    }
+                )
+    except Exception as hata:
+        hatalar.append(f"Genel hata: {hata}")
+
+    if not sonuclar:
+        return bos_sonuc, hatalar
+
+    return pd.DataFrame(sonuclar), hatalar
+
+
+def hisse_karti_format(hisse_kodu, fiyat, degisim, renk):
+    durum = "📈" if degisim >= 0 else "📉"
+
+    return f"""
+    <div style="
+        background: rgba(0, 0, 0, 0.3);
+        border-left: 4px solid {renk};
+        border-radius: 5px;
+        padding: 9px 14px;
+        margin: 6px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    ">
+        <span style="font-weight: bold;">{hisse_kodu}</span>
+        <span style="color: #ccc;">{tl_format(fiyat)}</span>
+        <span style="color: {renk}; font-weight: bold;">
+            {durum} {degisim:+.2f}%
+        </span>
+    </div>
+    """
+
+
+# ==================================================
+# PİYASA ÖZETİ (BIST100 / USDTRY / EURTRY / GRAM ALTIN)
+# ==================================================
+@st.cache_data(ttl=30, show_spinner=False)
+def piyasa_ozeti_getir():
+    """
+    Ana endeks, döviz ve altın kartları için veri toplar.
+    Gram Altın (TL), ons altın (USD) fiyatının USDTRY ile çarpılıp
+    31.1035 gramlık ons ağırlığına bölünmesiyle yaklaşık hesaplanır.
+    """
+    sonuclar = []
+
+    bist_son, bist_degisim, bist_hata = fiyat_degisim_getir(
+        "XU100.IS"
+    )
+    sonuclar.append(
+        {
+            "isim": "BIST100",
+            "fiyat": bist_son,
+            "degisim": bist_degisim,
+            "tur": "sayi",
+            "hata": bist_hata
+        }
+    )
+
+    usd_son, usd_degisim, usd_hata = fiyat_degisim_getir("USDTRY=X")
+    sonuclar.append(
+        {
+            "isim": "USDTRY",
+            "fiyat": usd_son,
+            "degisim": usd_degisim,
+            "tur": "sayi",
+            "hata": usd_hata
+        }
+    )
+
+    eur_son, eur_degisim, eur_hata = fiyat_degisim_getir("EURTRY=X")
+    sonuclar.append(
+        {
+            "isim": "EURTRY",
+            "fiyat": eur_son,
+            "degisim": eur_degisim,
+            "tur": "sayi",
+            "hata": eur_hata
+        }
+    )
+
+    ons_son, ons_degisim, ons_hata = fiyat_degisim_getir("GC=F")
+
+    if ons_son is not None and usd_son is not None:
+        gram_fiyat = (ons_son / 31.1035) * usd_son
+        gram_degisim = ons_degisim
+        gram_hata = None
+    else:
+        gram_fiyat = None
+        gram_degisim = None
+        gram_hata = ons_hata or usd_hata or "veri alınamadı"
+
+    sonuclar.append(
+        {
+            "isim": "GRAM ALTIN (yakl.)",
+            "fiyat": gram_fiyat,
+            "degisim": gram_degisim,
+            "tur": "tl",
+            "hata": gram_hata
+        }
+    )
+
+    return sonuclar
+
+
+# ==================================================
 # TASARIM
 # ==================================================
 st.markdown(
@@ -328,6 +552,7 @@ st.markdown(
         overflow: hidden;
         white-space: nowrap;
         margin-bottom: 12px;
+        text-align: center;
     }
 
     .bta-logo {
@@ -340,17 +565,6 @@ st.markdown(
             0 0 8px #00f5c8,
             0 0 18px #00f5c8,
             0 0 28px #168cff;
-        animation: kayan_logo 14s linear infinite;
-    }
-
-    @keyframes kayan_logo {
-        0% {
-            transform: translateX(100vw);
-        }
-
-        100% {
-            transform: translateX(-100%);
-        }
     }
 
     .mesaj-karti {
@@ -961,15 +1175,17 @@ if excel_dosyalari:
 # ==================================================
 # PANELLER
 # ==================================================
-tab_algoritmik, tab_bedelli, tab_sohbet, tab_kayit, tab_paylas = st.tabs(
-    [
-        "🤖 Algoritmik Bilgiler",
-        "🧮 Bedelli/Bedelsiz- HESAPLAMA",
-        "💬 Sohbet",
-        "📒 Kayıtlar",
-        "🔗 Paylaş"
-    ]
-)
+tab_algoritmik, tab_piyasa, tab_bedelli, tab_sohbet, tab_kayit, \
+    tab_paylas = st.tabs(
+        [
+            "🤖 Algoritmik Bilgiler",
+            "📊 En Çok Yükselen / Düşen",
+            "🧮 Bedelli/Bedelsiz- HESAPLAMA",
+            "💬 Sohbet",
+            "📒 Kayıtlar",
+            "🔗 Paylaş"
+        ]
+    )
 
 
 # ==================================================
@@ -1078,6 +1294,158 @@ with tab_algoritmik:
             st.warning(
                 f"Algoritmik bilgiler alınamadı: {hata}"
             )
+
+
+# ==================================================
+# EN ÇOK YÜKSELEN / DÜŞEN HİSSELER (CANLI)
+# ==================================================
+with tab_piyasa:
+    st.header("📊 Borsada En Çok Yükselenler ve Düşenler")
+
+    # ==================================================
+    # PİYASA ÖZETİ KARTLARI
+    # ==================================================
+    ozet_veriler = piyasa_ozeti_getir()
+
+    ozet_kolonlar = st.columns(len(ozet_veriler))
+
+    for kolon, veri in zip(ozet_kolonlar, ozet_veriler):
+        if veri["fiyat"] is None:
+            kolon.metric(veri["isim"], "-")
+        else:
+            if veri["tur"] == "tl":
+                deger_metni = tl_format(veri["fiyat"])
+            else:
+                deger_metni = sayi_format(veri["fiyat"])
+
+            kolon.metric(
+                veri["isim"],
+                deger_metni,
+                f"{veri['degisim']:+.2f}%"
+                if veri["degisim"] is not None
+                else None
+            )
+
+    st.caption(
+        "BIST100, USDTRY ve EURTRY canlı piyasa verisidir "
+        "(en az 15 dk. gecikmeli olabilir). Gram Altın, "
+        "ons altın x USDTRY üzerinden yaklaşık hesaplanır."
+    )
+
+    st.divider()
+
+    # ==================================================
+    # TIKLANABİLİR GÖRÜNÜM: YÜKSELEN / DÜŞEN
+    # ==================================================
+    piyasa_df, piyasa_hatalari = yukselen_dusen_hesapla(
+        tuple(BIST_TARAMA_LISTESI)
+    )
+
+    if piyasa_df.empty:
+        st.info(
+            "Piyasa verisi şu anda alınamıyor, "
+            "birazdan tekrar denenecek."
+        )
+
+        with st.expander("🔧 Teknik detay (neden veri gelmiyor?)"):
+            if piyasa_hatalari:
+                st.write(
+                    f"Toplam {len(piyasa_hatalari)} sembol denendi, "
+                    "hiçbirinden veri alınamadı. İlk hatalar:"
+                )
+
+                for satir in piyasa_hatalari[:10]:
+                    st.code(satir, language=None)
+
+                st.markdown(
+                    "Olası sebepler: **(1)** uygulamanın çalıştığı "
+                    "sunucunun finance.yahoo.com'a çıkışı engelli, "
+                    "**(2)** Yahoo Finance çok sayıda istek nedeniyle "
+                    "geçici sınırlama (rate limit) uygulamış olabilir, "
+                    "**(3)** semboller Yahoo formatına uymuyor olabilir."
+                )
+            else:
+                st.write("Tarama listesi boş görünüyor.")
+    else:
+        if "piyasa_gorunum" not in st.session_state:
+            st.session_state["piyasa_gorunum"] = "yukselen"
+
+        col_btn1, col_btn2 = st.columns(2)
+
+        with col_btn1:
+            yukselen_secili = (
+                st.session_state["piyasa_gorunum"] == "yukselen"
+            )
+
+            if st.button(
+                "🚀 En Çok Yükselenler",
+                use_container_width=True,
+                type="primary" if yukselen_secili else "secondary",
+                key="btn_yukselen_goster"
+            ):
+                st.session_state["piyasa_gorunum"] = "yukselen"
+                st.rerun()
+
+        with col_btn2:
+            dusen_secili = (
+                st.session_state["piyasa_gorunum"] == "dusen"
+            )
+
+            if st.button(
+                "🔻 En Çok Düşenler",
+                use_container_width=True,
+                type="primary" if dusen_secili else "secondary",
+                key="btn_dusen_goster"
+            ):
+                st.session_state["piyasa_gorunum"] = "dusen"
+                st.rerun()
+
+        st.write("")
+
+        if st.session_state["piyasa_gorunum"] == "yukselen":
+            gosterilecek_liste = piyasa_df.sort_values(
+                "Değişim %",
+                ascending=False
+            )
+            renk = "#00f5c8"
+            baslik = "🚀 En Çok Yükselen Hisseler"
+        else:
+            gosterilecek_liste = piyasa_df.sort_values(
+                "Değişim %",
+                ascending=True
+            )
+            renk = "#ff5264"
+            baslik = "🔻 En Çok Düşen Hisseler"
+
+        st.markdown(f"##### {baslik}")
+
+        if gosterilecek_liste.empty:
+            st.caption("Veri yok.")
+        else:
+            for _, satir in gosterilecek_liste.head(20).iterrows():
+                st.markdown(
+                    hisse_karti_format(
+                        satir["Hisse Kodu"],
+                        satir["Fiyat"],
+                        satir["Değişim %"],
+                        renk
+                    ),
+                    unsafe_allow_html=True
+                )
+
+        if piyasa_hatalari:
+            with st.expander(
+                f"⚠️ {len(piyasa_hatalari)} sembol için veri alınamadı"
+            ):
+                for satir in piyasa_hatalari[:20]:
+                    st.code(satir, language=None)
+
+        st.caption(
+            f"BIST genelinde {len(BIST_TARAMA_LISTESI)} hisse "
+            "taranmaktadır (kişisel takip listenizden bağımsızdır). "
+            "Veriler en az 15 dakika gecikmeli olabilir ve yaklaşık "
+            "30 saniyede bir yenilenir."
+        )
 
 
 # ==================================================
