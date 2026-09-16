@@ -1397,6 +1397,60 @@ st.markdown(
     .sekme-baslik .sb-logo {
         font-size: 26px;
     }
+
+    /* QR paylaşım kartı - beyaz QR'ın çevresine platform
+       kimliği eklenir; telefonla okunabilir durumda kalır */
+    .qr-kart {
+        background: rgba(5, 18, 32, 0.96);
+        border: 1px solid rgba(0, 245, 200, 0.45);
+        border-top: 4px solid #00f5c8;
+        border-radius: 14px;
+        padding: 16px;
+        max-width: 360px;
+        margin: 0 auto;
+        text-align: center;
+        box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+    }
+
+    .qr-kart-ust {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #00f5c8;
+        margin-bottom: 12px;
+    }
+
+    .qr-kart-gorsel {
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 10px;
+        display: inline-block;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        max-width: 100%;
+    }
+
+    .qr-kart-gorsel img {
+        display: block;
+        width: 100%;
+        max-width: 240px;
+        height: auto;
+        border-radius: 4px;
+    }
+
+    .qr-kart-link {
+        font-size: 13px;
+        color: #9bd6ff;
+        word-break: break-all;
+        margin-top: 12px;
+        font-weight: 600;
+    }
+
+    .qr-kart-alt {
+        font-size: 12px;
+        color: #c8d6e2;
+        margin-top: 8px;
+        line-height: 1.5;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -2979,13 +3033,18 @@ with tab_paylas:
     st.divider()
 
     # ==================================================
-    # QR KOD
+    # QR KOD - NORMAL (SİYAH-BEYAZ), KART GÖRÜNÜMLÜ
     # ==================================================
     st.subheader("📱 QR Kod ile Hızlı Erişim")
 
     try:
+        import io
+        import base64
         import qrcode
-        
+
+        # Telefon kamerasının okuyabilmesi için QR her zaman
+        # SİYAH kareler + BEYAZ zemin olmalıdır. Önceki renkli
+        # (turkuaz/koyu lacivert) sürüm telefonlarda okunmuyordu.
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -2996,16 +3055,40 @@ with tab_paylas:
         qr.add_data(sayfa_url)
         qr.make(fit=True)
 
-        qr_img = qr.make_image(fill_color="00f5c8", back_color="07131f")
+        qr_img = qr.make_image(
+            fill_color="black",
+            back_color="white"
+        )
 
-        col1, col2, col3 = st.columns([1, 2, 1])
+        _qr_buf = io.BytesIO()
+        qr_img.save(_qr_buf, format="PNG")
+        _qr_b64 = (
+            base64.b64encode(
+                _qr_buf.getvalue()
+            ).decode("utf-8")
+        )
 
-        with col2:
-            st.image(
-                qr_img,
-                caption="QR Kodu tarayarak platforma erişin",
-                use_column_width=True
-            )
+        st.markdown(
+            f"""
+            <div class="qr-kart">
+                <div class="qr-kart-ust">
+                    📱 BTA Platform · Hızlı Erişim
+                </div>
+                <div class="qr-kart-gorsel">
+                    <img src="data:image/png;base64,{_qr_b64}"
+                         alt="BTA QR kodu" />
+                </div>
+                <div class="qr-kart-link">
+                    🔗 {sayfa_url}
+                </div>
+                <div class="qr-kart-alt">
+                    Kameranızla okutup paylaşın · Basıp
+                    arkadaşınıza gösterebilirsiniz
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     except ImportError:
         st.info("QR kod göstermek için: pip install qrcode[pil]")
