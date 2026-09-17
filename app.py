@@ -2253,34 +2253,29 @@ def mesaj_sesi_cal():
 # ==================================================
 # LOGO
 # ==================================================
-_bta_logo_svg = """
-    <svg class="bta-logo-ikon" viewBox="0 0 64 64"
-         xmlns="http://www.w3.org/2000/svg"
-         fill="none" stroke="currentColor"
-         stroke-width="2.4" stroke-linecap="round">
-        <line x1="12" y1="48" x2="24" y2="30" />
-        <line x1="24" y1="30" x2="36" y2="38" />
-        <line x1="36" y1="38" x2="52" y2="14" />
-        <line x1="12" y1="48" x2="52" y2="48" />
-        <circle cx="12" cy="48" r="4.6" fill="currentColor" stroke="none" />
-        <circle cx="24" cy="30" r="4.6" fill="currentColor" stroke="none" />
-        <circle cx="36" cy="38" r="4.6" fill="currentColor" stroke="none" />
-        <circle cx="52" cy="14" r="4.6" fill="currentColor" stroke="none" />
-    </svg>
-"""
-
-st.markdown(
-    f"""
-    <div class="bta-logo-alani">
-        <div class="bta-logo">
-            {_bta_logo_svg}
-            <span class="bta-logo-metin">BTA ALGORİTMİK İŞLEM</span>
-            {_bta_logo_svg}
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
+_bta_logo_svg = (
+    '<svg class="bta-logo-ikon" viewBox="0 0 64 64" '
+    'xmlns="http://www.w3.org/2000/svg" fill="none" '
+    'stroke="currentColor" stroke-width="2.4" stroke-linecap="round">'
+    '<line x1="12" y1="48" x2="24" y2="30" />'
+    '<line x1="24" y1="30" x2="36" y2="38" />'
+    '<line x1="36" y1="38" x2="52" y2="14" />'
+    '<line x1="12" y1="48" x2="52" y2="48" />'
+    '<circle cx="12" cy="48" r="4.6" fill="currentColor" stroke="none" />'
+    '<circle cx="24" cy="30" r="4.6" fill="currentColor" stroke="none" />'
+    '<circle cx="36" cy="38" r="4.6" fill="currentColor" stroke="none" />'
+    '<circle cx="52" cy="14" r="4.6" fill="currentColor" stroke="none" />'
+    '</svg>'
 )
+
+_bta_logo_html = (
+    '<div class="bta-logo-alani"><div class="bta-logo">'
+    + _bta_logo_svg
+    + '<span class="bta-logo-metin">BTA ALGORİTMİK İŞLEM</span>'
+    + '</div></div>'
+)
+
+st.markdown(_bta_logo_html, unsafe_allow_html=True)
 
 
 # ==================================================
