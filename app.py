@@ -1274,7 +1274,6 @@ st.markdown(
     .haber-bulteni-kart {
         background: #000000;
         border-left: 5px solid #3a3a3a;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 10px;
         padding: 20px 22px;
         margin: 12px 0;
