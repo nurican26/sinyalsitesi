@@ -619,39 +619,70 @@ def piyasa_ozeti_getir():
 @st.cache_data(ttl=600, show_spinner=False)
 def son_dakika_haberleri_getir():
     """
-    Google News ana (gündem) akışından son haberleri getirir.
-    SADECE ekonomi değil: TV haberleri ve gündem başlıkları da gelir.
-    Yalnızca son 48 saatte yayınlananlar listelenir; eski haberler atlanır.
+    Google News'ten SADECE genel/ekonomi ağırlıklı akış değil,
+    birden fazla kategoriden (yurt, dünya, spor, magazin, sağlık)
+    haber çekip karıştırır. Böylece bir TV ana haber bülteni gibi
+    çeşitli konular yer alır, tek bir konu (ör. ekonomi) baskın
+    olmaz. Yalnızca son 48 saatte yayınlananlar listelenir.
     """
+    _kategori_url_listesi = [
+        "https://news.google.com/rss?hl=tr&gl=TR&ceid=TR:tr",
+        "https://news.google.com/rss/headlines/section/topic/"
+        "NATION?hl=tr&gl=TR&ceid=TR:tr",
+        "https://news.google.com/rss/headlines/section/topic/"
+        "WORLD?hl=tr&gl=TR&ceid=TR:tr",
+        "https://news.google.com/rss/headlines/section/topic/"
+        "SPORTS?hl=tr&gl=TR&ceid=TR:tr",
+        "https://news.google.com/rss/headlines/section/topic/"
+        "ENTERTAINMENT?hl=tr&gl=TR&ceid=TR:tr",
+        "https://news.google.com/rss/headlines/section/topic/"
+        "HEALTH?hl=tr&gl=TR&ceid=TR:tr",
+    ]
+
+    def _tek_kategori_getir(_url):
+        try:
+            _yanit = requests.get(
+                _url,
+                timeout=12,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36"
+                    )
+                }
+            )
+            _kok = ET.fromstring(_yanit.content)
+            return _kok.findall(".//item")
+        except Exception:
+            return []
+
     try:
-        # Google News Türkiye ana gündem akışı (ekonomi + TV + genel)
-        url = "https://news.google.com/rss?hl=tr&gl=TR&ceid=TR:tr"
+        _tum_ogeler = []
 
-        yanit = requests.get(
-            url,
-            timeout=12,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36"
-                )
-            }
-        )
-
-        kok = ET.fromstring(yanit.content)
-        ogeler = kok.findall(".//item")
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(_kategori_url_listesi)
+        ) as _havuz:
+            for _ogeler in _havuz.map(
+                _tek_kategori_getir, _kategori_url_listesi
+            ):
+                _tum_ogeler.extend(_ogeler)
 
         simdi = turkiye_saati()
         sinir_zaman = simdi - timedelta(hours=48)
 
-        haberler = []
+        _gecici = []
+        _gorulen_basliklar = set()
 
-        for oge in ogeler:
+        for oge in _tum_ogeler:
             baslik = (oge.findtext("title") or "").strip()
             link = (oge.findtext("link") or "").strip()
             yayin = (oge.findtext("pubDate") or "").strip()
 
             if not baslik:
+                continue
+
+            _anahtar = baslik.strip().lower()
+            if _anahtar in _gorulen_basliklar:
                 continue
 
             try:
@@ -665,18 +696,20 @@ def son_dakika_haberleri_getir():
             if yayin_zamani < sinir_zaman:
                 continue
 
-            zaman = yayin_zamani.strftime("%H:%M")
+            _gorulen_basliklar.add(_anahtar)
+            _gecici.append((baslik, link, yayin_zamani))
 
-            haberler.append(
-                (
-                    html.escape(baslik),
-                    html.escape(link),
-                    html.escape(zaman)
-                )
+        # En yeniden en eskiye doğru karışık (kategoriler arası) sırala
+        _gecici.sort(key=lambda _oge: _oge[2], reverse=True)
+
+        haberler = [
+            (
+                html.escape(_b),
+                html.escape(_l),
+                html.escape(_z.strftime("%H:%M"))
             )
-
-            if len(haberler) >= 20:
-                break
+            for _b, _l, _z in _gecici[:20]
+        ]
 
         return haberler
 
