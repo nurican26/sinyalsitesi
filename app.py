@@ -1273,11 +1273,11 @@ st.markdown(
 
     .haber-bulteni-kart {
         background: #000000;
-        border-left: 4px solid #3a3a3a;
+        border-left: 5px solid #3a3a3a;
         border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        padding: 16px 18px;
-        margin: 8px 0;
+        border-radius: 10px;
+        padding: 20px 22px;
+        margin: 12px 0;
         transition: background 0.3s ease;
     }
 
@@ -1286,10 +1286,10 @@ st.markdown(
     }
 
     .haber-bulteni-saat {
-        font-size: 14px;
-        font-weight: 600;
-        color: #b0b0b0;
-        margin-bottom: 6px;
+        font-size: 17px;
+        font-weight: 700;
+        color: #cfcfcf;
+        margin-bottom: 10px;
     }
 
     /* GÜNCEL ARZ HABERLERİ - sade */
@@ -1298,18 +1298,18 @@ st.markdown(
     }
 
     .arz-kaynak {
-        color: #b0b0b0;
-        font-weight: 600;
+        color: #cfcfcf;
+        font-weight: 700;
     }
 
     .haber-bulteni-link,
     .haber-bulteni-cerceve .haber-bulteni-link {
         display: block;
-        color: #f2f2f2 !important;
+        color: #ffffff !important;
         text-decoration: none;
-        font-size: 18px;
-        font-weight: 600;
-        line-height: 1.45;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.55;
         word-break: break-word;
         text-shadow: none !important;
     }
@@ -1321,16 +1321,21 @@ st.markdown(
 
     @media screen and (max-width: 768px) {
         .haber-bulteni-baslik {
-            font-size: 15px;
+            font-size: 16px;
             padding: 10px 14px;
         }
 
-        .haber-bulteni-link {
+        .haber-bulteni-saat {
             font-size: 16px;
         }
 
+        .haber-bulteni-link {
+            font-size: 21px;
+            line-height: 1.5;
+        }
+
         .haber-bulteni-kart {
-            padding: 13px 14px;
+            padding: 16px 15px;
         }
     }
 
