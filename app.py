@@ -1305,7 +1305,7 @@ st.markdown(
     .haber-bulteni-cerceve .haber-bulteni-link {
         display: block;
         color: #ffffff !important;
-        text-decoration: none;
+        text-decoration: none !important;
         font-size: 24px;
         font-weight: 700;
         line-height: 1.55;
@@ -1315,7 +1315,7 @@ st.markdown(
 
     .haber-bulteni-link:hover {
         color: #ffffff !important;
-        text-decoration: underline;
+        text-decoration: underline !important;
     }
 
     @media screen and (max-width: 768px) {
