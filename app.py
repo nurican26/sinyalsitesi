@@ -920,15 +920,39 @@ st.markdown(
     }
 
     .bta-logo {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
         color: #00f5c8;
-        font-family: "Brush Script MT", "Segoe Script", cursive;
-        font-size: 58px;
-        font-weight: bold;
+    }
+
+    .bta-logo-ikon {
+        width: 46px;
+        height: 46px;
+        flex-shrink: 0;
+        filter: drop-shadow(0 0 6px #00f5c8)
+                drop-shadow(0 0 14px #168cff);
+    }
+
+    .bta-logo-metin {
+        display: inline-block;
+        font-family: "Consolas", "SFMono-Regular", "Menlo",
+                     "Courier New", monospace;
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
         text-shadow:
             0 0 8px #00f5c8,
             0 0 18px #00f5c8,
             0 0 28px #168cff;
+    }
+
+    .bta-logo-metin .bta-logo-parantez {
+        color: #ff5264;
+        text-shadow:
+            0 0 8px #ff5264,
+            0 0 18px #ff5264;
     }
 
     /* ============================================
@@ -1522,7 +1546,16 @@ st.markdown(
         }
 
         .bta-logo {
-            font-size: clamp(15px, 6.2vw, 33px);
+            gap: 6px;
+        }
+
+        .bta-logo-ikon {
+            width: clamp(22px, 8vw, 34px);
+            height: clamp(22px, 8vw, 34px);
+        }
+
+        .bta-logo-metin {
+            font-size: clamp(15px, 6.2vw, 28px);
         }
 
         [data-testid="stTabs"] button {
@@ -2232,7 +2265,20 @@ st.markdown(
     """
     <div class="bta-logo-alani">
         <div class="bta-logo">
-            BTA ALGORİTMİK İŞLEM
+            <svg class="bta-logo-ikon" viewBox="0 0 64 64"
+                 xmlns="http://www.w3.org/2000/svg"
+                 fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round">
+                <line x1="12" y1="48" x2="24" y2="30" />
+                <line x1="24" y1="30" x2="36" y2="38" />
+                <line x1="36" y1="38" x2="52" y2="14" />
+                <line x1="12" y1="48" x2="52" y2="48" />
+                <circle cx="12" cy="48" r="4.6" fill="currentColor" stroke="none" />
+                <circle cx="24" cy="30" r="4.6" fill="currentColor" stroke="none" />
+                <circle cx="36" cy="38" r="4.6" fill="currentColor" stroke="none" />
+                <circle cx="52" cy="14" r="4.6" fill="currentColor" stroke="none" />
+            </svg>
+            <span class="bta-logo-metin"><span class="bta-logo-parantez">&lt;</span>BTA ALGORİTMİK İŞLEM<span class="bta-logo-parantez">/&gt;</span></span>
         </div>
     </div>
     """,
@@ -2646,7 +2692,7 @@ st.markdown(
 )
 
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
-    tab_arz, tab_teknik, tab_kayit, tab_paylas, tab_sermaye = st.tabs(
+    tab_arz, tab_sermaye, tab_teknik, tab_kayit, tab_paylas = st.tabs(
         [
             "🤖 BTA Algoritmik HİSSELER",
             "📅 BTA Günlük Algoritma HİSSELER",
@@ -2654,10 +2700,10 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
             "💬 Sohbet",
             "📰 Haber Bülteni",
             "🚀 Güncel Arz Haberleri",
+            "📢 Bedelli/Bedelsiz Haberleri",
             "📊 Teknik Analiz",
             "📒 Kayıtlar",
-            "🔗 Paylaş",
-            "📢 Bedelli/Bedelsiz Haberleri"
+            "🔗 Paylaş"
         ]
     )
 
