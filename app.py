@@ -2209,14 +2209,45 @@ st.markdown(
 BTA_DURUM_DOSYASI = "bta_gunluk_durum.csv"
 
 
+def _aktif_excel_kimligi():
+    """
+    Klasördeki güncel BTA excel dosyasının "kimliğini"
+    (dosya adı + son değiştirilme zamanı) döndürür. Yeni bir
+    excel yüklendiğinde bu kimlik değişir; böylece aşağıdaki
+    bta_gunluk_zaman_yukle() fonksiyonu YENİ bir excel geldiğini
+    anlayıp güncelleme saatini yeniler.
+    """
+    try:
+        _dosyalar = [
+            _d for _d in os.listdir(".")
+            if _d.lower().endswith((".xlsx", ".xlsm"))
+        ]
+        _dosyalar.sort(
+            key=lambda _ad: (
+                not _ad.lower().startswith("bta"),
+                _ad.lower()
+            )
+        )
+        if not _dosyalar:
+            return ""
+        _secilen = _dosyalar[0]
+        return f"{_secilen}:{os.path.getmtime(_secilen)}"
+    except Exception:
+        return ""
+
+
 def bta_gunluk_zaman_yukle():
     """
     "BTA Günlük Algoritma" bölümünün güncelleme saati ve tarihi,
-    Excel dosyasının yüklendiği İLK anda bir kez üretilir ve
-    'bta_gunluk_durum.csv' dosyasına yazılır. Sayfa her yenilenmede
-    bu kaydedilmiş saat yeniden okunur, yani saat/tarih ekranda
-    hiçbir yenilemede DEĞİŞMEZ (sabit kalır).
+    o an yüklü olan Excel dosyası DEĞİŞMEDİĞİ sürece
+    'bta_gunluk_durum.csv' dosyasından okunur (yani sayfa her
+    yenilenmede saat/tarih SABİT kalır). Ancak YENİ bir excel
+    dosyası yüklendiğinde (dosya adı veya değişiklik zamanı
+    farklıysa) saat otomatik olarak Türkiye saatine göre
+    yeniden üretilir.
     """
+    _kimlik = _aktif_excel_kimligi()
+
     try:
         if os.path.exists(BTA_DURUM_DOSYASI):
             durum = pd.read_csv(
@@ -2224,7 +2255,12 @@ def bta_gunluk_zaman_yukle():
                 encoding="utf-8-sig"
             )
 
-            if not durum.empty and "guncel_zaman" in durum.columns:
+            if (
+                not durum.empty
+                and "guncel_zaman" in durum.columns
+                and "excel_kimlik" in durum.columns
+                and str(durum.iloc[0]["excel_kimlik"]).strip() == _kimlik
+            ):
                 deger = str(durum.iloc[0]["guncel_zaman"]).strip()
                 if deger:
                     return deger
@@ -2235,7 +2271,7 @@ def bta_gunluk_zaman_yukle():
 
     try:
         pd.DataFrame(
-            [{"guncel_zaman": zaman}]
+            [{"guncel_zaman": zaman, "excel_kimlik": _kimlik}]
         ).to_csv(
             BTA_DURUM_DOSYASI,
             index=False,
