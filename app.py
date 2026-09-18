@@ -1709,6 +1709,11 @@ st.markdown(
             font-size: 12px !important;
             padding: 7px 4px !important;
             flex: 0 0 auto !important;
+            line-height: 1.2;
+        }
+
+        .stTabs [data-baseweb="tab-list"] {
+            -webkit-overflow-scrolling: touch;
         }
 
         .spk-uyari {
@@ -1734,9 +1739,25 @@ st.markdown(
         background: rgba(0, 245, 200, 0.07);
         border: 1px solid rgba(0, 245, 200, 0.35);
         border-radius: 10px;
-        padding: 6px 6px 0 6px;
+        padding: 6px 6px 2px 6px;
         gap: 4px;
         overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 245, 200, 0.55) rgba(0, 245, 200, 0.08);
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track {
+        background: rgba(0, 245, 200, 0.08);
+        border-radius: 10px;
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
+        background: rgba(0, 245, 200, 0.55);
+        border-radius: 10px;
     }
 
     .stTabs [data-baseweb="tab"] {
@@ -1749,6 +1770,13 @@ st.markdown(
         margin: 2px 1px !important;
         border: 1px solid rgba(255, 255, 255, 0.1);
         flex: 0 0 auto !important;
+    }
+
+    .stTabs [data-baseweb="tab"] img {
+        width: 18px;
+        height: 18px;
+        vertical-align: middle;
+        margin-right: 4px;
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(1),
@@ -2475,6 +2503,23 @@ _bta_logo_kucuk_svg = (
     '</svg>'
 )
 
+# Tab etiketlerinde güvenle kullanılabilecek sabit renkli,
+# base64 gömülü BTA logosu (özel karakter içermez).
+_bta_logo_b64 = (
+    "PHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIHhtbG5zPSJodHRwOi8vd3d3Lncz"
+    "Lm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmNWM4IiBz"
+    "dHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PGxpbmUg"
+    "eDE9IjEyIiB5MT0iNDgiIHgyPSIyNCIgeTI9IjMwIi8+PGxpbmUgeDE9IjI0"
+    "IiB5MT0iMzAiIHgyPSIzNiIgeTI9IjM4Ii8+PGxpbmUgeDE9IjM2IiB5MT0i"
+    "MzgiIHgyPSI1MiIgeTI9IjE0Ii8+PGxpbmUgeDE9IjEyIiB5MT0iNDgiIHgy"
+    "PSI1MiIgeTI9IjQ4Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSI0OCIgcj0iNC42"
+    "IiBmaWxsPSIjMDBmNWM4IiBzdHJva2U9Im5vbmUiLz48Y2lyY2xlIGN4PSIy"
+    "NCIgY3k9IjMwIiByPSI0LjYiIGZpbGw9IiMwMGY1YzgiIHN0cm9rZT0ibm9u"
+    "ZSIvPjxjaXJjbGUgY3g9IjM2IiBjeT0iMzgiIHI9IjQuNiIgZmlsbD0iIzAw"
+    "ZjVjOCIgc3Ryb2tlPSJub25lIi8+PGNpcmNsZSBjeD0iNTIiIGN5PSIxNCIg"
+    "cj0iNC42IiBmaWxsPSIjMDBmNWM4IiBzdHJva2U9Im5vbmUiLz48L3N2Zz4="
+)
+
 _bta_logo_html = (
     '<div class="bta-logo-alani"><div class="bta-logo">'
     + _bta_logo_svg
@@ -2866,7 +2911,8 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
     tab_kap, tab_spk, tab_arz, tab_sermaye, tab_teknik, \
     tab_kayit, tab_paylas = st.tabs(
         [
-            "BTA",
+            f"![BTA](data:image/svg+xml;base64,{_bta_logo_b64}) "
+            "BTA ALGORİTMİK İŞLEM",
             "📅 Günlük Algoritma",
             "🧮 Bedelli/Bedelsiz HESAP",
             "💬 Sohbet",
