@@ -877,6 +877,161 @@ def bedelli_bedelsiz_haberleri_getir():
         return []
 
 
+# ==================================================
+# KAP HABERLERİ - GOOGLE NEWS ARAMA
+# ==================================================
+@st.cache_data(ttl=600, show_spinner=False)
+def kap_haberleri_getir():
+    """
+    Google News'te 'KAP (Kamuyu Aydınlatma Platformu)' konulu son
+    haberleri getirir. Yalnızca son 48 saatte yayınlananlar listelenir.
+    """
+    try:
+        sorgu = urllib.parse.quote_plus(
+            '"KAP" OR "Kamuyu Aydınlatma Platformu" '
+            'OR "KAP bildirim" OR "özel durum açıklaması"'
+        )
+
+        url = (
+            "https://news.google.com/rss/search?q="
+            f"{sorgu}&hl=tr&gl=TR&ceid=TR:tr"
+        )
+
+        yanit = requests.get(
+            url,
+            timeout=12,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36"
+                )
+            }
+        )
+
+        kok = ET.fromstring(yanit.content)
+        ogeler = kok.findall(".//item")
+
+        simdi = turkiye_saati()
+        sinir_zaman = simdi - timedelta(hours=48)
+
+        haberler = []
+
+        for oge in ogeler:
+            baslik = (oge.findtext("title") or "").strip()
+            link = (oge.findtext("link") or "").strip()
+            yayin = (oge.findtext("pubDate") or "").strip()
+            kaynak = (oge.findtext("source") or "").strip()
+
+            if not baslik:
+                continue
+
+            try:
+                yayin_zamani = parsedate_to_datetime(
+                    yayin
+                ).astimezone(TURKIYE_TZ)
+            except Exception:
+                continue
+
+            if yayin_zamani < sinir_zaman:
+                continue
+
+            zaman = yayin_zamani.strftime("%H:%M")
+
+            haberler.append(
+                (
+                    html.escape(baslik),
+                    html.escape(link),
+                    html.escape(zaman),
+                    html.escape(kaynak)
+                )
+            )
+
+            if len(haberler) >= 20:
+                break
+
+        return haberler
+
+    except Exception:
+        return []
+
+
+# ==================================================
+# SPK HABERLERİ - GOOGLE NEWS ARAMA
+# ==================================================
+@st.cache_data(ttl=600, show_spinner=False)
+def spk_haberleri_getir():
+    """
+    Google News'te 'SPK (Sermaye Piyasası Kurulu)' konulu son
+    haberleri getirir. Yalnızca son 48 saatte yayınlananlar listelenir.
+    """
+    try:
+        sorgu = urllib.parse.quote_plus(
+            '"SPK" OR "Sermaye Piyasası Kurulu" OR "SPK açıklama"'
+        )
+
+        url = (
+            "https://news.google.com/rss/search?q="
+            f"{sorgu}&hl=tr&gl=TR&ceid=TR:tr"
+        )
+
+        yanit = requests.get(
+            url,
+            timeout=12,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36"
+                )
+            }
+        )
+
+        kok = ET.fromstring(yanit.content)
+        ogeler = kok.findall(".//item")
+
+        simdi = turkiye_saati()
+        sinir_zaman = simdi - timedelta(hours=48)
+
+        haberler = []
+
+        for oge in ogeler:
+            baslik = (oge.findtext("title") or "").strip()
+            link = (oge.findtext("link") or "").strip()
+            yayin = (oge.findtext("pubDate") or "").strip()
+            kaynak = (oge.findtext("source") or "").strip()
+
+            if not baslik:
+                continue
+
+            try:
+                yayin_zamani = parsedate_to_datetime(
+                    yayin
+                ).astimezone(TURKIYE_TZ)
+            except Exception:
+                continue
+
+            if yayin_zamani < sinir_zaman:
+                continue
+
+            zaman = yayin_zamani.strftime("%H:%M")
+
+            haberler.append(
+                (
+                    html.escape(baslik),
+                    html.escape(link),
+                    html.escape(zaman),
+                    html.escape(kaynak)
+                )
+            )
+
+            if len(haberler) >= 20:
+                break
+
+        return haberler
+
+    except Exception:
+        return []
+
+
 st.markdown(
     """
     <style>
@@ -1714,6 +1869,30 @@ st.markdown(
         text-shadow: 0 0 10px rgba(199, 125, 255, 0.7);
     }
 
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(11),
+    .stTabs [data-baseweb="tab"]:nth-of-type(11) {
+        color: #66d9ff !important;
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(102, 217, 255, 0.22),
+            rgba(102, 217, 255, 0.07)
+        ) !important;
+        border-color: rgba(102, 217, 255, 0.55) !important;
+        text-shadow: 0 0 10px rgba(102, 217, 255, 0.7);
+    }
+
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(12),
+    .stTabs [data-baseweb="tab"]:nth-of-type(12) {
+        color: #ff9f43 !important;
+        background: radial-gradient(
+            circle at 30% 30%,
+            rgba(255, 159, 67, 0.22),
+            rgba(255, 159, 67, 0.07)
+        ) !important;
+        border-color: rgba(255, 159, 67, 0.55) !important;
+        text-shadow: 0 0 10px rgba(255, 159, 67, 0.7);
+    }
+
     .stTabs button[role="tab"][aria-selected="true"] {
         color: #ffffff !important;
         font-weight: 800 !important;
@@ -1770,6 +1949,16 @@ st.markdown(
     .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(10) {
         background: rgba(199, 125, 255, 0.45) !important;
         border-color: #c77dff !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(11) {
+        background: rgba(102, 217, 255, 0.45) !important;
+        border-color: #66d9ff !important;
+    }
+
+    .stTabs button[role="tab"][aria-selected="true"]:nth-of-type(12) {
+        background: rgba(255, 159, 67, 0.45) !important;
+        border-color: #ff9f43 !important;
     }
 
     .stTabs [role="tablist"] [aria-selected="true"] + *::before,
@@ -2268,6 +2457,22 @@ _bta_logo_svg = (
     '</svg>'
 )
 
+_bta_logo_kucuk_svg = (
+    '<svg style="width:32px;height:32px;vertical-align:middle;" '
+    'viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" '
+    'fill="none" stroke="currentColor" stroke-width="3" '
+    'stroke-linecap="round">'
+    '<line x1="12" y1="48" x2="24" y2="30" />'
+    '<line x1="24" y1="30" x2="36" y2="38" />'
+    '<line x1="36" y1="38" x2="52" y2="14" />'
+    '<line x1="12" y1="48" x2="52" y2="48" />'
+    '<circle cx="12" cy="48" r="4.6" fill="currentColor" stroke="none" />'
+    '<circle cx="24" cy="30" r="4.6" fill="currentColor" stroke="none" />'
+    '<circle cx="36" cy="38" r="4.6" fill="currentColor" stroke="none" />'
+    '<circle cx="52" cy="14" r="4.6" fill="currentColor" stroke="none" />'
+    '</svg>'
+)
+
 _bta_logo_html = (
     '<div class="bta-logo-alani"><div class="bta-logo">'
     + _bta_logo_svg
@@ -2314,51 +2519,38 @@ def _aktif_excel_kimligi():
 def bta_gunluk_zaman_yukle():
     """
     "BTA Günlük Algoritma" bölümünün güncelleme saati ve tarihi,
-    o an yüklü olan Excel dosyası DEĞİŞMEDİĞİ sürece
-    'bta_gunluk_durum.csv' dosyasından okunur (yani sayfa her
-    yenilenmede saat/tarih SABİT kalır). Ancak YENİ bir excel
-    dosyası yüklendiğinde (dosya adı veya değişiklik zamanı
-    farklıysa) saat otomatik olarak Türkiye saatine göre
-    yeniden üretilir.
+    o an yüklü olan Excel dosyasının SON DEĞİŞTİRİLME zamanından
+    (dosyanın üzerine yazıldığı/yüklendiği andan) Türkiye saatine
+    göre hesaplanır. Yeni bir excel yüklediğinizde dosyanın
+    değişiklik zamanı güncellendiği için ekrandaki saat de yeni
+    yükleme saatini gösterir; dosya aynı kaldığı sürece saat sabit
+    kalır.
     """
-    _kimlik = _aktif_excel_kimligi()
-
     try:
-        if os.path.exists(BTA_DURUM_DOSYASI):
-            durum = pd.read_csv(
-                BTA_DURUM_DOSYASI,
-                encoding="utf-8-sig"
+        _dosyalar = [
+            _d for _d in os.listdir(".")
+            if _d.lower().endswith((".xlsx", ".xlsm"))
+        ]
+        _dosyalar.sort(
+            key=lambda _ad: (
+                not _ad.lower().startswith("bta"),
+                _ad.lower()
             )
-
-            if (
-                not durum.empty
-                and "guncel_zaman" in durum.columns
-                and "excel_kimlik" in durum.columns
-                and str(durum.iloc[0]["excel_kimlik"]).strip() == _kimlik
-            ):
-                deger = str(durum.iloc[0]["guncel_zaman"]).strip()
-                if deger:
-                    return deger
-    except Exception:
-        pass
-
-    zaman = turkiye_saati().strftime("%d.%m.%Y %H:%M:%S")
-
-    try:
-        pd.DataFrame(
-            [{"guncel_zaman": zaman, "excel_kimlik": _kimlik}]
-        ).to_csv(
-            BTA_DURUM_DOSYASI,
-            index=False,
-            encoding="utf-8-sig"
         )
+        if _dosyalar:
+            _secilen = _dosyalar[0]
+            _mt = os.path.getmtime(_secilen)
+            return datetime.fromtimestamp(
+                _mt, TURKIYE_TZ
+            ).strftime("%d.%m.%Y %H:%M:%S")
     except Exception:
         pass
 
-    return zaman
+    return turkiye_saati().strftime("%d.%m.%Y %H:%M:%S")
 
 
-# Güncelleme saati sayfanın ilk açılışında oluşturulup sabitlenir.
+# Güncelleme saati her çizimde Excel'in gerçek değişiklik zamanından okunur;
+# böylece yeni yüklenen dosyanın saati hiçbir zaman eski/yanlış kalmaz.
 _bta_gunluk_sabit_zaman = bta_gunluk_zaman_yukle()
 
 
@@ -2684,13 +2876,16 @@ st.markdown(
 )
 
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
-    tab_arz, tab_sermaye, tab_teknik, tab_kayit, tab_paylas = st.tabs(
+    tab_kap, tab_spk, tab_arz, tab_sermaye, tab_teknik, \
+    tab_kayit, tab_paylas = st.tabs(
         [
-            "🤖 BTA Algoritmik HİSSELER",
-            "📅 BTA Günlük Algoritma HİSSELER",
+            "🤖 Algoritmik HİSSELER",
+            "📅 Günlük Algoritma HİSSELER",
             "🧮 Bedelli/Bedelsiz- HESAPLAMA",
             "💬 Sohbet",
             "📰 Haber Bülteni",
+            "🏛 KAP Haberleri",
+            "🛡 SPK Haberleri",
             "🚀 Güncel Arz Haberleri",
             "📢 Bedelli/Bedelsiz Haberleri",
             "📊 Teknik Analiz",
@@ -2706,14 +2901,14 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
 with tab_algoritmik:
     st.markdown(
         sekme_baslik_format(
-            "🤖", "Algoritmik Bilgiler", "#00f5c8"
+            _bta_logo_kucuk_svg, "Algoritmik Bilgiler", "#00f5c8"
         ),
         unsafe_allow_html=True
     )
 
     if excel_df.empty:
         st.warning(
-            "BTA alım fiyatı bulunan hisse bulunamadı."
+            "Tarama da herhangi bir hisse bulunamadı."
         )
     else:
         secilen_hisse = st.selectbox(
@@ -2823,7 +3018,7 @@ with tab_algoritmik:
 with tab_gunluk:
     st.markdown(
         sekme_baslik_format(
-            "📅", "BTA Günlük Algoritma", "#4da6ff"
+            _bta_logo_kucuk_svg, "Günlük Algoritma", "#4da6ff"
         ),
         unsafe_allow_html=True
     )
@@ -2834,8 +3029,7 @@ with tab_gunluk:
         arka planda güncellenir (st.fragment)."""
         if gunluk_algoritma_df.empty:
             st.info(
-                "BTA Günlük Algoritma listesi bulunamadı. "
-                "Excel dosyasının B sütununa hisse kodlarını girin."
+                "Tarama da herhangi bir hisse bulunamadı."
             )
         else:
             _gunluk_hisseler = [
@@ -2886,10 +3080,10 @@ with tab_gunluk:
             except Exception as _hata:
                 st.error(f"Veri çekilirken hata oluştu: {_hata}")
 
-            # Güncelleme saati, Excel dosyasının yüklendiği anda bir kez
-            # oluşturulur ve bta_gunluk_durum.csv içinde SAKLANIR. Sayfa
-            # her yenilenmede ekrandaki saat ve tarih AYNI KALIR.
-            _gunluk_zamani = _bta_gunluk_sabit_zaman
+            # Güncelleme saati, Excel dosyasının gerçek değişiklik
+            # zamanından her çizimde okunur; aynı dosya durdukça sabit
+            # kalır, yeni bir Excel yüklenince otomatik güncellenir.
+            _gunluk_zamani = bta_gunluk_zaman_yukle()
 
             st.markdown(
                 f"""
@@ -3558,6 +3752,135 @@ with tab_haber:
         "Haberler Google News gündem akışından alınır; "
         "yalnızca bugün yayınlananlar listelenir. "
         "Başlığa dokunarak haber kaynağına gidebilirsiniz."
+    )
+
+
+# ==================================================
+# KAP HABERLERİ (Kamuyu Aydınlatma Platformu)
+# ==================================================
+with tab_kap:
+    _kap_haberler = kap_haberleri_getir()
+
+    st.markdown(
+        f"""
+        <div class="sekme-baslik" style="
+            border-left-color: #ffd166;
+            border-color: #ffd166;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 209, 102, 0.22),
+                rgba(255, 209, 102, 0.06)
+            );
+            box-shadow: 0 0 18px rgba(255, 209, 102, 0.3);
+        ">
+            <span class="sb-logo">
+                {_bta_logo_kucuk_svg}
+            </span>
+            <span style="color: #ffd166;
+                         text-shadow: 0 0 14px rgba(255, 209, 102, 0.8);">
+                KAP HABERLERİ
+            </span>
+            <span class="sekme-baslik-tarih">Son 48 Saat</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if not _kap_haberler:
+        st.info(
+            "Şu anda KAP haberi bulunamadı, birazdan "
+            "tekrar deneniyor."
+        )
+    else:
+        for (
+            _baslik, _link, _zaman, _kaynak
+        ) in _kap_haberler:
+            st.markdown(
+                f"""
+                <div class="haber-bulteni-kart arz-kart">
+                    <div class="haber-bulteni-saat">
+                        🕒 {_zaman}
+                        <span class="arz-kaynak">
+                            · {_kaynak or "Haber"}
+                        </span>
+                    </div>
+                    <a href="{_link}" target="_blank"
+                       class="haber-bulteni-link">
+                        {_baslik}
+                    </a>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.caption(
+        "KAP haberleri Google News arama akışından alınır; "
+        "her 10 dakikada bir tazelenir. Kesin bilgi için "
+        "Kamuyu Aydınlatma Platformu (KAP) sitesini kontrol edin."
+    )
+
+
+# ==================================================
+# SPK HABERLERİ (Sermaye Piyasası Kurulu)
+# ==================================================
+with tab_spk:
+    _spk_haberler = spk_haberleri_getir()
+
+    st.markdown(
+        f"""
+        <div class="sekme-baslik" style="
+            border-left-color: #7ddb6e;
+            border-color: #7ddb6e;
+            background: linear-gradient(
+                90deg,
+                rgba(125, 219, 110, 0.22),
+                rgba(125, 219, 110, 0.06)
+            );
+            box-shadow: 0 0 18px rgba(125, 219, 110, 0.3);
+        ">
+            <span class="sb-logo">
+                {_bta_logo_kucuk_svg}
+            </span>
+            <span style="color: #7ddb6e;
+                         text-shadow: 0 0 14px rgba(125, 219, 110, 0.8);">
+                SPK HABERLERİ
+            </span>
+            <span class="sekme-baslik-tarih">Son 48 Saat</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if not _spk_haberler:
+        st.info(
+            "Şu anda SPK haberi bulunamadı, birazdan "
+            "tekrar deneniyor."
+        )
+    else:
+        for (
+            _baslik, _link, _zaman, _kaynak
+        ) in _spk_haberler:
+            st.markdown(
+                f"""
+                <div class="haber-bulteni-kart arz-kart">
+                    <div class="haber-bulteni-saat">
+                        🕒 {_zaman}
+                        <span class="arz-kaynak">
+                            · {_kaynak or "Haber"}
+                        </span>
+                    </div>
+                    <a href="{_link}" target="_blank"
+                       class="haber-bulteni-link">
+                        {_baslik}
+                    </a>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.caption(
+        "SPK haberleri Google News arama akışından alınır; "
+        "her 10 dakikada bir tazelenir. Yatırım tavsiyesi değildir."
     )
 
 
