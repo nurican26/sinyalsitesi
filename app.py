@@ -1708,6 +1708,12 @@ st.markdown(
         [data-testid="stTabs"] button {
             font-size: 10px !important;
             padding: 7px 4px !important;
+            flex: 0 0 auto !important;
+        }
+
+        [data-testid="stTabs"] [data-baseweb="tab-list"] {
+            flex-wrap: wrap;
+            overflow-x: visible;
         }
 
         .spk-uyari {
@@ -1735,7 +1741,9 @@ st.markdown(
         border-radius: 10px;
         padding: 6px 6px 0 6px;
         gap: 4px;
-        overflow-x: auto;
+        flex-wrap: wrap;
+        overflow-x: visible;
+        overflow-y: visible;
     }
 
     .stTabs [data-baseweb="tab"] {
@@ -1747,6 +1755,7 @@ st.markdown(
         border-radius: 8px !important;
         margin: 2px 1px !important;
         border: 1px solid rgba(255, 255, 255, 0.1);
+        flex: 0 0 auto !important;
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(1),
@@ -2881,13 +2890,13 @@ tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
         [
             "🤖 Algoritmik HİSSELER",
             "📅 Günlük Algoritma HİSSELER",
-            "🧮 Bedelli/Bedelsiz- HESAPLAMA",
+            "🧮 Bedelli/Bedelsiz HESAP",
             "💬 Sohbet",
             "📰 Haber Bülteni",
             "🏛 KAP Haberleri",
             "🛡 SPK Haberleri",
             "🚀 Güncel Arz Haberleri",
-            "📢 Bedelli/Bedelsiz Haberleri",
+            "📢 Bedelli/Sermaye Haberleri",
             "📊 Teknik Analiz",
             "📒 Kayıtlar",
             "🔗 Paylaş"
