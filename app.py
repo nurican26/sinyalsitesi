@@ -1707,15 +1707,8 @@ st.markdown(
 
         [data-testid="stTabs"] button {
             font-size: 12px !important;
-            padding: 8px 5px !important;
-            flex: 1 1 0% !important;
-            min-width: 0;
-            justify-content: center;
-        }
-
-        [data-testid="stTabs"] [data-baseweb="tab-list"] {
-            flex-wrap: wrap;
-            overflow-x: visible;
+            padding: 7px 4px !important;
+            flex: 0 0 auto !important;
         }
 
         .spk-uyari {
@@ -1743,26 +1736,19 @@ st.markdown(
         border-radius: 10px;
         padding: 6px 6px 0 6px;
         gap: 4px;
-        flex-wrap: wrap;
-        overflow-x: visible;
-        overflow-y: visible;
+        overflow-x: auto;
     }
 
     .stTabs [data-baseweb="tab"] {
-        font-size: 15px !important;
+        font-size: 16px !important;
         font-weight: 800 !important;
         letter-spacing: 0.3px;
-        padding: 10px 8px !important;
+        padding: 10px 14px !important;
         white-space: nowrap;
         border-radius: 8px !important;
         margin: 2px 1px !important;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        flex: 1 1 0% !important;
-        min-width: 0;
-        justify-content: center;
-        text-align: center;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        flex: 0 0 auto !important;
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(1),
