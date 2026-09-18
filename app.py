@@ -1706,9 +1706,23 @@ st.markdown(
         }
 
         [data-testid="stTabs"] button {
-            font-size: 10px !important;
-            padding: 7px 4px !important;
-            flex: 0 0 auto !important;
+            font-size: 12px !important;
+            padding: 8px 5px !important;
+            flex: 1 1 0% !important;
+            min-width: 0;
+            justify-content: center;
+        }
+
+        [data-testid="stTabs"] [data-baseweb="tab"] {
+            white-space: normal !important;
+        }
+
+        .stTabs [data-baseweb="tab-list"] button:nth-of-type(1)::before,
+        .stTabs [data-baseweb="tab-list"] button:nth-of-type(1)::after {
+            width: 14px;
+            height: 14px;
+            margin-right: 3px;
+            margin-left: 3px;
         }
 
         [data-testid="stTabs"] [data-baseweb="tab-list"] {
@@ -1747,15 +1761,41 @@ st.markdown(
     }
 
     .stTabs [data-baseweb="tab"] {
-        font-size: 16px !important;
+        font-size: 15px !important;
         font-weight: 800 !important;
         letter-spacing: 0.3px;
-        padding: 10px 14px !important;
-        white-space: nowrap;
+        padding: 10px 8px !important;
+        white-space: normal;
         border-radius: 8px !important;
         margin: 2px 1px !important;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        flex: 0 0 auto !important;
+        flex: 1 1 0% !important;
+        min-width: 0;
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* İlk sekme "BTA ALGORİTMİK İŞLEM": etiketin iki yanına logo */
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(1)::before,
+    .stTabs [data-baseweb="tab"]:first-of-type::before {
+        content: "";
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        margin-right: 5px;
+        vertical-align: middle;
+        background: url("data:image/svg+xml;charset=utf-8,%3Csvg%20viewBox%3D%220%200%2064%2064%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20fill%3D%22none%22%20stroke%3D%22%2300f5c8%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%3E%3Cline%20x1%3D%2212%22%20y1%3D%2248%22%20x2%3D%2224%22%20y2%3D%2230%22/%3E%3Cline%20x1%3D%2224%22%20y1%3D%2230%22%20x2%3D%2236%22%20y2%3D%2238%22/%3E%3Cline%20x1%3D%2236%22%20y1%3D%2238%22%20x2%3D%2252%22%20y2%3D%2214%22/%3E%3Cline%20x1%3D%2212%22%20y1%3D%2248%22%20x2%3D%2252%22%20y2%3D%2248%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2248%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2230%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3Ccircle%20cx%3D%2236%22%20cy%3D%2238%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2214%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3C/svg%3E") no-repeat center center/contain;
+    }
+
+    .stTabs [data-baseweb="tab-list"] button:nth-of-type(1)::after,
+    .stTabs [data-baseweb="tab"]:first-of-type::after {
+        content: "";
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        margin-left: 5px;
+        vertical-align: middle;
+        background: url("data:image/svg+xml;charset=utf-8,%3Csvg%20viewBox%3D%220%200%2064%2064%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20fill%3D%22none%22%20stroke%3D%22%2300f5c8%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%3E%3Cline%20x1%3D%2212%22%20y1%3D%2248%22%20x2%3D%2224%22%20y2%3D%2230%22/%3E%3Cline%20x1%3D%2224%22%20y1%3D%2230%22%20x2%3D%2236%22%20y2%3D%2238%22/%3E%3Cline%20x1%3D%2236%22%20y1%3D%2238%22%20x2%3D%2252%22%20y2%3D%2214%22/%3E%3Cline%20x1%3D%2212%22%20y1%3D%2248%22%20x2%3D%2252%22%20y2%3D%2248%22/%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2248%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2230%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3Ccircle%20cx%3D%2236%22%20cy%3D%2238%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2214%22%20r%3D%224.6%22%20fill%3D%22%2300f5c8%22%20stroke%3D%22none%22/%3E%3C/svg%3E") no-repeat center center/contain;
     }
 
     .stTabs [data-baseweb="tab-list"] button:nth-of-type(1),
@@ -2869,26 +2909,11 @@ if not excel_df.empty:
 # ==================================================
 # PANELLER
 # ==================================================
-st.markdown(
-    """
-    <div style="
-        text-align: center;
-        font-size: 26px;
-        font-weight: 700;
-        color: #00f5c8;
-        margin-bottom: 6px;
-    ">
-        👇 👉
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 tab_algoritmik, tab_gunluk, tab_bedelli, tab_sohbet, tab_haber, \
     tab_kap, tab_spk, tab_arz, tab_sermaye, tab_teknik, \
     tab_kayit, tab_paylas = st.tabs(
         [
-            "🤖 Algoritmik HİSSELER",
+            "BTA ALGORİTMİK İŞLEM",
             "📅 Günlük Algoritma HİSSELER",
             "🧮 Bedelli/Bedelsiz HESAP",
             "💬 Sohbet",
